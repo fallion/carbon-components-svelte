@@ -1,38 +1,55 @@
 <script>
   /**
-   * Specify the kind of notification icon
+   * Specify the kind of notification icon.
    * @type {"error" | "info" | "info-square" | "success" | "warning" | "warning-alt"}
    */
   export let kind = "error";
 
   /**
-   * Set the type of notification
+   * Set the type of notification.
    * @type {"toast" | "inline"}
    */
   export let notificationType = "toast";
 
-  /** Specify the ARIA label for the icon */
-  export let iconDescription = "Closes notification";
+  /** Set to `true` to use the low contrast icon fill. */
+  export let lowContrast = false;
 
-  import CheckmarkFilled20 from "../icons/CheckmarkFilled20.svelte";
-  import ErrorFilled20 from "../icons/ErrorFilled20.svelte";
-  import InformationFilled20 from "../icons/InformationFilled20.svelte";
-  import InformationSquareFilled20 from "../icons/InformationSquareFilled20.svelte";
-  import WarningFilled20 from "../icons/WarningFilled20.svelte";
-  import WarningAltFilled20 from "../icons/WarningAltFilled20.svelte";
+  /**
+   * Specify a label for screen readers, such as "Warning". Leave it unset
+   * to hide the icon from screen readers.
+   * @type {string | undefined}
+   */
+  export let iconDescription = undefined;
+
+  import CheckmarkFilled from "../icons/CheckmarkFilled.svelte";
+  import ErrorFilled from "../icons/ErrorFilled.svelte";
+  import InformationFilled from "../icons/InformationFilled.svelte";
+  import InformationSquareFilled from "../icons/InformationSquareFilled.svelte";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
 
   const icons = {
-    error: ErrorFilled20,
-    "info-square": InformationSquareFilled20,
-    info: InformationFilled20,
-    success: CheckmarkFilled20,
-    warning: WarningFilled20,
-    "warning-alt": WarningAltFilled20,
+    error: ErrorFilled,
+    "info-square": InformationSquareFilled,
+    info: InformationFilled,
+    success: CheckmarkFilled,
+    warning: WarningFilled,
+    "warning-alt": WarningAltFilled,
   };
+
+  $: marker = `${lowContrast ? "low-contrast-" : ""}${kind}`;
+
+  $: iconClass =
+    notificationType === "toast"
+      ? `bx--toast-notification__icon bx--toast-notification__icon--${marker}`
+      : notificationType === "inline"
+        ? `bx--inline-notification__icon bx--inline-notification__icon--${marker}`
+        : "";
 </script>
 
 <svelte:component
-  this="{icons[kind]}"
-  title="{iconDescription}"
-  class="bx--{notificationType}-notification__icon"
+  this={icons[kind]}
+  size={20}
+  class={iconClass}
+  title={iconDescription}
 />

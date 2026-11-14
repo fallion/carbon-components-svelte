@@ -4,74 +4,126 @@
    */
 
   /**
-   * Specify the file uploader status
+   * Set to `true` for the item to fill the container instead of
+   * stopping at 20rem.
+   */
+  export let fullWidth = false;
+
+  /**
+   * Set to `true` to remove the bottom margin, such as for an item in a
+   * flex or grid layout that sets its own spacing.
+   */
+  export let noMargin = false;
+
+  /**
+   * Specify the file uploader status.
    * @type {"uploading" | "edit" | "complete"}
    */
   export let status = "uploading";
 
   /**
-   * Specify the size of button skeleton
-   * @type {"default" | "field" | "small"}
+   * Specify the size of button skeleton.
+   * Also accepts Carbon v11's `"sm"` (`"small"`), `"md"` (`"field"`) and
+   * `"lg"` (`"default"`).
+   * @type {"default" | "field" | "small" | "xs" | "sm" | "md" | "lg"}
    */
   export let size = "default";
 
-  /** Specify the ARIA label used for the status icons */
-  export let iconDescription = "";
+  /**
+   * Accessible label for the status icons. Forwarded to `Filename`.
+   * Use a string, or a function with `{ file, fileName, status, invalid }` (`file` is always `undefined` here).
+   * When omitted or the resolved value is blank after trim, `Filename` applies defaults.
+   * @type {string | undefined | ((ctx: { file?: File; fileName: string; status: "uploading" | "edit" | "complete"; invalid: boolean }) => string | undefined)}
+   */
+  export let iconDescription = undefined;
 
   /** Set to `true` to indicate an invalid state */
   export let invalid = false;
 
-  /** Specify the error subject text */
+  /** Set to `true` to disable the remove button */
+  export let disabled = false;
+
+  /**
+   * Specify the error subject text.
+   * When `invalid`, the error is announced with `role="alert"` and
+   * describes the remove button.
+   */
   export let errorSubject = "";
 
   /** Specify the error body text */
   export let errorBody = "";
 
   /** Set an id for the top-level element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
   /** Specify the file uploader name */
   export let name = "";
 
+  /**
+   * File size to show under the name.
+   * A number is bytes, formatted with decimal units (1000 bytes = 1 kB).
+   * A string is shown as-is; use `formatFileSize(bytes, { units: "binary" })`
+   * for binary units or a localized size.
+   * Omit to show the name only.
+   * @type {number | string | undefined}
+   */
+  export let fileSize = undefined;
+
   import { createEventDispatcher } from "svelte";
+  import { formatFileSize } from "../utils/format-file-size.js";
+  import { overflowTitle } from "../utils/overflow-title.js";
+  import { normalizeFileItemSize } from "../utils/size-aliases.js";
+  import { uniqueId } from "../utils/unique-id.js";
   import Filename from "./Filename.svelte";
 
   const dispatch = createEventDispatcher();
+
+  $: errorId = invalid && errorSubject ? `${id}-error` : undefined;
+  $: fileSizeText =
+    typeof fileSize === "number" ? formatFileSize(fileSize) : (fileSize ?? "");
+
+  $: effectiveSize = normalizeFileItemSize(size);
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <span
-  id="{id}"
-  class:bx--file__selected-file="{true}"
-  class:bx--file__selected-file--invalid="{invalid}"
-  class:bx--file__selected-file--md="{size === 'field'}"
-  class:bx--file__selected-file--sm="{size === 'small'}"
+  {id}
+  class:bx--file__selected-file={true}
+  class:bx--file__selected-file--full-width={fullWidth}
+  class:bx--file__selected-file--no-margin={noMargin}
+  class:bx--file__selected-file--invalid={invalid}
+  class:bx--file__selected-file--disabled={disabled}
+  class:bx--file__selected-file--md={effectiveSize === "field"}
+  class:bx--file__selected-file--sm={effectiveSize === "small"}
+  class:bx--file__selected-file--xs={effectiveSize === "xs"}
   {...$$restProps}
   on:mouseover
   on:mouseenter
   on:mouseleave
 >
-  <p class:bx--file-filename="{true}">{name}</p>
-  <span class:bx--file__state-container="{true}">
+  <span class:bx--file-filename-group={true}>
+    <p class:bx--file-filename={true} use:overflowTitle>{name}</p>
+    {#if fileSizeText}
+      <p class:bx--file-size={true}>{fileSizeText}</p>
+    {/if}
+  </span>
+  <span class:bx--file__state-container={true}>
     <Filename
-      on:keydown="{({ key }) => {
-        if (key === ' ' || key === 'Enter') {
-          dispatch('delete', id);
-        }
-      }}"
-      on:click="{() => {
-        dispatch('delete', id);
-      }}"
-      iconDescription="{iconDescription}"
-      status="{status}"
-      invalid="{invalid}"
+      fileName={name}
+      on:click={() => {
+        dispatch("delete", id);
+      }}
+      {iconDescription}
+      {status}
+      {invalid}
+      {disabled}
+      aria-describedby={errorId}
     />
   </span>
-  {#if invalid && errorSubject}
-    <div class:bx--form-requirement="{true}">
-      <div class:bx--form-requirement__title="{true}">{errorSubject}</div>
+  {#if errorId}
+    <div id={errorId} class:bx--form-requirement={true} role="alert">
+      <div class:bx--form-requirement__title={true}>{errorSubject}</div>
       {#if errorBody}
-        <p class:bx--form-requirement__supplement="{true}">{errorBody}</p>
+        <p class:bx--form-requirement__supplement={true}>{errorBody}</p>
       {/if}
     </div>
   {/if}

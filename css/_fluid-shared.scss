@@ -1,0 +1,121 @@
+// Declaration mixins shared by the fluid-* partials. This file emits no CSS
+// of its own; every mixin here is `@include`d from inside an existing rule
+// in one of the fluid-* partials.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+
+/// Absolutely positioned fluid label that overlays the top of a fluid field
+/// and truncates with an ellipsis instead of wrapping. (Carbon scrolls it
+/// sideways with a hidden scrollbar, which makes a cut-off label a tab stop
+/// of its own in browsers that focus scroll containers.)
+/// @access private
+/// @group components
+@mixin fluid-label {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  block-size: to-rem(16px);
+  inline-size: calc(100% - to-rem(32px));
+  inset-block-start: to-rem(13px);
+  @include ccs-inset-inline($start: $carbon--spacing-05);
+}
+
+/// Slotted fluid label content (e.g. a toggletip button) can't end in an
+/// ellipsis without hiding a trailing control, so it scrolls sideways under
+/// a hidden scrollbar, as in Carbon, and focusing the control scrolls it
+/// into view. It stays inside the field instead of spilling past its edge.
+/// @access private
+/// @group components
+@mixin fluid-label-slotted {
+  display: flex;
+  align-items: center;
+  gap: $carbon--spacing-03;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  // Room for a focused control's 2px outline, which the scroll box would
+  // otherwise clip; the negative margin keeps the text where it was.
+  box-sizing: content-box;
+  padding: to-rem(2px);
+  margin: to-rem(-2px);
+}
+
+/// Reveals a `.bx--form-requirement` validation message that a fluid variant
+/// renders inline instead of as a v10 sibling.
+/// @access private
+/// @group components
+@mixin fluid-requirement {
+  display: block;
+  overflow: visible;
+  max-block-size: 100%;
+}
+
+/// Padding for a revealed fluid `.bx--form-requirement` message.
+/// @access private
+/// @group components
+@mixin fluid-requirement-padding {
+  padding-block: $carbon--spacing-03;
+  padding-inline: $carbon--spacing-05 to-rem(40px);
+  margin: 0;
+}
+
+/// Status icon pinned to the first line of a fluid field's validation
+/// message.
+/// @access private
+/// @group components
+@mixin fluid-status-icon($offset) {
+  inset-block-start: $offset;
+  pointer-events: none;
+  @include ccs-inset-inline($end: $carbon--spacing-05);
+}
+
+/// Full-width divider drawn as a `border-block-end` rule.
+/// @access private
+/// @group components
+@mixin fluid-divider-rule {
+  display: block;
+  border: none;
+  margin: 0 to-rem(16px);
+  border-block-end: 1px solid $border-subtle;
+  inline-size: calc(100% - to-rem(32px));
+}
+
+/// Full-width divider drawn via `border-style`/`border-color`, leaving
+/// `border-block-end` for a sibling rule to fill in.
+/// @access private
+/// @group components
+@mixin fluid-divider-frame {
+  display: block;
+  border-style: solid;
+  border-color: $border-subtle;
+  margin: 0 to-rem(16px);
+  border-block-end: none;
+}
+
+/// Small skeleton placeholder bar standing in for a fluid label.
+/// @access private
+/// @group components
+@mixin fluid-skeleton-label {
+  position: absolute;
+  block-size: to-rem(8px);
+  inline-size: 25%;
+  inset-block-start: $carbon--spacing-05;
+  @include ccs-inset-inline($start: $carbon--spacing-05);
+}
+
+/// Wider skeleton placeholder bar standing in for a fluid field's value.
+/// @access private
+/// @group components
+@mixin fluid-skeleton-field {
+  position: absolute;
+  padding: 0;
+  block-size: to-rem(8px);
+  inline-size: 50%;
+  inset-block-start: to-rem(36px);
+  @include ccs-inset-inline($start: $carbon--spacing-05);
+}

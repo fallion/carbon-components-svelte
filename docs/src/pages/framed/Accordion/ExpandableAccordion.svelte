@@ -1,42 +1,35 @@
 <script>
-  export let items = [
+  import { Accordion, AccordionItem, Button } from "carbon-components-svelte";
+
+  const items = [
     {
-      title: "Natural Language Classifier",
+      title: "Billing and invoices",
       description:
-        "Natural Language Classifier uses advanced natural language processing and machine learning techniques to create custom classification models. Users train their data and the service predicts the appropriate category for the inputted text.",
+        "Manage payment methods, view invoice history, and download receipts for your organization's subscription.",
     },
     {
-      title: "Natural Language Understanding",
+      title: "API access",
       description:
-        "Analyze text to extract meta-data from content such as concepts, entities, emotion, relations, sentiment and more.",
+        "Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.",
     },
     {
-      title: "Language Translator",
+      title: "Team permissions",
       description:
-        "Translate text, documents, and websites from one language to another. Create industry or region-specific translations via the service's customization capability.",
+        "Assign roles and control which team members can view, edit, or administer workspace resources.",
     },
   ];
-
-  import { Accordion, AccordionItem, Button } from "carbon-components-svelte";
 
   let open = false;
 </script>
 
-<Button
-  kind="ghost"
-  size="field"
-  on:click="{() => {
-    open = !open;
-  }}"
->
+<Button kind="ghost" size="field" on:click={() => (open = !open)}>
   {open ? "Collapse" : "Expand"}
   all
 </Button>
 
 <Accordion>
   {#each items as item}
-    <AccordionItem open="{open}">
-      <h5 slot="title">{item.title}</h5>
+    <AccordionItem title={item.title} {open}>
       <p>{item.description}</p>
     </AccordionItem>
   {/each}

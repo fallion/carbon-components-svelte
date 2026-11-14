@@ -1,0 +1,132 @@
+---
+description: Tooltip icons show contextual information on hover or focus of an icon button.
+---
+
+<script>
+  import { Box, Stack, Text, TooltipGroup, TooltipIcon } from "carbon-components-svelte";
+  import Carbon from "carbon-icons-svelte/lib/Carbon.svelte";
+  import Filter from "carbon-icons-svelte/lib/Filter.svelte";
+</script>
+
+## Basic
+
+Display a tooltip with the default bottom-center alignment.
+
+<TooltipIcon tooltipText="Metrics are aggregated across every workspace in your organization." icon={Carbon} />
+
+## Reactive example
+
+Control tooltip state programmatically with `bind:open`.
+
+<FileSource src="/framed/TooltipIcon/TooltipIconReactive" />
+
+## Dispatched events
+
+The component dispatches `open` and `close` events.
+
+<FileSource src="/framed/TooltipIcon/TooltipIconEvents" />
+
+## Sizes
+
+Set icon size with `size`. Carbon icons use a 16/20/24/32 scale, but any pixel value works.
+
+<TooltipIcon tooltipText="16px" icon={Carbon} size={16} />
+<TooltipIcon tooltipText="20px" icon={Carbon} size={20} />
+<TooltipIcon tooltipText="24px" icon={Carbon} size={24} />
+<TooltipIcon tooltipText="32px" icon={Carbon} size={32} />
+
+## Placement
+
+Position the tooltip with direction and alignment.
+
+### Directions
+
+By default, the tooltip is positioned to the bottom.
+
+Position the tooltip with `direction`.
+
+<TooltipIcon tooltipText="Top" direction="top" icon={Filter} />
+<TooltipIcon tooltipText="Right" direction="right" icon={Filter} />
+<TooltipIcon tooltipText="Bottom" direction="bottom" icon={Filter} />
+<TooltipIcon tooltipText="Left" direction="left" icon={Filter} />
+
+### Alignment
+
+By default, the tooltip is aligned to the center.
+
+Align the tooltip content with `align`.
+
+<TooltipIcon tooltipText="Start" align="start" icon={Filter} />
+<TooltipIcon tooltipText="Center" align="center" icon={Filter} />
+<TooltipIcon tooltipText="End" align="end" icon={Filter} />
+
+## Custom tooltip text
+
+Use the `tooltipChildren` slot to customize the tooltip content with additional styling.
+
+<TooltipIcon icon={Carbon}>
+  <Text slot="tooltipChildren" tag="span" type="inherit" weight="semibold">Metrics are aggregated across every workspace in your organization.</Text>
+</TooltipIcon>
+
+## Custom icon
+
+Use the default slot to fully customize the trigger content, replacing what the `icon` prop would otherwise render.
+
+<TooltipIcon tooltipText="Custom icon content">
+  <Box width="1rem" height="1rem" border="interactive" />
+</TooltipIcon>
+
+## Custom delay
+
+Customize hover delays with `enterDelayMs` and `leaveDelayMs`. Defaults are 100ms and 100ms. The tooltip stays while the pointer is on it. Keyboard focus shows the tooltip at once.
+
+<TooltipIcon tooltipText="Slow to appear" icon={Carbon} enterDelayMs={500} leaveDelayMs={500} />
+
+## Tooltip group
+
+Wrap related tooltip icons in a [TooltipGroup](/components/TooltipGroup). Once one tooltip is open, moving to the next icon shows its tooltip right away, with no enter delay or fade-in. Inside a group, `enterDelayMs` and `leaveDelayMs` default to the group's delays.
+
+<TooltipGroup>
+  <Stack orientation="horizontal" gap={3}>
+    <TooltipIcon tooltipText="Synced 2 minutes ago" icon={Carbon} />
+    <TooltipIcon tooltipText="Filters applied: status, owner" icon={Filter} />
+    <TooltipIcon tooltipText="Metrics cover every workspace" icon={Carbon} />
+  </Stack>
+</TooltipGroup>
+
+## Disabled
+
+Prevent interaction with `disabled`.
+
+<TooltipIcon disabled tooltipText="Metrics are aggregated across every workspace in your organization." icon={Carbon} />
+
+## Portal
+
+A tooltip that a container would cut off, such as a box with `overflow: hidden`, a scroll area or a [DataTable](/components/DataTable), opens in a portal. Inside a Modal, the tooltip always opens in a portal.
+
+Set `portalTooltip` to `true` to always render the tooltip in a portal, or to `false` to keep it in place. Direction and alignment match the in-place tooltip. A portalled tooltip leaves its container in the DOM, so CSS that targets the tooltip as a descendant of the container does not match it.
+
+<TooltipIcon portalTooltip tooltipText="Metrics are aggregated across every workspace in your organization." icon={Carbon} />
+
+### Directions
+
+Icon tooltips support top, right, bottom, and left. With portalling, direction behaves the same as the default CSS path.
+
+<TooltipIcon portalTooltip direction="top" tooltipText="Top" icon={Carbon} />
+<TooltipIcon portalTooltip direction="right" tooltipText="Right" icon={Carbon} />
+<TooltipIcon portalTooltip direction="bottom" tooltipText="Bottom" icon={Carbon} />
+<TooltipIcon portalTooltip direction="left" tooltipText="Left" icon={Carbon} />
+
+### Alignment
+
+Portalled tooltips use the same alignment options as the default path: horizontal placement for top and bottom, vertical placement for left and right.
+
+<TooltipIcon portalTooltip direction="bottom" align="start" tooltipText="Start" icon={Carbon} />
+<TooltipIcon portalTooltip direction="bottom" align="center" tooltipText="Center" icon={Carbon} />
+<TooltipIcon portalTooltip direction="bottom" align="end" tooltipText="End" icon={Carbon} />
+
+## Inside a modal
+
+When a tooltip icon is used inside a [Modal](/components/Modal), it is automatically portalled so it is not clipped by the modal overflow or z-index stacking. Set `portalTooltip` to override this behavior.
+
+<FileSource src="/framed/TooltipIcon/TooltipIconModal" />

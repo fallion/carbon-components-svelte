@@ -1,229 +1,293 @@
-<script>
+<script lang="ts">
   import {
-    Grid,
-    Link,
-    Row,
+    Box,
+    Breadcrumb,
+    BreadcrumbItem,
     Column,
     Content,
-    Button,
-    Select,
-    SelectItem,
-    InlineNotification,
-    Tabs,
+    Dropdown,
+    LazyMount,
+    Link,
+    Row,
+    Stack,
     Tab,
     TabContent,
+    Tabs,
+    Text,
   } from "carbon-components-svelte";
-  import Code16 from "carbon-icons-svelte/lib/Code16";
-  import { page, metatags } from "@sveltech/routify";
-  import { onMount } from "svelte";
-  import { theme } from "../store";
+  import type { CarbonTheme } from "carbon-components-svelte/src/Theme/Theme.svelte";
+  import { themes as themeLabels } from "carbon-components-svelte/src/Theme/Theme.svelte";
+  import OpenPanelFilledRight from "carbon-icons-svelte/lib/OpenPanelFilledRight.svelte";
+  import OpenPanelRight from "carbon-icons-svelte/lib/OpenPanelRight.svelte";
+  import { flushSync, onMount } from "svelte";
+  import type COMPONENT_API from "../COMPONENT_API.json";
+  import { CATEGORY_BY_COMPONENT } from "../component-categories";
+  import {
+    categoryFilterHref,
+    sourceRepoUrlForFilePath,
+  } from "../component-index";
+  import { markdownBytesFor } from "../component-md-sizes";
   import ComponentApi from "../components/ComponentApi.svelte";
-  import COMPONENT_API from "../COMPONENT_API.json";
+  import ComponentDocBarActions from "../components/ComponentDocBarActions.svelte";
+  import ComponentDocLayout from "../components/ComponentDocLayout.svelte";
+  import ComponentTocNav from "../components/ComponentTocNav.svelte";
+  import { queueIdleMount } from "../idle-mount";
+  import { eagerContent, route } from "../router";
+  import { componentTocOpen, DOC_THEMES, theme } from "../store";
 
-  export let component = $page.title;
-  export let components = [component];
-  export let source = "";
-  export let unreleased = false;
-  export let unstable = false;
+  type DocComponent = (typeof COMPONENT_API.components)[number];
 
-  metatags.title = $page.title;
+  const themeItems = DOC_THEMES.map((t) => ({ id: t, text: themeLabels[t] }));
 
-  // TODO: `find` is not supported in IE
-  $: api_components = components.map((i) =>
-    COMPONENT_API.components.find((_) => _.moduleName === i)
-  );
+  function isCarbonTheme(value: string | null): value is CarbonTheme {
+    return value !== null && DOC_THEMES.includes(value as CarbonTheme);
+  }
+
+  export let component = $route?.name ?? "";
+  export let description = "";
+  export let headings: { id: string; text: string; depth: number }[] = [];
+
+  export let api: (DocComponent | null)[] = [];
+
+  $: api_components = api.filter((c): c is DocComponent => c != null);
   $: multiple = api_components.length > 1;
+  $: category = CATEGORY_BY_COMPONENT[component] ?? "";
+  $: categoryHref = category
+    ? categoryFilterHref([category])
+    : "/component-index";
+
+  /**
+   * The API section is a long page's largest part, 3,371 of DataTable's
+   * 12,238 elements, and held up the first render. Mount it lazily.
+   */
+  let apiSection: HTMLElement;
+  let apiMounted = false;
+  let apiIdle = false;
+  let selectedApi = 0;
+  let unqueueApi = () => {};
+  $: if (apiMounted) unqueueApi();
+  $: selectedApiComponent = api_components[selectedApi] ?? api_components[0];
+  /** Room for the API section until it mounts, from its tables' rows. */
+  $: apiEstimatedHeight =
+    600 +
+    (selectedApiComponent?.props.length ?? 0) * 180 +
+    (selectedApiComponent?.slots.length ?? 0) * 120;
 
   onMount(() => {
-    const currentTheme = window.location.search.split("?theme=")[1];
-
-    if (["white", "g10", "g80", "g90", "g100"].includes(currentTheme)) {
-      theme.set(currentTheme);
+    if (!apiMounted) {
+      unqueueApi = queueIdleMount(apiSection, () => {
+        apiIdle = true;
+        flushSync();
+      });
     }
+    const searchParams = new URLSearchParams(window.location.search);
+    const current_theme = searchParams.get("theme");
+
+    if (isCarbonTheme(current_theme)) {
+      theme.set(current_theme);
+    }
+
+    return () => {
+      unqueueApi();
+    };
   });
 
-  // TODO: [refactor] read from package.json value
-  $: sourceCode = `https://github.com/carbon-design-system/carbon-components-svelte/tree/master/src/${
-    source || `${$page.title}/${$page.title}.svelte`
-  }`;
+  $: sourceCode = sourceRepoUrlForFilePath(
+    api_components[0]?.filePath ?? "",
+    multiple,
+  );
+  $: markdownUrl = `/components/${component}.md`;
+  $: markdownBytes = markdownBytesFor(component);
+
+  $: tocToggleIcon = $componentTocOpen ? OpenPanelFilledRight : OpenPanelRight;
+  $: tocToggleDescription = $componentTocOpen ? "Hide sidebar" : "Show sidebar";
 </script>
 
-<Content data-components>
-  <Grid>
-    <Row>
-      <Column>
-        <h1>{component}</h1>
-        <div class="bar">
-          <Select
-            id="select-theme"
-            inline
-            labelText="Theme"
-            bind:selected="{$theme}"
-          >
-            <SelectItem value="white" text="White" />
-            <SelectItem value="g10" text="Gray 10" />
-            <SelectItem value="g80" text="Gray 80" />
-            <SelectItem value="g90" text="Gray 90" />
-            <SelectItem value="g100" text="Gray 100" />
-          </Select>
-          <Button
-            kind="ghost"
-            target="_blank"
-            size="field"
-            href="{sourceCode}"
-            icon="{Code16}"
-          >
-            Source code
-          </Button>
-        </div>
-        {#if unreleased}
-          <InlineNotification
-            lowContrast
-            kind="info"
-            title="Unreleased"
-            subtitle="This component has not been released yet."
-            hideCloseButton
-          />
-        {/if}
-        {#if unstable}
-          <InlineNotification
-            lowContrast
-            kind="warning"
-            title="Unstable component"
-            subtitle="Expect the API of this component to change. Use at your own risk."
-            hideCloseButton
-          />
-        {/if}
-      </Column>
-    </Row>
+<svelte:head>
+  <title>{component}</title>
+  <link
+    rel="canonical"
+    href="https://svelte.carbondesignsystem.com/components/{component}"
+  />
+</svelte:head>
 
-    <Row>
-      <Column class="prose">
-        <div class="toc mobile">
-          <h5>Table of Contents</h5>
-          <slot name="aside" />
-        </div>
-        <h2 id="usage">Usage</h2>
-        <slot />
-        <h2 id="component-api">Component API</h2>
-        <p>
+<Content data-component={component}>
+  <ComponentDocLayout
+    data-components
+    data-toc-collapsed={!$componentTocOpen}
+    aside={$componentTocOpen}
+  >
+    <Box
+      display="flex"
+      direction="column"
+      gap={3}
+      tag="section"
+      class="hero band hero--component"
+    >
+      {#if category}
+        <Breadcrumb noTrailingSlash size="sm">
+          <BreadcrumbItem href="/component-index">Categories</BreadcrumbItem>
+          <BreadcrumbItem href={categoryHref}>{category}</BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>{component}</BreadcrumbItem>
+        </Breadcrumb>
+      {/if}
+      <Stack gap={7}>
+        <Text tag="h1" type="fluid-heading-06" color="primary">
+          {component}
+        </Text>
+        {#if description}
+          <div class="hero__description">
+            <Text type="heading-04" color="secondary" maxWidth="52ch">
+              {description}
+            </Text>
+          </div>
+        {/if}
+      </Stack>
+    </Box>
+
+    <div class="bar bar--component">
+      <Dropdown
+        id="theme-dropdown"
+        portalMenu
+        class="theme-dropdown"
+        type="inline"
+        size="sm"
+        labelText="Theme"
+        items={themeItems}
+        selectedId={$theme}
+        on:select={({ detail }) => {
+          theme.set(detail.selectedId);
+        }}
+      />
+      <ComponentDocBarActions
+        {component}
+        {sourceCode}
+        {markdownUrl}
+        {markdownBytes}
+        {tocToggleIcon}
+        {tocToggleDescription}
+        on:tocToggle={() => {
+          componentTocOpen.update((open) => !open);
+        }}
+      />
+    </div>
+    <div class="toc mobile">
+      <ComponentTocNav {headings} />
+    </div>
+    <slot />
+    <div class="component-api-header">
+      <Stack gap={4}>
+        <Text tag="h2" id="component-api" type="heading-05" color="primary">
+          Component API
+          <a
+            class="heading-anchor"
+            href="#component-api"
+            aria-label="Copy link to this heading">#</a
+          >
+        </Text>
+        <Text type="body-02" color="secondary">
           API documentation is
           <Link
             inline
+            size="lg"
             href="https://github.com/carbon-design-system/sveld"
             target="_blank"
           >
             auto-generated by sveld.
           </Link>
-        </p>
-      </Column>
-    </Row>
-
-    <Row>
-      <Column class="prose" noGutter="{multiple}">
-        {#if multiple}
-          <Tabs class="override-tabs">
-            {#each api_components as component (component.moduleName)}
-              <Tab label="{component.moduleName}" />
-            {/each}
-            <div slot="content" style="padding-top: var(--cds-spacing-06)">
-              {#each api_components as component (component.moduleName)}
-                <TabContent>
-                  <ComponentApi component="{component}" />
-                </TabContent>
-              {/each}
-            </div>
-          </Tabs>
-        {:else}
-          <ComponentApi component="{api_components[0]}" />
-        {/if}
-      </Column>
-    </Row>
-  </Grid>
-
-  <Column class="table" xlg="{4}" lg="{5}">
-    <div class="toc">
-      <h5>Table of Contents</h5>
-      <slot name="aside" />
+        </Text>
+      </Stack>
     </div>
-  </Column>
+
+    <svelte:fragment slot="rows">
+      <Row>
+        <Column class="prose" noGutter={multiple}>
+          <div bind:this={apiSection}>
+            <LazyMount
+              rootMargin="1200px"
+              estimatedHeight={apiEstimatedHeight}
+              eager={$eagerContent || apiIdle}
+              bind:mounted={apiMounted}
+            >
+              {#if multiple}
+                <Tabs class="override-tabs" bind:selected={selectedApi}>
+                  {#each api_components as component (component.moduleName)}
+                    <Tab label={component.moduleName} />
+                  {/each}
+                  <div slot="content" class="tab-content-spacing">
+                    {#each api_components as component, i (component.moduleName)}
+                      <TabContent>
+                        {#if i === selectedApi}<ComponentApi {component} />{/if}
+                      </TabContent>
+                    {/each}
+                  </div>
+                </Tabs>
+              {:else}
+                <ComponentApi component={api_components[0]} />
+              {/if}
+            </LazyMount>
+          </div>
+        </Column>
+      </Row>
+    </svelte:fragment>
+
+    <svelte:fragment slot="aside">
+      <div class="toc">
+        <ComponentTocNav {headings} />
+      </div>
+    </svelte:fragment>
+  </ComponentDocLayout>
 </Content>
 
-<style global>
-  .override-tabs a.bx--tabs__nav-link,
-  .override-tabs a.bx--tabs__nav-link:focus,
-  .override-tabs a.bx--tabs__nav-link:active {
-    width: auto !important;
+<style>
+  /* A top margin collapses with the last example's, so the break is the
+     same size on every page. */
+  .component-api-header {
+    margin-top: var(--cds-spacing-12);
+    margin-bottom: var(--cds-spacing-06);
   }
 
-  #select-theme {
-    width: auto;
+  .tab-content-spacing {
+    padding-top: var(--cds-spacing-06);
   }
 
-  .prose > p > .bx--link {
-    font-size: inherit;
-    text-decoration: underline;
+  .hero__description {
+    margin-top: var(--cds-spacing-06);
+    margin-bottom: var(--cds-spacing-04);
   }
 
-  .prose .toc {
-    margin-bottom: var(--cds-layout-01);
-  }
-
-  .table {
-    position: sticky;
-    max-height: calc(100vh - 3rem);
-    top: 3rem;
-    padding-top: var(--cds-spacing-05);
-    padding-bottom: var(--cds-spacing-05);
-    padding-left: var(--cds-spacing-08);
-    overflow-y: auto;
+  .hero__description :global(p) {
+    margin: 0;
   }
 
   .bar {
     display: flex;
     justify-content: space-between;
-    margin-bottom: var(--cds-layout-02);
-    border-bottom: 1px solid var(--cds-ui-03);
-  }
-
-  [data-components] {
-    z-index: 2;
-    position: relative;
-    display: flex;
-  }
-
-  [data-components] .bx--grid {
     width: 100%;
   }
 
-  .toc h5 {
-    margin-bottom: var(--cds-spacing-03);
+  :global([data-floating-portal]:has(#menu-theme-dropdown)) {
+    z-index: 10001 !important;
+  }
+
+  :global(#menu-theme-dropdown) {
+    min-width: 8rem;
+    max-height: none !important;
+  }
+
+  .bar--component {
+    margin-top: calc(-1 * var(--cds-spacing-06));
+    margin-bottom: var(--cds-spacing-06);
   }
 
   .toc.mobile {
     display: none;
   }
 
-  @media (max-width: 1056px) {
-    .table {
-      display: none;
-    }
-
+  @media (max-width: 65.98rem) {
     .toc.mobile {
       display: block;
+      margin-bottom: var(--cds-spacing-09);
     }
-  }
-
-  .preview-viewer > .bx--aspect-ratio,
-  .preview-viewer [data-outline] {
-    outline: 1px solid var(--cds-interactive-04);
-  }
-
-  [data-outline] {
-    position: relative;
-  }
-
-  [data-outline] ~ [data-outline] {
-    margin-top: var(--cds-spacing-08);
   }
 </style>

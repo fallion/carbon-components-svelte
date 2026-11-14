@@ -1,0 +1,115 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { route } from "../../current-route";
+
+  $: exampleName = $route?.name ?? "";
+  $: componentName = $route?.parentName ?? "";
+
+  const validThemes = ["white", "g10", "g80", "g90", "g100", "system"];
+
+  function applyTheme(theme: string | null) {
+    if (theme && validThemes.includes(theme)) {
+      document.documentElement.setAttribute("theme", theme);
+    }
+  }
+
+  onMount(() => {
+    document.body.classList.add("framed");
+
+    // Intercept localStorage.setItem in this frame so that
+    // theme changes made via localStorage are applied immediately.
+    const _setItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = (key: string, value: string) => {
+      _setItem(key, value);
+      if (key === "theme") applyTheme(value);
+    };
+
+    // Listen for cross-document storage changes (e.g., from the parent docs page).
+    function handleStorage(event: StorageEvent) {
+      if (event.key === "theme") applyTheme(event.newValue);
+    }
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      document.body.classList.remove("framed");
+      localStorage.setItem = _setItem;
+      window.removeEventListener("storage", handleStorage);
+    };
+  });
+
+  $: {
+    const searchParams = new URLSearchParams(window.location.search);
+    const current_theme = searchParams.get("theme");
+
+    // NOTE: we *do not* want to persist the theme as this can
+    // conflict with how the iframe is displayed in the docs.
+    // Instead, we want the theme to be overridden in the standalone page.
+    applyTheme(current_theme);
+  }
+</script>
+
+<svelte:head>
+  <title>{exampleName} – Carbon Components Svelte</title>
+  <meta
+    name="description"
+    content="{exampleName} example for the {componentName} component in Carbon Components Svelte."
+  />
+  <link
+    rel="canonical"
+    href="https://svelte.carbondesignsystem.com{$route?.path ?? ''}"
+  />
+</svelte:head>
+
+<slot />
+
+<style>
+  :global(body.framed) {
+    min-height: 100vh;
+    width: 100%;
+    padding: var(--cds-spacing-06) var(--cds-spacing-05);
+  }
+
+  :global(.framed :not(.bx--content) [class^="bx--col"]),
+  :global(.framed .bx--css-grid-column) {
+    outline: 1px solid var(--cds-interactive);
+  }
+
+  /* Keep the label off the outline, so stacked columns stay readable. A
+     column that holds a subgrid keeps no padding, so the tracks line up. */
+  :global(.framed .bx--css-grid-column:not(:has(> .bx--subgrid))) {
+    padding: var(--cds-spacing-02) var(--cds-spacing-03);
+  }
+
+  /* A column that holds a subgrid is outlined by the subgrid's columns. */
+  :global(.framed .bx--css-grid-column:has(> .bx--subgrid)) {
+    outline: 0;
+  }
+
+  :global(.framed .bx--content [class^="bx--col"]) {
+    outline: 0;
+  }
+
+  :global(.framed .bx--page-header__body [class^="bx--col"]) {
+    outline: 0;
+  }
+
+  /* Table of contents examples show a page layout, not the grid itself. */
+  :global(.framed .bx--row:has(.bx--toc) > [class^="bx--col"]) {
+    outline: 0;
+  }
+
+  :global([data-outline]) {
+    outline: 1px solid var(--cds-background-brand);
+  }
+
+  :global([data-centered]) {
+    position: absolute;
+    width: calc(100% - var(--cds-spacing-05));
+    height: calc(100% - var(--cds-spacing-06));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cds-text-secondary);
+  }
+</style>

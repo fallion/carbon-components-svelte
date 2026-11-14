@@ -1,41 +1,35 @@
 <script>
-  import { ComboBox } from "carbon-components-svelte";
+  import { ComboBox, Stack } from "carbon-components-svelte";
 
   const items = [
     { id: "0", text: "Slack" },
     { id: "1", text: "Email" },
-    { id: "2", text: "Fax" },
+    { id: "2", text: "Webhook" },
   ];
 
-  let comboBox1_selectedIndex = -1;
-  let comboBox2_selectedIndex = -1;
+  let comboBox1_selectedId;
+  let comboBox2_selectedId;
 
-  const formatSelected = (i) => (items[i] ? items[i].text : "N/A");
+  const formatSelected = (id) =>
+    items.find((item) => item.id === id)?.text ?? "N/A";
 
-  $: primary = formatSelected(comboBox1_selectedIndex);
-  $: secondary = formatSelected(comboBox2_selectedIndex);
+  $: primary = formatSelected(comboBox1_selectedId);
+  $: secondary = formatSelected(comboBox2_selectedId);
 </script>
 
-<ComboBox
-  bind:selectedIndex="{comboBox1_selectedIndex}"
-  titleText="Primary contact"
-  placeholder="Select primary contact method"
-  items="{items}"
-/>
-
-<div>Primary: {primary}</div>
-
-<ComboBox
-  bind:selectedIndex="{comboBox2_selectedIndex}"
-  titleText="Secondary contact"
-  placeholder="Select secondary contact method"
-  items="{items}"
-/>
-
-<div>Secondary: {secondary}</div>
-
-<style>
-  div {
-    margin: var(--cds-layout-01) 0 var(--cds-layout-03);
-  }
-</style>
+<Stack gap={4}>
+  <ComboBox
+    bind:selectedId={comboBox1_selectedId}
+    labelText="Primary alert channel"
+    placeholder="Select primary alert channel"
+    {items}
+  />
+  <div>Primary: {primary}</div>
+  <ComboBox
+    bind:selectedId={comboBox2_selectedId}
+    labelText="Secondary alert channel"
+    placeholder="Select secondary alert channel"
+    {items}
+  />
+  <div>Secondary: {secondary}</div>
+</Stack>

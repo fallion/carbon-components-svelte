@@ -1,0 +1,104 @@
+---
+description: Clickable tiles are interactive content areas that link to another page or trigger an action.
+---
+
+<script>
+  import { AILabel, Box, ClickableTile, Layer, Stack } from "carbon-components-svelte";
+  import ArrowRight from "carbon-icons-svelte/lib/ArrowRight.svelte";
+  import Launch from "carbon-icons-svelte/lib/Launch.svelte";
+</script>
+
+## Basic
+
+Create a clickable tile with an href to link to another page.
+Press <DocKbd label="Enter" /> or <DocKbd label="Space" /> to follow the link; both
+fire `on:click` like a mouse click.
+
+<ClickableTile href="https://cloud.ibm.com/docs/api-gateway/">
+API documentation
+</ClickableTile>
+
+## Reactive example
+
+Bind to `clicked` to read whether the tile has been activated. Without
+`href`, the tile acts as a button: <DocKbd label="Tab" /> to it and
+press <DocKbd label="Enter" /> or <DocKbd label="Space" /> to toggle `clicked`.
+
+<FileSource src="/framed/ClickableTile/ReactiveClickableTile" />
+
+## With icon
+
+Set `icon` to show an icon in the bottom-right corner. In a right-to-left
+layout, it moves to the bottom-left corner and mirrors, so an arrow points
+left. Use `ArrowRight` for a page in your app and `Launch` for
+a link that opens another site. The icon is decorative and hidden from screen
+readers, so let the tile's text name the destination.
+
+<Stack gap={5}>
+  <ClickableTile href="/docs/deploy" icon={ArrowRight}>
+    Deployment guide
+  </ClickableTile>
+  <ClickableTile
+    href="https://status.cloud.ibm.com/"
+    target="_blank"
+    icon={Launch}
+  >
+    Service status
+  </ClickableTile>
+</Stack>
+
+## Prevent default
+
+Handle the `click` event to override default link behavior. Call `e.preventDefault()` to stop navigation.
+
+<ClickableTile
+  href="/incidents/new"
+  on:click={(e) => {
+    e.preventDefault();
+    // custom behavior
+  }}
+>
+  Create incident
+</ClickableTile>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the tile's content as AI-generated. The tile shows the AI surface, and the label sits in the top-right corner, outside the link at the `"xs"` size.
+
+<ClickableTile href="https://www.carbondesignsystem.com/">
+  Open the usage forecast
+  <AILabel slot="decorator">
+    <p>Projected from the last six months of spend.</p>
+  </AILabel>
+</ClickableTile>
+
+### Rounded corners
+
+Set `rounded` to `true` to round the corners of a tile with a decorator. Carbon reserves rounded tiles for AI content, so a tile without a decorator stays square.
+
+<ClickableTile href="https://www.carbondesignsystem.com/" rounded>
+  Open the usage forecast
+  <AILabel slot="decorator">
+    <p>Projected from the last six months of spend.</p>
+  </AILabel>
+</ClickableTile>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <ClickableTile href="/services/object-storage">
+    Object storage
+    </ClickableTile>
+  </Box>
+</Layer>
+
+## Disabled
+
+Prevent interaction with `disabled`.
+
+<ClickableTile disabled href="/audit-logs">
+Audit logs
+</ClickableTile>

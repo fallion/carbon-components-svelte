@@ -1,0 +1,70 @@
+<script>
+  /**
+   * Internal: the title, custom content and step progress that
+   * `InterstitialScreenHeader` renders in both hosting modes.
+   * @slot {{}}
+   */
+
+  /** @type {string} */
+  export let title;
+
+  /** @type {string} */
+  export let subTitle;
+
+  /** @type {string} */
+  export let headingTag;
+
+  /** @type {boolean} */
+  export let hideProgressIndicator;
+
+  /** @type {(step: number, total: number) => string} */
+  export let stepText;
+
+  /** @type {(status: "complete" | "invalid") => string} */
+  export let statusText;
+
+  /** @type {(step: number) => string} */
+  export let stepLabelText;
+
+  import { getContext } from "svelte";
+  import ProgressIndicator from "../ProgressIndicator/ProgressIndicator.svelte";
+  import ProgressStep from "../ProgressIndicator/ProgressStep.svelte";
+
+  const { progStep, views } = getContext("carbon:InterstitialScreen");
+
+  $: isMultiStep = $views.length > 1;
+</script>
+
+{#if title || subTitle}
+  <div class:bx--interstitial-screen__titles={true}>
+    {#if title}
+      <svelte:element this={headingTag} class="bx--interstitial-screen__title"
+        >{title}</svelte:element
+      >
+    {/if}
+    {#if subTitle}
+      <p class:bx--interstitial-screen__subtitle={true}>{subTitle}</p>
+    {/if}
+  </div>
+{/if}
+<slot />
+{#if !hideProgressIndicator && isMultiStep}
+  <div class:bx--interstitial-screen__progress={true}>
+    <ProgressIndicator
+      currentIndex={$progStep}
+      preventChangeOnClick
+      spaceEqually
+      {statusText}
+    >
+      {#each $views as view, index (view.id)}
+        <ProgressStep
+          label={view.stepTitle || stepLabelText(index + 1)}
+          complete={index < $progStep}
+        />
+      {/each}
+    </ProgressIndicator>
+    <div aria-live="polite" aria-atomic="true" class:bx--visually-hidden={true}>
+      {stepText($progStep + 1, $views.length)}
+    </div>
+  </div>
+{/if}

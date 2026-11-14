@@ -2,37 +2,45 @@
   /** Specify the number of rows */
   export let rows = 5;
 
-  /** Set to `true` to use the bordered variant */
-  export let border = false;
+  /** Specify the number of columns */
+  export let columns = 3;
+
+  /** Set to `true` to use the condensed variant */
+  export let condensed = false;
+
+  /** Set to `true` to flush the list */
+  export let flush = false;
+
+  $: cols = Array.from({ length: columns }, (_, i) => i);
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <div
-  class:bx--skeleton="{true}"
-  class:bx--structured-list="{true}"
-  class:bx--structured-list--border="{border}"
+  class:bx--skeleton={true}
+  class:bx--structured-list={true}
+  class:bx--structured-list--condensed={condensed}
+  class:bx--structured-list--flush={flush}
   {...$$restProps}
   on:click
   on:mouseover
   on:mouseenter
   on:mouseleave
 >
-  <div class:bx--structured-list-thead="{true}">
+  <div class:bx--structured-list-thead={true}>
     <div
-      class:bx--structured-list-row="{true}"
-      class:bx--structured-list-row--header-row="{true}"
+      class:bx--structured-list-row={true}
+      class:bx--structured-list-row--header-row={true}
     >
-      <div class:bx--structured-list-th="{true}"><span></span></div>
-      <div class:bx--structured-list-th="{true}"><span></span></div>
-      <div class:bx--structured-list-th="{true}"><span></span></div>
+      {#each cols as col (col)}
+        <div class:bx--structured-list-th={true}><span></span></div>
+      {/each}
     </div>
   </div>
-  <div class:bx--structured-list-tbody="{true}">
-    {#each Array.from({ length: rows }, (_, i) => i) as row, i (row)}
-      <div class:bx--structured-list-row="{true}">
-        <div class:bx--structured-list-td="{true}"></div>
-        <div class:bx--structured-list-td="{true}"></div>
-        <div class:bx--structured-list-td="{true}"></div>
+  <div class:bx--structured-list-tbody={true}>
+    {#each Array.from({ length: rows }, (_, i) => i) as row, index (row)}
+      <div class:bx--structured-list-row={true}>
+        {#each cols as col (col)}
+          <div class:bx--structured-list-td={true}><span></span></div>
+        {/each}
       </div>
     {/each}
   </div>

@@ -1,0 +1,25 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import ListBoxSelection from "carbon-components-svelte/ListBox/ListBoxSelection.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let selectionCount: ComponentProps<ListBoxSelection>["selectionCount"] =
+    undefined;
+  export let disabled: ComponentProps<ListBoxSelection>["disabled"] = false;
+  export let readonly: ComponentProps<ListBoxSelection>["readonly"] = false;
+  export let translateWithId: ComponentProps<ListBoxSelection>["translateWithId"] =
+    undefined;
+  export let ref: ComponentProps<ListBoxSelection>["ref"] = null;
+  export let onclear: ((event: CustomEvent) => void) | undefined = undefined;
+</script>
+
+<ListBoxSelection
+  {selectionCount}
+  {disabled}
+  {readonly}
+  {translateWithId}
+  bind:ref
+  on:clear={(e) => onclear?.(e)}
+  {...$$restProps}
+/>

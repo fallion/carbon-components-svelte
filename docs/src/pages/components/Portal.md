@@ -1,0 +1,37 @@
+---
+description: Portals render content into document.body to escape parent overflow and z-index stacking contexts.
+---
+
+<script>
+  import { Portal } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Render content in a portal — useful for modals, tooltips, and menus that need to escape parent containers. For anchored, positioned content (dropdowns, popovers, overflow menus), use [FloatingPortal](/components/FloatingPortal) instead.
+
+<FileSource src="/framed/Portal/BasicPortal" />
+
+## Multiple portals
+
+Each portal instance is independent, creating its own element in document.body, and is automatically cleaned up when removed.
+
+<FileSource src="/framed/Portal/MultiplePortals" />
+
+## Custom tag
+
+The portal renders a div by default. Set `tag` to specify a custom HTML element.
+
+<FileSource src="/framed/Portal/CustomTagPortal" />
+
+## Modal with portal
+
+Wrap the modal in a portal to escape parent containers with overflow hidden or z-index stacking contexts. This ensures the modal appears above all content and is not clipped by parent boundaries.
+
+<FileSource src="/framed/Portal/ModalPortal" />
+
+## Custom target
+
+Mount the portal into a specific DOM element instead of document.body with `target`.
+
+<FileSource src="/framed/Portal/CustomTargetPortal" />

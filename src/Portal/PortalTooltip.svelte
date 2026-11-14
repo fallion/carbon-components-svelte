@@ -1,0 +1,166 @@
+<script>
+  /**
+   * @event {null} cover Dispatched when the mouse moves onto a part of the
+   *   tooltip that covers another control. Close the tooltip at once.
+   */
+
+  import { createEventDispatcher } from "svelte";
+  import FloatingPortal from "./FloatingPortal.svelte";
+
+  /**
+   * Element to position the tooltip next to.
+   * @type {null | HTMLElement}
+   */
+  export let anchor = null;
+
+  /**
+   * Preferred edge of the anchor to place the tooltip.
+   * The underlying `FloatingPortal` flips to the opposite side when there is not enough space.
+   * @type {"bottom" | "top" | "left" | "right"}
+   */
+  export let direction = "top";
+
+  /**
+   * Set to `true` to show the tooltip in the portal.
+   * @type {boolean}
+   */
+  export let open = false;
+
+  /**
+   * Text shown when the default slot is empty.
+   * @type {string}
+   */
+  export let text = "";
+
+  /**
+   * When `"icon"` or `"definition"`, sets `data-tooltip-type` and applies Carbon
+   * `tooltip--content` typography to the portalled body (via package CSS).
+   * @type {"icon" | "definition" | undefined}
+   */
+  export let tooltipType = undefined;
+
+  /**
+   * Fade the tooltip in or out, as a copy confirmation does. The tooltip
+   * stays in the page until the owner sets `open` to `false`, for example
+   * on `animationend`.
+   * @type {"fade-in" | "fade-out" | undefined}
+   */
+  export let animation = undefined;
+
+  /**
+   * Set on the portalled content when using a11y tooltips (`role="tooltip"`).
+   * @type {string | undefined}
+   */
+  export let id = undefined;
+
+  /**
+   * Extra horizontal space (px) between anchor and tooltip when placed to the left of the anchor.
+   * @type {number}
+   */
+  export let horizontalGapLeft = 0;
+
+  /**
+   * Extra horizontal space (px) between anchor and tooltip when placed to the right of the anchor.
+   * @type {number}
+   */
+  export let horizontalGapRight = 0;
+
+  /**
+   * Extra vertical space (px) between anchor and tooltip when placed above the anchor.
+   * @type {number}
+   */
+  export let gapTop = 0;
+
+  /**
+   * Extra vertical space (px) between anchor and tooltip when placed below the anchor.
+   * @type {number}
+   */
+  export let gapBottom = 0;
+
+  /**
+   * Vertical nudge (px) when the tooltip is placed to the left of the anchor (`intrinsicAlign` along the vertical edge).
+   * @type {number}
+   */
+  export let verticalAlignOffsetLeft = 0;
+
+  /**
+   * Vertical nudge (px) when the tooltip is placed to the right of the anchor (`intrinsicAlign` along the vertical edge).
+   * @type {number}
+   */
+  export let verticalAlignOffsetRight = 0;
+
+  /**
+   * Align portalled tooltip to the anchor (see `FloatingPortal` `intrinsicAlign`).
+   * Above and below the anchor, `start` and `end` name inline sides, so they
+   * swap under `dir="rtl"`.
+   * @type {"start" | "center" | "end"}
+   */
+  export let intrinsicAlign = "center";
+
+  import { slideIntoWindow } from "../utils/fit-align.js";
+  import { physicalAlign } from "../utils/inline-align.js";
+  import {
+    getLayoutDirection,
+    resolveLayoutDirection,
+  } from "../utils/layout-direction.js";
+  import { closeOverControls } from "../utils/tooltip-cover.js";
+
+  const dispatch = createEventDispatcher();
+  const layoutDirection = getLayoutDirection();
+
+  // Read when the tooltip opens: nothing reports a `dir` change.
+  $: rtl = open && resolveLayoutDirection($layoutDirection, anchor) === "rtl";
+  // `FloatingPortal` and the caret styles take the physical side.
+  $: sideAlign =
+    direction === "top" || direction === "bottom"
+      ? physicalAlign(intrinsicAlign, rtl)
+      : intrinsicAlign;
+</script>
+
+<FloatingPortal
+  {anchor}
+  {direction}
+  {open}
+  {horizontalGapLeft}
+  {horizontalGapRight}
+  {gapTop}
+  {gapBottom}
+  {verticalAlignOffsetLeft}
+  {verticalAlignOffsetRight}
+  intrinsicAlign={sideAlign}
+  intrinsicWidth={true}
+  lockDirection="after-flip"
+  let:direction={actualDirection}
+>
+  <!-- The pointer can rest on the tooltip (WCAG 1.4.13). The owner keeps
+       it open while the pointer is on it, and closes it at once on `cover`. -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    use:closeOverControls={{
+      trigger: anchor,
+      onCover: () => dispatch("cover"),
+    }}
+    class:bx--tooltip-portal={true}
+    class:bx--tooltip-portal--fade-in={animation === "fade-in"}
+    class:bx--tooltip-portal--fade-out={animation === "fade-out"}
+    data-direction={actualDirection ?? direction}
+    data-tooltip-type={tooltipType}
+    on:mouseenter
+    on:mouseleave
+    on:animationend
+  >
+    <span class:bx--tooltip-portal__caret={true}></span>
+    <!-- The box lays out left to right (see _tooltip.scss); the text keeps
+    the anchor's direction. -->
+    <span
+      use:slideIntoWindow
+      class:bx--tooltip-portal__content={true}
+      class:bx--assistive-text={Boolean(tooltipType)}
+      role={id ? "tooltip" : undefined}
+      dir={rtl ? "rtl" : undefined}
+      {id}
+    >
+      <slot>{text}</slot>
+    </span>
+  </div>
+</FloatingPortal>

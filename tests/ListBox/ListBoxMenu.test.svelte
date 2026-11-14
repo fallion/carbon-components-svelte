@@ -1,0 +1,36 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import ListBoxMenu from "carbon-components-svelte/ListBox/ListBoxMenu.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let id: ComponentProps<ListBoxMenu>["id"] = undefined;
+  export let ref: ComponentProps<ListBoxMenu>["ref"] = null;
+  export let slotContent = "";
+  export let onscroll: ((event: Event) => void) | undefined = undefined;
+  export let portal: ComponentProps<ListBoxMenu>["portal"] = false;
+  export let anchor: ComponentProps<ListBoxMenu>["anchor"] = null;
+  export let direction: ComponentProps<ListBoxMenu>["direction"] = "bottom";
+  export let open: ComponentProps<ListBoxMenu>["open"] = false;
+  export let wrapOptions: ComponentProps<ListBoxMenu>["wrapOptions"] = false;
+  export let align: ComponentProps<ListBoxMenu>["align"] = "start";
+</script>
+
+<div data-testid="anchor" bind:this={anchor}>Anchor</div>
+
+<ListBoxMenu
+  {id}
+  bind:ref
+  {portal}
+  {anchor}
+  {direction}
+  {open}
+  {wrapOptions}
+  {align}
+  on:scroll={(e) => onscroll?.(e)}
+  {...$$restProps}
+>
+  {#if slotContent}
+    {slotContent}
+  {/if}
+</ListBoxMenu>

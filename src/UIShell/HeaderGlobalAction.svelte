@@ -1,26 +1,45 @@
 <script>
+  /**
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
+   * @extendProps {"../Button/Button.svelte"} ButtonProps
+   */
+
   /** Set to `true` to use the active variant */
   export let isActive = false;
 
   /**
-   * Specify the icon to render
-   * @type {typeof import("svelte").SvelteComponent}
+   * Specify the icon to render.
+   * @type {Icon | undefined}
    */
-  export let icon = undefined;
+  export let icon = /** @type {Icon | undefined} */ (undefined);
 
-  /** Obtain a reference to the HTML button element */
+  /**
+   * Obtain a reference to the HTML button element.
+   * @type {null | HTMLButtonElement}
+   * @bindable readonly
+   */
   export let ref = null;
+
+  import Button from "../Button/Button.svelte";
+
+  $: buttonClass = [
+    "bx--header__action",
+    isActive && " bx--header__action--active",
+    $$restProps.class,
+  ]
+    .filter(Boolean)
+    .join(" ");
 </script>
 
-<button
-  type="button"
-  bind:this="{ref}"
-  class:bx--header__action="{true}"
-  class:bx--header__action--active="{isActive}"
-  {...$$restProps}
-  on:click
->
-  <slot>
-    <svelte:component this="{icon}" />
-  </slot>
-</button>
+{#if $$slots.badge}
+  <div class:bx--btn__badge-wrapper={true}>
+    <Button bind:ref {...$$restProps} class={buttonClass} size="lg" on:click>
+      <svelte:component this={icon} slot="icon" size={20} />
+    </Button>
+    <slot name="badge" />
+  </div>
+{:else}
+  <Button bind:ref {...$$restProps} class={buttonClass} on:click>
+    <svelte:component this={icon} slot="icon" size={20} />
+  </Button>
+{/if}

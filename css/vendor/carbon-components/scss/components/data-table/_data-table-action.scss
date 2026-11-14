@@ -1,0 +1,732 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/vars';
+
+/// Data table action styles
+/// @access private
+/// @group data-table
+@mixin data-table-v2-action {
+  .#{$prefix}--table-toolbar {
+    // Need for batch actions
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-height: $spacing-09;
+    background-color: $layer;
+  }
+
+  .#{$prefix}--toolbar-content {
+    display: flex;
+    width: 100%;
+    min-height: $spacing-09; // ccs: grow for a taller (lg/xl) button instead of clipping it
+    justify-content: flex-end;
+    transform: translate3d(0, 0, 0);
+    transition: transform $duration--fast-02 motion(standard, productive),
+      clip-path $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--batch-actions ~ .#{$prefix}--toolbar-content {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+
+  .#{$prefix}--toolbar-content .#{$prefix}--search .#{$prefix}--search-input {
+    // For toolbar animation with (esp.) persistent search box
+    background-color: transparent;
+  }
+
+  .#{$prefix}--toolbar-content
+    .#{$prefix}--toolbar-search-container-expandable {
+    position: relative;
+    width: $spacing-09;
+    height: $spacing-09;
+    box-shadow: none;
+    cursor: pointer;
+    transition: width $transition--expansion $carbon--standard-easing,
+      background-color $duration--fast-02 motion(entrance, productive);
+
+    @media (any-hover: hover) {
+      &:hover {
+        background-color: $field-hover;
+      }
+    }
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable .#{$prefix}--search-input {
+    height: 100%;
+    cursor: pointer;
+    opacity: 0;
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable:not(.#{$prefix}--toolbar-search-container-active)
+    .#{$prefix}--search-input {
+    padding: 0;
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable
+    .#{$prefix}--search-magnifier-icon {
+    width: $spacing-09;
+    height: $spacing-09;
+    padding: $spacing-05;
+    fill: $icon-primary;
+    @include ccs-inset-inline($start: 0);
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable.#{$prefix}--search--disabled
+    .#{$prefix}--search-magnifier-icon {
+    background-color: $layer;
+    cursor: not-allowed;
+    transition: background-color none;
+  }
+
+  .#{$prefix}--toolbar-search-container-disabled .#{$prefix}--search-input {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable.#{$prefix}--search
+    .#{$prefix}--label {
+    visibility: hidden;
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable.#{$prefix}--search
+    .#{$prefix}--search-close {
+    width: $spacing-09;
+    height: $spacing-09;
+
+    &::before {
+      top: to-rem(2px);
+      height: calc(100% - #{to-rem(4px)});
+      background-color: $field-hover;
+    }
+  }
+
+  .#{$prefix}--toolbar-search-container-expandable.#{$prefix}--search
+    .#{$prefix}--search-close:focus::before {
+    background-color: $focus;
+  }
+
+
+  .#{$prefix}--toolbar-search-container-active.#{$prefix}--search {
+    width: 100%;
+  }
+
+  .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-input {
+    opacity: 1;
+  }
+
+  .#{$prefix}--toolbar-search-container-active .#{$prefix}--label,
+  .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-input {
+    padding: 0 $spacing-09;
+    cursor: text;
+  }
+
+  .#{$prefix}--toolbar-search-container-active
+    .#{$prefix}--search-input:focus
+    + .#{$prefix}--search-close {
+    border: none;
+    box-shadow: none;
+    outline: none;
+  }
+
+  .#{$prefix}--toolbar-search-container-active
+    .#{$prefix}--search-input:not(:placeholder-shown) {
+    border: none;
+    background-color: $field-hover;
+  }
+
+  .#{$prefix}--toolbar-search-container-active
+    .#{$prefix}--search-magnifier-icon:focus,
+  .#{$prefix}--toolbar-search-container-active
+    .#{$prefix}--search-magnifier-icon:active {
+    border: none;
+    background-color: transparent;
+    outline: none;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:hover {
+      border: none;
+      background-color: transparent;
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-close,
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-close:hover,
+  .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-close,
+  .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-close:hover {
+    border: none;
+    background-color: transparent;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-close::before {
+    display: none;
+  }
+
+  .#{$prefix}--overflow-menu.#{$prefix}--toolbar-action {
+    @include button-reset($omit: (display, width, padding));
+
+    display: flex;
+    width: $spacing-09;
+    height: $spacing-09;
+    padding: $spacing-05;
+    transition: background $duration--fast-02 motion(entrance, productive);
+  }
+
+  // DEPRECATED prefer .#{$prefix}--overflow-menu.#{$prefix}--toolbar-action instead
+  .#{$prefix}--toolbar-action {
+    @include button-reset($omit: (display, width));
+
+    display: flex;
+    width: $spacing-09;
+    height: $spacing-09;
+    transition: background $duration--fast-02 motion(entrance, productive);
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--toolbar-action:hover:not([disabled]) {
+      background-color: $field-hover;
+    }
+
+    .#{$prefix}--toolbar-action:hover[aria-expanded='true'] {
+      background-color: $layer;
+    }
+  }
+
+  .#{$prefix}--toolbar-action[disabled] {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--toolbar-action:focus:not([disabled]),
+  .#{$prefix}--toolbar-action:active:not([disabled]) {
+    @include focus-outline('outline');
+
+    &.#{$prefix}--toolbar-search-container-expandable {
+      // The focus style is handled by search input in it, need to avoid duplicate animation
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--toolbar-action ~ .#{$prefix}--btn {
+    max-width: none;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent {
+    position: relative;
+    width: 100%;
+    height: $spacing-09;
+    opacity: 1;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent
+    + .#{$prefix}--toolbar-content {
+    position: relative;
+    width: auto;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search {
+    position: initial;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-magnifier-icon {
+    left: $spacing-05;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-input {
+    height: $spacing-09;
+    padding: 0 $spacing-09;
+    border: none;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-input:focus:not([disabled]) {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-input:hover:not([disabled]), // ccs: dedupe
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-input:active:not([disabled]),
+  .#{$prefix}--toolbar-search-container-persistent
+    .#{$prefix}--search-input:not(:placeholder-shown) {
+    background-color: $field-hover;
+  }
+
+  .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-close {
+    width: $spacing-09;
+    height: $spacing-09;
+  }
+
+  .#{$prefix}--batch-actions--active ~ .#{$prefix}--toolbar-content {
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+    transform: translate3d(0, 48px, 0);
+    transition: transform $duration--fast-02 motion(standard, productive),
+      clip-path $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--batch-actions {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: $background-brand;
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+    pointer-events: none;
+    transform: translate3d(0, 48px, 0);
+    transition: transform $duration--fast-02 motion(standard, productive),
+      clip-path $duration--fast-02 motion(standard, productive),
+      opacity $duration--fast-02 motion(standard, productive);
+    will-change: transform;
+    overflow: hidden; // ccs: hidden bar must not widen the page
+  }
+
+  .#{$prefix}--batch-actions:focus {
+    @include focus-outline;
+  }
+
+  .#{$prefix}--batch-actions--active {
+    overflow: auto hidden;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    pointer-events: all;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .#{$prefix}--action-list {
+    display: flex;
+    align-items: center;
+  }
+
+  .#{$prefix}--action-list .#{$prefix}--btn {
+    padding: $button-padding-ghost;
+    color: $text-on-color;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--action-list .#{$prefix}--btn:disabled {
+    border-color: transparent;
+    background-color: transparent;
+    color: $text-on-color;
+    opacity: 0.5;
+  }
+
+  .#{$prefix}--action-list .#{$prefix}--btn .#{$prefix}--btn__icon {
+    position: static;
+    margin-left: $spacing-03;
+    fill: $icon-on-color;
+  }
+
+  .#{$prefix}--action-list .#{$prefix}--btn .#{$prefix}--btn__icon .st0 {
+    fill: none;
+  }
+
+  .#{$prefix}--action-list .#{$prefix}--btn--primary:focus::before,
+  .#{$prefix}--action-list .#{$prefix}--btn--primary::before,
+  .#{$prefix}--action-list .#{$prefix}--btn--primary:focus::after,
+  .#{$prefix}--action-list .#{$prefix}--btn--primary::after {
+    display: none;
+  }
+
+  .#{$prefix}--action-list .#{$prefix}--btn--primary:focus {
+    outline: 2px solid $layer;
+    outline-offset: to-rem(-2px);
+  }
+
+  .#{$prefix}--action-list
+    .#{$prefix}--btn--primary:nth-child(3):hover
+    + .#{$prefix}--btn--primary.#{$prefix}--batch-summary__cancel::before,
+  .#{$prefix}--action-list
+    .#{$prefix}--btn--primary:nth-child(3):focus
+    + .#{$prefix}--btn--primary.#{$prefix}--batch-summary__cancel::before {
+    opacity: 0;
+  }
+
+  .#{$prefix}--btn--primary.#{$prefix}--batch-summary__cancel::before {
+    position: absolute;
+    //visually 16px spacing is 1px too low
+    top: to-rem(15px);
+    left: 0;
+    display: block;
+    width: to-rem(1px);
+    height: $spacing-05;
+    border: none;
+    background-color: $text-on-color;
+    content: '';
+    opacity: 1;
+    transition: opacity $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--btn--primary.#{$prefix}--batch-summary__cancel:hover::before {
+    opacity: 0;
+    transition: opacity $transition--base $carbon--standard-easing;
+  }
+
+  .#{$prefix}--batch-summary {
+    position: sticky;
+    z-index: 100000;
+    left: 0;
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    padding: 0 $spacing-05;
+    background-color: $background-brand;
+
+    color: $text-on-color;
+  }
+
+  .#{$prefix}--batch-summary__para {
+    @include type-style('body-compact-01');
+  }
+
+  // V11: remove --small
+  .#{$prefix}--table-toolbar--small {
+    min-height: to-rem(32px); // ccs: grow for a taller (lg/xl) button instead of clipping it
+
+    .#{$prefix}--toolbar-search-container-expandable,
+    .#{$prefix}--toolbar-search-container-persistent,
+    .#{$prefix}--toolbar-search-container-expandable .#{$prefix}--search-input,
+    .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-input { // ccs: dedupe
+      height: to-rem(32px);
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable .#{$prefix}--search-close,
+    .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-close {
+      width: to-rem(32px);
+      height: to-rem(32px);
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable
+      .#{$prefix}--search-magnifier-icon,
+    .#{$prefix}--toolbar-search-container-persistent
+      .#{$prefix}--search-magnifier-icon {
+      width: to-rem(32px);
+      height: to-rem(32px);
+      padding: $spacing-03;
+    }
+
+    .#{$prefix}--toolbar-action.#{$prefix}--toolbar-search-container-persistent {
+      width: 100%;
+    }
+
+    // Adjust icon positioning since small has less padding
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon,
+    .#{$prefix}--toolbar-search-container-persistent
+      .#{$prefix}--search-magnifier-icon {
+      left: $spacing-03;
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable {
+      width: to-rem(32px);
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable
+      .#{$prefix}--search
+      .#{$prefix}--search-input {
+      padding: 0 $spacing-09;
+    }
+
+    .#{$prefix}--toolbar-search-container-active {
+      flex: auto;
+      transition: flex 175ms $carbon--standard-easing;
+    }
+
+    .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-input {
+      visibility: inherit;
+    }
+
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-input:focus {
+      @include focus-outline('outline');
+
+      background-color: $field-hover;
+    }
+
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-input:active,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-input:not(:placeholder-shown) {
+      background-color: $field-hover;
+    }
+
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:focus,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:active,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:hover {
+      @include focus-outline('reset');
+
+      background-color: transparent;
+    }
+
+    .#{$prefix}--overflow-menu.#{$prefix}--toolbar-action {
+      width: to-rem(32px);
+      //:after element is 2rem but w/o this trigger button is for some reason 28px
+      min-width: to-rem(32px);
+      height: to-rem(32px);
+    }
+
+    .#{$prefix}--toolbar-content {
+      min-height: to-rem(32px); // ccs: grow for a taller (lg/xl) button instead of clipping it
+    }
+  }
+
+  .#{$prefix}--search--disabled .#{$prefix}--search-magnifier-icon:hover {
+    background-color: transparent;
+  }
+
+  // V11: remove --small selector block
+  .#{$prefix}--table-toolbar--small
+    .#{$prefix}--batch-actions
+    .#{$prefix}--action-list {
+    height: to-rem(32px);
+  }
+
+  // V11: remove --small selector block
+  .#{$prefix}--table-toolbar--small .#{$prefix}--toolbar-action {
+    width: to-rem(32px);
+    height: to-rem(32px);
+    padding: $spacing-03 0;
+  }
+
+  // V11: remove --small selector block
+  .#{$prefix}--table-toolbar--small .#{$prefix}--btn:not(.#{$prefix}--btn--lg):not(.#{$prefix}--btn--xl) { // ccs: resize every button kind, not only primary; leave an explicit lg/xl size alone
+    height: to-rem(32px);
+    min-height: auto;
+    padding-top: calc(0.375rem - 3px);
+    padding-bottom: calc(0.375rem - 3px);
+  }
+
+  // V11: remove --small selector block
+  .#{$prefix}--table-toolbar--small
+    .#{$prefix}--btn--primary.#{$prefix}--batch-summary__cancel::before {
+    top: to-rem(8px);
+  }
+
+  // V11: remove --small selector block
+  .#{$prefix}--table-toolbar--small
+    .#{$prefix}--toolbar-action
+    ~ .#{$prefix}--btn {
+    overflow: hidden;
+    height: to-rem(32px);
+  }
+
+  // V11: remove --small selector block
+  .#{$prefix}--table-toolbar--small .#{$prefix}--batch-summary {
+    min-height: 2rem;
+  }
+}
+
+@include exports('data-table-v2-action') {
+  @include data-table-v2-action;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-toolbar.scss)
+@mixin data-table-toolbar-xs {
+  .#{$prefix}--table-toolbar--xs {
+    min-height: $carbon--spacing-06; // ccs: grow for a taller (lg/xl) button instead of clipping it
+
+    .#{$prefix}--toolbar-search-container-expandable,
+    .#{$prefix}--toolbar-search-container-persistent,
+    .#{$prefix}--toolbar-search-container-expandable .#{$prefix}--search-input,
+    .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-input { // ccs: dedupe
+      height: $carbon--spacing-06;
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable .#{$prefix}--search-close,
+    .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-close {
+      width: $carbon--spacing-06;
+      height: $carbon--spacing-06;
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable
+      .#{$prefix}--search-magnifier-icon,
+    .#{$prefix}--toolbar-search-container-persistent
+      .#{$prefix}--search-magnifier-icon {
+      width: $carbon--spacing-06;
+      height: $carbon--spacing-06;
+      padding: $carbon--spacing-02;
+    }
+
+    .#{$prefix}--toolbar-action.#{$prefix}--toolbar-search-container-persistent {
+      width: 100%;
+    }
+
+    // The magnifier icon fills the 24px leading square (left: 0), matching how
+    // the default toolbar's icon fills its 48px square. The 16px glyph centers
+    // via the $spacing-02 padding above.
+    .#{$prefix}--toolbar-search-container-expandable
+      .#{$prefix}--search-magnifier-icon,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon,
+    .#{$prefix}--toolbar-search-container-persistent
+      .#{$prefix}--search-magnifier-icon {
+      left: 0;
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable {
+      width: $carbon--spacing-06;
+    }
+
+    .#{$prefix}--toolbar-search-container-expandable
+      .#{$prefix}--search
+      .#{$prefix}--search-input,
+    .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-input,
+    .#{$prefix}--toolbar-search-container-persistent .#{$prefix}--search-input {
+      padding: 0 $carbon--spacing-06;
+    }
+
+    .#{$prefix}--toolbar-search-container-active {
+      flex: auto;
+      transition: flex 175ms $carbon--standard-easing;
+    }
+
+    .#{$prefix}--toolbar-search-container-active .#{$prefix}--search-input {
+      visibility: inherit;
+    }
+
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-input:focus {
+      @include focus-outline('outline');
+
+      background-color: $field-hover;
+    }
+
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-input:active,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-input:not(:placeholder-shown) {
+      background-color: $field-hover;
+    }
+
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:focus,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:active,
+    .#{$prefix}--toolbar-search-container-active
+      .#{$prefix}--search-magnifier-icon:hover {
+      @include focus-outline('reset');
+
+      background-color: transparent;
+    }
+
+    .#{$prefix}--overflow-menu.#{$prefix}--toolbar-action {
+      width: $carbon--spacing-06;
+      min-width: $carbon--spacing-06;
+      height: $carbon--spacing-06;
+    }
+
+    .#{$prefix}--toolbar-content {
+      min-height: $carbon--spacing-06; // ccs: grow for a taller (lg/xl) button instead of clipping it
+    }
+  }
+
+  .#{$prefix}--table-toolbar--xs
+    .#{$prefix}--batch-actions
+    .#{$prefix}--action-list {
+    height: $carbon--spacing-06;
+  }
+
+  .#{$prefix}--table-toolbar--xs .#{$prefix}--toolbar-action {
+    width: $carbon--spacing-06;
+    height: $carbon--spacing-06;
+    padding: $carbon--spacing-02 0;
+  }
+
+  // ccs: resize every button kind, not only primary; leave an explicit lg/xl size alone
+  .#{$prefix}--table-toolbar--xs .#{$prefix}--btn:not(.#{$prefix}--btn--lg):not(.#{$prefix}--btn--xl) {
+    height: $carbon--spacing-06;
+    min-height: auto;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .#{$prefix}--table-toolbar--xs
+    .#{$prefix}--btn--primary.#{$prefix}--batch-summary__cancel::before {
+    top: to-rem(4px);
+  }
+
+  .#{$prefix}--table-toolbar--xs
+    .#{$prefix}--toolbar-action
+    ~ .#{$prefix}--btn {
+    overflow: hidden;
+    height: $carbon--spacing-06;
+  }
+
+  .#{$prefix}--table-toolbar--xs .#{$prefix}--batch-summary {
+    min-height: $carbon--spacing-06;
+  }
+}
+
+@include exports('data-table-toolbar-xs') {
+  @include data-table-toolbar-xs;
+}
+
+// carbon-components-svelte patch (toolbar search close icon)
+/// ToolbarSearch keeps Search's xl size, which draws a 20px close icon.
+/// Carbon v11 draws it at 16px, which fits the 32px and 24px close
+/// buttons of the small and xs toolbars.
+/// @access private
+/// @group data-table
+@mixin data-table-toolbar-search-close {
+  .#{$prefix}--table-toolbar--small .#{$prefix}--search-close svg,
+  .#{$prefix}--table-toolbar--xs .#{$prefix}--search-close svg {
+    width: to-rem(16px);
+    height: to-rem(16px);
+  }
+}
+
+@include exports('data-table-toolbar-search-close') {
+  @include data-table-toolbar-search-close;
+}
+
+// carbon-components-svelte patch (sticky toolbar)
+/// @access private
+/// @group data-table
+@mixin data-table-toolbar-sticky {
+  // Sticky is still a positioned box, so the absolutely positioned
+  // .bx--batch-actions bar keeps the toolbar as its containing block.
+  .#{$prefix}--table-toolbar--sticky {
+    position: sticky;
+    top: 0;
+    // Match the row divider color so the stuck toolbar reads as separate
+    // from the table body instead of blending into the first row.
+    border-bottom: 1px solid $border-subtle;
+  }
+}
+
+@include exports('data-table-toolbar-sticky') {
+  @include data-table-toolbar-sticky;
+}
+
+// carbon-components-svelte patch (collapsed toolbar search)
+/// A collapsed expandable search is a fixed square, and its input has a
+/// percentage width that adds no minimum size. Beside a persistent search
+/// at full width, flexbox shrank it below its magnifier, which then ran
+/// past the toolbar's end.
+/// @access private
+/// @group data-table
+@mixin data-table-toolbar-search-collapsed {
+  .#{$prefix}--toolbar-search-container-expandable:not(.#{$prefix}--toolbar-search-container-active) {
+    flex-shrink: 0;
+  }
+}
+
+@include exports('data-table-toolbar-search-collapsed') {
+  @include data-table-toolbar-search-collapsed;
+}

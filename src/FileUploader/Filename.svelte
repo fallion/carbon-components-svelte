@@ -1,49 +1,142 @@
+<script context="module">
+  /**
+   * @param {File | undefined} file
+   * @param {string} fileName
+   * @param {"uploading" | "edit" | "complete"} status
+   * @param {boolean} invalid
+   * @param {string | undefined | ((ctx: {
+   *   file: File | undefined,
+   *   fileName: string,
+   *   status: "uploading" | "edit" | "complete",
+   *   invalid: boolean,
+   * }) => string | undefined)} iconDescription
+   * @returns {string | null}
+   */
+  function resolveIconLabel(file, fileName, status, invalid, iconDescription) {
+    const ctx = { file, fileName, status, invalid };
+    const raw =
+      typeof iconDescription === "function"
+        ? iconDescription(ctx)
+        : iconDescription;
+    if (raw != null && `${raw}`.trim() !== "") {
+      return `${raw}`.trim();
+    }
+    return null;
+  }
+</script>
+
 <script>
   /**
-   * Specify the file name status
+   * @restProps {div | button | svg}
+   */
+
+  /**
+   * @typedef {Object} FilenameIconDescriptionContext
+   * @property {File | undefined} [file] Set when rendered from `FileUploader` rows; otherwise `undefined`.
+   * @property {string} fileName Display name (`file.name` or `FileUploaderItem` `name`).
+   * @property {"uploading" | "edit" | "complete"} status
+   * @property {boolean} invalid
+   */
+
+  /**
+   * Specify the file name status.
    * @type {"uploading" | "edit" | "complete"}
    */
   export let status = "uploading";
 
-  /** Specify the ARIA label used for the status icons */
-  export let iconDescription = "";
+  /**
+   * Accessible label for the status icons (spinner, remove control, checkmark).
+   * Pass a string, or a function receiving {@link FilenameIconDescriptionContext}.
+   * When the resolved value is omitted or blank after trim, defaults are used:
+   * - `uploading`: passed to `Loading` as `"uploading"`
+   * - `edit`: close button `aria-label` is `"Remove file {fileName}"` (`"Remove file"` without a `fileName`)
+   * - `complete`: checkmark `aria-label` / `title` are `"Upload complete"`
+   *
+   * The resolved `complete` value is also announced to screen readers when
+   * the file finishes uploading. Use the function form to include the file name.
+   * @type {string | undefined | ((ctx: FilenameIconDescriptionContext) => string | undefined)}
+   */
+  export let iconDescription = undefined;
+
+  /**
+   * Current file when rendered inside `FileUploader`; omit when using `FileUploaderItem` only.
+   * @type {File | undefined}
+   */
+  export let file = undefined;
+
+  /** Display file name (e.g. `file.name` or `FileUploaderItem` `name`). */
+  export let fileName = "";
 
   /** Set to `true` to indicate an invalid state */
   export let invalid = false;
 
-  import Close16 from "../icons/Close16.svelte";
-  import CheckmarkFilled16 from "../icons/CheckmarkFilled16.svelte";
-  import WarningFilled16 from "../icons/WarningFilled16.svelte";
-  import { Loading } from "../Loading";
+  /** Set to `true` to disable the remove button */
+  export let disabled = false;
+
+  $: resolvedIconLabel = resolveIconLabel(
+    file,
+    fileName,
+    status,
+    invalid,
+    iconDescription,
+  );
+
+  let prevStatus = status;
+  let statusAnnouncement = "";
+
+  // Announce the transition into "complete" only (not the initial render)
+  // so a screen reader user hears completion without being told about the
+  // status a file starts in. An override from `iconDescription` is read as
+  // is; the default names the file when there is one.
+  $: if (status !== prevStatus) {
+    statusAnnouncement =
+      status === "complete"
+        ? (resolvedIconLabel ??
+          (fileName ? `${fileName} upload complete` : "Upload complete"))
+        : "";
+    prevStatus = status;
+  }
+
+  import Loading from "../Loading/Loading.svelte";
+  import CheckmarkFilled from "../icons/CheckmarkFilled.svelte";
+  import Close from "../icons/Close.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
 </script>
+
+<span role="status" class:bx--visually-hidden={true}>{statusAnnouncement}</span>
 
 {#if status === "uploading"}
   <Loading
-    description="{iconDescription}"
+    description={resolvedIconLabel ?? "uploading"}
     {...$$restProps}
     small
-    withOverlay="{false}"
+    withOverlay={false}
   />
 {/if}
 
 {#if status === "edit"}
   {#if invalid}
-    <WarningFilled16 class="bx--file-invalid" />
+    <WarningFilled class="bx--file-invalid" />
   {/if}
-  <Close16
-    aria-label="{iconDescription}"
-    title="{iconDescription}"
-    class="bx--file-close"
+  <button
+    aria-label={resolvedIconLabel ??
+      (fileName ? `Remove file ${fileName}` : "Remove file")}
+    class:bx--file-close={true}
+    type="button"
+    tabindex="0"
+    {disabled}
     {...$$restProps}
     on:click
     on:keydown
-  />
+  >
+    <Close />
+  </button>
 {/if}
 
 {#if status === "complete"}
-  <CheckmarkFilled16
-    aria-label="{iconDescription}"
-    title="{iconDescription}"
+  <CheckmarkFilled
+    aria-label={resolvedIconLabel ?? "Upload complete"}
+    title={resolvedIconLabel ?? "Upload complete"}
     class="bx--file-complete"
     {...$$restProps}
   />

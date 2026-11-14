@@ -1,0 +1,444 @@
+import { createHash } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { highlight } from "../src/syntax/index.js";
+import { PAGE_EXTENSION } from "./scripts/constants.ts";
+import { exampleSource, isInstanceScript } from "./scripts/example-source.ts";
+import { createFormatter, formatterVersion } from "./scripts/format.ts";
+import type { Node as MdastNode } from "./scripts/markdown.ts";
+import { compilePage } from "./scripts/page.ts";
+import { requireLeadingHeading } from "./scripts/require-leading-heading.ts";
+import { rehypeSlug } from "./scripts/slug.ts";
+import { stripDocsOnly } from "./scripts/strip-docs-only.ts";
+import { visit } from "./scripts/visit.ts";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const NODE_MODULES_REGEX = /node_modules/;
+const PAGES_COMPONENTS_REGEX = /pages\/(components)/;
+const SCRIPT_TAG_REGEX = /(<script[^>]*>)/i;
+const METADATA_RE = /export const metadata = (\{.*\});/;
+const LAYOUT_OPEN_TAG_RE = /<PageLayout\b[^>]*>/;
+const FILE_SOURCE_SRC_REGEX = /src="([^"]+)"/;
+const NO_PREVIEW_HTML_RE = /^\s*<DocKbd\b/;
+const HTML_COMMENT_RE = /^\s*<!--/;
+const DOC_KBD_IMPORT_STMT =
+  '  import DocKbd from "../../components/DocKbd.svelte";';
+const DOC_KBD_IMPORT_RE = /import\s+DocKbd\s+from/;
+const DOC_KBD_USAGE_RE = /<DocKbd\b/;
+
+const SKIP_PREVIEW_FORMAT = process.env.NODE_ENV === "development";
+
+const previewCodeCache = new Map<string, string>();
+
+const PREVIEW_CODE_CACHE_DIR = path.join(
+  __dirname,
+  "node_modules/.cache/ccs-docs-preview-code",
+);
+
+function hashKey(s: string): string {
+  return createHash("sha256").update(s, "utf8").digest("hex").slice(0, 32);
+}
+
+function escapeHtmlText(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Escapes what would end `{@html \`...\`}` early or read as Svelte. */
+function escapeSvelte(html: string): string {
+  return html
+    .replace(
+      /[{}`]/g,
+      (char) => ({ "{": "&#123;", "}": "&#125;", "`": "&#96;" })[char] ?? char,
+    )
+    .replace(/\\([trn])/g, "&#92;$1");
+}
+
+function highlightCodeBlock(code: string, lang: string | null): string {
+  const raw = lang?.toLowerCase().trim() ?? "";
+  const classLang = raw || "text";
+  const inner = (raw && highlight(code, raw)) || escapeHtmlText(code);
+  const highlighted = escapeSvelte(inner);
+  return `<pre class="language-${classLang}">{@html \`<code class="language-${classLang}">${highlighted}</code>\`}</pre>`;
+}
+
+const formatSvelte = createFormatter("svelte");
+
+const PREVIEW_CODE_CACHE_SALT = formatterVersion();
+
+async function readPreviewCodeCache(file: string, key: string) {
+  try {
+    const entry = JSON.parse(await fs.promises.readFile(file, "utf8"));
+    if (entry?.key === key && typeof entry.formattedCode === "string") {
+      return entry.formattedCode as string;
+    }
+  } catch {}
+  return undefined;
+}
+
+let previewCodeCacheDirReady: Promise<unknown> | undefined;
+
+async function writePreviewCodeCache(
+  file: string,
+  key: string,
+  formattedCode: string,
+) {
+  // Rename a temp file so parallel builds never see a partial entry.
+  const tmp = `${file}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+  try {
+    previewCodeCacheDirReady ??= fs.promises.mkdir(PREVIEW_CODE_CACHE_DIR, {
+      recursive: true,
+    });
+    await previewCodeCacheDirReady;
+    await fs.promises.writeFile(tmp, JSON.stringify({ key, formattedCode }));
+    await fs.promises.rename(tmp, file);
+  } catch {
+    await fs.promises.rm(tmp, { force: true }).catch(() => {});
+  }
+}
+
+async function formatSvelteCached(source: string) {
+  const key = createHash("sha256")
+    .update(PREVIEW_CODE_CACHE_SALT, "utf8")
+    .update("\0")
+    .update(source, "utf8")
+    .digest("hex");
+  const file = path.join(PREVIEW_CODE_CACHE_DIR, `${key}.json`);
+  const cached = await readPreviewCodeCache(file, key);
+  if (cached !== undefined) return cached;
+
+  const formattedCode = await formatSvelte(source);
+  await writePreviewCodeCache(file, key, formattedCode);
+  return formattedCode;
+}
+
+/**
+ * `Preview` highlights in the browser, which keeps the highlighted markup,
+ * most of a page's size, out of the bundle.
+ */
+async function formatPreviewCode(source: string) {
+  if (SKIP_PREVIEW_FORMAT) return source;
+  const cacheKey = hashKey(source);
+  let formatted = previewCodeCache.get(cacheKey);
+  if (formatted === undefined) {
+    formatted = await formatSvelteCached(source);
+    previewCodeCache.set(cacheKey, formatted);
+  }
+  return formatted;
+}
+
+function plugin() {
+  async function visitHtml(
+    node: { lang?: string; value: string } & MdastNode,
+    isWholeParagraph: boolean,
+    pageScript: string | undefined,
+  ) {
+    // A paragraph that opens with `<DocKbd>` parses as an HTML block, so it
+    // misses carbonify's `<p>`. Add it back at the root only: in a
+    // paragraph or table cell it must stay inline.
+    if (NO_PREVIEW_HTML_RE.test(node.value)) {
+      if (isWholeParagraph) {
+        node.value = `<p class="bx--type-body-02">${node.value}</p>`;
+      }
+      return;
+    }
+
+    if (HTML_COMMENT_RE.test(node.value)) return;
+
+    if (
+      node.lang !== "svelte" &&
+      !node.value.startsWith("<FileSource") &&
+      !node.value.startsWith("<script>")
+    ) {
+      const formattedCode = await formatPreviewCode(
+        exampleSource(node.value, pageScript),
+      );
+
+      node.value = `<Preview code={${JSON.stringify(formattedCode)}}>${node.value}</Preview>`;
+    }
+
+    if (node.value.startsWith("<FileSource")) {
+      const srcMatch = node.value.match(FILE_SOURCE_SRC_REGEX);
+      const src = srcMatch ? srcMatch[1] : "";
+
+      const filePath = path.join(__dirname, "src/pages", `${src}.svelte`);
+      const sourceCode = stripDocsOnly(fs.readFileSync(filePath, "utf-8"));
+      const formattedCode = await formatPreviewCode(sourceCode);
+
+      node.value = `<Preview framed src="${src}" code={${JSON.stringify(formattedCode)}} />`;
+    }
+  }
+
+  return async (tree: Parameters<typeof visit>[0]) => {
+    const pageScript = (
+      (tree as { children?: { type: string; value?: string }[] }).children ?? []
+    ).find(
+      (node) => node.type === "html" && isInstanceScript(node.value ?? ""),
+    )?.value;
+    const jobs: Promise<void>[] = [];
+    visit(tree, "html", (node, _index, parent) => {
+      const isWholeParagraph =
+        (parent as { type?: string } | null)?.type === "root";
+      jobs.push(
+        visitHtml(
+          node as Parameters<typeof visitHtml>[0],
+          isWholeParagraph,
+          pageScript,
+        ),
+      );
+    });
+    await Promise.all(jobs);
+  };
+}
+
+function importGuideHelpers(code: string, filename: string): string {
+  const dir = path
+    .relative(path.dirname(filename), path.join(__dirname, "src/components"))
+    .split(path.sep)
+    .join("/");
+  const imports: string[] = [];
+  if (code.includes("<Preview") && !code.includes("import Preview")) {
+    imports.push(`  import Preview from "${dir}/Preview.svelte";`);
+  }
+  if (DOC_KBD_USAGE_RE.test(code) && !DOC_KBD_IMPORT_RE.test(code)) {
+    imports.push(`  import DocKbd from "${dir}/DocKbd.svelte";`);
+  }
+  if (imports.length === 0) return code;
+  const block = imports.join("\n");
+  return SCRIPT_TAG_REGEX.test(code)
+    ? code.replace(SCRIPT_TAG_REGEX, `$1\n${block}`)
+    : `<script>\n${block}\n</script>\n\n${code}`;
+}
+
+function isStandaloneSectionIntro(next: unknown): boolean {
+  if (!next || typeof next !== "object" || !("type" in next)) return false;
+  const node = next as { type?: string; depth?: number };
+  if (node.type === "table") return true;
+  return (
+    node.type === "heading" && typeof node.depth === "number" && node.depth >= 3
+  );
+}
+
+function isH2Heading(node: unknown): node is { type: "heading"; depth: 2 } {
+  return (
+    node != null &&
+    typeof node === "object" &&
+    "type" in node &&
+    node.type === "heading" &&
+    "depth" in node &&
+    node.depth === 2
+  );
+}
+
+function isH2SectionIntro(
+  parent: { children: unknown[] } | null | undefined,
+  index: number | null | undefined,
+): boolean {
+  if (!parent || index == null || index === 0) return false;
+  return (
+    isH2Heading(parent.children[index - 1]) &&
+    isStandaloneSectionIntro(parent.children[index + 1])
+  );
+}
+
+function rehypeHeadingAnchors() {
+  return (tree: Parameters<typeof visit>[0]) => {
+    visit(tree, "element", (node) => {
+      const el = node as {
+        tagName?: string;
+        properties?: Record<string, unknown>;
+        children?: unknown[];
+      };
+      if (el.tagName !== "h2" && el.tagName !== "h3") return;
+
+      const id = el.properties?.id;
+      if (typeof id !== "string" || !id) return;
+
+      el.children = el.children ?? [];
+      el.children.push({
+        type: "element",
+        tagName: "a",
+        properties: {
+          href: `#${id}`,
+          className: ["heading-anchor"],
+          ariaLabel: "Copy link to this heading",
+        },
+        children: [{ type: "text", value: "#" }],
+      });
+    });
+  };
+}
+
+function carbonify() {
+  return (tree: Parameters<typeof visit>[0]) => {
+    visit(tree, (node, index, parent) => {
+      switch (node.type) {
+        case "link":
+          node.data = { hProperties: { class: "bx--link bx--link--muted" } };
+          return;
+        case "list": {
+          const list = node as MdastNode & { ordered?: boolean };
+          list.data = {
+            hProperties: {
+              class: list.ordered ? "bx--list--ordered" : "bx--list--unordered",
+            },
+          };
+          return;
+        }
+        case "listItem":
+          node.data = { hProperties: { class: "bx--list__item" } };
+          return;
+        case "paragraph": {
+          const className = isH2SectionIntro(parent, index)
+            ? "bx--type-heading-03 prose-section-intro"
+            : "bx--type-body-02";
+          node.data = { hProperties: { class: className } };
+          return;
+        }
+        case "heading": {
+          const heading = node as { depth?: number };
+          if (heading.depth === 2) {
+            node.data = {
+              hProperties: { class: "bx--type-heading-04" },
+            };
+          } else if (heading.depth === 3) {
+            node.data = {
+              hProperties: { class: "bx--type-heading-03" },
+            };
+          }
+          return;
+        }
+        case "inlineCode":
+          node.data = { hProperties: { class: "bx--type-code-01" } };
+          return;
+        case "table": {
+          const table = node as MdastNode & { children: MdastNode[] };
+          const headerClass = "bx--type-label-01";
+          const bodyClass = "bx--type-label-01 bx--type-text-secondary";
+          for (let rowIndex = 0; rowIndex < table.children.length; rowIndex++) {
+            const row = table.children[rowIndex];
+            if (row.type !== "tableRow") continue;
+            const cellClass = rowIndex === 0 ? headerClass : bodyClass;
+            for (const cell of row.children ?? []) {
+              if (cell.type === "tableCell") {
+                cell.data = { hProperties: { class: cellClass } };
+              }
+            }
+          }
+          return;
+        }
+      }
+    });
+  };
+}
+
+const HEADING_RE = /<h([23])[^>]+id="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g;
+const HEADING_ANCHOR_TAG_RE =
+  /<a\b[^>]*\bclass="heading-anchor"[^>]*>[\s\S]*?<\/a\s*>/g;
+const TAG_RE = /<[^>]+>/g;
+const ENTITY_RE = /&(?:#x([\da-f]+)|#(\d+)|(amp|lt|gt|quot|apos));/gi;
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+};
+
+function decodeEntities(text: string): string {
+  return text.replace(ENTITY_RE, (_, hex, dec, name) =>
+    hex
+      ? String.fromCodePoint(Number.parseInt(hex, 16))
+      : dec
+        ? String.fromCodePoint(Number(dec))
+        : NAMED_ENTITIES[name.toLowerCase()],
+  );
+}
+
+function tocHeadings(html: string) {
+  return Array.from(html.matchAll(HEADING_RE), (match) => ({
+    id: match[2],
+    text: decodeEntities(
+      match[3].replace(HEADING_ANCHOR_TAG_RE, "").replace(TAG_RE, ""),
+    ).trim(),
+    depth: Number(match[1]) as 2 | 3,
+  }));
+}
+
+export default {
+  extensions: [".svelte", PAGE_EXTENSION],
+  preprocess: [
+    {
+      async markup({
+        content,
+        filename,
+      }: {
+        content: string;
+        filename: string;
+      }) {
+        if (!filename.endsWith(PAGE_EXTENSION)) return null;
+        return {
+          code: await compilePage(content, filename, {
+            highlight: highlightCodeBlock,
+            remarkPlugins: [requireLeadingHeading, plugin, carbonify],
+            rehypePlugins: [rehypeSlug, rehypeHeadingAnchors],
+            layouts: {
+              guide: path.join(__dirname, "src/layouts/GuideLayout.svelte"),
+              _: path.join(__dirname, "src/layouts/ComponentLayout.svelte"),
+            },
+          }),
+        };
+      },
+    },
+    {
+      markup({ content, filename }: { content: string; filename: string }) {
+        if (NODE_MODULES_REGEX.test(filename)) return null;
+        if (!filename.match(PAGES_COMPONENTS_REGEX)) {
+          return filename.endsWith(PAGE_EXTENSION)
+            ? { code: importGuideHelpers(content, filename) }
+            : null;
+        }
+
+        // Import each documented component's API on its own, so the page
+        // doesn't carry every component's.
+        const metadata = JSON.parse(METADATA_RE.exec(content)?.[1] ?? "{}");
+        const names: string[] = metadata.components ?? [
+          path.basename(filename, PAGE_EXTENSION),
+        ];
+        const apiLocals = names.map((_, i) => `__component_api_${i}`);
+        let code = content.replace(
+          LAYOUT_OPEN_TAG_RE,
+          (tag) =>
+            `${tag.slice(0, -1)} headings={${JSON.stringify(tocHeadings(content))}} api={[${apiLocals.join(", ")}]}>`,
+        );
+        code = code.replace(
+          SCRIPT_TAG_REGEX,
+          (open) =>
+            `${open}\n${names.map((name, i) => `  import ${apiLocals[i]} from "virtual:component-api/${name}";`).join("\n")}`,
+        );
+
+        if (!code.includes("import Preview")) {
+          code = code.replace(
+            SCRIPT_TAG_REGEX,
+            '$1\n  import Preview from "../../components/Preview.svelte";',
+          );
+        }
+
+        if (DOC_KBD_USAGE_RE.test(code) && !DOC_KBD_IMPORT_RE.test(code)) {
+          if (SCRIPT_TAG_REGEX.test(code)) {
+            code = code.replace(SCRIPT_TAG_REGEX, `$1\n${DOC_KBD_IMPORT_STMT}`);
+          } else {
+            code = `<script>\n${DOC_KBD_IMPORT_STMT}\n</script>\n\n${code}`;
+          }
+        }
+
+        return { code };
+      },
+    },
+  ],
+};

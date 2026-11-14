@@ -1,0 +1,132 @@
+import { render, screen } from "@testing-library/svelte";
+import type FormComponent from "carbon-components-svelte/Form/Form.svelte";
+import type { ComponentProps } from "svelte";
+import type { Action } from "svelte/action";
+import { getForm } from "../utils/get-form";
+import { user } from "../utils/user";
+import FormActionsTest from "./Form.actions.test.svelte";
+import FormTest from "./Form.test.svelte";
+
+describe("Form", () => {
+  it("renders with default props", () => {
+    render(FormTest);
+    const form = getForm();
+    expect(form).toBeInTheDocument();
+    expect(form).toHaveClass("bx--form");
+  });
+
+  describe("actions", () => {
+    it("calls each action with the form element", () => {
+      const action = vi.fn(() => ({ destroy: vi.fn() }));
+      render(FormActionsTest, { props: { actions: [action] } });
+      const form = getForm();
+      expect(action).toHaveBeenCalledTimes(1);
+      expect(action).toHaveBeenCalledWith(form);
+    });
+
+    it("invokes destroy on unmount", () => {
+      const destroy = vi.fn();
+      const action = vi.fn(() => ({ destroy }));
+      const { unmount } = render(FormActionsTest, {
+        props: { actions: [action] },
+      });
+      expect(destroy).not.toHaveBeenCalled();
+      unmount();
+      expect(destroy).toHaveBeenCalledTimes(1);
+    });
+
+    it("passes tuple parameters to actions", () => {
+      const action = vi.fn(() => ({ destroy: vi.fn() }));
+      const parameter = { submit: vi.fn() };
+      render(FormActionsTest, {
+        props: { actions: [[action, parameter]] },
+      });
+      const form = getForm();
+      expect(action).toHaveBeenCalledWith(form, parameter);
+    });
+
+    it("accepts a readonly array of actions and tuples", () => {
+      type Actions = NonNullable<ComponentProps<FormComponent>["actions"]>;
+      const action: Action<HTMLFormElement, { id: string }> = () => {};
+      const actions = [action, [action, { id: "a" }]] as const;
+
+      expectTypeOf(actions).toExtend<Actions>();
+    });
+
+    it("preserves bind:ref alongside actions", () => {
+      const action = vi.fn(() => ({ destroy: vi.fn() }));
+      const { component } = render(FormActionsTest, {
+        props: { actions: [action] },
+      });
+      const form = getForm();
+      expect(component.ref).toBe(form);
+    });
+  });
+
+  it("renders form elements correctly", () => {
+    render(FormTest);
+
+    const formGroup = screen.getByRole("group");
+    expect(formGroup).toBeInTheDocument();
+    expect(formGroup).toHaveTextContent("Checkboxes");
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes).toHaveLength(3);
+    expect(checkboxes[0]).toBeChecked();
+    expect(checkboxes[1]).not.toBeChecked();
+    expect(checkboxes[2]).toBeDisabled();
+
+    const submitButton = screen.getByRole("button", { name: "Submit" });
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton).toHaveAttribute("type", "submit");
+  });
+
+  describe("form submission", () => {
+    it("handles form submission", async () => {
+      const consoleLog = vi.spyOn(console, "log");
+      render(FormTest);
+
+      const submitButton = screen.getByRole("button", { name: "Submit" });
+      await user.click(submitButton);
+
+      expect(consoleLog).toHaveBeenCalledWith("submit", expect.any(Event));
+    });
+
+    it.each([
+      [true, false],
+      [false, true],
+    ])(
+      "submit handler preventDefault=%s: event proceeds=%s",
+      (preventDefault, proceeds) => {
+        render(FormTest, { preventDefault });
+
+        const form = screen.getByTestId("form");
+        const notCancelled = form.dispatchEvent(
+          new Event("submit", { bubbles: true, cancelable: true }),
+        );
+
+        expect(notCancelled).toBe(proceeds);
+      },
+    );
+  });
+
+  describe("form reset", () => {
+    it("forwards reset from a reset button", async () => {
+      const consoleLog = vi.spyOn(console, "log");
+      render(FormTest);
+
+      await user.click(screen.getByRole("button", { name: "Reset" }));
+
+      expect(consoleLog).toHaveBeenCalledWith("reset", expect.any(Event));
+    });
+
+    it("forwards reset from form.reset()", () => {
+      const consoleLog = vi.spyOn(console, "log");
+      render(FormTest);
+
+      getForm().reset();
+
+      expect(consoleLog).toHaveBeenCalledWith("reset", expect.any(Event));
+    });
+  });
+});

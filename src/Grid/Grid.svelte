@@ -1,12 +1,17 @@
 <script>
   /**
-   * @restProps {div}
    * @slot {{ props: { class: string; [key: string]: any; } }}
    */
 
   /**
-   * Set to `true` to render a custom HTML element
-   * Props are destructured as `props` in the default slot (e.g., <Grid let:props><header {...props}>...</header></Grid>)
+   * Set to `true` to render a custom HTML element.
+   * Props are destructured as `props` in the default slot.
+   * @example
+   * ```svelte
+   * <Grid let:props>
+   *   <header {...props}>Content</header>
+   * </Grid>
+   * ```
    */
   export let as = false;
 
@@ -50,9 +55,7 @@
 </script>
 
 {#if as}
-  <slot props="{props}" />
+  <slot {props} />
 {:else}
-  <div {...props}>
-    <slot />
-  </div>
+  <div {...props}><slot /></div>
 {/if}

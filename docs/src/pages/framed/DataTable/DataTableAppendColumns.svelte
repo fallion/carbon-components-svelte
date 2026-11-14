@@ -9,7 +9,7 @@
     { key: "name", value: "Name" },
     { key: "port", value: "Port" },
     { key: "rule", value: "Rule" },
-    { key: "overflow", empty: true },
+    { key: "overflow", empty: true, value: "Actions", width: "72px" },
   ];
 
   const rows = [
@@ -22,10 +22,10 @@
   ];
 </script>
 
-<DataTable sortable headers="{headers}" rows="{rows}">
+<DataTable sortable {headers} {rows}>
   <svelte:fragment slot="cell" let:cell>
     {#if cell.key === "overflow"}
-      <OverflowMenu flipped>
+      <OverflowMenu portalMenu flipped>
         <OverflowMenuItem text="Restart" />
         <OverflowMenuItem
           href="https://cloud.ibm.com/docs/loadbalancer-service"
@@ -33,6 +33,8 @@
         />
         <OverflowMenuItem danger text="Stop" />
       </OverflowMenu>
-    {:else}{cell.value}{/if}
+    {:else}
+      {cell.value}
+    {/if}
   </svelte:fragment>
 </DataTable>

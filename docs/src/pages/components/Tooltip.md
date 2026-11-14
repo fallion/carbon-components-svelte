@@ -1,0 +1,201 @@
+---
+components: ["Tooltip", "TooltipFooter"]
+description: Tooltips display contextual information on hover or focus, with support for directions, alignments, and interactive content.
+---
+
+<script>
+  import { Box, Stack, Tooltip, TooltipFooter, TooltipGroup, Link, Button } from "carbon-components-svelte";
+  import Catalog from "carbon-icons-svelte/lib/Catalog.svelte";
+</script>
+
+## Basic
+
+Display a tooltip triggered by the default information icon.
+
+<Tooltip>
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+## Custom labels
+
+Customize the tooltip's visible trigger text and the icon button's accessible name.
+
+### Trigger text
+
+Use custom trigger text instead of the default icon with `triggerText`.
+
+<Tooltip triggerText="Resource list">
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+### Trigger text slot
+
+Alternatively, use the `triggerChildren` slot for custom markup.
+
+<Tooltip>
+  <strong slot="triggerChildren">Resource list</strong>
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+### Accessible label
+
+Set the button's ARIA label with `iconDescription`. It defaults to `"Show information"`.
+
+<Tooltip iconDescription="View resource details">
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+## Reactive example
+
+Control the tooltip state programmatically.
+
+<FileSource src="/framed/Tooltip/TooltipReactive" />
+
+## Dispatched events
+
+The component dispatches `open` and `close` events.
+
+<FileSource src="/framed/Tooltip/TooltipEvents" />
+
+## Placement
+
+Position the tooltip with direction and alignment.
+
+### Directions
+
+Position the tooltip with `direction`.
+
+<Tooltip triggerText="Top" direction="top"><p>Top</p></Tooltip>
+<Tooltip triggerText="Right" direction="right"><p>Right</p></Tooltip>
+<Tooltip triggerText="Bottom" direction="bottom"><p>Bottom</p></Tooltip>
+<Tooltip triggerText="Left" direction="left"><p>Left</p></Tooltip>
+
+### Alignment
+
+Align the tooltip content with `align`.
+
+<Tooltip triggerText="Start" align="start"><p>Start</p></Tooltip>
+<Tooltip triggerText="End" align="end"><p>End</p></Tooltip>
+<Tooltip triggerText="Center" align="center"><p>Center</p></Tooltip>
+
+## Interactive
+
+Add interactive elements like links and buttons using the tooltip footer.
+
+<Tooltip triggerText="Resource list">
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+  <TooltipFooter selectorPrimaryFocus="#d">
+    <Link href="/">Learn more</Link>
+    <Button id="d" size="small">Manage</Button>
+  </TooltipFooter>
+</Tooltip>
+
+## Custom icon
+
+Customize or hide the default trigger icon.
+
+### Component
+
+Use a custom icon component with `icon`.
+
+<Tooltip triggerText="Resource list" icon={Catalog}>
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+### Slot
+
+Customize the icon using the `icon` slot for more flexibility.
+
+<Tooltip triggerText="Resource list">
+  <Box slot="icon" width="1rem" height="1rem" border="interactive" />
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+### Hidden icon
+
+Hide the trigger icon while keeping tooltip behavior with `hideIcon`.
+
+<Tooltip hideIcon triggerText="Resource list">
+  <p>
+    Resources are provisioned based on your account's organization.
+  </p>
+</Tooltip>
+
+## Custom delay
+
+Customize the enter and leave delay with `enterDelayMs` and `leaveDelayMs`. Defaults are 100ms and 300ms.
+
+<Tooltip triggerText="Slow open" enterDelayMs={500} leaveDelayMs={200}>
+  <p>
+    This tooltip has a 500ms enter delay and a 200ms leave delay.
+  </p>
+</Tooltip>
+
+## Tooltip group
+
+Wrap related tooltips in a [TooltipGroup](/components/TooltipGroup). Once one is open on hover, moving to the next trigger opens it right away, with no enter delay, and closes the first. A tooltip opened with the keyboard stays open so focus inside it isn't lost. Inside a group, `enterDelayMs` and `leaveDelayMs` default to the group's delays.
+
+<TooltipGroup>
+  <Stack orientation="horizontal" gap={7}>
+    <Tooltip triggerText="Region">
+      <p>Where your resources run. Pick the one closest to your users.</p>
+    </Tooltip>
+    <Tooltip triggerText="Plan">
+      <p>Sets your monthly quota. You can change plans at any time.</p>
+    </Tooltip>
+    <Tooltip triggerText="Retention">
+      <p>How long logs are kept before they are deleted.</p>
+    </Tooltip>
+  </Stack>
+</TooltipGroup>
+
+## Portal
+
+A tooltip that a container would cut off, such as a box with `overflow: hidden` or a scroll area, opens in a portal. Inside a Modal, the tooltip always opens in a portal.
+
+Set `portalTooltip` to `true` to always render the tooltip in a portal, or to `false` to keep it in place. A portalled tooltip leaves its container in the DOM, so CSS that targets the tooltip as a descendant of the container does not match it.
+
+<Tooltip portalTooltip triggerText="Portalled">
+  <p>
+    This tooltip is rendered in a portal.
+  </p>
+</Tooltip>
+
+### Hidden icon
+
+Portal tooltips also work with a hidden trigger icon.
+
+<Tooltip portalTooltip hideIcon triggerText="Portalled (hidden icon)">
+  <p>
+    This tooltip is rendered in a portal without the icon.
+  </p>
+</Tooltip>
+
+### Directions
+
+Position portalled tooltips in different directions.
+
+<Tooltip portalTooltip triggerText="Top" direction="top"><p>Top</p></Tooltip>
+<Tooltip portalTooltip triggerText="Right" direction="right"><p>Right</p></Tooltip>
+<Tooltip portalTooltip triggerText="Bottom" direction="bottom"><p>Bottom</p></Tooltip>
+<Tooltip portalTooltip triggerText="Left" direction="left"><p>Left</p></Tooltip>
+
+## Inside a modal
+
+When a tooltip is used inside a [Modal](/components/Modal), it is automatically portalled so it is not clipped by the modal overflow or z-index stacking. Set `portalTooltip` to override this behavior.
+
+<FileSource src="/framed/Tooltip/TooltipModal" />

@@ -1,0 +1,841 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../form/form';
+@import '../text-input/text-input';
+
+/// Slider styles
+/// @access private
+/// @group slider
+@mixin slider {
+  .#{$prefix}--slider-container {
+    display: flex;
+    max-width: 100%;
+    // ccs: wraps the number input onto a second line in a container too
+    // narrow for it beside even the shortest track (the track's flex basis
+    // below), instead of overflowing.
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: $carbon--spacing-03;
+    user-select: none;
+  }
+
+  .#{$prefix}--slider {
+    position: relative;
+    // ccs: 200px where there's room, as before, and down to 48px when the
+    // container is narrower: a 200px minimum pushed the number input out
+    // of narrow containers. `width` sizes a content-sized container to the
+    // 200px track; the 48px flex basis decides when the row wraps, and the
+    // track grows from it back to 200px.
+    width: to-rem(200px);
+    min-width: to-rem(48px);
+    max-width: to-rem(200px);
+    flex: 1 1 to-rem(48px);
+    padding: $spacing-05 0;
+    margin: 0 $carbon--spacing-05;
+    cursor: pointer;
+    // ccs: keep horizontal drags as pointer events instead of a page pan,
+    // which would fire `pointercancel` mid-drag. Vertical page scroll still
+    // works when a swipe starts on the track.
+    touch-action: pan-y;
+  }
+
+  .#{$prefix}--slider-container--full-width .#{$prefix}--slider {
+    max-width: to-rem(640px);
+  }
+
+  // ccs: `hideRangeLabels`. The track's side margins space it from the range
+  // labels; where nothing sits beside it, inset it by the thumb's radius
+  // instead, so the thumb at either end lines up with the label above.
+  // Logical, so the inset stays at the start and the text input keeps its
+  // gap in RTL.
+  .#{$prefix}--slider-container--no-range-labels:not(.#{$prefix}--slider-container--two-handles):not(.#{$prefix}--slider-container--vertical)
+    > .#{$prefix}--slider {
+    margin-inline-start: to-rem(7px);
+  }
+
+  .#{$prefix}--slider-container--no-range-labels.#{$prefix}--slider-container--no-text-input:not(.#{$prefix}--slider-container--vertical)
+    > .#{$prefix}--slider {
+    margin-right: to-rem(7px);
+    margin-left: to-rem(7px);
+  }
+
+  .#{$prefix}--slider__range-label {
+    // ccs: match v11 (`body-compact-01`) instead of v10's mono `code-02`.
+    @include type-style('body-compact-01');
+
+    color: $text-primary;
+    white-space: nowrap;
+
+    // ccs: logical, so the max label keeps its gap from the text input in
+    // RTL.
+    &:last-of-type {
+      margin-inline-end: $carbon--spacing-05;
+    }
+  }
+
+  .#{$prefix}--slider__track {
+    position: absolute;
+    width: 100%;
+    height: to-rem(2px);
+    background: $layer-accent;
+    transform: translate(0%, -50%);
+  }
+
+  .#{$prefix}--slider__track:before {
+    position: absolute;
+    top: to-rem(-5px);
+    left: 50%;
+    display: inline-block;
+    width: to-rem(2px);
+    height: to-rem(4px);
+    background: $layer-accent;
+    content: '';
+    transform: translate(-50%, 0);
+  }
+
+  .#{$prefix}--slider__filled-track {
+    position: absolute;
+    width: 100%;
+    height: to-rem(2px);
+    background: $layer-selected-inverse;
+    pointer-events: none;
+    transform: translate(0%, -50%);
+    transform-origin: left;
+    transition: background $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--slider__thumb {
+    position: absolute;
+    z-index: 3;
+    width: to-rem(14px);
+    height: to-rem(14px);
+    background: $layer-selected-inverse;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px transparent, inset 0 0 0 2px transparent;
+    outline: none;
+    transform: translate(-50%, -50%);
+    transition: transform $duration--fast-02 motion(standard, productive),
+      background $duration--fast-02 motion(standard, productive);
+
+    &:focus {
+      background-color: $interactive;
+      box-shadow: inset 0 0 0 2px $interactive, inset 0 0 0 3px $layer;
+      // 20px / 14px = 1.4286
+      transform: translate(-50%, -50%) scale(1.4286);
+    }
+
+    &:active {
+      box-shadow: inset 0 0 0 2px $interactive;
+      transform: translate(-50%, -50%) scale(1.4286);
+    }
+  }
+
+  .#{$prefix}--slider-text-input {
+    width: to-rem(64px);
+    height: to-rem(40px);
+    -moz-appearance: textfield;
+    appearance: textfield;
+    text-align: center;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      display: none;
+    }
+  }
+
+  .#{$prefix}--slider-text-input.#{$prefix}--text-input--invalid {
+    padding-right: 1rem;
+  }
+
+  .#{$prefix}--slider__thumb:focus ~ .#{$prefix}--slider__filled-track {
+    background-color: $interactive;
+  }
+
+  .#{$prefix}--label--disabled
+    ~ .#{$prefix}--slider-container
+    > .#{$prefix}--slider__range-label {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--slider--disabled.#{$prefix}--slider {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__thumb {
+    background-color: $layer-accent;
+
+    &:focus {
+      background-color: $layer-accent;
+      box-shadow: none;
+      outline: none;
+      transform: translate(-50%, -50%);
+    }
+
+    // ccs: also drop the base `:active` ring, or pressing a disabled thumb
+    // draws the blue $interactive ring.
+    &:active {
+      background: $layer-accent;
+      box-shadow: none;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  // ccs: grouped this component's any-hover rules into one block
+  // (order-safe: the disabled thumb's selector is strictly more specific
+  // than the plain thumb hover rule above, and the disabled text-input's
+  // hover rule repeats its own :active/:focus rule's values, so position
+  // relative to either cannot change the computed style)
+  @media (any-hover: hover) {
+    .#{$prefix}--slider__thumb:hover {
+      // 20px / 14px = 1.4286
+      transform: translate(-50%, -50%) scale(1.4286);
+    }
+
+    .#{$prefix}--slider--disabled .#{$prefix}--slider__thumb:hover {
+      cursor: not-allowed;
+      transform: translate(-50%, -50%);
+    }
+
+    // RangeSlider handles (`slider-two-handle` below). Only recolor the
+    // non-focus icon; the focus-state icon must keep its $background-brand
+    // fill even when the focused thumb is hovered. Disabled handles keep
+    // their muted fill.
+    .#{$prefix}--slider:not(.#{$prefix}--slider--disabled)
+      .#{$prefix}--slider__thumb--lower:hover
+      .#{$prefix}--slider__thumb-icon:not(.#{$prefix}--slider__thumb-icon--focus),
+    .#{$prefix}--slider:not(.#{$prefix}--slider--disabled)
+      .#{$prefix}--slider__thumb--upper:hover
+      .#{$prefix}--slider__thumb-icon:not(.#{$prefix}--slider__thumb-icon--focus) {
+      fill: $text-secondary;
+    }
+  }
+
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__track,
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__filled-track,
+  .#{$prefix}--slider--disabled
+    .#{$prefix}--slider__thumb:focus
+    ~ .#{$prefix}--slider__filled-track {
+    background-color: $layer-accent;
+  }
+
+  .#{$prefix}--slider-container.#{$prefix}--skeleton
+    .#{$prefix}--slider__range-label {
+    @include skeleton;
+
+    width: to-rem(20px);
+    height: to-rem(12px);
+  }
+
+  // ccs: a bar for the number input, which takes the slider's height
+  // (40px, or 24px at `xs`) and some of its width.
+  .#{$prefix}--slider-container.#{$prefix}--skeleton
+    .#{$prefix}--slider-text-input {
+    @include skeleton;
+  }
+
+  .#{$prefix}--slider-container.#{$prefix}--skeleton
+    .#{$prefix}--slider__track {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  // ccs: a skeleton thumb, not the dark live one, and no filled track:
+  // it's as wide as the track until a value sets its width.
+  .#{$prefix}--slider-container.#{$prefix}--skeleton
+    .#{$prefix}--slider__thumb {
+    @include skeleton($omit: (position));
+
+    left: 50%;
+    cursor: default;
+  }
+
+  .#{$prefix}--slider-container.#{$prefix}--skeleton
+    .#{$prefix}--slider__filled-track {
+    display: none;
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--slider__thumb {
+    @include high-contrast-mode('outline');
+  }
+  .#{$prefix}--slider__thumb:focus {
+    @include high-contrast-mode('focus');
+  }
+  .#{$prefix}--slider__track {
+    @include high-contrast-mode('outline');
+  }
+  /* stylelint-enable */
+}
+
+@include exports('slider') {
+  @include slider;
+}
+
+// carbon-components-svelte patch (formerly css/_slider.scss)
+@import "carbon-components/scss/globals/scss/typography";
+
+/// Slider validation message styles
+/// @access private
+/// @group slider
+@mixin slider-validation {
+  .#{$prefix}--slider-text-input-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .#{$prefix}--slider-text-input-wrapper
+    .#{$prefix}--slider-text-input.#{$prefix}--text-input--invalid,
+  .#{$prefix}--slider-text-input-wrapper
+    .#{$prefix}--slider-text-input--warn {
+    width: to-rem(96px);
+    padding-right: to-rem(48px);
+    text-align: left;
+  }
+
+  .#{$prefix}--slider__invalid-icon {
+    position: absolute;
+    fill: $support-error;
+    // top/transform used to center invalid icon in IE11
+    top: 50%;
+    right: $carbon--spacing-05;
+    transform: translateY(-50%);
+  }
+
+  .#{$prefix}--slider__invalid-icon.#{$prefix}--slider__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--slider__invalid-icon--warning path[data-icon-path="inner-path"] {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--slider__validation-msg.#{$prefix}--form-requirement {
+    display: block;
+    overflow: visible;
+    max-height: 100%;
+  }
+
+  .#{$prefix}--slider__validation-msg--invalid {
+    color: $text-error;
+  }
+
+  // Disabled takes precedence over readonly (`.bx--slider--disabled.bx--slider` above).
+  .#{$prefix}--slider--readonly:not(.#{$prefix}--slider--disabled) {
+    cursor: default;
+  }
+
+  .#{$prefix}--slider-container--readonly .#{$prefix}--slider__thumb {
+    height: 0;
+    width: 0;
+
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  // A read-only thumb stays focusable, so give it back its size while
+  // focused; the shared thumb focus styles then show where focus is.
+  .#{$prefix}--slider-container--readonly .#{$prefix}--slider__thumb:focus {
+    height: to-rem(14px);
+    width: to-rem(14px);
+  }
+
+  // Range handles fill their wrapper instead, with the connector line that
+  // joins the handle to the track.
+  .#{$prefix}--slider-container--readonly .#{$prefix}--slider__thumb--lower:focus,
+  .#{$prefix}--slider-container--readonly .#{$prefix}--slider__thumb--upper:focus {
+    height: 100%;
+    width: 100%;
+
+    &::before {
+      display: block;
+    }
+  }
+
+  // A read-only slider shows its value as text in place of the number input.
+  // The container disables selection for dragging; the value stays copyable.
+  .#{$prefix}--slider-text-input--readonly {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    user-select: text;
+  }
+}
+
+/// Two-handle range slider (Carbon v11 port for v10)
+/// @access private
+/// @group slider
+@mixin slider-two-handle {
+  .#{$prefix}--slider-container--two-handles {
+    display: flex;
+    align-items: center;
+    gap: to-rem(16px);
+  }
+
+  .#{$prefix}--slider-container--two-handles .#{$prefix}--slider {
+    margin-left: 4px;
+    margin-right: 4px;
+  }
+
+  // ccs: the two-handle thumbs hang 16px past the track's ends. The column
+  // gap gave them room only between items, so where the row wraps and the
+  // track ends a line, the upper thumb hung past the container. The track
+  // keeps that room in its own margins (16px + 4px) instead, and the inputs
+  // keep their 16px; spacing in a full row is unchanged.
+  .#{$prefix}--slider-container--two-handles:not(.#{$prefix}--slider-container--vertical) {
+    column-gap: 0;
+
+    > .#{$prefix}--slider {
+      margin-inline: to-rem(20px);
+    }
+
+    > .#{$prefix}--slider-text-input-wrapper:first-child {
+      margin-inline-end: $carbon--spacing-05;
+    }
+
+    > .#{$prefix}--slider ~ .#{$prefix}--slider-text-input-wrapper {
+      margin-inline-start: $carbon--spacing-05;
+    }
+  }
+
+  .#{$prefix}--slider-text-input-wrapper--hidden {
+    display: none;
+  }
+
+  .#{$prefix}--slider__thumb-wrapper {
+    position: absolute;
+    z-index: 3;
+    height: 24px;
+    width: 16px;
+    transform: translate(-50%, -50%);
+    top: 50%;
+  }
+
+  .#{$prefix}--slider__thumb-wrapper--lower {
+    transform: translate(-100%, -50%);
+  }
+
+  .#{$prefix}--slider__thumb-wrapper--upper {
+    transform: translate(0, -50%);
+  }
+
+  // Override the round single-handle thumb when in two-handle mode. Emitted
+  // after the base `.bx--slider__thumb` rules above, so the modifier class
+  // alone wins.
+  .#{$prefix}--slider__thumb--lower,
+  .#{$prefix}--slider__thumb--upper {
+    position: absolute;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    // Reset the v10 single-handle `translate(-50%, -50%)` that would otherwise
+    // pull the arrow icon up/left off the track at rest.
+    transform: none;
+    transition: none;
+
+    &::before {
+      position: absolute;
+      z-index: -1;
+      display: block;
+      background: $background;
+      height: 2px;
+      content: "";
+      width: 6px;
+      top: calc(50% - 1px);
+    }
+
+    &:hover {
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+    }
+
+    &:active {
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+    }
+
+    &:focus {
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+      outline: none;
+
+      .#{$prefix}--slider__thumb-icon:not(.#{$prefix}--slider__thumb-icon--focus) {
+        display: none;
+      }
+
+      .#{$prefix}--slider__thumb-icon--focus {
+        display: block;
+      }
+    }
+  }
+
+  .#{$prefix}--slider__thumb--lower::before {
+    right: 0;
+  }
+
+  .#{$prefix}--slider__thumb--upper::before {
+    left: 0;
+  }
+
+  .#{$prefix}--slider__thumb--lower:focus::before,
+  .#{$prefix}--slider__thumb--upper:focus::before {
+    width: 100%;
+  }
+
+  .#{$prefix}--slider__thumb-icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    // $border-inverse is the highest-contrast UI color (dark on light themes,
+    // light on dark themes); equivalent to v11's $layer-selected-inverse used
+    // by Carbon React for the range-slider arrow handles.
+    fill: $layer-selected-inverse;
+  }
+
+  .#{$prefix}--slider__thumb-icon--focus {
+    display: none;
+    fill: $background-brand;
+  }
+
+  .#{$prefix}--slider__thumb-wrapper:focus-within
+    ~ .#{$prefix}--slider__filled-track {
+    background-color: $interactive;
+  }
+
+  // While `trackDrag` moves or paints the whole range, both handles change,
+  // so both take the focused look (and the fill its focused color) with
+  // neither holding focus.
+  .#{$prefix}--slider--moving-range .#{$prefix}--slider__filled-track {
+    background-color: $interactive;
+  }
+
+  .#{$prefix}--slider--moving-range .#{$prefix}--slider__thumb-icon:not(.#{$prefix}--slider__thumb-icon--focus) {
+    display: none;
+  }
+
+  .#{$prefix}--slider--moving-range .#{$prefix}--slider__thumb-icon--focus {
+    display: block;
+  }
+
+  .#{$prefix}--slider--moving-range .#{$prefix}--slider__thumb--lower::before,
+  .#{$prefix}--slider--moving-range .#{$prefix}--slider__thumb--upper::before {
+    width: 100%;
+  }
+
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__thumb--lower,
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__thumb--upper {
+    background: transparent;
+
+    &:hover,
+    &:active,
+    &:focus {
+      background: transparent;
+      transform: none;
+    }
+
+    .#{$prefix}--slider__thumb-icon {
+      fill: $icon-disabled;
+    }
+  }
+}
+
+/// Slider tick marks / labeled stops
+/// @access private
+/// @group slider
+@mixin slider-marks {
+  // Suppress the Carbon default center tick (`.bx--slider__track:before`,
+  // fixed at 50% regardless of `step`/`min`/`max`) once custom marks render;
+  // otherwise it duplicates or misaligns with an actual mark.
+  .#{$prefix}--slider--with-marks .#{$prefix}--slider__track:before {
+    display: none;
+  }
+
+  // Percentage-based marks track the fluid/fullWidth slider width.
+  .#{$prefix}--slider__marks {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .#{$prefix}--slider__mark {
+    position: absolute;
+    top: 0;
+    width: to-rem(2px);
+    height: to-rem(8px);
+    background-color: $layer-accent;
+    transform: translate(-50%, -50%);
+  }
+
+  .#{$prefix}--slider__mark-label {
+    @include type-style("label-01");
+
+    position: absolute;
+    top: to-rem(12px);
+    left: 50%;
+    color: $text-secondary;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  .#{$prefix}--slider--with-mark-labels {
+    padding-bottom: $carbon--spacing-07;
+  }
+
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__mark {
+    background-color: $button-disabled;
+  }
+
+  .#{$prefix}--slider--disabled .#{$prefix}--slider__mark-label {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--label--disabled
+    ~ .#{$prefix}--slider-container
+    .#{$prefix}--slider__mark-label {
+    color: $text-disabled;
+  }
+}
+
+@include exports("slider-validation") {
+  @include slider-validation;
+  @include slider-two-handle;
+  @include slider-marks;
+}
+
+// carbon-components-svelte patch: vertical orientation
+/// Vertical slider track. The thumb and marks are placed with an inline
+/// `top` (measured from the top, so `max` sits at 0%), which keeps the base
+/// `translate(-50%, -50%)` centering, including its hover/focus/active and
+/// disabled variants, correct without overrides.
+/// @access private
+/// @group slider
+@mixin slider-vertical {
+  // Fill the parent's height. `height: 100%` only resolves against a definite
+  // parent height; otherwise the container's flex-basis sets a default 200px
+  // track, which flex-shrink/grow then fit to a definite parent.
+  .#{$prefix}--slider-form-item--vertical {
+    height: 100%;
+  }
+
+  // Track on the left; `max` label top-right, `min` label bottom-right. The
+  // text input sits in its own row below so it reads as the value rather
+  // than as either end.
+  .#{$prefix}--slider-container--vertical {
+    display: grid;
+    flex: 1 1 to-rem(280px);
+    align-items: start;
+    gap: 0;
+    grid-template-areas:
+      "track max"
+      "track ."
+      "track min"
+      "input input";
+    grid-template-columns: auto auto;
+    grid-template-rows: auto 1fr auto auto;
+  }
+
+  // RangeSlider: each input pairs with the end it bounds, so there is no
+  // input row to budget for in the default height.
+  .#{$prefix}--slider-container--vertical.#{$prefix}--slider-container--two-handles {
+    flex-basis: to-rem(240px);
+    grid-template-areas:
+      "track max upper"
+      "track . ."
+      "track min lower";
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  // Half the 40px text input, so the track ends line up with the centers of
+  // the range labels and the range slider's inputs.
+  .#{$prefix}--slider--vertical {
+    width: to-rem(2px);
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    align-self: stretch;
+    padding: 0 $carbon--spacing-05;
+    margin: to-rem(20px) 0;
+    grid-area: track;
+    touch-action: pan-x;
+  }
+
+  // Center each range label on its end of the track.
+  .#{$prefix}--slider-container--vertical > .#{$prefix}--slider__range-label {
+    margin: 0;
+  }
+
+  .#{$prefix}--slider-container--vertical
+    > .#{$prefix}--slider__range-label:last-of-type {
+    align-self: start;
+    margin-top: to-rem(20px);
+    grid-area: max;
+    transform: translateY(-50%);
+  }
+
+  .#{$prefix}--slider-container--vertical
+    > .#{$prefix}--slider__range-label:first-of-type {
+    align-self: end;
+    margin-bottom: to-rem(20px);
+    grid-area: min;
+    transform: translateY(50%);
+  }
+
+  .#{$prefix}--slider-container--vertical > .#{$prefix}--slider-text-input-wrapper {
+    justify-self: start;
+    grid-area: input;
+  }
+
+  .#{$prefix}--slider-container--vertical
+    > .#{$prefix}--slider-text-input-wrapper--upper {
+    align-self: start;
+    margin-inline-start: $carbon--spacing-05;
+    grid-area: upper;
+  }
+
+  .#{$prefix}--slider-container--vertical
+    > .#{$prefix}--slider-text-input-wrapper--lower {
+    align-self: end;
+    margin-inline-start: $carbon--spacing-05;
+    grid-area: lower;
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__track {
+    top: 0;
+    left: 50%;
+    width: to-rem(2px);
+    height: 100%;
+    transform: translate(-50%, 0);
+  }
+
+  // The center tick sits on the inline start side, away from the labels.
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__track:before {
+    top: 50%;
+    width: to-rem(4px);
+    height: to-rem(2px);
+    transform: translate(0, -50%);
+    @include ccs-inset-inline($start: to-rem(-5px));
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__filled-track {
+    top: 0;
+    left: 50%;
+    width: to-rem(2px);
+    height: 100%;
+    transform-origin: bottom;
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__thumb {
+    left: 50%;
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__marks {
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 100%;
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__mark {
+    left: 0;
+    width: to-rem(8px);
+    height: to-rem(2px);
+  }
+
+  // Labels sit on the inline end side of the track, toward the range
+  // labels, so they mirror to its left in RTL.
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__mark-label {
+    top: 50%;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($start: to-rem(12px));
+  }
+
+  // Labels sit beside the track instead of below it; reserve room with
+  // margin (not padding, which would shift the 50% track position).
+  .#{$prefix}--slider--vertical.#{$prefix}--slider--with-mark-labels {
+    margin-inline-end: $carbon--spacing-08;
+  }
+
+  // RangeSlider: rotate the 16x24 arrow handles a quarter turn so they point
+  // along the track. The inline `top` is the value point; the lower handle
+  // hangs below it and the upper handle sits above it, each with its flat
+  // edge on the value.
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__thumb-wrapper {
+    left: 50%;
+  }
+
+  // Undo the single-thumb `left: 50%` above; range thumbs fill their wrapper.
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__thumb--lower,
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__thumb--upper {
+    left: 0;
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__thumb-wrapper--lower {
+    transform: translate(-50%, -4px) rotate(-90deg);
+  }
+
+  .#{$prefix}--slider--vertical .#{$prefix}--slider__thumb-wrapper--upper {
+    transform: translate(-50%, -20px) rotate(-90deg);
+  }
+}
+
+@include exports("slider-vertical") {
+  @include slider-vertical;
+}
+
+// carbon-components-svelte patch
+// Extra-small (`xs`, 24px) number input, centered on the track like the
+// default size.
+@mixin slider-xs {
+  .#{$prefix}--slider-text-input--xs {
+    height: to-rem(24px);
+  }
+}
+
+@include exports('slider-xs') {
+  @include slider-xs;
+}
+
+// carbon-components-svelte patch
+// The value and the range labels read in their own direction, so in RTL
+// "-5" keeps its sign in front instead of showing as "5-", as in
+// `.bx--number input`. The value is centered and a label is as wide as its
+// text, so the alignment `unicode-bidi: plaintext` sets changes nothing.
+/// @access private
+/// @group slider
+@mixin slider-plaintext {
+  .#{$prefix}--slider-text-input,
+  .#{$prefix}--slider__range-label {
+    unicode-bidi: plaintext;
+  }
+}
+
+@include exports("slider-plaintext") {
+  @include slider-plaintext;
+}

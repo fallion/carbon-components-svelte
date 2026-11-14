@@ -1,0 +1,224 @@
+---
+components: ["UserAvatar"]
+description: User avatars display a photo, a custom icon, or initials derived from a name, for identifying a person in a header, list, or profile menu.
+---
+
+<script>
+  import { Stack, UserAvatar } from "carbon-components-svelte";
+  import CheckmarkFilled from "carbon-icons-svelte/lib/CheckmarkFilled.svelte";
+  import UserAvatarFilledAlt from "carbon-icons-svelte/lib/UserAvatarFilledAlt.svelte";
+  import Bot from "carbon-icons-svelte/lib/Bot.svelte";
+  import Password from "carbon-icons-svelte/lib/Password.svelte";
+  import Group from "carbon-icons-svelte/lib/Group.svelte";
+</script>
+
+## Content
+
+The avatar renders the first available of custom slotted content, an image, a custom icon, initials, or the default user icon. It is designed for the UI Shell [profile menu](/components/UIShell#profile-menu).
+
+### Fallback icon
+
+Render the avatar without any content to show the default user icon.
+
+<UserAvatar />
+
+### Initials
+
+Set `name` to derive the user's initials. The first character of each word is used, capped at two.
+
+<UserAvatar name="Monica" />
+<UserAvatar name="Richard Hendricks" />
+
+Set `initials` to override the derived initials while keeping `name` for display purposes such as tooltips.
+
+<UserAvatar name="Richard J. Hendricks" initials="RH" tooltipText="Richard J. Hendricks" />
+
+Initials come from `getInitials`, which takes the first user-perceived character of each word so emoji and accented letters stay intact. Import it from the package to compute the same initials elsewhere, for example in a legend.
+
+```html
+<script context="module">
+  import { getInitials } from "carbon-components-svelte";
+
+  getInitials("Richard J. Hendricks"); // "RJ"
+  getInitials("Richard J. Hendricks", { max: 3 }); // "RJH"
+</script>
+```
+
+Set `locale` for language-specific casing, such as `"tr"`.
+
+### Custom icon
+
+Set `icon` to render a custom icon instead of the default user icon, such as an icon from [carbon-icons-svelte](https://github.com/carbon-design-system/carbon-icons-svelte).
+
+<UserAvatar icon={UserAvatarFilledAlt} />
+<UserAvatar icon={Bot} backgroundColor="purple" />
+<UserAvatar icon={Password} backgroundColor="teal" />
+<UserAvatar icon={Group} backgroundColor="cool-gray" />
+
+<UserAvatar size="sm" icon={Bot} backgroundColor="purple" />
+<UserAvatar size="md" icon={Bot} backgroundColor="purple" />
+<UserAvatar size="lg" icon={Bot} backgroundColor="purple" />
+<UserAvatar size="xl" icon={Bot} backgroundColor="purple" />
+
+### Custom content
+
+Use the default slot to render arbitrary content, such as a status badge, instead of the computed image, icon, or initials. Slotted content takes priority over `image`, `icon`, and `initials`.
+
+<UserAvatar backgroundColor="cyan">99+</UserAvatar>
+
+## Image
+
+Set `image` to render a photo. Provide `imageDescription` for the alternative text. The image fills the circle (`object-fit: cover`) and takes priority over the icon and initials.
+
+If the image fails to load, the avatar falls back to the icon or initials and dispatches `image:error`.
+
+<UserAvatar
+  size="xl"
+  image="https://i.pravatar.cc/300?img=12"
+  imageDescription="Richard Hendricks"
+/>
+
+### Image attributes
+
+Pass HTML attributes to the image with `imageAttributes`. Use this for values such as `loading`, `srcset`, or `referrerPolicy`. Rest props stay on the host element; `image` and `imageDescription` still set `src` and `alt`.
+
+<UserAvatar
+  size="xl"
+  image="https://i.pravatar.cc/300?img=12"
+  imageDescription="Richard Hendricks"
+  imageAttributes={{ loading: "lazy" }}
+/>
+
+## Sizes
+
+Set `size` to control avatar size. The default is `"md"`. The sizes are 24, 32, 48 and 64 pixels, as in Carbon. The size applies to any content; the image fills the frame at every size, and initials step up the type scale.
+
+<UserAvatar size="sm" image="https://i.pravatar.cc/300?img=12" imageDescription="Richard Hendricks" />
+<UserAvatar size="md" image="https://i.pravatar.cc/300?img=12" imageDescription="Richard Hendricks" />
+<UserAvatar size="lg" image="https://i.pravatar.cc/300?img=12" imageDescription="Richard Hendricks" />
+<UserAvatar size="xl" image="https://i.pravatar.cc/300?img=12" imageDescription="Richard Hendricks" />
+
+<Stack orientation="horizontal" gap={3} align="center">
+  <UserAvatar size="sm" name="Richard Hendricks" />
+  <UserAvatar size="md" name="Richard Hendricks" />
+  <UserAvatar size="lg" name="Richard Hendricks" />
+  <UserAvatar size="xl" name="Richard Hendricks" />
+</Stack>
+
+## Background colors
+
+Set `backgroundColor` to choose the color rendered behind the initials or icon. The default is `"gray"`. Dark themes use a lighter step of each color with dark initials, so the text keeps at least 5:1 contrast.
+
+<UserAvatar backgroundColor="red" name="Richard Hendricks" />
+<UserAvatar backgroundColor="magenta" name="Richard Hendricks" />
+<UserAvatar backgroundColor="purple" name="Richard Hendricks" />
+<UserAvatar backgroundColor="blue" name="Richard Hendricks" />
+<UserAvatar backgroundColor="cyan" name="Richard Hendricks" />
+<UserAvatar backgroundColor="teal" name="Richard Hendricks" />
+<UserAvatar backgroundColor="green" name="Richard Hendricks" />
+<UserAvatar backgroundColor="gray" name="Richard Hendricks" />
+<UserAvatar backgroundColor="cool-gray" name="Richard Hendricks" />
+<UserAvatar backgroundColor="warm-gray" name="Richard Hendricks" />
+
+### Strong shade
+
+Set `shade` to `"strong"` for a fill that stands further from the page: a darker step in light themes and a lighter one in dark themes, as in Carbon's `order-7` to `order-12` colors. Every color has a strong shade, and `"auto"` keeps its hue.
+
+<UserAvatar backgroundColor="red" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="magenta" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="purple" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="blue" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="cyan" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="teal" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="green" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="gray" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="cool-gray" shade="strong" name="Richard Hendricks" />
+<UserAvatar backgroundColor="warm-gray" shade="strong" name="Richard Hendricks" />
+
+### Automatic background color
+
+Set `backgroundColor` to `"auto"` to pick a color from `name` (or `initials`). The name is hashed into one of the palette swatches. The same name always gets the same color.
+
+<UserAvatar backgroundColor="auto" name="Monica" />
+<UserAvatar backgroundColor="auto" name="Richard Hendricks" />
+<UserAvatar backgroundColor="auto" name="Dinesh Chugtai" />
+<UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" />
+<UserAvatar backgroundColor="auto" name="Jared Dunn" />
+
+## Clickable avatar
+
+Render the avatar as an interactive element instead of a static `span` — a `button` for a custom control, or an anchor for a link.
+
+### Interactive
+
+Set `interactive` to render a `button` instead of a `span` when the avatar is a clickable control, such as a custom profile menu trigger. The button receives a focus ring. `name` is used as the accessible name when `aria-label` is not set.
+
+Do not set `interactive` when slotting the avatar into [ProfileMenu](/components/UIShell#profile-menu) — that component already wraps the avatar in a labelled trigger button.
+
+The button forwards `keydown`, focus, and blur events, so it can control a popover or a menu.
+
+<UserAvatar interactive name="Richard Hendricks" backgroundColor="purple" />
+
+### Link
+
+Set `href` to render an anchor, for example a profile page link. `href` takes priority over `interactive`.
+
+<UserAvatar href="/profile" name="Richard Hendricks" backgroundColor="blue" />
+
+## Status
+
+Set `status` to show a presence indicator at the bottom-right of the avatar. Use `"online"`, `"away"`, `"busy"`, or `"offline"`.
+
+<UserAvatar name="Monica" status="online" />
+<UserAvatar name="Richard Hendricks" status="away" />
+<UserAvatar name="Dinesh Chugtai" status="busy" />
+<UserAvatar name="Bertram Gilfoyle" status="offline" />
+
+### Custom badge
+
+Use the `badge` slot to replace the status indicator with custom overlay content. The slot sits at the bottom-right with a ring in the surrounding background color.
+
+<UserAvatar name="Jared Dunn" status="online">
+  <CheckmarkFilled slot="badge" size={8} />
+</UserAvatar>
+
+## Tooltip
+
+Set `tooltipText` to show the display name on hover or focus. The tooltip closes on <DocKbd label="Escape" />.
+
+Setting `tooltipText` wraps the avatar in a focusable button. Do not combine it with `interactive` or `href`, and do not set it when slotting the avatar into the `ProfileMenu` trigger.
+
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" />
+
+### Position
+
+Set `direction` to `"top"` or `"bottom"` to position the tooltip relative to the avatar.
+
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" direction="top" />
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" direction="bottom" />
+
+### Alignment
+
+Set `align` to `"start"`, `"center"`, or `"end"` to align the tooltip relative to the avatar.
+
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" align="start" />
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" align="center" />
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" align="end" />
+
+### Inline tooltip
+
+By default, the tooltip renders in a floating portal so it is not clipped by the avatar's circular frame or an `overflow: hidden` container. Set `portalTooltip` to `false` to render the tooltip inline.
+
+<UserAvatar name="Richard Hendricks" tooltipText="Richard Hendricks" portalTooltip={false} />
+
+### Inside a modal
+
+The floating portal keeps the tooltip from being clipped by the modal's overflow and z-index stacking.
+
+<FileSource src="/framed/UserAvatar/UserAvatarModal" />
+
+## Use within ProfileMenu
+
+Slot the avatar into [ProfileMenu](/components/UIShell#profile-menu) for the header trigger and the profile header. Use `size="md"` for the trigger and `size="lg"` for the header to match the menu frame. Leave `interactive`, `href`, and `tooltipText` unset on the slotted avatar so the menu owns focus and labelling.
+
+<UserAvatar size="md" name="Richard Hendricks" />

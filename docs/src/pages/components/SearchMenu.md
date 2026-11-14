@@ -1,0 +1,301 @@
+---
+components: ["SearchMenu", "SearchMenuGroup", "SearchMenuItem", "SearchMenuSkeleton"]
+description: Search menus filter and highlight typeahead suggestions as users type, with grouped results and keyboard navigation.
+---
+
+<script>
+  import { Box, Layer, SearchMenu, SearchMenuGroup, SearchMenuItem } from "carbon-components-svelte";
+  import ArrowRight from "carbon-icons-svelte/lib/ArrowRight.svelte";
+  import Query from "carbon-icons-svelte/lib/Query.svelte";
+</script>
+
+## Basic
+
+Render `SearchMenuItem` children to display suggestions. Each item highlights the portion of its `text` that matches the search value. Result text is flush-left with the input placeholder. The menu opens on focus. Use the arrow keys to move between results, <DocKbd label="Enter" /> to select the active result, and <DocKbd label="Escape" /> to close the menu. The menu also closes on an outside click.
+
+<FileSource src="/framed/SearchMenu/DefaultSearchMenu" />
+
+## Sizes
+
+Set `size` to control the search input height, matching the [Search](/components/Search) input sizing. The default is extra-large (`"xl"`). By default the results menu adjusts to match the input: row height, text inset, and the leading-icon gutter all align with the input for the chosen size.
+
+### Extra large
+
+The default. Set `size` to `"xl"` for an extra-large search input.
+
+<FileSource src="/framed/SearchMenu/SizeExtraLarge" />
+
+### Large
+
+Set `size` to `"lg"` for a large search input.
+
+<FileSource src="/framed/SearchMenu/SizeLarge" />
+
+### Small
+
+Set `size` to `"sm"` for a small search input.
+
+<FileSource src="/framed/SearchMenu/SizeSmall" />
+
+### Extra small
+
+Set `size` to `"xs"` for an extra-small search input.
+
+<FileSource src="/framed/SearchMenu/SizeExtraSmall" />
+
+### Decoupled menu size
+
+Set `menuSize` to size the results menu independently of the input. By default the menu follows `size`; override it when you want a compact input with a roomier menu, or vice versa. The example below pairs a small input with an extra-large menu.
+
+<FileSource src="/framed/SearchMenu/SizeDecoupled" />
+
+### Max height
+
+Set `menuMaxHeight` to override the results menu's max height (360px by default). Numbers are pixels; strings accept any CSS length such as `"50vh"`.
+
+<FileSource src="/framed/SearchMenu/MenuMaxHeight" />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <SearchMenu labelText="Search" placeholder="Search...">
+      <SearchMenuItem text="Databases for TestSQL" />
+      <SearchMenuItem text="Data Store for Memcache" />
+    </SearchMenu>
+  </Box>
+</Layer>
+
+## Custom icon
+
+Replace the default search icon with a custom one.
+
+<SearchMenu icon={Query} labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+</SearchMenu>
+
+## Close button label
+
+Set `closeButtonLabelText` to customize the accessible label of the clear button (default `"Clear search input"`).
+
+<SearchMenu closeButtonLabelText="Clear catalog search" labelText="Search" placeholder="Search..." value="Cloud functions">
+  <SearchMenuItem text="Cloud functions" />
+</SearchMenu>
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<SearchMenu selectTextOnFocus labelText="Search" placeholder="Search..." value="Cloud functions">
+  <SearchMenuItem text="Cloud functions" />
+</SearchMenu>
+
+## Grouping
+
+Compose `SearchMenuGroup` and `SearchMenuItem` for grouped results, recent searches, and footer actions.
+
+### Grouped results
+
+Wrap items in `SearchMenuGroup` to add a category header. Use the `action` slot to add a header action such as a "View all" link. Set `divider` on a group to separate footer actions, and `persistent` on an item to keep it visible regardless of the search value. Provide `icon` for a leading icon and `iconRight` for a trailing affordance.
+
+<FileSource src="/framed/SearchMenu/GroupedResults" />
+
+### Recent searches
+
+Set `filter` to `false` on a group to show its items regardless of the search value, for example a list of recent searches. Use the `action` slot to add a header action such as "Clear recent searches".
+
+<FileSource src="/framed/SearchMenu/RecentSearches" />
+
+### Item filter override
+
+Set `filter` on a `SearchMenuItem` to override the group's `filter` (or the menu's `shouldFilter`) for that one item, for example to pin a suggestion inside an otherwise-filtered group.
+
+<SearchMenu labelText="Search" placeholder="Search..." value="test">
+  <SearchMenuGroup label="Results">
+    <SearchMenuItem text="Databases for TestSQL" />
+    <SearchMenuItem text="Data Store for Memcache" />
+    <SearchMenuItem text="Pinned: Getting started guide" filter={false} />
+  </SearchMenuGroup>
+</SearchMenu>
+
+## Layout
+
+### Leading dropdown
+
+Use the `before` slot to render content to the left of the input within a joined bar, for example a [Dropdown](/components/Dropdown) that scopes the search. Bind to the dropdown selection to update the placeholder and filter results. Compose a [Stack](/components/Stack) with a 1px separator between the dropdown and the search input. The results menu matches the search input width, and opening the dropdown closes the search menu.
+
+<FileSource src="/framed/SearchMenu/LeadingDropdown" />
+
+## Menu positioning
+
+Control where and how the results menu renders relative to the input.
+
+### Top direction
+
+Set `direction` to `"top"` to open the results menu above the input. Useful when space below is limited.
+
+<SearchMenu direction="top" labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+</SearchMenu>
+
+### Portal menu
+
+By default, the results menu renders in a floating portal so it can escape parent containers with `overflow: hidden` or z-index stacking contexts. Set it to `false` for the menu to render within the parent container.
+
+<SearchMenu portal={false} labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+</SearchMenu>
+
+## Matching
+
+As the user types, each `SearchMenuItem` is matched against the search value to decide whether it is shown and which characters of its `text` are highlighted. The `match` prop controls this. It receives the item `text` and the current search value and returns `{ matched, indices }`: `matched` filters the item out when `false`, and `indices` are the character positions highlighted in the text. The default is fuzzy matching.
+
+### Built-in fuzzy matching
+
+Fuzzy matching prefers a contiguous substring, ranking a prefix above a word boundary above a mid-word occurrence, and falls back to a subsequence match so that "dsm" matches "**D**ata **S**tore for **M**emcache". Matching is case-insensitive. No configuration is required.
+
+<SearchMenu labelText="Search" placeholder="Search..." value="dsm">
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+  <SearchMenuItem text="AT&T IoT Data Plans" />
+</SearchMenu>
+
+### Custom fuzzy options
+
+Import `fuzzyMatch` from `carbon-components-svelte` to reuse the built-in matcher with custom options. Pass an options object as the third argument to tune sensitivity: set `threshold` to a value between `0` and `1` to require a minimum match quality (`0`, the default, accepts any match; `0.5` requires a contiguous substring; `0.7` a word-boundary substring; and `0.9` a prefix). Set `caseSensitive` to `true` to match the exact case. Pass it to the `match` prop.
+
+<FileSource src="/framed/SearchMenu/CustomFuzzyOptions" />
+
+### Custom filtering
+
+Provide your own `match` function for full control over the matching logic. The example below matches items by a case-insensitive prefix. Return `matched: false` to filter an item out. Pass a no-op such as `match={() => ({ matched: true })}` to keep every item and disable highlighting entirely.
+
+<FileSource src="/framed/SearchMenu/CustomFilter" />
+
+### Custom filtering with character highlighting
+
+To customize how matched characters render, use the default slot with `let:segments`. Each segment is `{ text, match }`, computed from your `match` function's `indices`, so you can wrap matched runs in your own markup -- no `{@html}` required. The example below applies a yellow highlight. Keep the `{#each}` compact so adjacent segments are not split by whitespace.
+
+<FileSource src="/framed/SearchMenu/CustomHighlight" />
+
+## Filtering
+
+The `shouldFilter` prop toggles client-side filtering. Client-side matching (the default) and server-side filtering can each be used on their own or combined. Unmatched items stay mounted and are hidden, so later keystrokes only punch visibility and update highlight marks.
+
+### Server-side results
+
+Set `shouldFilter` to `false` to render results exactly as provided, for example results already filtered by a server. The default matcher still highlights the query within each result; pass a no-op `match={() => ({ matched: true })}` to disable client-side highlighting entirely.
+
+<SearchMenu shouldFilter={false} labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Result rendered as-is" />
+  <SearchMenuItem text="Another server result" />
+</SearchMenu>
+
+### No results
+
+Provide a `noResults` slot to render an empty state when the search value matches no items.
+
+<SearchMenu labelText="Search" placeholder="Search..." value="no match">
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+  <svelte:fragment slot="noResults">No results found</svelte:fragment>
+</SearchMenu>
+
+### Async results
+
+Combine an async data source with client-side highlighting. Set `debounce` (in milliseconds) to fetch on `search` after typing pauses, instead of on every keystroke. `value` and the fuzzy-match highlighting stay immediate; only `search` waits, and the default `debounce` of `0` never dispatches it. `shouldFilter={false}` defers filtering to the server, so the menu shows exactly what it returns while the client still highlights the query. Set `loading` to render a skeleton menu while fetching (customize the rows with `skeletonCount` or the `loading` slot), and use the `noResults` slot for the empty state.
+
+Selecting an item or pressing <DocKbd label="Enter" /> with no active item cancels a pending `search` instead of also firing it, since `select` and `submit` already cover those cases. Clearing with the clear icon is instant and also cancels a pending `search`. <DocKbd label="Escape" /> only closes the menu here; it does not clear `value`.
+
+<FileSource src="/framed/SearchMenu/AsyncResults" />
+
+## Events
+
+The `select` event fires when an item is activated, carrying the `value`, the `item`, and the originating `event`. The `submit` event fires when pressing <DocKbd label="Enter" /> without an active item, carrying the current `value`. The `search` event fires after the `debounce` pause (see [Async results](#async-results)), carrying the current `value`. The `close` event fires when the menu closes, with a `trigger` of `"escape-key"`, `"outside-click"`, `"select"`, or `"blur"`.
+
+### Load more
+
+`scrollend` fires when the results menu is scrolled near the bottom. Use it to append the next page of `SearchMenuItem`s to the slot.
+
+This is a library load-more signal, not the browser's native `scrollend` (scroll stopped). It fires once per approach to the bottom, re-arming after the user scrolls away and when more items are slotted.
+
+While the menu already has results, set `loading` to append a loading row below them. `loading` only swaps in the full skeleton menu when there are no results yet.
+
+<FileSource src="/framed/SearchMenu/ScrollEndSearchMenu" />
+
+### Result links
+
+Set `href` on a `SearchMenuItem` to render it as a link. Selecting the item with the mouse or <DocKbd label="Enter" /> follows the link.
+
+<SearchMenu labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Carbon Design System" href="https://carbondesignsystem.com" iconRight={ArrowRight} />
+  <SearchMenuItem text="Carbon Components Svelte" href="https://github.com/carbon-design-system/carbon-components-svelte" iconRight={ArrowRight} />
+</SearchMenu>
+
+### Free-text submit
+
+<SearchMenu
+  labelText="Search"
+  placeholder="Search..."
+  on:submit={(e) => console.log("submit", e.detail.value)}
+  on:select={(e) => console.log("select", e.detail)}
+>
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+</SearchMenu>
+
+## States
+
+Reflect interaction states.
+
+### Disabled
+
+Disable the entire search input with `disabled`. The menu does not open.
+
+<SearchMenu disabled labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Databases for TestSQL" />
+</SearchMenu>
+
+### Disabled items
+
+Set `disabled` on an individual `SearchMenuItem` to keep it visible but non-interactive. Disabled items are skipped during keyboard navigation and cannot be selected.
+
+<FileSource src="/framed/SearchMenu/DisabledItems" />
+
+### Read-only
+
+Set `readonly` to prevent opening the results menu or selecting a value. The current value stays visible and still submits with the form.
+
+<SearchMenu readonly labelText="Search" placeholder="Search..." value="Cloud functions">
+  <SearchMenuItem text="Cloud functions" />
+</SearchMenu>
+
+## Loading
+
+Set `searchLoading` to show a spinner in the search input while results are loading, independent of `loading`, which controls the skeleton menu (see [Async results](#async-results)). Combine both props when the menu is also loading.
+
+Set `loadingDelay` to wait a number of milliseconds after `loading` or `searchLoading` becomes `true` before showing the skeleton menu, the loading row or the spinner. Work that finishes within the delay shows none of them. Once shown, they stay for at least 500 ms so they do not flash. The menu is marked busy as soon as `loading` is `true`.
+
+<SearchMenu searchLoading labelText="Search" placeholder="Search...">
+  <SearchMenuItem text="Databases for TestSQL" />
+  <SearchMenuItem text="Data Store for Memcache" />
+</SearchMenu>
+
+## Skeleton
+
+### Search input
+
+Render only the input skeleton with the [Search](/components/Search) `skeleton` prop, for example before the menu is ready.
+
+<FileSource src="/framed/SearchMenu/SearchInputSkeleton" />
+
+### Search input and menu
+
+Grey out both the input and the menu by composing [Search](/components/Search) with the `skeleton` prop and `SearchMenuSkeleton` for the results menu. Place `SearchMenuSkeleton` inside a `bx--search-menu__search` wrapper so the menu aligns with the input. For a loading state on an interactive menu, prefer the `loading` prop shown in [Async results](#async-results).
+
+<FileSource src="/framed/SearchMenu/SkeletonState" />

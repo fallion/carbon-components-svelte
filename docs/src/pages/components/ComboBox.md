@@ -1,0 +1,791 @@
+---
+components: ["ComboBox", "ComboBoxSkeleton", "FluidComboBoxSkeleton"]
+description: Combo boxes combine a text input with a dropdown menu to select from predefined options or enter custom values, with filtering and custom rendering.
+keywords: ["autocomplete", "typeahead"]
+---
+
+<script>
+  import { AILabel, Box, ComboBox, ComboBoxSkeleton, FluidComboBoxSkeleton, Layer, TooltipIcon } from "carbon-components-svelte";
+  import Chat from "carbon-icons-svelte/lib/Chat.svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+  import Email from "carbon-icons-svelte/lib/Email.svelte";
+  import Webhook from "carbon-icons-svelte/lib/Webhook.svelte";
+  import Star from "carbon-icons-svelte/lib/Star.svelte";
+  import StarFilled from "carbon-icons-svelte/lib/StarFilled.svelte";
+</script>
+
+## Basic
+
+Create a combobox with a title and placeholder text. Each item needs a unique id and display text. Combo boxes key items by id for performance.
+
+<DocKbd label="ArrowDown" /> or <DocKbd label="ArrowUp" /> opens the menu and highlights the selected item, or the first or last option. Once open, they move the highlight, and <DocKbd label="Home" /> and <DocKbd label="End" /> jump to the first or last option. <DocKbd label="PageUp" /> and <DocKbd label="PageDown" /> move the highlight 10 options and stop at either end. <DocKbd label="Alt" /> + <DocKbd label="ArrowDown" /> opens the menu without moving the highlight, and <DocKbd label="Alt" /> + <DocKbd label="ArrowUp" /> closes it. <DocKbd label="Enter" /> or <DocKbd label="Tab" /> selects the keyboard-highlighted option. With no keyboard highlight, <DocKbd label="Enter" />, <DocKbd label="Tab" />, or a click outside selects the option whose label matches the typed text, ignoring case. Text that browser autofill writes into the field selects a matching option the same way.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+## Content
+
+Customize how items render and how the label and helper text appear.
+
+### Custom slot
+
+Override the default slot to customize how each item displays. Use `let:item`, `let:index`, `let:selected`, and `let:highlighted` to style highlighted and selected rows.
+
+<FileSource src="/framed/ComboBox/ComboBoxSlot" />
+
+### Item icons
+
+Set icon on an item for a left icon. The label sits between the icon and the checkmark. Use the icon slot for custom markup.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel" selectedId="0" items={[
+  {id: "0", text: "Slack", icon: Chat},
+  {id: "1", text: "Email", icon: Email},
+  {id: "2", text: "Webhook", icon: Webhook}]} />
+
+Use the `iconEnd` slot to replace the checkmark.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel" selectedId="0" items={[
+  {id: "0", text: "Slack", icon: Chat},
+  {id: "1", text: "Email", icon: Email},
+  {id: "2", text: "Webhook", icon: Webhook}]}>
+  <svelte:fragment slot="icon" let:item>
+    <svelte:component this={item.icon} />
+  </svelte:fragment>
+  <svelte:fragment slot="iconEnd" let:selected>
+    {#if selected}<StarFilled />{:else}<Star />{/if}
+  </svelte:fragment>
+</ComboBox>
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<ComboBox hideLabel labelText="Hidden Label" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Helper text
+
+Add descriptive text below the combobox with `helperText`.
+
+<ComboBox helperText="Choose where alert notifications are sent" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+## Selection
+
+Bind to the selection, pre-select items, clear the current selection, and coordinate multiple combo boxes.
+
+### Reactive
+
+See how the combobox responds to user input and selection changes.
+
+<FileSource src="/framed/ComboBox/ReactiveComboBox" />
+
+### Initial selection
+
+Set `selectedId` to pre-select an item when the combobox loads.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+selectedId="1"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Clear selection
+
+Use `bind:this` to access the component instance and call `ComboBox.clear()` to clear the selection. Pass `focus: false` in the options to prevent re-focusing the input.
+
+Pressing <DocKbd label="Escape" /> in the input closes the menu and also clears the selection and the text.
+
+Clearing a selection with the clear button, <DocKbd label="Escape" />, or `clear()` is announced to screen readers through a polite live region. Override the message with `selectionClearedText`.
+
+<FileSource src="/framed/ComboBox/ComboBoxClear" />
+
+### Open on clear
+
+By default, the dropdown menu is closed after clearing the selection.
+
+Set `openOnClear` to `true` to reopen the dropdown menu after clearing the selection. This lets users immediately browse all available items without needing to click the input again.
+
+Clearing with <DocKbd label="Escape" /> never reopens the menu, even with `openOnClear`.
+
+<ComboBox openOnClear labelText="Alert channel" placeholder="Select alert channel"
+selectedId="1"
+value="Email"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Multiple combo boxes
+
+See how to manage multiple comboboxes in a form.
+
+<FileSource src="/framed/ComboBox/MultipleComboBox" />
+
+## Typeahead and auto-highlight
+
+Auto-highlight and typeahead both assist users while typing. Auto-highlight highlights a matching item as you type so it can be selected with <DocKbd label="Enter" /> alone. Typeahead completes the input inline with the untyped portion of a match. They work independently or together.
+
+### Auto-highlight
+
+Set `autoHighlight` to `"first-match"` to automatically highlight the first matching item as you type. Select it by pressing <DocKbd label="Enter" /> without using arrow keys.
+
+The default filter is case-insensitive substring matching (for example, "mar" matches "Marketing").
+
+<ComboBox autoHighlight="first-match"
+labelText="Department"
+placeholder="Select a department"
+items={[
+  {id: "0", text: "Accounting"},
+  {id: "1", text: "Accounts Payable"},
+  {id: "2", text: "Billing"},
+  {id: "3", text: "Business Development"},
+  {id: "4", text: "Business Intelligence"},
+  {id: "5", text: "Customer Success"},
+  {id: "6", text: "Customer Support"},
+  {id: "7", text: "Engineering"},
+  {id: "8", text: "Marketing"},
+  {id: "9", text: "Product"},
+  ]}  />
+
+### Case-sensitive filter
+
+Use `autoHighlight="first-match"` with a custom `shouldFilterItem` to control which items appear. The auto-highlight respects the custom filter; only items that pass the filter are considered for highlighting.
+
+In this example, the filter is case-sensitive.
+
+<ComboBox autoHighlight="first-match"
+shouldFilterItem={(item, value) => item.text.startsWith(value)}
+labelText="Department"
+placeholder="Select a department"
+items={[
+  {id: "0", text: "Accounting"},
+  {id: "1", text: "Accounts Payable"},
+  {id: "2", text: "Billing"},
+  {id: "3", text: "Business Development"},
+  {id: "4", text: "Business Intelligence"},
+  {id: "5", text: "Customer Success"},
+  {id: "6", text: "Customer Support"},
+  {id: "7", text: "Engineering"},
+  {id: "8", text: "Marketing"},
+  {id: "9", text: "Product"},
+  ]}  />
+
+### Typeahead
+
+Set `typeahead` to `true` to enable autocomplete. As users type, the input suggests and completes matching items.
+
+By default, typeahead uses case-insensitive prefix matching against each item's displayed label (`itemToString`). When a match is found, the suggestion shows the untyped portion highlighted so users can accept it or keep typing.
+
+Pressing <DocKbd label="Enter" /> or <DocKbd label="Tab" /> accepts the suggestion: it selects the matching item, normalizes the value to the item's casing, and closes the dropdown. <DocKbd label="Tab" /> still moves focus to the next control. Clicking away accepts the suggestion the same way. When the typed text matches no item, the suggestion is not committed.
+
+Pressing <DocKbd label="→" /> or <DocKbd label="End" /> accepts the inline suggestion in place: it commits the completed text into the value (keeping your casing) and collapses the cursor to the end, but keeps focus in the input and leaves the dropdown open so you can continue editing. Unlike <DocKbd label="Enter" /> and <DocKbd label="Tab" />, it does not select an item or close the menu.
+
+You can provide a custom `shouldFilterItem` to change the filtering logic. See the [fuzzy filter](#fuzzy-filter) example below.
+
+<FileSource src="/framed/ComboBox/TypeaheadComboBox" />
+
+### Combined with auto-highlight
+
+Combine `typeahead` and `autoHighlight="first-match"` for the full autocomplete experience: the input text is completed and the matching item is visually highlighted.
+
+<ComboBox typeahead autoHighlight="first-match" labelText="Department" placeholder="Search for a department"
+items={[
+  {id: "0", text: "Accounting"},
+  {id: "1", text: "Accounts Payable"},
+  {id: "2", text: "Billing"},
+  {id: "3", text: "Business Development"},
+  {id: "4", text: "Business Intelligence"},
+  {id: "5", text: "Customer Success"},
+  {id: "6", text: "Customer Support"},
+  {id: "7", text: "Engineering"},
+  {id: "8", text: "Marketing"},
+  {id: "9", text: "Product"},
+  ]}  />
+
+### Fuzzy filter
+
+Provide a custom `shouldFilterItem` to override the default prefix matching used by typeahead. This example reuses the built-in `fuzzyMatch` utility, exported from `carbon-components-svelte`, as the predicate. It matches items whose text contains the typed characters in order (for example, "acc" matches "Accounting" and "Accounts Payable"). Only the `matched` boolean is used here; the `score` and `indices` it also returns rank and highlight matches, as shown in [Highlight matches](#highlight-matches) below.
+
+Inline completion only fills in the input when the top match starts with the typed text, so a fuzzy match like "pdt" against "Product" filters the list without completing the input. Pair the custom filter with `autoHighlight="first-match"` so the matched item is highlighted and <DocKbd label="Enter" /> or <DocKbd label="Tab" /> selects it.
+
+<FileSource src="/framed/ComboBox/TypeaheadCustomFilter" />
+
+### Highlight matches
+
+Besides `matched`, `fuzzyMatch` returns the `indices` of the characters that matched. Pass them to the `highlightSegments` utility (also exported from `carbon-components-svelte`) to split the item text into matched and unmatched runs, then bold the matched runs in the default slot. Bind `value` to read the typed query inside the slot.
+
+<FileSource src="/framed/ComboBox/ComboBoxHighlightMatch" />
+
+## Groups
+
+Set `group` on items to list them under a non-selectable header. Items without a group are listed first, without a header, followed by the groups in the order they first occur in `items`. The arrow keys move between options and skip the headers. While filtering, a group with no matching items is hidden, header and all.
+
+Each group is exposed to screen readers as a group named by its label. The selection is still a single id.
+
+<ComboBox labelText="Region" placeholder="Select a region"
+  items="{[{id: "0", text: "Frankfurt", group: "Europe"},
+    {id: "1", text: "Toronto", group: "Americas"},
+    {id: "2", text: "London", group: "Europe"},
+    {id: "3", text: "São Paulo", group: "Americas"},
+    {id: "4", text: "Global (any region)"}]}"
+/>
+
+### Custom header
+
+Override the `group` slot to customize a header. Use `let:group` for the label and `let:items` for the group's items. The slot changes the visible header only; screen readers still announce the plain label.
+
+<ComboBox labelText="Region" placeholder="Select a region"
+  items="{[{id: "0", text: "Frankfurt", group: "Europe"},
+    {id: "1", text: "Toronto", group: "Americas"},
+    {id: "2", text: "London", group: "Europe"},
+    {id: "3", text: "São Paulo", group: "Americas"},
+    {id: "4", text: "Global (any region)"}]}"
+>
+  <svelte:fragment slot="group" let:group let:items={groupItems}>
+    {group} ({groupItems.length})
+  </svelte:fragment>
+</ComboBox>
+
+## Filtering
+
+By default, combobox filtering is synchronous and client-side. Customize the filter logic, label rendering, and when results reset.
+
+While a filter is active, the number of matching options is announced to screen readers once typing pauses. Override the message with `filterResultsText`, a function of the count.
+
+### Filterable
+
+Enable filtering to let users search through the options.
+
+<FileSource src="/framed/ComboBox/FilterableComboBox" />
+
+### Filter mode
+
+By default (`filterMode="remove"`), filtering unmounts non-matching options and recreates them when they match again.
+
+Set `filterMode` to `"hide"` to keep every option mounted and hide non-matching ones with the `hidden` attribute. Keyboard navigation, `aria-setsize`, and `aria-posinset` still follow the matching items only. `"hide"` falls back to `"remove"` when virtualization is enabled or items are [grouped](#groups). For typical ComboBox lists, `"remove"` is faster per keystroke because it only updates matching option nodes.
+
+<ComboBox filterMode="hide" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Empty state
+
+When the filter matches nothing, the menu shows "No results" in place of the options. Screen readers already hear the count from `filterResultsText`, so the message is hidden from them.
+
+Set `emptyText` to change the message, or pass a function that builds it from the typed text. Set it to `""` to leave the menu empty instead.
+
+<ComboBox labelText="Alert channel" placeholder="Type to filter" emptyText="No matching channels"
+shouldFilterItem={(item, value) => item.text.toLowerCase().includes(value.toLowerCase())}
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+Use the `empty` slot for richer content. `let:value` is the typed text.
+
+<ComboBox labelText="Alert channel" placeholder="Type to filter"
+shouldFilterItem={(item, value) => item.text.toLowerCase().includes(value.toLowerCase())}
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}>
+  <svelte:fragment slot="empty" let:value>
+    No channel named "{value}". Check the spelling or add it in Settings.
+  </svelte:fragment>
+</ComboBox>
+
+### Custom label
+
+Set `itemToString` to customize how items display in the filterable combobox.
+
+<FileSource src="/framed/ComboBox/FilterableComboBoxCustomLabel" />
+
+### Clear filter on open
+
+After selecting an item in a filterable combobox, reopening the dropdown normally shows only the results matching that selection. Set `clearFilterOnOpen` to `true` to clear the filter on open, showing all items so you can browse and change the selection.
+
+The original value is automatically restored if you close the dropdown without making a new selection.
+
+<FileSource src="/framed/ComboBox/ClearFilterOnOpen" />
+
+### Async
+
+For async (for example, server-side) filtering, bind to `value` and update `items` when input changes. This example simulates async behavior with a debounced input value change.
+
+Set `loading` to `true` while a request is in flight. The menu shows a loading row after the options, is marked busy for screen readers, and holds back the empty state until the results arrive.
+
+Set `loadingDelay` to wait a number of milliseconds after `loading` becomes `true` before showing the loading row. Work that finishes within the delay shows no row. Once shown, the row stays for at least 500 ms so it does not flash. The menu is marked busy, and the empty state held back, as soon as `loading` is `true`.
+
+<FileSource src="/framed/ComboBox/AsyncComboBox" />
+
+### Load more
+
+`scrollend` fires when the menu is scrolled near the bottom. Use it to append the next page of `items`. The component does not fetch or mutate `items` for you.
+
+This is a library load-more signal, named like Modal's lowercase `transitionend`. It is not the browser's native `scrollend` (scroll stopped).
+
+Keep prior items visible while the next page loads, and set `loading` while the request is in flight to show a loading row after them. The options stay selectable.
+
+`scrollend` fires once per approach to the bottom. It re-arms after the user scrolls away, and when `items` grows so another page can be requested. Holding the scrollbar at the bottom does not spam the handler. The raw DOM `scroll` event is still forwarded via `on:scroll`.
+
+<FileSource src="/framed/ComboBox/ScrollEndComboBox" />
+
+### Allow custom value
+
+Set `allowCustomValue` to `true` to let users enter custom text that is not in the predefined list. By default, user-entered text is cleared when the combobox loses focus without selecting an item. With allowCustomValue enabled, custom text is preserved.
+
+<FileSource src="/framed/ComboBox/AllowCustomValue" />
+
+### Select text on focus
+
+Set `selectTextOnFocus` to `true` to select all text in the input when it receives focus (for example, on tab or click). Users can replace the value by typing without manually selecting first.
+
+An alternative is [clear filter on open](#clear-filter-on-open), which clears the filter when opening so all options are visible.
+
+<ComboBox selectTextOnFocus labelText="Alert channel" placeholder="Select alert channel"
+selectedId="1"
+value="Email"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+## Virtualization
+
+Virtualization renders only the items currently visible in the viewport, improving performance for large lists. By default, the combo box virtualizes lists with more than 100 items.
+
+Besides the options shown below, `virtualize` also accepts `containerHeight` (the maximum height in pixels of the dropdown container, default 300) and `maxItems` (a cap on the number of items rendered, default unlimited) for further tuning.
+
+### Large lists
+
+In the example below, 10,000 items are provided to the combobox but only 11 items (8 visible items + 3 overscan items) are rendered in the DOM.
+
+Set `virtualize={false}` to explicitly disable virtualization, even for large lists. Or customize the threshold at which virtualization activates. See the [custom threshold](#custom-threshold) example below.
+
+<FileSource src="/framed/ComboBox/VirtualizedComboBox" />
+
+### Custom overscan
+
+Overscanning is the process of rendering extra items above and below the viewport to ensure smooth scrolling. The default overscan value is 3.
+
+Specify a custom value for `overscan` to control how many extra items render above and below the viewport for smoother scrolling.
+
+During very fast scrolling, higher overscan values may cause more flickering due to increased DOM updates. For fast-scrolling scenarios, use a lower overscan value.
+
+<FileSource src="/framed/ComboBox/VirtualizeOverscan" />
+
+### Fast scrolling
+
+During a scroll faster than the menu can render, such as a quick drag of the scrollbar, the options can briefly disappear. Set `optimizeFastScroll: true` to keep the options already rendered in view until the new ones arrive.
+
+The options then follow the scroll a frame behind, and pause while the page is busy running scripts. Leave it off when the menu sits on a page that often does heavy work.
+
+<FileSource src="/framed/ComboBox/VirtualizeFastScroll" />
+
+### Custom threshold
+
+The threshold is the minimum number of items required before virtualization activates. The default threshold value is 100, meaning lists with fewer than 100 items will not be virtualized and all items will be rendered normally.
+
+Specify a custom value for `threshold` to control when virtualization activates. Below the threshold, all items render normally without virtualization.
+
+<FileSource src="/framed/ComboBox/VirtualizeThreshold" />
+
+### Custom item height
+
+By default, item height matches the menu row for each size: 24px (`xs`), 32px (`sm`), 40px (`md`), 48px (`lg`, `xl`). Set `itemHeight` when custom slots change row height.
+
+<FileSource src="/framed/ComboBox/VirtualizeItemHeight" />
+
+## Events
+
+Listen for selection, the menu opening and closing, and clear interactions. The `scrollend` load-more event is documented separately; see [Load more](#load-more).
+
+### Select
+
+Listen for `on:select` to know when an item is selected. `event.detail` includes `selectedId` and `selectedItem`.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+on:select={(e) => console.log(e.detail.selectedId, e.detail.selectedItem)}
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Open
+
+Use `on:open` to know when the menu opens and why. `event.detail.trigger` is `"click"`, `"keydown"`, `"input"` (typing opened it), or `"programmatic"` when `open` is set from outside, such as through `bind:open`. It fires once per open, after the menu renders, and not for a combo box rendered already open.
+
+<ComboBox
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+  on:open={(e) => console.log(e.detail.trigger)}
+/>
+
+### Close
+
+Listen for `on:close` to know when the dropdown menu closes and why. `event.detail.trigger` is `"escape-key"`, `"outside-click"`, or `"select"`.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+on:close={(e) => console.log(e.detail.trigger)}
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Clear
+
+Listen for `on:clear` to know when the user activates the clear ("x") button that appears once there is a selection, whether by click or by keyboard. `event.detail` is the originating `KeyboardEvent` or `MouseEvent`. This is distinct from calling the [imperative `clear()` method](#clear-selection) directly, which does not dispatch `clear`.
+
+<ComboBox selectedId="1" labelText="Alert channel" placeholder="Select alert channel"
+on:clear={(e) => console.log(e.type)}
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+## Menu placement
+
+Control where and how the dropdown menu renders relative to the input.
+
+### Direction
+
+Set `direction` to `"top"` to make the dropdown menu appear above the input.
+
+<ComboBox direction="top" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Portal menu
+
+A dropdown menu that a container would cut off, such as a box with `overflow: hidden` or a scroll area, opens in a floating portal. The container in the example below hides its overflow, so the menu moves to a portal when it opens. Inside a [Modal](/components/Modal#modal-with-dropdowns), the menu always opens in a portal.
+
+Set `portalMenu` to `true` to always render the menu in a portal, for example to escape a z-index stacking context. Set it to `false` to keep the menu in place. A portalled menu leaves its container in the DOM, so CSS that targets the menu as a descendant of the container does not match it.
+
+<FileSource src="/framed/ComboBox/ComboBoxPortalMenu" />
+
+### Wrapped options
+
+Option labels are truncated to one line. At a 320px viewport, that hides text and can leave two options looking identical, a WCAG 1.4.10 Reflow failure.
+
+Set `wrapOptions` to let a label take as many lines as it needs. Lines break between words, and mid-word only when a word is too long to fit a line by itself. Default slot markup wraps with the label: a [highlighted match](#highlight-matches) stays marked across the break it is split by.
+
+It defaults to `false` because wrapping changes option heights.
+
+<FileSource src="/framed/ComboBox/WrapOptions" />
+
+### Programmatic access
+
+Bind to `open` to control the dropdown menu programmatically, such as opening it from an external trigger.
+
+<FileSource src="/framed/ComboBox/ComboBoxOpenBinding" />
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<ComboBox labelText="Region" selectedId="us-east-1" items={[{ id: "us-east-1", text: "US East (N. Virginia)" }, { id: "eu-west-1", text: "EU West (Ireland)" }]}>
+  <AILabel slot="decorator">
+    <p>Picked as the region closest to most of your users.</p>
+  </AILabel>
+</ComboBox>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <ComboBox
+      labelText="Alert channel"
+      placeholder="Select alert channel"
+      items={[
+        { id: "0", text: "Slack" },
+        { id: "1", text: "Email" },
+        { id: "2", text: "Webhook" },
+      ]}
+    />
+  </Box>
+</Layer>
+
+## Sizes
+
+Set `size` to control the height. The default is `medium`.
+
+### Extra-small
+
+Set `size` to `"xs"` for an extra-small combobox.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+size="xs"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Small
+
+Set `size` to `"sm"` for a small combobox.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+size="sm"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Extra-large
+
+Set `size` to `"xl"` for an extra-large combobox.
+
+<ComboBox labelText="Alert channel" placeholder="Select alert channel"
+size="xl"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` to show an error message.
+
+<ComboBox invalid invalidText="Secondary alert channel must be different from the primary channel" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` to show a warning message.
+
+<ComboBox warn warnText="This alert channel is not associated with your on-call schedule" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Disabled
+
+Set `disabled` to `true` to prevent interaction with the combobox.
+
+<ComboBox disabled labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Disabled items
+
+Mark individual items with `disabled: true` to disable specific options.
+
+Disabled options can still be highlighted with <DocKbd label="ArrowDown" /> and <DocKbd label="ArrowUp" />, so screen reader users can find them, but <DocKbd label="Enter" /> and <DocKbd label="Tab" /> do not select them.
+
+<ComboBox
+  labelText="Alert channel"
+  placeholder="Select alert channel"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email", disabled: true },
+    { id: "2", text: "Webhook" },
+  ]}
+/>
+
+### Read-only
+
+Set `readonly` to `true` to display a non-editable value.
+
+<ComboBox
+  readonly
+  selectedId="1"
+  labelText="Alert channel"
+  placeholder="Select alert channel"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Webhook" },
+  ]}
+/>
+
+## Fluid
+
+Set `fluid` to `true` to use the fluid variant, which embeds the label
+inside the field. Fluid combo boxes can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically.
+
+<ComboBox fluid labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<ComboBox fluid labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}>
+  <svelte:fragment slot="labelChildren">
+    Alert channel
+    <TooltipIcon tooltipText="Your alert channel is used for on-call notifications." icon={Information} />
+  </svelte:fragment>
+</ComboBox>
+
+### Condensed
+
+By default, the fluid variant renders taller menu items to match the taller
+field. Set `condensed` to `true` to render menu items at their default
+height instead.
+
+<ComboBox fluid condensed labelText="Alert channel" placeholder="Select alert channel" selectedId="0"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Invalid
+
+Fluid combo boxes display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<ComboBox fluid invalid invalidText="Secondary alert channel must be different from the primary channel. Slack is already configured as your primary alert channel; choose Email or Webhook instead." labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Warning
+
+<ComboBox fluid warn warnText="This alert channel is not associated with your on-call schedule" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Disabled
+
+Invalid and warning states are not displayed while the combo box is disabled.
+
+<ComboBox fluid disabled invalid invalidText="Secondary alert channel must be different from the primary channel" labelText="Alert channel" placeholder="Select alert channel"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Read-only
+
+Invalid and warning states are not displayed while the combo box is read-only.
+
+<ComboBox fluid readonly warn warnText="This alert channel is not associated with your on-call schedule" labelText="Alert channel" placeholder="Select alert channel" selectedId="0"
+items={[
+  {id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Webhook"}
+  ]}  />
+
+### Skeleton
+
+Display a loading skeleton for the fluid combo box variant.
+
+<FluidComboBoxSkeleton />
+
+## Form name
+
+Set `name` so the combo box participates in native form submission (for
+example SvelteKit form actions and `FormData`). Unlike [Dropdown](/components/Dropdown#form-name),
+`name` lands directly on the always-mounted text input, so it submits
+the displayed text (`value`), not `selectedId`, empty string when
+nothing is selected.
+
+```svelte
+<script>
+  import { Form, ComboBox, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/alerts">
+  <ComboBox
+    name="alertChannel"
+    labelText="Alert channel"
+    items={[
+      { id: "0", text: "Slack" },
+      { id: "1", text: "Email" },
+      { id: "2", text: "Webhook" },
+    ]}
+  />
+  <Button type="submit">Submit</Button>
+</Form>
+```
+
+## Required
+
+Set `required` to keep a surrounding form from submitting until the input has a value. `required` lands on the text input itself, like `name`. The field is marked required for screen readers.
+
+When a submit is blocked, the field shows its invalid state instead of the browser's error bubble, and the first invalid field takes focus. Calling `checkValidity()` from code shows nothing. The state clears once the field has a value or the form resets.
+
+Set `requiredInvalidText` to change the message, which defaults to "Select an item". Your own `invalid` and `invalidText` take precedence.
+
+<FileSource src="/framed/ComboBox/ComboBoxRequired" />
+
+## Skeleton
+
+Show a loading state with `ComboBoxSkeleton`.
+
+<ComboBoxSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<ComboBoxSkeleton size="xs" />

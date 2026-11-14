@@ -1,37 +1,49 @@
 <script>
   /**
-   * Set the `href` to use an anchor link
-   * @type {string}
+   * Set the `href` to use an anchor link.
+   * @type {string | undefined}
    */
   export let href = undefined;
 
   /**
-   * Specify the size of button skeleton
-   * @type {"default" | "field" | "small" | "lg" | "xl"}
+   * Specify the size of button skeleton.
+   * Falls back to the height of a parent `Form`'s size, as Button does.
+   * Accepts the same Carbon v11 aliases as Button.
+   * @type {"default" | "field" | "small" | "xs" | "lg" | "xl" | "sm" | "md" | "2xl" | undefined}
+   * @default "default"
    */
-  export let size = "default";
+  export let size = undefined;
 
-  /**
-   * @deprecated this prop will be removed in the next major release
-   * Use size="small" instead
-   */
-  export let small = false;
+  import { getContext } from "svelte";
+  import { FORM_SIZE_CONTEXT_KEY } from "../constants/context-keys.js";
+  import { formButtonSize } from "../utils/form-button-size.js";
+  import { resolveLinkRel } from "../utils/link-rel.js";
+  import { normalizeButtonSize } from "../utils/size-aliases.js";
+
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize =
+    normalizeButtonSize(size) ?? formButtonSize($formSize) ?? "default";
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 {#if href}
   <a
-    href="{href}"
-    rel="{$$restProps.target === '_blank' ? 'noopener noreferrer' : undefined}"
+    {href}
+    rel={resolveLinkRel($$restProps.target)}
     role="button"
-    class:bx--skeleton="{true}"
-    class:bx--btn="{true}"
-    class:bx--btn--field="{size === 'field'}"
-    class:bx--btn--sm="{size === 'small' || small}"
-    class:bx--btn--lg="{size === 'lg'}"
-    class:bx--btn--xl="{size === 'xl'}"
+    tabindex="-1"
+    aria-hidden="true"
+    class:bx--skeleton={true}
+    class:bx--btn={true}
+    class:bx--btn--field={effectiveSize === "field"}
+    class:bx--btn--xs={effectiveSize === "xs"}
+    class:bx--btn--sm={effectiveSize === "small"}
+    class:bx--btn--lg={effectiveSize === "lg"}
+    class:bx--btn--xl={effectiveSize === "xl"}
     {...$$restProps}
     on:click
+    on:focus
+    on:blur
     on:mouseover
     on:mouseenter
     on:mouseleave
@@ -40,14 +52,17 @@
   </a>
 {:else}
   <div
-    class:bx--skeleton="{true}"
-    class:bx--btn="{true}"
-    class:bx--btn--field="{size === 'field'}"
-    class:bx--btn--sm="{size === 'small' || small}"
-    class:bx--btn--lg="{size === 'lg'}"
-    class:bx--btn--xl="{size === 'xl'}"
+    class:bx--skeleton={true}
+    class:bx--btn={true}
+    class:bx--btn--field={effectiveSize === "field"}
+    class:bx--btn--xs={effectiveSize === "xs"}
+    class:bx--btn--sm={effectiveSize === "small"}
+    class:bx--btn--lg={effectiveSize === "lg"}
+    class:bx--btn--xl={effectiveSize === "xl"}
     {...$$restProps}
     on:click
+    on:focus
+    on:blur
     on:mouseover
     on:mouseenter
     on:mouseleave

@@ -1,0 +1,141 @@
+import { fireEvent, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
+import { openTooltips } from "../utils/open-tooltips";
+import { renderIconOnly, tabsRoot } from "./helpers";
+
+describe("Tabs (icon-only)", () => {
+  it("renders the icon-only variant when `iconOnly` is set", async () => {
+    await renderIconOnly();
+
+    expect(tabsRoot()).toHaveClass("bx--tabs--icon-only");
+  });
+
+  it("renders icons beside labels (not icon-only) by default", async () => {
+    await renderIconOnly({ iconOnly: false });
+
+    expect(tabsRoot()).not.toHaveClass("bx--tabs--icon-only");
+    expect(screen.getByRole("tab", { name: "Calendar" })).toHaveTextContent(
+      "Calendar",
+    );
+  });
+
+  it("labels each icon tab with `label` and renders the icon, not visible text", async () => {
+    await renderIconOnly();
+
+    const settings = screen.getByRole("tab", { name: "Settings" });
+    expect(settings).toHaveAttribute("aria-label", "Settings");
+    expect(settings.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("ignores fullWidth so icon tabs stay square", async () => {
+    const { rerender } = await renderIconOnly(
+      {
+        props: { fullWidth: true },
+      }.props,
+    );
+
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab.style.width).toBe("");
+    }
+
+    // The width applies again once the tabs are no longer icon-only.
+    await rerender({ iconOnly: false });
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab.style.width).toBe("100%");
+    }
+  });
+
+  it("opens a tooltip on focus and closes on blur", async () => {
+    await renderIconOnly();
+
+    const settings = screen.getByRole("tab", { name: "Settings" });
+
+    await fireEvent.focus(settings);
+    await tick();
+    expect(openTooltips()).toHaveLength(1);
+    expect(openTooltips()[0]).toHaveTextContent("Settings");
+
+    await fireEvent.blur(settings);
+    await tick();
+    expect(openTooltips()).toHaveLength(0);
+  });
+
+  describe("hover", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("opens a tooltip after the enter delay and closes on mouse leave", async () => {
+      await renderIconOnly();
+
+      const settings = screen.getByRole("tab", { name: "Settings" });
+      await fireEvent.mouseEnter(settings);
+      expect(openTooltips()).toHaveLength(0);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(openTooltips()).toHaveLength(1);
+      expect(openTooltips()[0]).toHaveTextContent("Settings");
+
+      await fireEvent.mouseLeave(settings);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(openTooltips()).toHaveLength(0);
+    });
+
+    it("hands the tooltip off to a hovered neighbor", async () => {
+      await renderIconOnly();
+
+      await fireEvent.mouseEnter(screen.getByRole("tab", { name: "Settings" }));
+      await vi.advanceTimersByTimeAsync(100);
+      expect(openTooltips()).toHaveLength(1);
+
+      await fireEvent.mouseEnter(
+        screen.getByRole("tab", { name: "Information" }),
+      );
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(openTooltips()).toHaveLength(1);
+      expect(openTooltips()[0]).toHaveTextContent("Information");
+    });
+
+    it("places the tooltip per `tooltipDirection`", async () => {
+      await renderIconOnly({ tooltipDirection: "top" });
+
+      await fireEvent.mouseEnter(screen.getByRole("tab", { name: "Settings" }));
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(document.querySelector(".bx--tooltip-portal")).toHaveAttribute(
+        "data-direction",
+        "top",
+      );
+    });
+  });
+
+  it("does not open a tooltip for a disabled icon tab", async () => {
+    await renderIconOnly({ disabledFirst: true });
+
+    const calendar = screen.getByRole("tab", { name: "Calendar" });
+    await fireEvent.focus(calendar);
+    await tick();
+    expect(openTooltips()).toHaveLength(0);
+  });
+
+  it("aligns the tooltip per `tooltipAlignment`", async () => {
+    await renderIconOnly({ tooltipAlignment: "start" });
+
+    const settings = screen.getByRole("tab", { name: "Settings" });
+    await fireEvent.focus(settings);
+    await tick();
+
+    const portal = document.querySelector("[data-floating-portal]");
+    expect(portal).toHaveAttribute("data-floating-intrinsic-align", "start");
+  });
+
+  it("applies the large icon scale via `iconSize`", async () => {
+    await renderIconOnly({ iconSize: "lg" });
+
+    expect(tabsRoot()).toHaveClass("bx--tabs__icon--lg");
+  });
+});

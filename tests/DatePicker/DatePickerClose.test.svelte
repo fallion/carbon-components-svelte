@@ -1,0 +1,32 @@
+<script lang="ts">
+  import DatePicker from "carbon-components-svelte/DatePicker/DatePicker.svelte";
+  import DatePickerInput from "carbon-components-svelte/DatePicker/DatePickerInput.svelte";
+
+  export let onClose: (e: CustomEvent<{ trigger: string }>) => void = () => {};
+  export let datePickerType: "single" | "range" = "single";
+  export let value = "";
+  export let valueFrom = "";
+  export let valueTo = "";
+  export let portalMenu: boolean | undefined = undefined;
+  // Renders a focus target outside the picker.
+  export let outsideButton = false;
+</script>
+
+<DatePicker
+  {datePickerType}
+  {value}
+  {valueFrom}
+  {valueTo}
+  {portalMenu}
+  on:close={onClose}
+>
+  {#if datePickerType === "range"}
+    <DatePickerInput labelText="Start date" placeholder="mm/dd/yyyy" />
+    <DatePickerInput labelText="End date" placeholder="mm/dd/yyyy" />
+  {:else}
+    <DatePickerInput labelText="Date" placeholder="mm/dd/yyyy" />
+  {/if}
+</DatePicker>
+{#if outsideButton}
+  <button type="button">Outside</button>
+{/if}

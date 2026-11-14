@@ -1,0 +1,360 @@
+import { get } from "svelte/store";
+import { createAnchoredTooltip } from "../../src/utils/anchored-tooltip.js";
+import { focusQuietly } from "../../src/utils/focus.js";
+import {
+  activeTooltip,
+  createTooltipGroup,
+} from "../../src/utils/tooltip-group.js";
+
+const group = () =>
+  createTooltipGroup({
+    enterDelayMs: () => 100,
+    leaveDelayMs: () => 0,
+    skipDelayMs: () => 0,
+  });
+
+/** Detaches what `setup` attached, so no test's listeners reach the next. */
+const detaches = new Set<() => void>();
+
+function setup(
+  options: Parameters<typeof createAnchoredTooltip>[0] = {},
+  tag = "p",
+) {
+  const node = document.createElement(tag);
+  document.body.append(node);
+  const tooltip = createAnchoredTooltip({ group: group(), ...options });
+  const attached = tooltip.attach(node);
+  const detach = () => {
+    if (detaches.delete(detach)) attached();
+  };
+  detaches.add(detach);
+  return {
+    node,
+    tooltip,
+    detach,
+    open: () => get(tooltip.open),
+    hidden: () => get(tooltip.hidden),
+  };
+}
+
+function escapeKey(init: KeyboardEventInit = {}) {
+  const event = new KeyboardEvent("keydown", {
+    key: "Escape",
+    bubbles: true,
+    ...init,
+  });
+  const stopPropagation = vi.spyOn(event, "stopPropagation");
+  return { event, stopPropagation };
+}
+
+describe("createAnchoredTooltip", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    activeTooltip.set(null);
+  });
+
+  afterEach(() => {
+    for (const detach of detaches) detach();
+    vi.useRealTimers();
+    document.body.innerHTML = "";
+  });
+
+  it("opens after the enter delay on hover and closes on leave", () => {
+    const { node, open } = setup();
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(99);
+    expect(open()).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(open()).toBe(true);
+
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(open()).toBe(false);
+  });
+
+  it("opens at once on focus and closes on blur", () => {
+    const { node, open } = setup();
+
+    node.dispatchEvent(new FocusEvent("focus"));
+    expect(open()).toBe(true);
+
+    node.dispatchEvent(new FocusEvent("blur"));
+    expect(open()).toBe(false);
+  });
+
+  it("stays open on blur while hovered, and on leave while focused", () => {
+    const { node, open } = setup();
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    node.dispatchEvent(new FocusEvent("focus"));
+    node.dispatchEvent(new FocusEvent("blur"));
+    expect(open()).toBe(true);
+
+    node.dispatchEvent(new FocusEvent("focus"));
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(open()).toBe(true);
+  });
+
+  it("hides on activation until the next pointer enter", () => {
+    const { node, open } = setup();
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    node.dispatchEvent(new MouseEvent("click"));
+    vi.advanceTimersByTime(100);
+    expect(open()).toBe(false);
+
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    expect(open()).toBe(true);
+  });
+
+  it("cancels a pending open on activation", () => {
+    const { node, open } = setup();
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    node.dispatchEvent(new MouseEvent("click"));
+    vi.advanceTimersByTime(100);
+    expect(open()).toBe(false);
+  });
+
+  it("stays open on activation with dismissOnClick false", () => {
+    const { node, open } = setup({ dismissOnClick: false });
+
+    node.dispatchEvent(new FocusEvent("focus"));
+    node.dispatchEvent(new MouseEvent("click"));
+    expect(open()).toBe(true);
+  });
+
+  it("opens at once on hover with an enter delay of 0", () => {
+    const { node, open } = setup({ enterDelayMs: () => 0 });
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(open()).toBe(true);
+  });
+
+  it("hides on Escape from anywhere, before a window listener sees it", () => {
+    const { node, open } = setup();
+    const onWindowKeydown = vi.fn();
+    window.addEventListener("keydown", onWindowKeydown);
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+
+    document.body.dispatchEvent(escapeKey().event);
+    window.removeEventListener("keydown", onWindowKeydown);
+
+    expect(open()).toBe(false);
+    expect(onWindowKeydown).not.toHaveBeenCalled();
+  });
+
+  it("marks the anchor hidden while hovered or focused but closed", () => {
+    const { node, tooltip, hidden } = setup();
+    expect(hidden()).toBe(false);
+
+    // Waiting out the enter delay.
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(hidden()).toBe(true);
+    vi.advanceTimersByTime(100);
+    expect(hidden()).toBe(false);
+
+    tooltip.handleKeydown(escapeKey().event);
+    expect(hidden()).toBe(true);
+
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    expect(hidden()).toBe(false);
+  });
+
+  it.each([
+    ["hover", new MouseEvent("mouseenter")],
+    ["focus", new FocusEvent("focus")],
+  ])("hides on Escape after %s and stops the key", (_, open$) => {
+    const { node, tooltip, open } = setup();
+    node.dispatchEvent(open$);
+    vi.advanceTimersByTime(100);
+
+    const { event, stopPropagation } = escapeKey();
+    tooltip.handleKeydown(event);
+
+    expect(open()).toBe(false);
+    expect(stopPropagation).toHaveBeenCalledOnce();
+  });
+
+  it("passes Escape on to a focused anchor when asked", () => {
+    const { node, tooltip, open } = setup({ passEscapeWhenFocused: true });
+    node.dispatchEvent(new FocusEvent("focus"));
+
+    const { event, stopPropagation } = escapeKey();
+    tooltip.handleKeydown(event);
+
+    expect(open()).toBe(false);
+    expect(stopPropagation).not.toHaveBeenCalled();
+
+    // Hidden until the next focus.
+    node.dispatchEvent(new FocusEvent("blur"));
+    node.dispatchEvent(new FocusEvent("focus"));
+    expect(open()).toBe(true);
+  });
+
+  it("passes Escape on, focused or not, while passEscape returns true", () => {
+    let pass = false;
+    const { node, tooltip } = setup({ passEscape: () => pass });
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    const first = escapeKey();
+    tooltip.handleKeydown(first.event);
+    expect(first.stopPropagation).toHaveBeenCalledOnce();
+
+    pass = true;
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    const second = escapeKey();
+    tooltip.handleKeydown(second.event);
+    expect(second.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a closed tooltip", {}, false],
+    ["another key", { key: "Enter" }, true],
+    ["an IME composition", { isComposing: true }, true],
+  ])("ignores Escape for %s", (_, init, opened) => {
+    const { node, tooltip, open } = setup();
+    if (opened) node.dispatchEvent(new FocusEvent("focus"));
+
+    const { event, stopPropagation } = escapeKey(init);
+    tooltip.handleKeydown(event);
+
+    expect(open()).toBe(opened);
+    expect(stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it("ignores hover and focus while disabled", () => {
+    let enabled = false;
+    const { node, open } = setup({ enabled: () => enabled });
+
+    node.dispatchEvent(new FocusEvent("focus"));
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    expect(open()).toBe(false);
+    expect(get(activeTooltip)).toBeNull();
+
+    enabled = true;
+    node.dispatchEvent(new FocusEvent("focus"));
+    expect(open()).toBe(true);
+  });
+
+  it("closes when another tooltip opens", () => {
+    const first = setup();
+    const second = setup();
+
+    first.node.dispatchEvent(new FocusEvent("focus"));
+    second.node.dispatchEvent(new FocusEvent("focus"));
+
+    expect(first.open()).toBe(false);
+    expect(second.open()).toBe(true);
+  });
+
+  it("hide() closes and releases the slot", () => {
+    const { node, tooltip, open } = setup();
+    node.dispatchEvent(new FocusEvent("focus"));
+
+    tooltip.hide();
+
+    expect(open()).toBe(false);
+    expect(get(activeTooltip)).toBeNull();
+  });
+
+  it("stops listening once detached", () => {
+    const { node, detach, open } = setup();
+
+    detach();
+    node.dispatchEvent(new FocusEvent("focus"));
+
+    expect(open()).toBe(false);
+  });
+
+  it("waits the icon leave delay and stays while the pointer is on the tooltip", () => {
+    const { node, tooltip, open } = setup({ group: createTooltipGroup() });
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    vi.advanceTimersByTime(99);
+    expect(open()).toBe(true);
+
+    tooltip.handleTooltipMouseenter();
+    vi.advanceTimersByTime(500);
+    expect(open()).toBe(true);
+
+    tooltip.handleTooltipMouseleave();
+    vi.advanceTimersByTime(99);
+    expect(open()).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(open()).toBe(false);
+  });
+
+  it("stays open when the pointer comes back from the tooltip", () => {
+    const { node, tooltip, open } = setup({ group: createTooltipGroup() });
+
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    node.dispatchEvent(new MouseEvent("mouseleave"));
+    tooltip.handleTooltipMouseenter();
+    tooltip.handleTooltipMouseleave();
+    vi.advanceTimersByTime(50);
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(500);
+    expect(open()).toBe(true);
+  });
+
+  it("ignores the pointer on a tooltip that is closed", () => {
+    const { tooltip, open } = setup();
+
+    tooltip.handleTooltipMouseenter();
+    expect(open()).toBe(false);
+  });
+
+  it("stays closed for focus the library moves, and opens for the user's", () => {
+    const { node, tooltip, open, hidden } = setup({}, "button");
+    const { event, stopPropagation } = escapeKey();
+
+    focusQuietly(node);
+    expect(open()).toBe(false);
+    expect(hidden()).toBe(true);
+    // Escape goes on, for example to close a dialog.
+    tooltip.handleKeydown(event);
+    expect(stopPropagation).not.toHaveBeenCalled();
+
+    node.blur();
+    node.focus();
+    expect(open()).toBe(true);
+  });
+
+  it("opens on hover after focus the library moved", () => {
+    const { node, open } = setup({}, "button");
+
+    focusQuietly(node);
+    node.dispatchEvent(new MouseEvent("mouseenter"));
+    vi.advanceTimersByTime(100);
+    expect(open()).toBe(true);
+  });
+
+  it("keeps a click on an inline tooltip from reaching the anchor", () => {
+    const { node } = setup({ dismissOnClick: false }, "button");
+    const tip = document.createElement("span");
+    tip.className = "bx--assistive-text";
+    node.append(tip);
+    const onClick = vi.fn();
+    node.addEventListener("click", onClick);
+
+    const onTip = new MouseEvent("click", { bubbles: true, cancelable: true });
+    tip.dispatchEvent(onTip);
+    expect(onTip.defaultPrevented).toBe(true);
+    expect(onClick).not.toHaveBeenCalled();
+
+    node.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});

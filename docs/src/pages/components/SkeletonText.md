@@ -1,0 +1,65 @@
+---
+description: Skeleton text provides a loading placeholder for text content, with support for headings, paragraphs, custom line counts, and widths.
+---
+
+<script>
+  import { SkeletonText, Stack } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic skeleton text with default styling.
+
+<SkeletonText />
+
+## Heading
+
+Use the heading variant for larger text placeholders.
+
+<SkeletonText heading />
+
+## Paragraph
+
+Use the paragraph variant for multi-line text placeholders.
+
+<SkeletonText paragraph />
+
+### Custom line count
+
+Specify the number of lines with `lines`.
+
+<SkeletonText paragraph lines={8} />
+
+## Width
+
+Set a custom width with `width`, as a percentage or pixel value. This works with any variant, not just paragraph.
+
+<SkeletonText width="50%" />
+
+### Paragraph
+
+In paragraph mode, each line's width varies around the `width` value instead of using it uniformly, for a more natural look.
+
+<SkeletonText paragraph width="50%" />
+
+## No margin
+
+Set `noMargin` to `true` to remove the bottom margin, for placeholders in a
+flex or grid layout that sets its own gap.
+
+<Stack orientation="horizontal" gap={5}>
+  <SkeletonText noMargin width="40%" />
+  <SkeletonText noMargin width="20%" />
+</Stack>
+
+## AI
+
+Set `ai` to `true` for text that AI is generating. The skeleton turns blue, and a gradient sweeps across it. The sweep stops when the user prefers reduced motion.
+
+<SkeletonText ai />
+
+### Paragraph
+
+`ai` works with every variant.
+
+<SkeletonText ai paragraph />

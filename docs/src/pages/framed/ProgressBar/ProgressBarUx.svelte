@@ -1,44 +1,52 @@
 <script>
-  import { ProgressBar, ButtonSet, Button } from "carbon-components-svelte";
+  import {
+    Button,
+    ButtonSet,
+    ProgressBar,
+    Stack,
+  } from "carbon-components-svelte";
 
-  let max = 328;
+  const max = 328;
   let value = 0;
+  let status = "active";
 
   $: helperText =
-    value > 0 ? value.toFixed(0) + "MB of " + max + "MB" : "Press start";
-  $: if (value === max) helperText = "Done";
+    value > 0 ? `${value.toFixed(0)}MB of ${max}MB` : "Press start";
+  $: if (value === max) {
+    helperText = "Done";
+    status = "finished";
+  }
 </script>
 
-<ProgressBar
-  labelText="Upload status"
-  value="{value}"
-  max="{max}"
-  helperText="{helperText}"
-/>
+<Stack gap={8}>
+  <ProgressBar labelText="Upload status" {value} {max} {helperText} {status} />
+  <ButtonSet>
+    <Button
+      disabled={value > 0}
+      on:click={() => {
+        const interval = setInterval(() => {
+          const delta = Math.random() * 10;
 
-<ButtonSet style="margin-top: var(--cds-spacing-08)">
-  <Button
-    disabled="{value > 0}"
-    on:click="{() => {
-      const interval = setInterval(() => {
-        const delta = Math.random() * 10;
-
-        if (value + delta < max) {
-          value += delta;
-        } else {
-          value = max;
-          clearInterval(interval);
-        }
-      }, 30);
-    }}"
-  >
-    Start
-  </Button>
-  <Button
-    kind="tertiary"
-    disabled="{value !== max}"
-    on:click="{() => (value = 0)}"
-  >
-    Reset
-  </Button>
-</ButtonSet>
+          if (value + delta < max) {
+            value += delta;
+          } else {
+            value = max;
+            clearInterval(interval);
+          }
+        }, 30);
+      }}
+    >
+      Start
+    </Button>
+    <Button
+      kind="tertiary"
+      disabled={value !== max}
+      on:click={() => {
+        value = 0;
+        status = "active";
+      }}
+    >
+      Reset
+    </Button>
+  </ButtonSet>
+</Stack>

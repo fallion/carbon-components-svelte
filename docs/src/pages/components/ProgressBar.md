@@ -1,0 +1,115 @@
+---
+description: Progress bars indicate the progress of an operation, such as a file upload or data processing, with determinate and indeterminate states, sizes, and status indicators.
+---
+
+<script>
+  import { ProgressBar, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create an indeterminate progress bar that continuously animates. A progress bar is indeterminate when `value` is left `undefined` while `status` is `"active"`.
+
+<ProgressBar helperText="Checking for updates..." />
+
+## Value
+
+### Percentage
+
+Display progress as a percentage with `value`.
+
+<ProgressBar value={40} labelText="Upload status" helperText="40 MB of 100 MB" />
+
+### Custom max value
+
+Set a custom maximum value for the progress bar.
+
+<ProgressBar value={40} max={200} labelText="Storage used" helperText="40 GB of 200 GB" />
+
+### Value text
+
+Set `valueText` to render a right-aligned value in the label row. Format it yourself; `valueText` also becomes the progress bar's `aria-valuetext`.
+
+<ProgressBar value={40} labelText="Upload status" valueText="40 MB of 100 MB" />
+
+Use the `valueChildren` slot to render custom value content. Also provide `valueText` as its plain-text equivalent for assistive technologies.
+
+<ProgressBar value={40} labelText="Upload status" valueText="40 MB of 100 MB">
+  <strong slot="valueChildren">40 MB / 100 MB</strong>
+</ProgressBar>
+
+## Label
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<ProgressBar hideLabel value={40} labelText="Upload status" helperText="40 MB of 100 MB" />
+
+### Custom label content
+
+Use the `labelChildren` slot to render custom label content, such as a tooltip icon.
+
+<ProgressBar value={40} helperText="40 MB of 100 MB">
+  <svelte:fragment slot="labelChildren">
+    Upload status
+    <TooltipIcon tooltipText="Files are scanned before upload completes." icon={Information} />
+  </svelte:fragment>
+</ProgressBar>
+
+## Size
+
+Use the small size variant for compact layouts.
+
+<ProgressBar size="sm" helperText="Refreshing table data..." />
+
+## Status
+
+Reflect operation outcome with `status`.
+
+### Finished
+
+Show completion status with a checkmark icon.
+
+<ProgressBar value={100} status="finished" labelText="Upload file" helperText="Upload complete" />
+
+### Error
+
+Indicate errors with an error icon and red styling.
+
+<ProgressBar value={0} status="error" labelText="Upload file" helperText="Invalid file format" />
+
+### Status announcements
+
+Status changes are announced to assistive technologies. Set `errorText` and `finishedText` to localize or customize the status text.
+
+<ProgressBar value={100} status="finished" labelText="Upload file" finishedText="Terminé" />
+
+## Variants
+
+Change layout with `kind`.
+
+### Inline
+
+Use the inline variant to display progress without helper text.
+
+<ProgressBar kind="inline" value={40} labelText="Sync progress" helperText="40 of 100 records synced" />
+
+### Indented
+
+Use the indented variant for a more compact layout.
+
+<ProgressBar kind="indented" value={40} labelText="Provision resources" helperText="40 of 100 nodes provisioned" />
+
+### Indented (status)
+
+Combine the indented variant with status indicators.
+
+<ProgressBar kind="indented" status="finished" value={40} labelText="Provision resources" helperText="Provisioning complete" />
+
+## UX example
+
+Demonstrate a complete upload flow with start and end states.
+
+<FileSource src="/framed/ProgressBar/ProgressBarUx" />

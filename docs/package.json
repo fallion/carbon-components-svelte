@@ -1,43 +1,30 @@
 {
   "private": true,
   "scripts": {
-    "dev": "run-p dev:*",
-    "dev:routify": "cross-env NODE_ENV=development routify run",
-    "dev:svite": "vite dev",
-    "build": "run-s build:*",
-    "build:routify": "routify run -b",
-    "build:svite": "vite build"
+    "dev": "bun run format-component-api && bun run --parallel index-docs dev:vite",
+    "dev:vite": "vite dev",
+    "build": "bun run format-component-api && bun run --parallel build:index-docs build:sitemap && bun run build:md-docs && bun run build:vite",
+    "index-docs": "bun scripts/index-docs.ts",
+    "build:index-docs": "bun scripts/index-docs.ts",
+    "build:md-docs": "bun scripts/generate-md-docs.ts",
+    "build:sitemap": "bun scripts/generate-sitemap.ts",
+    "format-component-api": "bun scripts/format-component-api.ts",
+    "build:vite": "vite build",
+    "typecheck:examples": "bun scripts/typecheck-examples.ts",
+    "render:examples": "bun scripts/render-examples.ts",
+    "eval:search": "bun scripts/index-docs.ts && bun scripts/search-eval.ts",
+    "preview": "vite preview",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@sveltech/routify": "^1.9.9",
-    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.33",
-    "autoprefixer": "^10.2.3",
-    "carbon-components": "10.48.0",
-    "carbon-components-10.47": "npm:carbon-components@10.47",
-    "carbon-components-svelte": "../",
-    "carbon-icons-svelte": "^10.44.3",
-    "clipboard-copy": "^4.0.1",
-    "cross-env": "^7.0.3",
-    "mdsvex": "^0.9.8",
-    "npm-run-all": "^4.1.5",
-    "postcss": "^8.2.4",
-    "prettier": "^2.5.1",
-    "prettier-plugin-svelte": "^2.5.1",
-    "prism-svelte": "^0.4.7",
-    "prismjs": "^1.21.0",
-    "remark-slug": "^6.0.0",
-    "sass": "^1.42.1",
-    "svelte": "^3.44.3",
-    "svelte-hmr": "0.11.1",
-    "svelte-preprocess": "^4.3.2",
-    "vite": "^2.7.10"
+    "@ibm/plex-mono": "1.1.0",
+    "@ibm/plex-sans": "1.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "carbon-icons-svelte": "^13.17.0",
+    "carbon-pictograms-svelte": "^13.21.0",
+    "sveast": "^0.9.8",
+    "svelte": "^5.57.3",
+    "vite": "^8.3.5"
   },
-  "routify": {
-    "routifyDir": ".routify",
-    "dynamicImports": true,
-    "extensions": [
-      "svelte",
-      "svx"
-    ]
-  }
+  "type": "module"
 }

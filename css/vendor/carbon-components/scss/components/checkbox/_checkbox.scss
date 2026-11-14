@@ -1,0 +1,407 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../form/form';
+@import '../../globals/scss/css--reset';
+
+/// Checkbox styles
+/// @access private
+/// @group checkbox
+@mixin checkbox {
+  // ccs: v11's metrics through the box's `::after` below: 6px between
+  // checkboxes, none above the first, and a 20px label.
+  .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper {
+    position: relative;
+    margin-bottom: to-rem(6px);
+  }
+
+  .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper:first-of-type {
+    margin-top: 0;
+  }
+
+  // Shift collection of checkboxes up if label is present
+  // to account for the 2px top margin for the first checkbox
+  .#{$prefix}--label + .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper {
+    margin-top: -#{$carbon--spacing-01};
+  }
+
+  .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper:last-of-type {
+    margin-bottom: to-rem(3px);
+  }
+
+  // Checkboxes in a wrapping row. The margins above space a vertical stack;
+  // in a row, the first one's top margin would drop it below the others.
+  .#{$prefix}--checkbox-group--horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: $carbon--spacing-02 $carbon--spacing-07;
+  }
+
+  .#{$prefix}--checkbox-group--horizontal
+    > .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper {
+    flex: none;
+    margin: 0;
+  }
+
+  // Keep the validation message on its own line below the row.
+  .#{$prefix}--checkbox-group--horizontal
+    > .#{$prefix}--checkbox-group__validation-msg {
+    flex-basis: 100%;
+  }
+
+  // Visually, we'll hide the checkbox input and create our own styled version
+  // to match the specs.
+  .#{$prefix}--checkbox {
+    @include hidden;
+
+    //even though its hidden, positioning is for native validation to be aligned to checkbox
+    top: 1.25rem;
+    @include ccs-inset-inline($start: 0.7rem);
+  }
+
+  // The label corresponds to the content inside of the `label` tag. Since we're
+  // creating our own checkbox style, we'll need to position this in order to
+  // accommodate the spacing needed for the checkbox.
+  .#{$prefix}--checkbox-label {
+    @include reset;
+    @include type-style('body-compact-01');
+
+    position: relative;
+    display: flex;
+    min-height: to-rem(20px);
+    padding-top: to-rem(1px);
+    padding-inline-start: to-rem(20px);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .#{$prefix}--checkbox-label-text {
+    padding-inline-start: to-rem(10px);
+  }
+
+  // Required because `$css--reset: true` cannot currently apply to this `::before` and `::after`
+  .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-label::after {
+    box-sizing: border-box;
+  }
+
+  .#{$prefix}--checkbox-label::before {
+    // We need to position the pseudo-element absolutely in the space that we've
+    // created with the padding from the label itself. We position only with
+    // `top` since we don't want the checkbox to be centered vertically with the
+    // text overflows.
+    position: absolute;
+    top: to-rem(2px);
+
+    // According to the spec, we'll want the bounding box for our checkbox to
+    // be 16px. The border size will be what will be updated during the
+    // different checkbox states.
+    width: to-rem(16px);
+    height: to-rem(16px);
+    border: 1px solid $icon-primary;
+    // increase left margin for #6480
+    margin-block: to-rem(1px) to-rem(2px);
+    margin-inline: to-rem(3px) to-rem(2px);
+
+    // Checkboxes with a background color look visually off against a parent container.
+    background-color: transparent;
+    border-radius: 2px;
+    content: '';
+    @include ccs-inset-inline($start: 0);
+  }
+
+  // Create the appearance of the check in the `after` pseudo-element
+  .#{$prefix}--checkbox-label::after {
+    position: absolute;
+    top: to-rem(6.5px);
+    width: to-rem(9px);
+    height: to-rem(5px);
+    border-bottom: 1.5px solid $icon-inverse;
+    border-left: 1.5px solid $icon-inverse;
+    margin-top: to-rem(-3px) #{'/*rtl:0rem*/'};
+    background: none;
+    content: '';
+    transform: scale(0) rotate(-45deg);
+    transform-origin: bottom right #{'/*rtl:center*/'};
+    @include ccs-inset-inline($start: to-rem(7px));
+  }
+
+  .#{$prefix}--checkbox:checked + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox:indeterminate + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-state='true']::before,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-state='mixed']::before {
+    border-width: 1px;
+    border-color: $icon-primary;
+    background-color: $icon-primary;
+  }
+
+  .#{$prefix}--checkbox:checked + .#{$prefix}--checkbox-label::after,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-state='true']::after {
+    transform: scale(1) rotate(-45deg) #{'/*rtl:scale(1.2) rotate3d(.5, 1, 0, 158deg)*/'};
+  }
+
+  .#{$prefix}--checkbox:indeterminate + .#{$prefix}--checkbox-label::after,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-state='mixed']::after {
+    top: to-rem(11px);
+    width: to-rem(8px);
+    border-bottom: 2px solid $icon-inverse;
+    border-left: 0 solid $icon-inverse;
+    transform: scale(1) rotate(0deg);
+  }
+
+  // ccs: server markup can't set `indeterminate`, so Checkbox marks its
+  // label mixed until hydration. A checked and indeterminate box must still
+  // draw the dash, as `:indeterminate` does by coming after `:checked`.
+  .#{$prefix}--checkbox:checked
+    + .#{$prefix}--checkbox-label[data-contained-checkbox-state='mixed']::after {
+    transform: scale(1) rotate(0deg);
+  }
+
+  .#{$prefix}--checkbox:focus + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox:checked:focus + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox:indeterminate:focus + .#{$prefix}--checkbox-label::before {
+    outline: 2px solid $focus;
+    outline-offset: 1px;
+  }
+
+  .#{$prefix}--checkbox:disabled + .#{$prefix}--checkbox-label,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-disabled='true'] {
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--checkbox:disabled + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-disabled='true']::before {
+    border-color: $icon-disabled;
+  }
+
+  .#{$prefix}--checkbox:checked:disabled + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox:indeterminate:disabled
+    + .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-state='true'][data-contained-checkbox-disabled='true']::before,
+  .#{$prefix}--checkbox-label[data-contained-checkbox-state='mixed'][data-contained-checkbox-disabled='true']::before {
+    background-color: $button-disabled;
+  }
+
+
+  .#{$prefix}--checkbox-label-text.#{$prefix}--skeleton {
+    @include skeleton;
+
+    width: to-rem(100px);
+    height: $spacing-05;
+
+    margin-block: to-rem(1px) 0;
+    margin-inline: to-rem(6px) 0;
+  }
+
+  .#{$prefix}--checkbox--inline {
+    position: relative;
+  }
+}
+
+@include exports('checkbox') {
+  @include checkbox;
+}
+
+// carbon-components-svelte patch (formerly css/_checkbox-readonly.scss)
+/// Readonly checkbox styles
+/// @access private
+/// @group checkbox
+@mixin checkbox-readonly {
+  .#{$prefix}--checkbox-wrapper--readonly .#{$prefix}--checkbox-label {
+    cursor: default;
+  }
+
+  .#{$prefix}--checkbox-wrapper--readonly .#{$prefix}--checkbox-label-text {
+    cursor: text;
+    user-select: text;
+  }
+
+  .#{$prefix}--checkbox-wrapper--readonly
+    .#{$prefix}--checkbox
+    + .#{$prefix}--checkbox-label::before {
+    border-color: $icon-secondary;
+  }
+
+  .#{$prefix}--checkbox-wrapper--readonly
+    .#{$prefix}--checkbox:checked
+    + .#{$prefix}--checkbox-label::before {
+    border: 1px solid $icon-secondary;
+    background: transparent;
+  }
+
+  .#{$prefix}--checkbox-wrapper--readonly
+    .#{$prefix}--checkbox:checked
+    + .#{$prefix}--checkbox-label::after {
+    border-color: $text-primary;
+  }
+}
+
+@include exports('checkbox-readonly') {
+  @include checkbox-readonly;
+}
+
+// carbon-components-svelte patch (formerly css/_checkbox-validation.scss)
+// Checkbox/CheckboxGroup `invalid`/`warn` states. v10 ships none of this
+// (`grep` for `checkbox…--invalid` under carbon-components' checkbox SCSS
+// returns nothing) - ported from Carbon React's real @carbon/styles
+// `_checkbox.scss`, translated to this repo's `to-rem()`/`$carbon--spacing-*`
+// conventions.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Checkbox/CheckboxGroup invalid and warning states.
+/// @access private
+/// @group components
+@mixin checkbox-validation {
+  .#{$prefix}--checkbox-group[data-invalid] .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-wrapper--invalid .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-wrapper--invalid
+    .#{$prefix}--checkbox:checked
+    + .#{$prefix}--checkbox-label::before {
+    border: 1px solid $support-error;
+  }
+
+  // A checkbox individually marked invalid inside a group defers to the
+  // group's own state: its message is hidden, and its border resets to
+  // normal unless the group itself is also invalid.
+  .#{$prefix}--checkbox-group
+    .#{$prefix}--checkbox-wrapper--invalid
+    > .#{$prefix}--checkbox__validation-msg,
+  .#{$prefix}--checkbox-group
+    .#{$prefix}--checkbox-wrapper--warning
+    > .#{$prefix}--checkbox__validation-msg,
+  .#{$prefix}--checkbox-group
+    .#{$prefix}--checkbox-wrapper
+    > .#{$prefix}--form__helper-text {
+    display: none;
+  }
+
+  .#{$prefix}--checkbox-group:not(.#{$prefix}--checkbox-group[data-invalid])
+    .#{$prefix}--checkbox-wrapper--invalid
+    .#{$prefix}--checkbox-label::before,
+  .#{$prefix}--checkbox-group:not(.#{$prefix}--checkbox-group[data-invalid])
+    .#{$prefix}--checkbox-wrapper--invalid
+    .#{$prefix}--checkbox:checked
+    + .#{$prefix}--checkbox-label::before {
+    border: 1px solid $icon-primary;
+  }
+
+  .#{$prefix}--checkbox-group__validation-msg,
+  .#{$prefix}--checkbox__validation-msg {
+    display: none;
+    align-items: flex-start;
+    inline-size: 100%;
+    margin-block-start: $carbon--spacing-02;
+  }
+
+  .#{$prefix}--checkbox__invalid-icon {
+    margin: to-rem(1px) to-rem(1px) 0 to-rem(3px);
+    fill: $support-error;
+    min-inline-size: to-rem(16px);
+  }
+
+  .#{$prefix}--checkbox__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--checkbox__invalid-icon--warning path:first-of-type {
+    fill: $carbon__black-100;
+  }
+
+  .#{$prefix}--checkbox-group--invalid
+    .#{$prefix}--checkbox-group__validation-msg,
+  .#{$prefix}--checkbox-group--warning
+    .#{$prefix}--checkbox-group__validation-msg,
+  .#{$prefix}--checkbox-wrapper--invalid
+    > .#{$prefix}--checkbox__validation-msg,
+  .#{$prefix}--checkbox-wrapper--warning
+    > .#{$prefix}--checkbox__validation-msg {
+    display: flex;
+  }
+
+  .#{$prefix}--checkbox-group--invalid
+    .#{$prefix}--checkbox-group__validation-msg
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--checkbox-group--warning
+    .#{$prefix}--checkbox-group__validation-msg
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--checkbox-wrapper--invalid
+    .#{$prefix}--checkbox__validation-msg
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--checkbox-wrapper--warning
+    .#{$prefix}--checkbox__validation-msg
+    .#{$prefix}--form-requirement {
+    display: block;
+    overflow: visible;
+    margin-block-start: 0;
+    margin-inline-start: $carbon--spacing-03;
+    max-block-size: 100%;
+  }
+
+  .#{$prefix}--checkbox-group--invalid
+    .#{$prefix}--checkbox-group__validation-msg
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--checkbox-wrapper--invalid
+    .#{$prefix}--checkbox__validation-msg
+    .#{$prefix}--form-requirement {
+    color: $text-error;
+  }
+}
+
+@include exports("checkbox-validation") {
+  @include checkbox-validation;
+}
+
+// carbon-components-svelte patch
+// `noMargin`: no outer margin. The margins above space a stack of checkboxes
+// by DOM position, so a checkbox alone in a cell or sharing a row with other
+// content picks up a stack's top and bottom margins it has no use for. The
+// extra class wins over those rules by order.
+@mixin checkbox-no-margin {
+  .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper.#{$prefix}--checkbox-wrapper--no-margin {
+    margin: 0;
+  }
+}
+
+@include exports("checkbox-no-margin") {
+  @include checkbox-no-margin;
+}
+
+// carbon-components-svelte patch (checkbox-forced-colors)
+// Forced-colors mode paints a disabled checkbox like an enabled one: the
+// lighter label, box and check all become `CanvasText`. They read
+// `GrayText`, as a disabled TreeView node does.
+
+/// Disabled checkbox in forced-colors mode.
+/// @access private
+/// @group checkbox
+@mixin checkbox-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--checkbox:disabled + .#{$prefix}--checkbox-label,
+    .#{$prefix}--checkbox-label[data-contained-checkbox-disabled="true"] {
+      color: GrayText;
+    }
+
+    .#{$prefix}--checkbox:disabled + .#{$prefix}--checkbox-label::before,
+    .#{$prefix}--checkbox:disabled + .#{$prefix}--checkbox-label::after,
+    .#{$prefix}--checkbox-label[data-contained-checkbox-disabled="true"]::before,
+    .#{$prefix}--checkbox-label[data-contained-checkbox-disabled="true"]::after {
+      border-color: GrayText;
+    }
+  }
+}
+
+@include exports("checkbox-forced-colors") {
+  @include checkbox-forced-colors;
+}

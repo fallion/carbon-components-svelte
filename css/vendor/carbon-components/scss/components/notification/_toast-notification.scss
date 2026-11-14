@@ -1,0 +1,373 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/component-tokens';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--reset';
+@import 'mixins';
+@import 'tokens';
+
+/// Toast notification styles
+/// @access private
+/// @group notification
+@mixin toast-notifications {
+  .#{$prefix}--toast-notification {
+    @include reset;
+
+    display: flex;
+    width: to-rem(288px);
+    // ccs: no wider than its container, at either width.
+    max-width: 100%;
+    height: auto;
+    padding-inline-start: $carbon--spacing-05;
+    @if not feature-flag-enabled('enable-v11-release') {
+      margin-top: $carbon--spacing-03;
+      margin-inline-end: $carbon--spacing-05;
+      margin-bottom: $carbon--spacing-03;
+    }
+
+    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.2);
+    color: $text-inverse;
+
+    @if not feature-flag-enabled('enable-v11-release') {
+      &:first-child {
+        margin-top: $carbon--spacing-05;
+      }
+    }
+
+    @include carbon--breakpoint(max) {
+      width: to-rem(352px);
+    }
+  }
+
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__details {
+    @include notification--inverse-content;
+  }
+
+  .#{$prefix}--toast-notification--high-contrast a { // ccs: flatten
+    color: $link-inverse;
+  }
+
+  // Hover, active and visited keep the weight the old `:not()` rule had,
+  // so the `.bx--link` state colors still lose to them.
+  .#{$prefix}--toast-notification--high-contrast a:hover, // ccs: specificity
+  .#{$prefix}--toast-notification--high-contrast a:active, // ccs: specificity
+  .#{$prefix}--toast-notification--high-contrast a:visited { // ccs: specificity
+    color: $link-inverse;
+  }
+
+  // ccs: underlined at rest. In a low-contrast notification on g90 and
+  // g100, the link color is too close to the text's to mark a link alone.
+  .#{$prefix}--toast-notification a {
+    text-decoration: underline;
+  }
+
+  // ccs: `:active` too, so a pressed link shows this ring rather than the
+  // `.#{$prefix}--link:active` one, as in v11
+  .#{$prefix}--toast-notification a:focus,
+  .#{$prefix}--toast-notification a:active {
+    outline: 1px solid $link-inverse;
+  }
+
+  .#{$prefix}--toast-notification.#{$prefix}--toast-notification--low-contrast
+    a:focus,
+  .#{$prefix}--toast-notification.#{$prefix}--toast-notification--low-contrast
+    a:active {
+    @include focus-outline;
+  }
+
+  .#{$prefix}--toast-notification--low-contrast {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--toast-notification--error {
+    @include notification--experimental($support-error-inverse, $background-inverse);
+  }
+
+  .#{$prefix}--toast-notification--low-contrast-error { // ccs: flatten
+    @include notification--experimental(
+      $support-error,
+      get-token-value($notification-colors, 'notification-background-error')
+    );
+  }
+
+  .#{$prefix}--toast-notification--success {
+    @include notification--experimental($support-success-inverse, $background-inverse);
+  }
+
+  .#{$prefix}--toast-notification--low-contrast-success { // ccs: flatten
+    @include notification--experimental(
+      $support-success,
+      get-token-value($notification-colors, 'notification-background-success')
+    );
+  }
+
+  .#{$prefix}--toast-notification--info,
+  .#{$prefix}--toast-notification--info-square {
+    @include notification--experimental($support-info-inverse, $background-inverse);
+  }
+
+  .#{$prefix}--toast-notification--low-contrast-info, // ccs: flatten
+  .#{$prefix}--toast-notification--low-contrast-info-square { // ccs: flatten
+    @include notification--experimental(
+      $support-info,
+      get-token-value($notification-colors, 'notification-background-info')
+    );
+  }
+
+  .#{$prefix}--toast-notification--warning,
+  .#{$prefix}--toast-notification--warning-alt {
+    @include notification--experimental($support-warning-inverse, $background-inverse);
+  }
+
+  .#{$prefix}--toast-notification--low-contrast-warning, // ccs: flatten
+  .#{$prefix}--toast-notification--low-contrast-warning-alt { // ccs: flatten
+    @include notification--experimental(
+      $support-warning,
+      get-token-value($notification-colors, 'notification-background-warning')
+    );
+  }
+
+  @include notification--icon-fills('toast');
+
+  .#{$prefix}--toast-notification--warning
+    .#{$prefix}--toast-notification__icon
+    path[data-icon-path='inner-path'],
+  .#{$prefix}--toast-notification--warning-alt
+    .#{$prefix}--toast-notification__icon
+    path[data-icon-path='inner-path'] {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--toast-notification__icon {
+    flex-shrink: 0;
+    margin-top: $carbon--spacing-05;
+    margin-inline-end: $carbon--spacing-05;
+  }
+
+  @if feature-flag-enabled('enable-v11-release') {
+    .#{$prefix}--toast-notification__content {
+      @include type-style('body-compact-01');
+
+      margin-top: $carbon--spacing-05;
+      margin-inline-end: $carbon--spacing-05;
+      margin-bottom: $carbon--spacing-05;
+      word-break: break-word;
+    }
+
+    .#{$prefix}--toast-notification--low-contrast
+      .#{$prefix}--toast-notification__content {
+      color: $text-primary;
+    }
+  } @else {
+    .#{$prefix}--toast-notification__details {
+      margin-inline-end: $carbon--spacing-05;
+    }
+  }
+
+  .#{$prefix}--toast-notification__close-button {
+    @include focus-outline('reset');
+
+    display: flex;
+    width: to-rem(48px);
+    min-width: to-rem(48px);
+    height: to-rem(48px);
+    min-height: to-rem(48px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    margin-inline-start: auto;
+    background-color: transparent;
+    cursor: pointer;
+    transition: background-color $transition--base;
+
+    &:focus {
+      outline: 2px solid $focus-inverse;
+      outline-offset: -2px;
+    }
+  }
+
+  .#{$prefix}--toast-notification__close-icon { // ccs: flatten
+    fill: $icon-inverse;
+  }
+
+  .#{$prefix}--toast-notification--low-contrast
+    .#{$prefix}--toast-notification__close-button:focus {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--toast-notification__close-icon--low-contrast { // ccs: flatten
+    fill: $icon-primary;
+  }
+
+  @if not feature-flag-enabled('enable-v11-release') {
+    .#{$prefix}--toast-notification__title {
+      @include type-style('heading-compact-01', $omit: (font-weight));
+
+      margin-top: $carbon--spacing-05;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .#{$prefix}--toast-notification__subtitle {
+      @include type-style('body-compact-01');
+
+      margin-top: 0;
+      margin-bottom: $carbon--spacing-05;
+      color: $text-inverse;
+      word-break: break-word;
+    }
+
+    .#{$prefix}--toast-notification--low-contrast
+      .#{$prefix}--toast-notification__subtitle {
+      color: $text-primary;
+    }
+
+    // The title is omitted when empty; keep its top spacing.
+    .#{$prefix}--toast-notification__subtitle:first-child,
+    .#{$prefix}--toast-notification__caption:first-child {
+      margin-top: $carbon--spacing-05;
+    }
+
+    .#{$prefix}--toast-notification__caption {
+      @include type-style('body-compact-01');
+
+      padding-top: $carbon--spacing-03;
+      margin-bottom: $carbon--spacing-05;
+      color: $text-inverse;
+    }
+
+    .#{$prefix}--toast-notification--low-contrast
+      .#{$prefix}--toast-notification__caption {
+      color: $text-primary;
+    }
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--toast-notification {
+    @include high-contrast-mode('outline');
+  }
+  .#{$prefix}--toast-notification__close-button:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  .#{$prefix}--toast-notification .#{$prefix}--toast-notification__close-icon {
+    @include high-contrast-mode('icon-fill');
+  }
+  /* stylelint-enable */
+}
+
+@include exports('toast-notifications') {
+  @include toast-notifications;
+}
+
+// carbon-components-svelte patch
+// The `actions` slot, as in v11's actionable toast: a small tertiary button
+// under the text. Tertiary colors are built for the page background, so the
+// dark high-contrast toast flips them with v11's notification tokens.
+/// @access private
+/// @group notification
+@mixin toast-notification-actions {
+  .#{$prefix}--toast-notification__actions {
+    display: flex;
+    margin-top: $carbon--spacing-06;
+    margin-bottom: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--toast-notification__action-button {
+    padding-inline: $carbon--spacing-05;
+  }
+
+  // `:hover` restates the resting colors, so the base tertiary hover
+  // can't paint a tap on a touch screen.
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__action-button,
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__action-button:hover {
+    border-color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse"
+    );
+    background-color: transparent;
+    color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse"
+    );
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--toast-notification--high-contrast
+      .#{$prefix}--toast-notification__action-button:hover {
+      background-color: get-token-value(
+        $notification-colors,
+        "notification-action-tertiary-inverse-hover"
+      );
+      color: get-token-value(
+        $notification-colors,
+        "notification-action-tertiary-inverse-text"
+      );
+    }
+  }
+
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__action-button:focus {
+    border-color: $focus-inverse;
+    background-color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse"
+    );
+    box-shadow:
+      inset 0 0 0 $button-outline-width $focus-inverse,
+      inset 0 0 0 $button-border-width $background-inverse;
+    color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse-text"
+    );
+  }
+
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__action-button:active {
+    border-color: transparent;
+    background-color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse-active"
+    );
+    color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse-text"
+    );
+  }
+
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__action-button:disabled,
+  .#{$prefix}--toast-notification--high-contrast
+    .#{$prefix}--toast-notification__action-button.#{$prefix}--btn--disabled {
+    border-color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse-text-on-color-disabled"
+    );
+    background-color: transparent;
+    box-shadow: none;
+    color: get-token-value(
+      $notification-colors,
+      "notification-action-tertiary-inverse-text-on-color-disabled"
+    );
+  }
+}
+
+@include exports("toast-notification-actions") {
+  @include toast-notification-actions;
+}

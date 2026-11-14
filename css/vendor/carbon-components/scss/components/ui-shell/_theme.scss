@@ -1,0 +1,42 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+// ccs: v10 hardcodes the UI Shell palette (always-dark header and panel,
+// always-white side nav). Every shell token below now resolves to a theme
+// token so the shell follows the page theme; css/_ui-shell.scss used to get
+// the same result by restating each rule with doubled selectors. Tokens no
+// vendored rule references keep their original literal.
+@import '../../globals/scss/colors';
+@import '../../globals/scss/theme';
+
+$shell-header-bg-01: $background;
+$shell-header-bg-02: $background-hover;
+$shell-header-bg-03: $background-active;
+$shell-header-bg-04: $background-hover;
+$shell-header-bg-06: $layer;
+$shell-header-border-01: $border-subtle;
+$shell-header-focus: $focus;
+$shell-header-text-01: $text-primary;
+$shell-header-text-02: $text-secondary;
+$shell-header-icon-01: $icon-secondary;
+$shell-header-icon-02: $icon-primary;
+$shell-header-icon-03: $icon-secondary;
+
+$shell-panel-bg-01: $layer;
+$shell-panel-bg-02: $background-hover;
+$shell-panel-bg-03: $background-active;
+$shell-panel-bg-04: $layer-selected;
+$shell-panel-border: $border-subtle;
+$shell-panel-text-01: $text-secondary;
+$shell-panel-text-02: $text-primary;
+$shell-panel-focus: $focus;
+
+$shell-side-nav-bg-01: $background;
+$shell-side-nav-bg-04: $background-hover;
+$shell-side-nav-text-01: $text-secondary;
+$shell-side-nav-icon-01: $icon-secondary;
+$shell-side-nav-accent-01: $border-interactive;

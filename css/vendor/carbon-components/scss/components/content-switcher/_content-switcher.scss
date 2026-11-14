@@ -1,0 +1,579 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+
+/// Content switcher styles
+/// @access private
+/// @group content-switcher
+@mixin content-switcher {
+  .#{$prefix}--content-switcher {
+    display: flex;
+    width: 100%;
+    height: to-rem(40px);
+    // ccs: start-aligned, not space-evenly. Text switches fill the row
+    // either way; icon switches, at fixed widths, sit together in
+    // server-rendered markup, before the switcher is marked icon-only.
+    justify-content: flex-start;
+    // ccs: v11's 1px outline around the switcher. The switches' own borders
+    // cover it, except above and below the selected switch's rounded fill.
+    border-radius: to-rem(4px);
+    outline: 1px solid $border-inverse;
+    outline-offset: -1px;
+  }
+
+  .#{$prefix}--content-switcher--low-contrast {
+    outline-color: $border-strong; // ccs: as v11, to match its switches
+  }
+
+  .#{$prefix}--content-switcher--sm {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--content-switcher--xl {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--content-switcher-btn {
+    @include reset;
+    @include type-style('body-compact-01');
+    @include focus-outline('reset');
+
+    position: relative;
+    display: inline-flex;
+    overflow: hidden;
+    width: 100%;
+    align-items: center;
+    padding: $carbon--spacing-03 $carbon--spacing-05;
+    border: none;
+    border-top: to-rem(1px) solid $border-inverse;
+    border-bottom: to-rem(1px) solid $border-inverse;
+    margin: 0;
+    background-color: transparent;
+    color: $text-secondary;
+    text-align: left;
+    text-decoration: none;
+    // ccs: hover/selected/disabled change background-color and color.
+    // Omit border-color/box-shadow so the :focus ring snaps on; avoid
+    // `all` so the browser doesn't interpolate the rest of the
+    // animatable property set.
+    transition: background-color $duration--moderate-01 motion(standard, productive),
+      color $duration--moderate-01 motion(standard, productive);
+    white-space: nowrap;
+
+    &::after {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: $layer-selected-inverse;
+      border-radius: to-rem(4px); // ccs: v11's rounded selected fill
+      content: '';
+      transform: scaleY(0);
+    }
+
+    &:disabled::after {
+      display: none;
+    }
+
+    &:focus {
+      z-index: 3;
+      border-color: $focus;
+      box-shadow: inset 0 0 0 2px $focus, inset 0 0 0 3px $focus-inset;
+    }
+
+    &:focus::after {
+      clip-path: inset(3px 3px 3px 3px);
+    }
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    &:hover,
+    &:active {
+      z-index: 3;
+      background-color: $layer-hover;
+      color: $text-primary;
+    }
+
+    &:disabled {
+      border-color: $border-disabled;
+      background-color: transparent;
+      color: $text-disabled;
+
+      &:hover {
+        cursor: not-allowed;
+      }
+    }
+
+    &:disabled:first-child,
+    &:disabled:last-child {
+      border-color: $border-disabled;
+    }
+  }
+
+  .#{$prefix}--content-switcher-btn:first-child {
+    border-left: to-rem(1px) solid $border-inverse;
+    border-bottom-left-radius: to-rem(4px);
+    border-top-left-radius: to-rem(4px);
+  }
+
+  .#{$prefix}--content-switcher-btn:last-child {
+    border-right: to-rem(1px) solid $border-inverse;
+    border-bottom-right-radius: to-rem(4px);
+    border-top-right-radius: to-rem(4px);
+  }
+
+  // `border-color: transparent` (not `border: 0`) keeps the 1px border-width
+  // that unselected buttons carry (including the edge-only left/right border
+  // on first/last child), so selecting a button doesn't change its border-box
+  // size and shift the label.
+  .#{$prefix}--content-switcher--selected,
+  .#{$prefix}--content-switcher--selected:first-child,
+  .#{$prefix}--content-switcher--selected:last-child {
+    border-color: transparent;
+  }
+
+  .#{$prefix}--content-switcher-btn::before {
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    display: block;
+    width: to-rem(1px);
+    height: to-rem(16px);
+    background-color: $border-subtle;
+    content: '';
+  }
+
+  .#{$prefix}--content-switcher-btn:first-of-type::before {
+    display: none;
+  }
+
+  .#{$prefix}--content-switcher-btn:focus::before,
+  .#{$prefix}--content-switcher-btn:focus
+    + .#{$prefix}--content-switcher-btn::before,
+  .#{$prefix}--content-switcher-btn:hover::before,
+  .#{$prefix}--content-switcher-btn:hover
+    + .#{$prefix}--content-switcher-btn::before,
+  .#{$prefix}--content-switcher--selected::before,
+  .#{$prefix}--content-switcher--selected
+    + .#{$prefix}--content-switcher-btn::before {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--content-switcher-btn:disabled::before,
+  .#{$prefix}--content-switcher-btn:disabled:hover
+    + .#{$prefix}--content-switcher-btn:disabled::before {
+    background-color: $border-disabled;
+  }
+
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected:disabled
+    + .#{$prefix}--content-switcher-btn::before,
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected:disabled:hover
+    + .#{$prefix}--content-switcher-btn::before {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--content-switcher__label {
+    z-index: 1;
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ccs: an icon before the text in a Switch's slot (`<Switch><Icon /> Text
+  // </Switch>`). An inline svg sits on the text baseline, about 3px above
+  // the text's center. Top-aligning it in the 18px line box and pushing it
+  // down 1px centers the 16px icon. The label stays inline, so the text
+  // keeps its ellipsis; the slot's space plus the margin make an 8px gap.
+  .#{$prefix}--content-switcher__label > svg:first-child {
+    margin-top: to-rem(1px);
+    margin-inline-end: $carbon--spacing-02;
+    vertical-align: top;
+  }
+
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected {
+    z-index: 3;
+    // ccs: the rounded `::after` is the fill, as in v11. A button fill
+    // would square its corners, and show behind it on hover.
+    background-color: transparent;
+    color: $text-inverse;
+
+    &::after {
+      transform: scaleY(1);
+    }
+
+    &:disabled {
+      background-color: $layer-selected-disabled;
+      color: $text-disabled;
+    }
+  }
+
+  // Windows HCM fix
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--content-switcher-btn:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  // ccs: ContentSwitcherSkeleton: a bar per switch, sharing the
+  // switcher's width and height, 1px apart where the switches' dividers
+  // are. Bars of their own: a switch's `::before` is its divider.
+  .#{$prefix}--content-switcher.#{$prefix}--skeleton {
+    gap: 1px;
+    outline: 0;
+  }
+
+  .#{$prefix}--content-switcher__skeleton-switch {
+    @include skeleton;
+
+    flex: 1 1 0;
+    height: 100%;
+  }
+
+  .#{$prefix}--content-switcher--icon-only .#{$prefix}--content-switcher__skeleton-switch {
+    flex: 0 0 auto;
+    width: to-rem(40px);
+  }
+
+  .#{$prefix}--content-switcher--icon-only.#{$prefix}--content-switcher--sm
+    .#{$prefix}--content-switcher__skeleton-switch {
+    width: to-rem(32px);
+  }
+
+  .#{$prefix}--content-switcher--icon-only.#{$prefix}--content-switcher--xl
+    .#{$prefix}--content-switcher__skeleton-switch {
+    width: to-rem(48px);
+  }
+}
+
+@include exports('content-switcher') {
+  @include content-switcher;
+}
+
+// carbon-components-svelte patch (content-switcher-auto-width)
+// Switches split the width evenly by default, so long labels truncate while
+// short ones leave empty space. Auto width sizes each switch to its label and
+// shrinks the switcher to fit. Switches still shrink (and ellipsize) when the
+// container is narrower than the content. Emitted before icon-only so its
+// fixed square widths win by source order.
+
+/// Auto-width content switcher.
+/// @access private
+/// @group content-switcher
+@mixin content-switcher-auto-width {
+  .#{$prefix}--content-switcher--auto-width {
+    width: fit-content;
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+
+  .#{$prefix}--content-switcher--auto-width .#{$prefix}--content-switcher-btn {
+    width: auto;
+    flex: 0 1 auto;
+  }
+}
+
+@include exports('content-switcher-auto-width') {
+  @include content-switcher-auto-width;
+}
+
+// carbon-components-svelte patch (formerly css/_content-switcher.scss)
+@import "carbon-components/scss/globals/scss/typography";
+
+/// Icon-only content switcher (Carbon React IconSwitch).
+/// v10 has no icon-only variant. Tooltip label renders in a portal (`Switch.svelte`).
+/// @access private
+/// @group components
+@mixin content-switcher-icon-only {
+  // ccs: the switcher infers `--icon-only` once its switches register,
+  // after it renders. The `iconOnly` prop sets it from the first render,
+  // so server-rendered markup fits its switches too.
+  .#{$prefix}--content-switcher--icon-only {
+    width: fit-content;
+  }
+
+  // ccs: the switch styles key on `--icon`, which each Switch sets as it
+  // renders, not the switcher's `--icon-only`, which is known only once
+  // the switches register: server-rendered markup lacked it, so icon
+  // switches drew at text widths and the selected fill hid its icon until
+  // hydration.
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon {
+    width: to-rem(40px);
+    justify-content: center;
+    padding: 0;
+  }
+
+  .#{$prefix}--content-switcher--sm
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon {
+    width: to-rem(32px);
+  }
+
+  .#{$prefix}--content-switcher--xl
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon {
+    width: to-rem(48px);
+  }
+
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon svg {
+    // The svg is a flex item, so z-index lifts it above the button's
+    // `::after` selected-state fill overlay without needing `position`.
+    z-index: 1;
+    fill: $icon-primary;
+    transition: fill $duration--fast-01 motion(standard, productive);
+  }
+
+  // xl: 20px icon (Carbon React lg); sm/default stay 16px.
+  .#{$prefix}--content-switcher--xl
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon
+    svg {
+    block-size: to-rem(20px);
+    inline-size: to-rem(20px);
+  }
+
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon.#{$prefix}--content-switcher--selected
+    svg {
+    fill: $icon-inverse;
+  }
+
+  .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon:disabled
+    svg {
+    fill: $icon-disabled;
+  }
+}
+
+@include exports('content-switcher-icon-only') {
+  @include content-switcher-icon-only;
+}
+
+// carbon-components-svelte patch (formerly css/_content-switcher-low-contrast.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/functions";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/component-tokens";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "tokens";
+
+/// Low contrast content switcher (Carbon React lowContrast).
+/// Selected segment becomes an outlined card; unselected buttons stay
+/// transparent. The fills read Carbon v11's `content-switcher-*` tokens: a
+/// gray container in the light themes and a transparent one in the dark
+/// themes, where the hover and the selected card are translucent grays.
+/// @access private
+/// @group components
+@mixin content-switcher-low-contrast {
+  $background: get-token-value($content-switcher-colors, "content-switcher-background");
+  $background-hover: get-token-value(
+    $content-switcher-colors,
+    "content-switcher-background-hover"
+  );
+  $selected: get-token-value($content-switcher-colors, "content-switcher-selected");
+
+  .#{$prefix}--content-switcher--low-contrast {
+    // Match the end switches' 4px corners so the gray fill doesn't show
+    // outside a selected end card's rounded ring.
+    border-radius: to-rem(4px);
+    background-color: $background;
+
+    .#{$prefix}--content-switcher-btn {
+      border-color: $border-strong;
+      color: $text-secondary;
+
+      &::before {
+        background-color: $border-strong;
+      }
+
+      &::after {
+        border-radius: to-rem(4px);
+        background-color: $selected;
+        box-shadow: inset 0 0 0 to-rem(1px) $border-inverse;
+      }
+
+      &:hover,
+      &:active {
+        background-color: $background-hover;
+        color: $text-primary;
+      }
+
+      // `background-color` must be re-asserted so a disabled switch does not
+      // keep the hover fill (the `:hover`/`:disabled` rules are equal
+      // specificity; this resets it).
+      &:disabled {
+        background-color: transparent;
+        color: $text-disabled;
+      }
+
+      // Carbon's first/last disabled rules set `border-color` at equal
+      // specificity and win by source order, so re-assert the disabled border
+      // for every position. v10 `$border-disabled` is lighter than the
+      // container (invisible); `$text-disabled` matches React's v11
+      // `border-disabled` (gray 30).
+      &:disabled,
+      &:disabled:first-child,
+      &:disabled:last-child {
+        border-color: $icon-disabled;
+      }
+    }
+
+    // The selected button keeps its 1px border slot (transparent) so the label
+    // doesn't shift, and the resting `border-color: $border-strong` above outranks
+    // Carbon's selected reset, so re-assert it here. The card ring is an
+    // outline inset over that slot rather than an `::after` shadow: `::after`
+    // fills only the padding box, so a ring there sat 1px inside the
+    // container edge and read as a second outline.
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected {
+      border-color: transparent;
+      border-radius: to-rem(4px);
+      outline: to-rem(1px) solid $border-inverse;
+      outline-offset: to-rem(-1px);
+      background-color: transparent;
+      color: $text-primary;
+      font-weight: 600;
+
+      // The selected button is a stacking context (`z-index: 3`), and
+      // Chrome paints its own outline before positioned children, so the
+      // fill would cover the ring's sides on middle switches (which have no
+      // side border slot). A negative z-index keeps the fill under the
+      // outline and the label.
+      &::after {
+        z-index: -1;
+        box-shadow: none;
+      }
+
+      // Carbon's 2px focus ring as one outline; splitting it across the
+      // outline and an `::after` shadow left a seam where their corner
+      // curves diverged.
+      &:focus {
+        box-shadow: none;
+        outline: to-rem(2px) solid $focus;
+        outline-offset: to-rem(-2px);
+      }
+
+      &:focus::after {
+        box-shadow: none;
+        clip-path: none;
+      }
+
+      &:disabled {
+        border-color: transparent;
+        outline-color: $icon-disabled;
+        color: $text-disabled;
+      }
+    }
+
+    // The active card carries its own outline, so suppress the dividers on both
+    // sides of it (its own and the next sibling's). The resting `&::before` rule
+    // above outranks Carbon's selected resets, so they must be re-asserted here
+    // at higher specificity.
+    .#{$prefix}--content-switcher--selected::before,
+    .#{$prefix}--content-switcher--selected
+      + .#{$prefix}--content-switcher-btn::before {
+      background-color: transparent;
+    }
+
+    // Unselected icon-only switches use $icon-secondary (Carbon React lowContrast).
+    & .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon
+      svg {
+      fill: $icon-secondary;
+    }
+
+    // Selected icon-only switches use $icon-primary on the light card
+    // (overrides the $icon-secondary fill above).
+    & .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon.#{$prefix}--content-switcher--selected
+      svg {
+      fill: $icon-primary;
+    }
+  }
+}
+
+@include exports("content-switcher-low-contrast") {
+  @include content-switcher-low-contrast;
+}
+
+// carbon-components-svelte patch (content-switcher-forced-colors)
+// The selected switch is a background fill (on the button and its `::after`
+// overlay), which forced-colors mode repaints as Canvas, so selected and
+// unselected switches looked identical.
+//
+// `forced-color-adjust: none` brings the real focus styling back (the blue
+// `box-shadow`, `border-color: $focus`, and on the low-contrast `::after` an
+// inset ring), and the high-contrast `Highlight` outline would sit on the
+// `Highlight` fill. A focused selected switch therefore drops the real
+// shadows and shows an inset `HighlightText` ring, which contrasts with the
+// fill. The switcher ancestor makes these outrank the low-contrast focus rules
+// regardless of emit order.
+//
+// Forced colors also paint the transparent 2px outline that
+// `focus-outline("reset")` leaves on a resting switch. Each unselected switch
+// drew a box inside the switcher's edge, with a double line between
+// switches, and the 1px `Highlight` focus ring was thinner than the boxes
+// around it. A resting switch drops the outline, and the focus ring is 2px.
+// The divider between switches is a background, which forced colors paint
+// `Canvas`, so it opts out of forcing and reads `CanvasText`, or `GrayText`
+// when disabled. The rules that hide it next to a selected, focused or
+// hovered switch outrank these and keep it transparent.
+
+/// Selected content switcher in forced-colors mode.
+/// @access private
+/// @group content-switcher
+@mixin content-switcher-forced-colors {
+  @media (forced-colors: active) {
+    // Ties the base rules and wins on order.
+    .#{$prefix}--content-switcher-btn {
+      outline-style: none;
+    }
+
+    .#{$prefix}--content-switcher-btn:focus {
+      outline-width: 2px;
+    }
+
+    .#{$prefix}--content-switcher-btn::before {
+      forced-color-adjust: none;
+      background-color: CanvasText;
+    }
+
+    .#{$prefix}--content-switcher-btn:disabled::before {
+      background-color: GrayText;
+    }
+
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected:not(:disabled) {
+      forced-color-adjust: none;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected:not(:disabled)::after {
+      background-color: Highlight;
+    }
+
+    .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher-btn--icon.#{$prefix}--content-switcher--selected:not(:disabled)
+      svg {
+      fill: HighlightText;
+    }
+
+    .#{$prefix}--content-switcher .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected:not(:disabled):focus {
+      border-color: Highlight;
+      box-shadow: none;
+      outline: 2px solid HighlightText;
+      outline-offset: -4px;
+    }
+
+    .#{$prefix}--content-switcher .#{$prefix}--content-switcher-btn.#{$prefix}--content-switcher--selected:not(:disabled):focus::after {
+      box-shadow: none;
+    }
+  }
+}
+
+@include exports("content-switcher-forced-colors") {
+  @include content-switcher-forced-colors;
+}

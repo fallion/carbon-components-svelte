@@ -1,0 +1,200 @@
+<script lang="ts">
+  import BigNumber from "carbon-components-svelte/BigNumber/BigNumber.svelte";
+</script>
+
+<BigNumber labelText="Basic" value={42} data-testid="basic" />
+
+<BigNumber labelText="No total" value={42} data-testid="no-total" />
+<BigNumber
+  labelText="Total shown"
+  value={3}
+  total={10}
+  data-testid="total-shown"
+/>
+<BigNumber
+  labelText="Total equal to value"
+  value={999}
+  total={999}
+  data-testid="total-equal"
+/>
+<BigNumber
+  labelText="Total less than value"
+  value={10}
+  total={3}
+  data-testid="total-less"
+/>
+<BigNumber
+  labelText="Total truncates the same as value"
+  value={1000000}
+  total={1040000}
+  data-testid="total-truncated-same"
+/>
+<BigNumber
+  labelText="Force show total"
+  value={999}
+  total={999}
+  forceShowTotal
+  data-testid="force-show-total"
+/>
+
+<BigNumber
+  labelText="Percentage"
+  value={42}
+  percentage
+  data-testid="percentage"
+/>
+<BigNumber
+  labelText="Percentage hides total"
+  value={3}
+  total={10}
+  percentage
+  data-testid="percentage-with-total"
+/>
+
+<BigNumber
+  labelText="Truncate thousands"
+  value={1500}
+  data-testid="truncate-thousands"
+/>
+<BigNumber
+  labelText="Full number"
+  value={1500}
+  fullNumber
+  data-testid="full-number"
+/>
+
+<BigNumber labelText="Trend up" value={42} trend="up" data-testid="trend-up" />
+<BigNumber
+  labelText="Trend down"
+  value={42}
+  trend="down"
+  data-testid="trend-down"
+/>
+<BigNumber labelText="No trend" value={42} data-testid="no-trend" />
+<BigNumber
+  labelText="Trend up, overridden to error"
+  value={42}
+  trend="up"
+  trendColor="error"
+  data-testid="trend-up-error"
+/>
+<BigNumber
+  labelText="Trend down, overridden to success"
+  value={42}
+  trend="down"
+  trendColor="success"
+  data-testid="trend-down-success"
+/>
+<BigNumber
+  labelText="Trend flat"
+  value={42}
+  trend="flat"
+  data-testid="trend-flat"
+/>
+<BigNumber
+  labelText="Trend flat, overridden to error"
+  value={42}
+  trend="flat"
+  trendColor="error"
+  data-testid="trend-flat-error"
+/>
+<BigNumber
+  labelText="Trend description override"
+  value={42}
+  trend="up"
+  trendDescription="Up 12% week over week"
+  data-testid="trend-description"
+/>
+
+<BigNumber
+  labelText="Delta percentage with label"
+  value={128000}
+  delta={4.2}
+  deltaPercentage
+  deltaLabel="vs last week"
+  trend="up"
+  data-testid="delta-percentage"
+/>
+<BigNumber
+  labelText="Delta absolute negative"
+  value={128000}
+  delta={-120}
+  data-testid="delta-negative"
+/>
+<BigNumber
+  labelText="Delta zero"
+  value={128000}
+  delta={0}
+  data-testid="delta-zero"
+/>
+<BigNumber labelText="No delta" value={128000} data-testid="no-delta" />
+
+<BigNumber labelText="Footer" value={42} data-testid="footer">
+  <span>Footer content</span>
+</BigNumber>
+<BigNumber labelText="No footer" value={42} data-testid="no-footer" />
+
+<BigNumber labelText="Action" value={42} total={100} data-testid="action">
+  <a slot="action" href="/reports/latency">View report</a>
+</BigNumber>
+
+<BigNumber labelText="Loading" value={42} loading data-testid="loading" />
+
+<BigNumber
+  labelText="Tooltip"
+  value={42}
+  tooltipDescription="Extra context about this metric"
+  data-testid="tooltip"
+/>
+
+<BigNumber
+  labelText="Default label"
+  value={42}
+  data-testid="label-children-test"
+>
+  <strong slot="labelChildren">Custom label content</strong>
+</BigNumber>
+
+<BigNumber
+  labelText="Currency"
+  value={1250000}
+  locale="en-US"
+  formatOptions={{ style: "currency", currency: "USD" }}
+  data-testid="format-currency"
+/>
+<BigNumber
+  labelText="Unit"
+  value={340}
+  locale="en-US"
+  fullNumber
+  formatOptions={{ style: "unit", unit: "millisecond", unitDisplay: "short" }}
+  data-testid="format-unit"
+/>
+<BigNumber
+  labelText="Custom format"
+  value={7}
+  format={(v) => `${v}h`}
+  data-testid="format-custom"
+/>
+
+<BigNumber
+  labelText="Cache 1"
+  value={1000}
+  locale="en-US"
+  formatOptions={{ style: "currency", currency: "USD" }}
+  data-testid="cache-1"
+/>
+<BigNumber
+  labelText="Cache 2"
+  value={2000}
+  locale="en-US"
+  formatOptions={{ style: "currency", currency: "USD" }}
+  data-testid="cache-2"
+/>
+<BigNumber
+  labelText="Cache 3"
+  value={3000}
+  locale="en-US"
+  formatOptions={{ style: "currency", currency: "USD" }}
+  data-testid="cache-3"
+/>

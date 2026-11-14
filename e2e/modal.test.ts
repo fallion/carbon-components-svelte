@@ -1,0 +1,206 @@
+import { expect, test } from "./helpers/host";
+
+test.describe("Modal", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/modal.html");
+  });
+
+  test("does not show content when closed", async ({ page }) => {
+    const modal = page.locator(".bx--modal");
+    await expect(modal).not.toHaveClass(/is-visible/);
+  });
+
+  test("shows content when opened", async ({ page }) => {
+    await page.getByTestId("open-modal").click();
+
+    await expect(page.locator(".bx--modal")).toHaveClass(/is-visible/);
+    await expect(page.getByTestId("modal-body")).toHaveText("Modal content");
+    await expect(
+      page.getByRole("dialog", { name: "Modal title" }),
+    ).toBeVisible();
+  });
+
+  test("closes when close button is clicked", async ({ page }) => {
+    await page.getByTestId("open-modal").click();
+    await expect(page.locator(".bx--modal")).toHaveClass(/is-visible/);
+
+    await page.getByRole("button", { name: "Close the modal" }).click();
+    await expect(page.locator(".bx--modal")).not.toHaveClass(/is-visible/);
+  });
+
+  test("closes with a programmatic trigger when open is set false", async ({
+    page,
+  }) => {
+    await page.getByTestId("open-modal").click();
+    await expect(page.locator(".bx--modal")).toHaveClass(/is-visible/);
+
+    // Set `open = false` from app code (not a built-in close affordance).
+    await page.getByTestId("close-modal-programmatic").click();
+
+    await expect(page.locator(".bx--modal")).not.toHaveClass(/is-visible/);
+    // The deferred `close` dispatch reports the "programmatic" trigger.
+    await expect(page.getByTestId("close-events")).toHaveText("programmatic");
+  });
+
+  test("does not close when mousedown inside modal and mouseup outside", async ({
+    page,
+  }) => {
+    await page.goto("/modal.html?passive");
+    await page.getByTestId("open-modal").click();
+    const modal = page.locator(".bx--modal");
+    await expect(modal).toHaveClass(/is-visible/);
+
+    const container = page.locator(".bx--modal-container");
+    const containerBox = await container.boundingBox();
+    const modalBox = await modal.boundingBox();
+    if (containerBox == null || modalBox == null) {
+      throw new Error("expected modal container and modal bounding boxes");
+    }
+
+    // mousedown inside the modal container, then mouseup on the backdrop
+    await page.mouse.move(
+      containerBox.x + containerBox.width / 2,
+      containerBox.y + containerBox.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(modalBox.x + 5, modalBox.y + 5);
+    await page.mouse.up();
+
+    await expect(modal).toHaveClass(/is-visible/);
+  });
+
+  test("does not close when clicking a native select inside the modal (#3710)", async ({
+    page,
+  }) => {
+    await page.goto("/modal.html?passive");
+    await page.getByTestId("open-modal").click();
+    const modal = page.locator(".bx--modal");
+    await expect(modal).toHaveClass(/is-visible/);
+
+    const select = page.getByTestId("modal-select");
+    await select.click();
+    // Chromium fires a second, unpaired `mouseup` on a native <select> when its
+    // (browser-native, not in the DOM) options popup closes — confirmed via
+    // direct event instrumentation: mousedown -> mouseup -> click -> mouseup.
+    // That extra mouseup is racy to trigger organically through a plain click
+    // in headless mode, so dispatch it directly for a deterministic test.
+    await select.evaluate((el) => {
+      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    });
+
+    await expect(modal).toHaveClass(/is-visible/);
+  });
+
+  test("fires the secondary event when pressing Enter on the focused secondary button", async ({
+    page,
+  }) => {
+    await page.getByTestId("open-modal").click();
+    await expect(page.locator(".bx--modal")).toHaveClass(/is-visible/);
+
+    // Focus the secondary "Cancel" button and press Enter to cancel.
+    await page.getByRole("button", { name: "Cancel" }).focus();
+    await page.keyboard.press("Enter");
+
+    // Pressing Enter on the secondary button should cancel, not confirm.
+    // The primary (confirm) event must not fire — only the secondary event.
+    await expect(page.getByTestId("events")).toHaveText("secondary");
+  });
+
+  test("stays open on a backdrop click by default", async ({ page }) => {
+    await page.getByTestId("open-modal").click();
+    const modal = page.locator(".bx--modal");
+    await expect(modal).toHaveClass(/is-visible/);
+
+    const modalBox = await modal.boundingBox();
+    if (modalBox == null) {
+      throw new Error("expected modal bounding box");
+    }
+
+    await page.mouse.click(modalBox.x + 5, modalBox.y + 5);
+    await expect(modal).toHaveClass(/is-visible/);
+    await expect(page.getByTestId("close-events")).toHaveText("");
+  });
+
+  test("closes a passive modal on a backdrop click", async ({ page }) => {
+    await page.goto("/modal.html?passive");
+    await page.getByTestId("open-modal").click();
+    const modal = page.locator(".bx--modal");
+    await expect(modal).toHaveClass(/is-visible/);
+
+    const modalBox = await modal.boundingBox();
+    if (modalBox == null) {
+      throw new Error("expected modal bounding box");
+    }
+
+    // click directly on the backdrop (outside the container)
+    await page.mouse.click(modalBox.x + 5, modalBox.y + 5);
+    await expect(modal).not.toHaveClass(/is-visible/);
+    await expect(page.getByTestId("close-events")).toHaveText("outside-click");
+  });
+
+  test("returns focus to the trigger when the closing transition never runs", async ({
+    page,
+  }) => {
+    // A pinned transform keeps the transition duration but runs no
+    // transition, so no `transitionend` fires.
+    await page.addStyleTag({
+      content: `html .bx--modal-container,
+        html .bx--modal.is-visible .bx--modal-container { transform: none; }`,
+    });
+    // The new rule moves the closed container, which runs its own
+    // transition. Let it end first.
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((a) => a.finished)),
+    );
+    const trigger = page.getByTestId("open-modal");
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("modal-select")).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+  });
+
+  test("returns focus to a trigger opened by a mouse click", async ({
+    page,
+  }) => {
+    // Safari does not focus a button on click, so focus sits on `<body>` when
+    // the modal opens and there is nothing to return to.
+    const trigger = page.getByTestId("open-modal");
+    await trigger.click();
+    await expect(page.getByTestId("modal-select")).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+  });
+
+  test("focuses a select that mounts in the update that opens the modal", async ({
+    page,
+  }) => {
+    await page.goto("/modal.html?select-on-open");
+    const trigger = page.getByTestId("open-modal");
+    await trigger.click();
+    await expect(page.getByTestId("modal-select")).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".bx--modal")).not.toHaveClass(/is-visible/);
+    await trigger.click();
+    await expect(page.getByTestId("modal-select")).toBeFocused();
+  });
+
+  test("closes on Escape when the primary button is disabled", async ({
+    page,
+  }) => {
+    await page.goto("/modal.html?primary-disabled");
+    await page.getByTestId("open-modal").click();
+    await expect(page.locator(".bx--modal")).toHaveClass(/is-visible/);
+
+    // A disabled button takes no focus, so first focus must land elsewhere
+    // in the dialog for its keydown handler to hear Escape.
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(page.locator(".bx--modal:focus-within")).toBeAttached();
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".bx--modal")).not.toHaveClass(/is-visible/);
+  });
+});

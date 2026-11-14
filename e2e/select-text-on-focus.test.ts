@@ -1,0 +1,80 @@
+import type { Locator, Page } from "@playwright/test";
+import { expect, test } from "./helpers/host";
+
+// WebKit collapses a focus-time `select()` on the click's mouseup, so each
+// case clicks into the field and checks the whole value is still selected.
+// jsdom can't show this, and CI runs Chromium only: run WebKit locally.
+// `number` inputs expose no selection API, so those cases type a digit and
+// expect it to replace the value.
+const cases: {
+  testId: string;
+  check?: "replace";
+  setup?: (page: Page) => Promise<void>;
+}[] = [
+  { testId: "copy-input" },
+  { testId: "text-input" },
+  { testId: "password-input" },
+  { testId: "text-area" },
+  { testId: "time-picker" },
+  { testId: "number-input", check: "replace" },
+  { testId: "date-picker-input" },
+  { testId: "search" },
+  { testId: "search-menu" },
+  { testId: "toolbar-search" },
+  { testId: "slider", check: "replace" },
+  { testId: "range-slider", check: "replace" },
+  { testId: "combo-box" },
+  { testId: "multi-select" },
+  { testId: "pin-code-input" },
+  {
+    testId: "header-search",
+    // Open the search, then tab away so the click below focuses it again.
+    setup: async (page) => {
+      await page
+        .locator("header")
+        .getByRole("button", { name: "Search" })
+        .click();
+      await page.keyboard.press("Tab");
+    },
+  },
+];
+
+async function expectFullSelection(input: Locator) {
+  await expect
+    .poll(() =>
+      input.evaluate((el: HTMLInputElement | HTMLTextAreaElement) => ({
+        start: el.selectionStart,
+        wholeValue: el.value.length > 0 && el.selectionEnd === el.value.length,
+      })),
+    )
+    .toEqual({ start: 0, wholeValue: true });
+}
+
+test.describe("selectTextOnFocus", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/select-text-on-focus.html");
+  });
+
+  for (const { testId, check, setup } of cases) {
+    test(`${testId} keeps the full value selected after a click`, async ({
+      page,
+    }) => {
+      await setup?.(page);
+      // `data-testid` lands on the wrapper for some components.
+      const target = page.getByTestId(testId);
+      const input = (await target.evaluate((el) =>
+        el.matches("input, textarea"),
+      ))
+        ? target
+        : target.locator("input:not([type=hidden]), textarea").first();
+      await input.click();
+
+      if (check === "replace") {
+        await page.keyboard.type("9");
+        await expect(input).toHaveValue("9");
+      } else {
+        await expectFullSelection(input);
+      }
+    });
+  }
+});

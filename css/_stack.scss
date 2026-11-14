@@ -1,0 +1,82 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./spacing-scale";
+
+/// Stack component
+/// @access private
+/// @group components
+@mixin stack {
+  .#{$prefix}--stack {
+    display: flex;
+  }
+
+  .#{$prefix}--stack-inline {
+    display: inline-flex;
+  }
+
+  .#{$prefix}--stack-vertical {
+    flex-direction: column;
+  }
+
+  .#{$prefix}--stack-horizontal {
+    flex-direction: row;
+  }
+
+  @each $step, $size in $ccs-spacing-scale {
+    .#{$prefix}--stack-scale-#{$step} {
+      gap: $size;
+    }
+  }
+
+  .#{$prefix}--stack-align-start {
+    align-items: flex-start;
+  }
+
+  .#{$prefix}--stack-align-center {
+    align-items: center;
+  }
+
+  .#{$prefix}--stack-align-end {
+    align-items: flex-end;
+  }
+
+  .#{$prefix}--stack-align-baseline {
+    align-items: baseline;
+  }
+
+  .#{$prefix}--stack-justify-start {
+    justify-content: flex-start;
+  }
+
+  .#{$prefix}--stack-justify-center {
+    justify-content: center;
+  }
+
+  .#{$prefix}--stack-justify-end {
+    justify-content: flex-end;
+  }
+
+  .#{$prefix}--stack-justify-space-between {
+    justify-content: space-between;
+  }
+
+  .#{$prefix}--stack-justify-space-around {
+    justify-content: space-around;
+  }
+
+  .#{$prefix}--stack-justify-space-evenly {
+    justify-content: space-evenly;
+  }
+
+  .#{$prefix}--stack-wrap {
+    flex-wrap: wrap;
+  }
+
+  .#{$prefix}--stack-wrap-reverse {
+    flex-wrap: wrap-reverse;
+  }
+}
+
+@include exports("stack") {
+  @include stack;
+}

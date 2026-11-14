@@ -1,79 +1,57 @@
 <script>
   import {
-    Header,
-    HeaderUtilities,
-    HeaderAction,
-    HeaderGlobalAction,
-    HeaderPanelLinks,
-    HeaderPanelDivider,
-    HeaderPanelLink,
-    SideNav,
-    SideNavItems,
-    SideNavMenu,
-    SideNavMenuItem,
-    SideNavLink,
-    SkipToContent,
+    BadgeIndicator,
+    Column,
     Content,
     Grid,
+    Header,
+    HeaderGlobalAction,
+    HeaderUtilities,
     Row,
-    Column,
+    SideNav,
+    SideNavItems,
+    SideNavLink,
+    SideNavMenu,
+    SideNavMenuItem,
+    SkipToContent,
   } from "carbon-components-svelte";
-  import SettingsAdjust20 from "carbon-icons-svelte/lib/SettingsAdjust20";
-  import UserAvatarFilledAlt20 from "carbon-icons-svelte/lib/UserAvatarFilledAlt20";
+  import Help from "carbon-icons-svelte/lib/Help.svelte";
+  import Notification from "carbon-icons-svelte/lib/Notification.svelte";
+  import UserAvatarFilledAlt from "carbon-icons-svelte/lib/UserAvatarFilledAlt.svelte";
 
   let isSideNavOpen = false;
-  let isOpen1 = false;
-  let isOpen2 = false;
 </script>
 
-<Header company="IBM" platformName="Carbon Svelte" bind:isSideNavOpen>
-  <svelte:fragment slot="skip-to-content">
-    <SkipToContent />
-  </svelte:fragment>
+<Header companyName="IBM" platformName="Cloud" bind:isSideNavOpen>
+  <svelte:fragment slot="skipToContent"><SkipToContent /></svelte:fragment>
   <HeaderUtilities>
-    <HeaderGlobalAction aria-label="Settings" icon="{SettingsAdjust20}" />
-    <HeaderAction
-      bind:isOpen="{isOpen1}"
-      icon="{UserAvatarFilledAlt20}"
-      closeIcon="{UserAvatarFilledAlt20}"
+    <HeaderGlobalAction
+      iconDescription="Notifications"
+      tooltipAlignment="start"
+      icon={Notification}
     >
-      <HeaderPanelLinks>
-        <HeaderPanelDivider>Switcher subject 1</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 2</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 3</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 4</HeaderPanelLink>
-        <HeaderPanelDivider>Switcher subject 2</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 2</HeaderPanelLink>
-        <HeaderPanelDivider>Switcher subject 3</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-      </HeaderPanelLinks>
-    </HeaderAction>
-    <HeaderAction bind:isOpen="{isOpen2}">
-      <HeaderPanelLinks>
-        <HeaderPanelDivider>Switcher subject 1</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-        <HeaderPanelDivider>Switcher subject 2</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 2</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 3</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 4</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 5</HeaderPanelLink>
-      </HeaderPanelLinks>
-    </HeaderAction>
+      <BadgeIndicator slot="badge" count={4} />
+    </HeaderGlobalAction>
+    <HeaderGlobalAction iconDescription="Help" icon={Help}>
+      <BadgeIndicator slot="badge" count={0} />
+    </HeaderGlobalAction>
+    <HeaderGlobalAction
+      iconDescription="Profile"
+      tooltipAlignment="end"
+      icon={UserAvatarFilledAlt}
+    />
   </HeaderUtilities>
 </Header>
 
-<SideNav bind:isOpen="{isSideNavOpen}">
+<SideNav bind:isOpen={isSideNavOpen}>
   <SideNavItems>
-    <SideNavLink text="Link 1" />
-    <SideNavLink text="Link 2" />
-    <SideNavLink text="Link 3" />
-    <SideNavMenu text="Menu">
-      <SideNavMenuItem href="/" text="Link 1" />
-      <SideNavMenuItem href="/" text="Link 2" />
-      <SideNavMenuItem href="/" text="Link 3" />
+    <SideNavLink href="/dashboard" text="Dashboard" />
+    <SideNavLink href="/resources" text="Resource list" />
+    <SideNavLink href="/activity" text="Activity tracker" />
+    <SideNavMenu text="Kubernetes">
+      <SideNavMenuItem href="/kubernetes/clusters" text="Clusters" />
+      <SideNavMenuItem href="/kubernetes/worker-pools" text="Worker pools" />
+      <SideNavMenuItem href="/kubernetes/registry" text="Container registry" />
     </SideNavMenu>
   </SideNavItems>
 </SideNav>
@@ -81,9 +59,7 @@
 <Content>
   <Grid>
     <Row>
-      <Column>
-        <h1>Welcome</h1>
-      </Column>
+      <Column><h1>Dashboard</h1></Column>
     </Row>
   </Grid>
 </Content>

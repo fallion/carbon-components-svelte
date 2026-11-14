@@ -1,0 +1,644 @@
+<script>
+  /**
+   * @template [T=string]
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
+   */
+
+  /**
+   * @event {{ value: string; item: { text?: string; value?: string; href?: string }; event: Event }} select
+   * @event {{ value: T }} submit
+   * @event {T} search
+   * @event {{ trigger: "escape-key" | "outside-click" | "select" | "blur" }} close
+   * @restProps {input}
+   * @slot {{}} before
+   * @slot {{}} noResults
+   * @slot {{}} loading
+   */
+
+  /**
+   * Dispatched when the results menu is scrolled near the bottom (load-more
+   * signal). Not the browser's native `scrollend` (scroll stopped).
+   * @event {{ scrollTop: number; scrollHeight: number; clientHeight: number }} scrollend
+   */
+
+  /**
+   * Specify the value of the search input.
+   * @type {T}
+   * @bindable writable
+   */
+  export let value = /** @type {T} */ ("");
+
+  /**
+   * Whether the results menu is visible. Driven by focus and available content.
+   * @bindable readonly
+   */
+  export let open = false;
+
+  /**
+   * Set to `true` to filter items by the search value using fuzzy matching.
+   * Unmatched items stay mounted and are hidden so later keystrokes do not
+   * recreate option nodes.
+   */
+  export let shouldFilter = true;
+
+  /**
+   * Override how the search value is matched against each item's `text`.
+   * Receives the item `text` and the current search value, and returns whether
+   * the item `matched` along with the `indices` of characters to highlight.
+   * Defaults to fuzzy matching. Supply your own function for custom filtering
+   * and highlighting, or pass a no-op like `() => ({ matched: true })` to keep
+   * every item and disable highlighting.
+   * @type {(text: string, query: string) => { matched: boolean; indices?: number[] }}
+   */
+  export let match = fuzzyMatch;
+
+  /**
+   * Specify the size of the search input.
+   * Also accepts Carbon v11's `"md"` (`"lg"`, 40px). `"lg"` keeps this
+   * library's 40px; Carbon v11's 48px `lg` is `"xl"` here.
+   * @type {"xs" | "sm" | "md" | "lg" | "xl"}
+   */
+  export let size = "xl";
+
+  /**
+   * Specify the size of the results menu, independent of the input `size`.
+   * Defaults to the input `size`.
+   * Also accepts Carbon v11's `"md"` (`"lg"`, 40px). `"lg"` keeps this
+   * library's 40px; Carbon v11's 48px `lg` is `"xl"` here.
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
+   */
+  export let menuSize = undefined;
+
+  /**
+   * Override the results menu's max height. Numbers are pixels; strings
+   * accept any CSS length (for example `"50vh"`). Defaults to 360px.
+   * @type {number | string | undefined}
+   */
+  export let menuMaxHeight = undefined;
+
+  /** Set to `true` to disable the search input */
+  export let disabled = false;
+
+  /**
+   * Set to `true` to use the read-only variant.
+   * Blocks opening the results menu and selecting or submitting a value;
+   * the current value still submits with the form.
+   */
+  export let readonly = false;
+
+  /**
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
+
+  /**
+   * Set to `true` to render a skeleton menu while results are loading, for
+   * example while fetching server-side results. Override the placeholder rows
+   * with the `loading` slot. When results are already rendered, a single
+   * loading row is appended below them instead.
+   */
+  export let loading = false;
+
+  /** Specify the number of skeleton rows rendered while `loading` */
+  export let skeletonCount = 4;
+
+  /**
+   * Wait this many milliseconds after `loading` turns `true` before showing
+   * the skeleton menu or loading row, and the `searchLoading` spinner. Once
+   * shown, it stays for at least 500 ms, so fast work shows nothing and slow
+   * work never flashes. The menu sets `aria-busy` and holds back the
+   * no-results state as soon as `loading` is `true`.
+   * Set to `0` to show it at once.
+   */
+  export let loadingDelay = 0;
+
+  /**
+   * Set to `true` to show a spinner in the search input while results are
+   * loading. Independent of `loading`, which controls the skeleton menu —
+   * combine both to show the spinner while the menu is also loading.
+   */
+  export let searchLoading = false;
+
+  /** Specify the placeholder text */
+  export let placeholder = "Search...";
+
+  /** Specify the label text */
+  export let labelText = "";
+
+  /** Set to `true` to visually hide the label text */
+  export let hideLabel = false;
+
+  /** Specify the close button label text */
+  export let closeButtonLabelText = "Clear search input";
+
+  /**
+   * Specify the icon to render.
+   * @type {Icon | undefined}
+   */
+  export let icon = /** @type {Icon | undefined} */ (undefined);
+
+  /**
+   * Specify the direction of the results menu.
+   * @type {"bottom" | "top"}
+   */
+  export let direction = "bottom";
+
+  /** Set to `true` to render the menu in a portal to escape `overflow: hidden` containers */
+  export let portal = true;
+
+  /** Specify a class passed to the inner Search element */
+  export let searchClass = "";
+
+  /** Set an id for the search input */
+  export let id = uniqueId();
+
+  /**
+   * Obtain a reference to the input HTML element.
+   * @type {null | HTMLInputElement}
+   * @bindable readonly
+   */
+  export let ref = null;
+
+  /**
+   * Obtain a reference to the menu HTML element.
+   * @type {null | HTMLDivElement}
+   * @bindable readonly
+   */
+  export let menuRef = null;
+
+  /** Set to `true` to select the input's text when it receives focus */
+  export let selectTextOnFocus = false;
+
+  /**
+   * Milliseconds to wait after the last input before dispatching `search`.
+   * 0 (default) does not dispatch `search`. `value`, the fuzzy-match
+   * highlighting, and clearing all stay immediate regardless of this delay
+   * -- only the `search` event waits. Selecting an item or submitting with
+   * <kbd>Enter</kbd> cancels a pending `search` instead of also firing it.
+   */
+  export let debounce = 0;
+
+  import { createEventDispatcher, onMount, setContext } from "svelte";
+  import { writable } from "svelte/store";
+  import FloatingPortal from "../Portal/FloatingPortal.svelte";
+  import Search from "../Search/Search.svelte";
+  import SkeletonText from "../SkeletonText/SkeletonText.svelte";
+  import { toCssLength } from "../utils/css-length.js";
+  import { debounce as debounceFn } from "../utils/debounce.js";
+  import { createLoadingIndicator } from "../utils/delayed-loading.js";
+  import { dismiss } from "../utils/dismiss.js";
+  import { buildFieldIds, joinDescribedBy } from "../utils/field-status.js";
+  import { fuzzyMatch } from "../utils/fuzzy-match.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { isOutsideClick } from "../utils/is-outside-click.js";
+  import { createScrollEndTracker } from "../utils/is-scroll-near-end.js";
+  import { createOptionListNavigator } from "../utils/option-list-navigator.js";
+  import { normalizeSearchSize } from "../utils/size-aliases.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  const dispatch = createEventDispatcher();
+
+  /** @type {null | HTMLDivElement} */
+  let anchorRef = null;
+  /** @type {null | HTMLDivElement} */
+  let searchAnchorRef = null;
+  let focused = false;
+  let dismissed = false;
+  let refocusOnBlur = false;
+  /** @type {Search | null} */
+  let search = null;
+
+  /** @type {null | import("../utils/debounce.js").Debounced<(searchValue: unknown) => void>} */
+  let dispatchSearch = null;
+
+  $: {
+    dispatchSearch?.cancel();
+    dispatchSearch =
+      debounce > 0
+        ? debounceFn(
+            /** @param {unknown} searchValue */
+            (searchValue) => dispatch("search", searchValue),
+            debounce,
+          )
+        : null;
+  }
+
+  onMount(() => {
+    return () => {
+      dispatchSearch?.cancel();
+      loadingIndicator.cancel();
+    };
+  });
+
+  // `loading` takes effect at once for `aria-busy` and the no-results state.
+  // Only the indicator waits for `loadingDelay`; with no delay it follows
+  // `loading` exactly.
+  let showLoading = loading;
+  const loadingIndicator = createLoadingIndicator((shown) => {
+    showLoading = shown;
+  });
+  $: loadingIndicator(loading, loadingDelay);
+
+  const query = writable("");
+  const sharedShouldFilter = writable(shouldFilter);
+  const sharedMatch = writable(match);
+  const highlightedId = writable(/** @type {string | null} */ (null));
+  const hasPrimaryItems = writable(false);
+
+  let itemIds = new Set();
+  let filterableIds = new Set();
+  let primaryItemIds = new Set();
+
+  const scrollEndTracker = createScrollEndTracker();
+
+  $: query.set(String(value ?? ""));
+  $: sharedShouldFilter.set(shouldFilter);
+  $: sharedMatch.set(match);
+
+  // Varying widths so the skeleton rows mimic results of different lengths.
+  const SKELETON_WIDTHS = ["75%", "90%", "65%", "80%"];
+  $: skeletonWidths = Array.from(
+    { length: Math.max(0, skeletonCount) },
+    (_, i) => SKELETON_WIDTHS[i % SKELETON_WIDTHS.length],
+  );
+
+  $: itemCount = itemIds.size;
+  $: hasPrimaryItems.set(primaryItemIds.size > 0);
+  $: hasQuery = String(value ?? "").length > 0;
+  $: showNoResults =
+    !loading &&
+    hasQuery &&
+    filterableIds.size === 0 &&
+    itemCount === 0 &&
+    $$slots.noResults;
+  $: open = !disabled && !readonly && focused && !dismissed;
+  $: if (!open) scrollEndTracker.reset();
+  $: loadingMore = showLoading && itemCount > 0;
+  $: menuVisible = open && (loading || itemCount > 0 || showNoResults);
+  $: menuDomId = `menu-${id}`;
+  $: ({ readonlyId } = buildFieldIds(id));
+  $: describedById = joinDescribedBy(readonly ? readonlyId : null);
+  $: menuLabel = labelText || placeholder;
+  $: menuAnchor = $$slots.before ? searchAnchorRef : anchorRef;
+  $: resolvedMenuSize = normalizeSearchSize(menuSize ?? size);
+  $: resolvedMenuMaxHeight = toCssLength(menuMaxHeight);
+  $: menuClass = [
+    "bx--search-menu__menu",
+    `bx--search-menu__menu--${resolvedMenuSize}`,
+    !menuVisible && "bx--search-menu__menu--hidden",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  setContext("carbon:SearchMenu", {
+    query,
+    shouldFilter: sharedShouldFilter,
+    match: sharedMatch,
+    highlightedId,
+    /** @param {string | null} next */
+    setActiveId(next) {
+      setPointerActive(next);
+    },
+    /** @param {{ value: string; item: { text?: string; value?: string; href?: string }; event: Event }} detail */
+    selectItem(detail) {
+      dispatchSearch?.cancel();
+      // The field shows what was picked; `select` carries the item's value.
+      value = /** @type {T} */ (detail.item.text ?? detail.value ?? value);
+      dispatch("select", detail);
+      close("select");
+      dismissed = true;
+      highlightedId.set(null);
+    },
+    hasPrimaryItems,
+    /**
+     * @param {string} itemId
+     * @param {boolean} filterable
+     * @param {boolean} [inDividerGroup]
+     */
+    registerItem(itemId, filterable, inDividerGroup = false) {
+      itemIds.add(itemId);
+      if (filterable) filterableIds.add(itemId);
+      else filterableIds.delete(itemId);
+      if (inDividerGroup) primaryItemIds.delete(itemId);
+      else primaryItemIds.add(itemId);
+      itemIds = itemIds;
+      filterableIds = filterableIds;
+      primaryItemIds = primaryItemIds;
+    },
+    /** @param {string} itemId */
+    unregisterItem(itemId) {
+      itemIds.delete(itemId);
+      filterableIds.delete(itemId);
+      primaryItemIds.delete(itemId);
+      itemIds = itemIds;
+      filterableIds = filterableIds;
+      primaryItemIds = primaryItemIds;
+    },
+  });
+
+  // `open` is reactive, so it lags within a tick; derive the live open state
+  // synchronously to guard `close` against emitting twice for one dismissal
+  // (e.g. a blur immediately followed by an outside-click handler).
+  function isMenuOpen() {
+    return !disabled && !readonly && focused && !dismissed;
+  }
+
+  /** @param {"escape-key" | "outside-click" | "select" | "blur"} trigger */
+  function close(trigger) {
+    if (isMenuOpen()) dispatch("close", { trigger });
+  }
+
+  const {
+    moveActive,
+    setActiveEdge,
+    setPointerActive,
+    getKeyboardActiveOption,
+  } = createOptionListNavigator({
+    getMenuRef: () => menuRef,
+    highlightedId,
+  });
+
+  /** @param {KeyboardEvent} event */
+  function handleKeydown(event) {
+    // Keys during an IME composition belong to the IME.
+    if (isImeComposition(event)) return;
+    if (disabled || readonly) return;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        dismissed = false;
+        if (menuVisible) moveActive(1);
+        break;
+      case "ArrowUp":
+        if (!menuVisible) return;
+        event.preventDefault();
+        moveActive(-1);
+        break;
+      case "Home":
+        if (!menuVisible) return;
+        event.preventDefault();
+        setActiveEdge("first");
+        break;
+      case "End":
+        if (!menuVisible) return;
+        event.preventDefault();
+        setActiveEdge("last");
+        break;
+      case "Enter": {
+        const option = getKeyboardActiveOption();
+        if (menuVisible && option) {
+          event.preventDefault();
+          option.click();
+        } else {
+          dispatchSearch?.cancel();
+          dispatch("submit", { value });
+        }
+        break;
+      }
+      case "Escape":
+        if (open) {
+          // Close the menu without letting Search (or the native
+          // type="search" clear-on-Escape affordance) clear the value.
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          close("escape-key");
+          dismissed = true;
+          highlightedId.set(null);
+        }
+        break;
+    }
+  }
+
+  function handleFocus() {
+    focused = true;
+    dismissed = false;
+  }
+
+  function handleBeforeInteraction() {
+    close("outside-click");
+    dismissed = true;
+    highlightedId.set(null);
+  }
+
+  /** @param {FocusEvent} event */
+  function handleBlur(event) {
+    const next = event.relatedTarget;
+    if (
+      next instanceof Node &&
+      (searchAnchorRef?.contains(next) || menuRef?.contains(next))
+    ) {
+      return;
+    }
+    // A pointer press on a non-interactive menu area (a group header, padding)
+    // blurs the input with no relatedTarget. Keep focus on the input so those
+    // are dead click areas; only selecting an item should close the menu.
+    if (refocusOnBlur) {
+      refocusOnBlur = false;
+      if (search) search.focusWithoutSelect();
+      else ref?.focus();
+      return;
+    }
+    close("blur");
+    focused = false;
+    highlightedId.set(null);
+  }
+
+  function handleMenuPointerDown() {
+    refocusOnBlur = true;
+    // Clears on the next frame whether or not a blur followed (e.g. the input
+    // was already blurred), so a later outside click still closes the menu.
+    requestAnimationFrame(() => {
+      refocusOnBlur = false;
+    });
+  }
+
+  function handleInput() {
+    dismissed = false;
+    // The new query can hide the highlighted option.
+    highlightedId.set(null);
+    dispatchSearch?.(value);
+  }
+
+  function handleClear() {
+    dispatchSearch?.cancel();
+  }
+
+  /**
+   * @param {Event} event
+   */
+  function handleMenuScroll(event) {
+    const target = /** @type {HTMLElement} */ (event.target);
+    const detail = scrollEndTracker.observe({
+      scrollTop: target.scrollTop,
+      scrollHeight: target.scrollHeight,
+      clientHeight: target.clientHeight,
+      itemCount,
+    });
+    if (detail) dispatch("scrollend", detail);
+  }
+
+  /** @param {Event} event */
+  function handleOutsideClick(event) {
+    if (open && isOutsideClick(event, [anchorRef, portal ? menuRef : null])) {
+      close("outside-click");
+      dismissed = true;
+      highlightedId.set(null);
+    }
+  }
+</script>
+
+<div
+  bind:this={anchorRef}
+  class:bx--search-menu={true}
+  class:bx--search-menu--bar={$$slots.before}
+  use:dismiss={{ enabled: open, type: "click", handler: handleOutsideClick }}
+>
+  {#if $$slots.before}
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div
+      class:bx--search-menu__before={true}
+      on:mousedown={handleBeforeInteraction}
+      on:focusin={handleBeforeInteraction}
+    >
+      <slot name="before" />
+    </div>
+  {/if}
+  <div bind:this={searchAnchorRef} class:bx--search-menu__search={true}>
+    <!-- SearchMenu implements its own debounced `search` (below) rather than
+      forwarding the inner Search's `debounce`/`search`: Search dispatches
+      `search` on every Enter, which would duplicate `select`/`submit`. -->
+    <Search
+      bind:this={search}
+      {size}
+      {disabled}
+      {readonly}
+      {hideLabel}
+      {placeholder}
+      {labelText}
+      {closeButtonLabelText}
+      {icon}
+      {id}
+      {searchClass}
+      {selectTextOnFocus}
+      loading={searchLoading}
+      {loadingDelay}
+      bind:value
+      bind:ref
+      role="combobox"
+      tabindex={0}
+      aria-autocomplete="list"
+      aria-expanded={menuVisible}
+      aria-controls={menuVisible ? menuDomId : undefined}
+      aria-activedescendant={$highlightedId ?? undefined}
+      {...$$restProps}
+      aria-describedby={joinDescribedBy(
+        describedById,
+        $$restProps["aria-describedby"],
+      )}
+      on:focus
+      on:focus={handleFocus}
+      on:blur
+      on:blur={handleBlur}
+      on:input
+      on:input={handleInput}
+      on:change
+      on:clear
+      on:clear={handleClear}
+      on:keydown
+      on:keydown={handleKeydown}
+      on:keyup
+      on:paste
+    />
+    {#if readonly}
+      <span id={readonlyId} class:bx--visually-hidden={true}
+        >{readonlyText}</span
+      >
+    {/if}
+    {#if open && !portal}
+      <div
+        bind:this={menuRef}
+        id={menuDomId}
+        role="listbox"
+        tabindex="-1"
+        aria-label={menuLabel}
+        aria-busy={loading || undefined}
+        class:bx--search-menu__menu--inline={true}
+        class={menuClass}
+        style:max-height={resolvedMenuMaxHeight}
+        on:mousedown={handleMenuPointerDown}
+        on:scroll={handleMenuScroll}
+      >
+        {#if showLoading && itemCount === 0}
+          <slot name="loading">
+            {#each skeletonWidths as width, i (i)}
+              <div
+                class:bx--search-menu-item={true}
+                class:bx--search-menu-item--skeleton={true}
+              >
+                <SkeletonText {width} />
+              </div>
+            {/each}
+          </slot>
+        {:else}
+          <slot />
+          {#if loadingMore}
+            <div
+              class:bx--search-menu-item={true}
+              class:bx--search-menu-item--skeleton={true}
+            >
+              <SkeletonText width={SKELETON_WIDTHS[0]} />
+            </div>
+          {:else if showNoResults}
+            <div class:bx--search-menu__no-results={true}>
+              <slot name="noResults" />
+            </div>
+          {/if}
+        {/if}
+      </div>
+    {/if}
+  </div>
+  {#if open && portal}
+    <FloatingPortal anchor={menuAnchor} {direction} {open}>
+      <div
+        bind:this={menuRef}
+        id={menuDomId}
+        role="listbox"
+        tabindex="-1"
+        aria-label={menuLabel}
+        aria-busy={loading || undefined}
+        class={menuClass}
+        style:max-height={resolvedMenuMaxHeight}
+        on:mousedown={handleMenuPointerDown}
+        on:scroll={handleMenuScroll}
+      >
+        {#if showLoading && itemCount === 0}
+          <slot name="loading">
+            {#each skeletonWidths as width, i (i)}
+              <div
+                class:bx--search-menu-item={true}
+                class:bx--search-menu-item--skeleton={true}
+              >
+                <SkeletonText {width} />
+              </div>
+            {/each}
+          </slot>
+        {:else}
+          <slot />
+          {#if loadingMore}
+            <div
+              class:bx--search-menu-item={true}
+              class:bx--search-menu-item--skeleton={true}
+            >
+              <SkeletonText width={SKELETON_WIDTHS[0]} />
+            </div>
+          {:else if showNoResults}
+            <div class:bx--search-menu__no-results={true}>
+              <slot name="noResults" />
+            </div>
+          {/if}
+        {/if}
+      </div>
+    </FloatingPortal>
+  {/if}
+</div>

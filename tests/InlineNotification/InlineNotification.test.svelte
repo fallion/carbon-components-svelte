@@ -1,0 +1,32 @@
+<script lang="ts">
+  import InlineNotification from "carbon-components-svelte/Notification/InlineNotification.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let kind: ComponentProps<InlineNotification>["kind"] = "error";
+  export let lowContrast: ComponentProps<InlineNotification>["lowContrast"] = false;
+  export let timeout: ComponentProps<InlineNotification>["timeout"] = 0;
+  export let pauseOnHover: ComponentProps<InlineNotification>["pauseOnHover"] = false;
+  export let role: ComponentProps<InlineNotification>["role"] = "status";
+  export let title: ComponentProps<InlineNotification>["title"] = "";
+  export let subtitle: ComponentProps<InlineNotification>["subtitle"] = "";
+  export let closeButtonDescription: ComponentProps<InlineNotification>["closeButtonDescription"] =
+    "Close notification";
+  export let hideCloseButton: ComponentProps<InlineNotification>["hideCloseButton"] = false;
+  export let onclose: ((event: CustomEvent) => void) | undefined = undefined;
+  export let onclick: ((event: MouseEvent) => void) | undefined = undefined;
+</script>
+
+<InlineNotification
+  {kind}
+  {lowContrast}
+  {timeout}
+  {pauseOnHover}
+  {role}
+  {title}
+  {subtitle}
+  {closeButtonDescription}
+  {hideCloseButton}
+  on:close={(e) => onclose?.(e)}
+  on:click={(e) => onclick?.(e)}
+  {...$$restProps}
+/>

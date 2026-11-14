@@ -1,0 +1,51 @@
+<script lang="ts">
+  import Select from "carbon-components-svelte/Select/Select.svelte";
+  import SelectItem from "carbon-components-svelte/Select/SelectItem.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let selected: ComponentProps<Select>["selected"] = undefined;
+  export let disabled = false;
+  export let id = "test-select";
+  export let invalid = false;
+  export let invalidText = "";
+  export let warn = false;
+  export let warnText = "";
+  export let helperText = "";
+  export let hideLabel = false;
+  export let noLabel = false;
+  export let labelText = "Select label";
+  export let size: ComponentProps<Select>["size"] = undefined;
+  export let inline = false;
+  export let readonly = false;
+  export let readonlyText: ComponentProps<Select>["readonlyText"] = undefined;
+  export let fluid = false;
+  export let onChange: () => void = () => {};
+  export let onInput: () => void = () => {};
+  export let onUpdate: (detail: unknown) => void = () => {};
+</script>
+
+<Select
+  bind:selected
+  {disabled}
+  {id}
+  {invalid}
+  {invalidText}
+  {warn}
+  {warnText}
+  {helperText}
+  {hideLabel}
+  {noLabel}
+  {labelText}
+  {size}
+  {inline}
+  {readonly}
+  {readonlyText}
+  {fluid}
+  on:change={onChange}
+  on:input={onInput}
+  on:update={(e) => onUpdate(e.detail)}
+>
+  <SelectItem value="option-1" text="Option 1" />
+  <SelectItem value="option-2" text="Option 2" />
+  <SelectItem value="option-3" text="Option 3" />
+</Select>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E2E Test Fixtures</title>
+  </head>
+  <body>
+    <nav>
+      <a href="/action-set.html">ActionSet</a>
+      <a href="/breakpoint.html">Breakpoint</a>
+      <a href="/combobox.html">ComboBox</a>
+      <a href="/combobox-measured.html">ComboBox (measured heights)</a>
+      <a href="/search-menu.html">SearchMenu</a>
+      <a href="/dropdown.html">Dropdown</a>
+      <a href="/dropdown-measured.html">Dropdown (measured heights)</a>
+      <a href="/list-box-icons.html">List box icons and highlight</a>
+      <a href="/list-box-groups.html">List box groups</a>
+      <a href="/rtl.html">Right-to-left layout</a>
+      <a href="/rtl-icons.html">Right-to-left icons</a>
+      <a href="/rtl-fields.html">Right-to-left text fields</a>
+      <a href="/rtl-buttons.html">Right-to-left buttons</a>
+      <a href="/rtl-placement.html">Right-to-left menus, resizing and keys</a>
+      <a href="/rtl-tooltips.html">Right-to-left tooltips and popovers</a>
+      <a href="/rtl-date-picker.html">Right-to-left date picker</a>
+      <a href="/rtl-plain-dir.html">Right-to-left plain dir</a>
+      <a href="/slider-server.html">Slider server render</a>
+      <a href="/rtl-nested.html">Right-to-left nested regions</a>
+      <a href="/listbox-virtualized.html">Listbox (virtualized)</a>
+      <a href="/reflow.html">Listbox option reflow (320x256)</a>
+      <a href="/date-picker.html">DatePicker</a>
+      <a href="/local-storage.html">LocalStorage</a>
+      <a href="/session-storage.html">SessionStorage</a>
+      <a href="/portal.html">Portal</a>
+      <a href="/floating-portal.html">FloatingPortal</a>
+      <a href="/floating-portal-intrinsic.html">FloatingPortal (intrinsic)</a>
+      <a href="/expandable-tile.html">ExpandableTile</a>
+      <a href="/tooltip.html">Tooltip</a>
+      <a href="/theme.html">Theme</a>
+      <a href="/theme-zone.html">ThemeZone</a>
+      <a href="/slider.html">Slider</a>
+      <a href="/context-menu.html">ContextMenu</a>
+      <a href="/overflow-menu.html">OverflowMenu</a>
+      <a href="/menu-button.html">MenuButton</a>
+      <a href="/submenu-aim.html">Submenu pointer aim</a>
+      <a href="/button-set.html">ButtonSet</a>
+      <a href="/combo-button.html">ComboButton</a>
+      <a href="/multiselect.html">MultiSelect</a>
+      <a href="/multiselect-measured.html">MultiSelect (measured heights)</a>
+      <a href="/multiselect-filter-status.html"
+        >MultiSelect (filter status icon)</a
+      >
+      <a href="/select.html">Select</a>
+      <a href="/select-inline-status.html">Select (inline status)</a>
+      <a href="/text-input.html">TextInput</a>
+      <a href="/password-input.html">PasswordInput</a>
+      <a href="/pin-code-input.html">PinCodeInput</a>
+      <a href="/text-area.html">TextArea</a>
+      <a href="/checkbox.html">Checkbox</a>
+      <a href="/checkbox-group.html">CheckboxGroup</a>
+      <a href="/radio-button-group.html">RadioButtonGroup</a>
+      <a href="/tabs.html">Tabs</a>
+      <a href="/tabs-overflow.html">Tabs (overflow)</a>
+      <a href="/tag.html">Tag</a>
+      <a href="/tag-set-view-all.html">TagSet (View all)</a>
+      <a href="/tag-v11.html">Tag (v11 width, focus, borders)</a>
+      <a href="/pagination.html">Pagination</a>
+      <a href="/pagination-nav.html">PaginationNav</a>
+      <a href="/big-number.html">BigNumber</a>
+      <a href="/breadcrumb.html">Breadcrumb</a>
+      <a href="/progress-indicator.html">ProgressIndicator</a>
+      <a href="/file-uploader.html">FileUploader</a>
+      <a href="/file-uploader-advanced.html">FileUploader (advanced)</a>
+      <a href="/file-uploader-item.html">FileUploaderItem</a>
+      <a href="/time-picker.html">TimePicker</a>
+      <a href="/items-resync.html">Items resync</a>
+      <a href="/callout.html">Callout</a>
+      <a href="/inline-notification.html">InlineNotification</a>
+      <a href="/interstitial-screen.html">InterstitialScreen</a>
+      <a href="/toast-notification.html">ToastNotification</a>
+      <a href="/warning-icon-glyph.html">Warning icon glyph</a>
+      <a href="/content-switcher.html">ContentSwitcher</a>
+      <a href="/copy-button.html">CopyButton</a>
+      <a href="/toggle.html">Toggle</a>
+      <a href="/readonly-controls.html">Read-only controls</a>
+      <a href="/form-item-fit.html">Form item fit</a>
+      <a href="/number-input.html">NumberInput</a>
+      <a href="/number-input-readonly-decorator.html"
+        >NumberInput (read-only with a decorator)</a
+      >
+      <a href="/description-list.html">DescriptionList</a>
+      <a href="/tabular-nums.html">Tabular figures</a>
+      <a href="/input-group.html">InputGroup</a>
+      <a href="/star-rating.html">StarRating</a>
+      <a href="/chat.html">Chat</a>
+      <a href="/search.html">Search</a>
+      <a href="/button.html">Button</a>
+      <a href="/accordion.html">Accordion</a>
+      <a href="/accordion-nested.html">Accordion (nested)</a>
+      <a href="/composed-modal.html">ComposedModal</a>
+      <a href="/modal.html">Modal</a>
+      <a href="/modal-v11.html">Modal (v11 parity)</a>
+      <a href="/popover.html">Popover</a>
+      <a href="/popover-portal-fit.html">Popover (portal fit)</a>
+      <a href="/tree-view.html">TreeView</a>
+      <a href="/tree-long-names.html">TreeView (long names)</a>
+      <a href="/truncate-reveal.html">Truncate (reveal)</a>
+      <a href="/truncated-titles.html">Truncated titles</a>
+      <a href="/structured-list.html">StructuredList</a>
+      <a href="/clickable-tile.html">ClickableTile</a>
+      <a href="/radio-tile.html">RadioTile</a>
+      <a href="/selectable-tile.html">SelectableTile</a>
+      <a href="/tile-decorator.html">Tile (decorator)</a>
+      <a href="/contained-list.html">ContainedList</a>
+      <a href="/layer.html">Layer</a>
+      <a href="/modal-layer.html">Layer (in a modal)</a>
+      <a href="/virtual-list-spacer.html">VirtualList (in a list)</a>
+      <a href="/tooltip-definition.html">TooltipDefinition</a>
+      <a href="/tooltip-definition-inline.html"
+        >TooltipDefinition (in body text)</a
+      >
+      <a href="/tooltip-definition-modal.html"
+        >TooltipDefinition (modal portal)</a
+      >
+      <a href="/tooltip-icon.html">TooltipIcon</a>
+      <a href="/tooltip-icon-modal.html">TooltipIcon (modal portal)</a>
+      <a href="/tooltip-icon-reactive.html">TooltipIcon (reactive)</a>
+      <a href="/tooltip-stretch.html">Tooltips in a stretching Stack</a>
+      <a href="/tooltip-escape.html">Tooltips and Escape (modal)</a>
+      <a href="/tooltip-hover.html">Icon tooltips and the pointer</a>
+      <a href="/icon-tooltip-edge.html">Icon tooltips at the window edge</a>
+      <a href="/icon-tooltip-side-edge.html?index"
+        >Side tooltips at the window edge (every case)</a
+      >
+      <a href="/code-snippet.html">CodeSnippet</a>
+      <a href="/data-table.html">DataTable</a>
+      <a href="/data-table-virtual.html">DataTable (virtualized)</a>
+      <a href="/data-table-batch-actions-overflow.html"
+        >DataTable (batch actions overflow)</a
+      >
+      <a href="/data-table-sticky-header.html">DataTable (sticky header)</a>
+      <a href="/data-table-cell-overlays.html">DataTable (cell overlays)</a>
+      <a href="/data-table-tag.html">DataTable (small tags)</a>
+      <a href="/link.html">Link (icon scaling)</a>
+      <a href="/list.html">OrderedList and UnorderedList</a>
+      <a href="/layout-direction.html">LayoutDirection</a>
+      <a href="/uishell.html">UIShell</a>
+      <a href="/side-nav-menu-nested.html">SideNavMenu (nested)</a>
+      <a href="/side-nav-active-item-scroll.html"
+        >SideNav (active item scroll)</a
+      >
+      <a href="/user-avatar-group.html">UserAvatarGroup</a>
+      <a href="/notification-queue.html">NotificationQueue</a>
+      <a href="/actionable-notification.html">Actionable notification</a>
+      <a href="/dialog.html">Dialog</a>
+      <a href="/loading.html">Loading</a>
+      <a href="/virtual-list-fast-scroll.html">VirtualList (fast scroll)</a>
+      <a href="/forced-colors.html">Forced colors</a>
+      <a href="/side-panel.html">SidePanel</a>
+      <a href="/readonly-fields.html">Read-only fields</a>
+      <a href="/layout-checks.html">Layout checks</a>
+    </nav>
+  </body>
+</html>

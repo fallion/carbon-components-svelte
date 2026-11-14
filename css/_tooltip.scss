@@ -1,0 +1,254 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/tooltip";
+@import "carbon-components/scss/globals/scss/motion";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Portal tooltip for overflow containers (e.g. modals)
+/// @access private
+/// @group components
+@mixin tooltip-portal {
+  // Suppress the default CSS pseudo-element tooltip when a portal tooltip is active.
+  .#{$prefix}--tooltip--portal-active::before,
+  .#{$prefix}--tooltip--portal-active::after {
+    display: none;
+  }
+
+  // The portal places the box by physical side (`left`, `start` = left
+  // edge), so the caret and the content lay out left to right in RTL too.
+  // The content takes the trigger's direction back through `dir`.
+  // Every portal tooltip takes the pointer, so the pointer can move from
+  // the trigger onto it (WCAG 1.4.13). The component keeps it open while
+  // the pointer is on it; a tooltip the pointer fell through would close.
+  .#{$prefix}--tooltip-portal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    direction: ltr;
+  }
+
+  [data-floating-portal][data-floating-direction="top"] .#{$prefix}--tooltip-portal {
+    flex-direction: column-reverse;
+  }
+
+  [data-floating-portal][data-floating-direction="top"][data-floating-intrinsic-align="start"]
+    .#{$prefix}--tooltip-portal,
+  [data-floating-portal][data-floating-direction="bottom"][data-floating-intrinsic-align="start"]
+    .#{$prefix}--tooltip-portal,
+  [data-floating-portal][data-floating-direction="top"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal,
+  [data-floating-portal][data-floating-direction="bottom"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal {
+    align-items: flex-start;
+  }
+
+  [data-floating-portal][data-floating-direction="top"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal__content,
+  [data-floating-portal][data-floating-direction="bottom"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal__content {
+    align-self: flex-end;
+  }
+
+  // `start`: offset the caret from the box's left edge.
+  [data-floating-portal][data-floating-direction="top"][data-floating-intrinsic-align="start"]
+    .#{$prefix}--tooltip-portal__caret,
+  [data-floating-portal][data-floating-direction="bottom"][data-floating-intrinsic-align="start"]
+    .#{$prefix}--tooltip-portal__caret {
+    margin-left: calc(var(--ccs-tooltip-caret-nudge) - to-rem(5px));
+  }
+
+  // `end`: offset the caret from the box's right edge. The nudge is the anchor
+  // half-width, so the caret stays centered on the trigger regardless of the
+  // tooltip width (no movement when the text swaps to the copy feedback).
+  [data-floating-portal][data-floating-direction="top"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal__caret,
+  [data-floating-portal][data-floating-direction="bottom"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal__caret {
+    align-self: flex-end;
+    margin-right: calc(var(--ccs-tooltip-caret-nudge) - to-rem(5px));
+  }
+
+  [data-floating-portal][data-floating-direction="right"] .#{$prefix}--tooltip-portal {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  [data-floating-portal][data-floating-direction="left"] .#{$prefix}--tooltip-portal {
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+
+  // Beside the trigger, a `start` box lines its top edge up with the
+  // trigger's and an `end` box its bottom edge. The caret follows: half the
+  // trigger's height from that edge, not the center of the box.
+  [data-floating-portal][data-floating-direction="right"][data-floating-intrinsic-align="start"]
+    .#{$prefix}--tooltip-portal__caret,
+  [data-floating-portal][data-floating-direction="left"][data-floating-intrinsic-align="start"]
+    .#{$prefix}--tooltip-portal__caret {
+    align-self: flex-start;
+    margin-top: calc(var(--ccs-tooltip-caret-nudge) - to-rem(5px));
+  }
+
+  [data-floating-portal][data-floating-direction="right"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal__caret,
+  [data-floating-portal][data-floating-direction="left"][data-floating-intrinsic-align="end"]
+    .#{$prefix}--tooltip-portal__caret {
+    align-self: flex-end;
+    margin-bottom: calc(var(--ccs-tooltip-caret-nudge) - to-rem(5px));
+  }
+
+  .#{$prefix}--tooltip-portal[data-tooltip-type="definition"] {
+    filter: drop-shadow(0 2px 6px $shadow);
+  }
+
+  .#{$prefix}--tooltip-portal__caret {
+    flex-shrink: 0;
+    width: 0;
+    height: to-rem(12px);
+    border-right: to-rem(5px) solid transparent;
+    border-bottom: to-rem(5px) solid $background-inverse;
+    border-left: to-rem(5px) solid transparent;
+    border-top: 0 solid transparent;
+  }
+
+  [data-floating-portal][data-floating-direction="top"]
+    .#{$prefix}--tooltip-portal__caret {
+    border-top: to-rem(5px) solid $background-inverse;
+    border-bottom: none;
+  }
+
+  [data-floating-portal][data-floating-direction="right"]
+    .#{$prefix}--tooltip-portal__caret {
+    width: to-rem(12px);
+    height: 0;
+    border-top: to-rem(5px) solid transparent;
+    border-right: to-rem(5px) solid $background-inverse;
+    border-bottom: to-rem(5px) solid transparent;
+    border-left: 0;
+  }
+
+  [data-floating-portal][data-floating-direction="left"]
+    .#{$prefix}--tooltip-portal__caret {
+    width: to-rem(12px);
+    height: 0;
+    border-top: to-rem(5px) solid transparent;
+    border-right: 0;
+    border-bottom: to-rem(5px) solid transparent;
+    border-left: to-rem(5px) solid $background-inverse;
+  }
+
+  .#{$prefix}--tooltip-portal__content {
+    @include type-style("body-compact-01");
+
+    display: flex;
+    align-items: center;
+    width: max-content;
+    min-height: to-rem(24px);
+    max-width: to-rem(208px);
+    padding: to-rem(3px) to-rem(16px);
+    border-radius: to-rem(2px);
+    background-color: $background-inverse;
+    color: $text-inverse;
+    text-align: center;
+  }
+
+  .#{$prefix}--tooltip-portal[data-tooltip-type="definition"]
+    .#{$prefix}--tooltip-portal__content {
+    // box-shadow, z-index and transform are always re-set below
+    @include tooltip--content("definition", (box-shadow, transform, z-index));
+
+    box-shadow: none;
+    position: static;
+    z-index: auto;
+    transform: none;
+    opacity: 1;
+    display: flex;
+    align-items: center;
+    min-height: unset;
+    box-sizing: content-box;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .#{$prefix}--tooltip-portal[data-tooltip-type="icon"]
+    .#{$prefix}--tooltip-portal__content {
+    // z-index and transform are always re-set below
+    @include tooltip--content("icon", (transform, z-index));
+
+    position: static;
+    z-index: 1;
+    transform: none;
+    opacity: 1;
+    display: flex;
+    align-items: center;
+    min-height: unset;
+    box-sizing: content-box;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  // A copy confirmation fades as Carbon's inline one does: in on the
+  // entrance curve, out on the exit curve. `forwards` holds it hidden until
+  // the component removes it. Under reduced motion it swaps at once.
+  .#{$prefix}--tooltip-portal--fade-in {
+    animation: $duration--fast-02 motion(entrance, productive) show-feedback;
+  }
+
+  .#{$prefix}--tooltip-portal--fade-out {
+    animation: $duration--fast-02 motion(exit, productive) hide-feedback
+      forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .#{$prefix}--tooltip-portal--fade-in,
+    .#{$prefix}--tooltip-portal--fade-out {
+      animation: none;
+    }
+  }
+}
+
+@include exports("tooltip-portal") {
+  @include tooltip-portal;
+}
+
+/// Warm handoff within a tooltip group: the tooltip replaces one that was
+/// just showing, so it appears without the fade-in. Mirrors the selectors
+/// of the `:hover`, `:focus` and `--visible` fade rules (including their
+/// caret selector's repeated `--a11y`), so it ties them on specificity and
+/// wins on order, since this partial is imported after the tooltip
+/// component.
+/// @access private
+/// @group components
+@mixin tooltip-instant {
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--a11y.#{$prefix}--tooltip--instant {
+    .#{$prefix}--assistive-text,
+    + .#{$prefix}--assistive-text,
+    &.#{$prefix}--tooltip--a11y::before {
+      animation: none;
+    }
+  }
+}
+
+@include exports("tooltip-instant") {
+  @include tooltip-instant;
+}
+
+/// Tooltip text starts at the inline start in RTL too. Carbon sets
+/// `text-align: left` on the tooltip body. The `[dir="rtl"]` ancestor ties
+/// or beats each of those rules, and this partial emits after them. A
+/// portalled body carries `dir` itself only when its trigger is RTL.
+/// @access private
+/// @group components
+@mixin tooltip-rtl-text {
+  [dir="rtl"] .#{$prefix}--tooltip p,
+  [dir="rtl"] .#{$prefix}--tooltip__trigger .#{$prefix}--assistive-text,
+  [dir="rtl"]
+    .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition
+    + .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip-portal .#{$prefix}--tooltip-portal__content[dir="rtl"] {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("tooltip-rtl-text") {
+  @include tooltip-rtl-text;
+}

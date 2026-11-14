@@ -1,15 +1,40 @@
 <script>
-  /** Specify the value of the radio button */
-  export let value = "";
-
-  /** Set to `true` to check the radio button */
-  export let checked = false;
-
-  /** et to `true` to disable the radio button */
-  export let disabled = false;
+  /**
+   * @restProps {div}
+   * @template {string | number} [Value=string | number]
+   */
 
   /**
-   * Specify the label position
+   * Specify the value of the radio button.
+   * @type {Value}
+   */
+  export let value = /** @type {Value} */ ("");
+
+  /**
+   * Set to `true` to check the radio button.
+   * Follows the radio button when the owning form resets.
+   * @bindable writable
+   */
+  export let checked = false;
+
+  /** Set to `true` to disable the radio button */
+  export let disabled = false;
+
+  /** Set to `true` for the radio button to be read-only */
+  export let readonly = false;
+
+  /**
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`, and ARIA
+   * does not support `aria-readonly` on role "radio" at all.
+   */
+  export let readonlyText = "Read-only";
+
+  /** Set to `true` to mark the field as required */
+  export let required = false;
+
+  /**
+   * Specify the label position.
    * @type {"right" | "left"}
    */
   export let labelPosition = "right";
@@ -21,58 +46,274 @@
   export let hideLabel = false;
 
   /** Set an id for the input element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
-  /** Specify a name attribute for the checkbox input */
-  export let name = "";
+  /**
+   * Specify a name attribute for the radio button input.
+   * When multiple standalone RadioButton components share the same `name`,
+   * they form an implicit group and their `checked` state will be synchronized.
+   * @type {string | undefined}
+   */
+  export let name = undefined;
 
-  /** Obtain a reference to the input HTML element */
+  /**
+   * Specify the id of a form element outside the component to associate
+   * the radio input with.
+   * @type {string | undefined}
+   */
+  export let form = undefined;
+
+  /**
+   * Obtain a reference to the input HTML element.
+   * @bindable readonly
+   * @type {null | HTMLInputElement}
+   */
   export let ref = null;
 
-  import { getContext } from "svelte";
-  import { writable } from "svelte/store";
+  import { getContext, onMount } from "svelte";
+  import { readable, writable } from "svelte/store";
+  import Decorator from "../AILabel/Decorator.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import { buildFieldIds, joinDescribedBy } from "../utils/field-status.js";
+  import { formReset } from "../utils/form-reset.js";
+  import { uniqueId } from "../utils/unique-id.js";
+  import {
+    registerRadioButton,
+    updateGroupSelection,
+  } from "./radio-button-registry.js";
 
-  const ctx = getContext("RadioButtonGroup");
-  const selectedValue = ctx
-    ? ctx.selectedValue
-    : writable(checked ? value : undefined);
+  // Naming and description belong on the input, not the wrapper.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
 
-  if (ctx) {
-    ctx.add({ id, checked, disabled, value });
+  const ctx = getContext("carbon:RadioButtonGroup");
+
+  const {
+    add,
+    update,
+    deselect,
+    selectedValue,
+    groupName,
+    groupForm,
+    fallbackName,
+    groupRequired,
+    readonly: groupReadonly,
+    allowDeselect,
+    helperId,
+  } = ctx ?? {
+    groupName: readable(undefined),
+    groupForm: readable(undefined),
+    groupRequired: readable(undefined),
+    selectedValue: readable(checked ? value : undefined),
+    readonly: readable(false),
+    allowDeselect: readable(false),
+    helperId: readable(undefined),
+  };
+
+  // Track if we're in standalone mode (no RadioButtonGroup context)
+  const isStandalone = !ctx;
+
+  // Unique key for this component instance (used for registry identity)
+  // Using an object reference guarantees uniqueness across all instances
+  const instanceKey = {};
+
+  $: effectiveReadonly = $groupReadonly || readonly;
+  // A read-only `RadioButtonGroup` already describes itself on the
+  // fieldset; only describe the radio when its own `readonly` is the
+  // source, so the state is not announced twice.
+  $: describeReadonly = readonly && !$groupReadonly;
+  $: ({ readonlyId } = buildFieldIds(id));
+
+  // Registry state for standalone mode with name
+  /** @type {import("svelte/store").Writable<{} | undefined> | null} */
+  let registry = null;
+  /** @type {(() => void) | null} */
+  let unregister = null;
+  /** @type {(() => void) | null} */
+  let registryUnsubscribe = null;
+  /** @type {string | undefined} */
+  let prevName;
+
+  /**
+   * Initialize registry for standalone mode with name.
+   */
+  /** @param {string | undefined} radioName */
+  function initRegistry(radioName) {
+    // Clean up previous registration if any
+    cleanupRegistry();
+
+    if (isStandalone && radioName) {
+      const registration = registerRadioButton(radioName, instanceKey, checked);
+      registry = registration.selectedKey;
+      unregister = registration.unregister;
+
+      // Subscribe to uncheck this radio when a sibling is selected.
+      // Only set checked=false when another instance is selected, not checked=true for self.
+      // This allows parent components (like DataTable) to control the checked state.
+      registryUnsubscribe = registry.subscribe((selectedKey) => {
+        if (selectedKey !== undefined && selectedKey !== instanceKey) {
+          checked = false;
+        }
+      });
+
+      prevName = radioName;
+    }
   }
 
-  $: checked = $selectedValue === value;
+  function cleanupRegistry() {
+    if (registryUnsubscribe) {
+      registryUnsubscribe();
+      registryUnsubscribe = null;
+    }
+    if (unregister) {
+      unregister();
+      unregister = null;
+    }
+    registry = null;
+    prevName = undefined;
+  }
+
+  // Handle name prop changes reactively
+  $: if (isStandalone && name !== prevName) {
+    initRegistry(name);
+  }
+
+  // Push only a false → true change: Svelte 5 re-runs this block for every
+  // radio when a parent mutates an array bound with `bind:checked={a[i]}`,
+  // and a radio that was already checked must not reclaim the selection.
+  let registeredChecked = checked;
+
+  $: if (registry) {
+    if (checked && !registeredChecked) updateGroupSelection(name, instanceKey);
+    registeredChecked = checked;
+  }
+
+  if (add) {
+    add({ checked, value });
+  }
+
+  // Only sync checked when inside RadioButtonGroup.
+  // This allows standalone `RadioButton` usage.
+  $: if (add) {
+    checked = $selectedValue === value;
+  }
+
+  // A form reset restores the radio button without a change event. Inside
+  // `RadioButtonGroup`, the group syncs `selected`; standalone, sync
+  // `checked` here.
+  function handleFormReset() {
+    if (!ref || update) return;
+    if (effectiveReadonly) {
+      ref.checked = checked;
+      return;
+    }
+    checked = ref.checked;
+    if (checked && name && registry) {
+      updateGroupSelection(name, instanceKey);
+    }
+  }
+
+  onMount(() => {
+    return () => {
+      cleanupRegistry();
+    };
+  });
+
+  /** @type {import("svelte/store").Writable<undefined | "active" | "revert">} */
+  const aiLabelState = writable(undefined);
+
+  /** @param {"default" | "inline"} variant */
+  function labelSizeForVariant(variant) {
+    return variant === "inline" ? "md" : "mini";
+  }
 </script>
 
 <div
-  class:bx--radio-button-wrapper="{true}"
-  class:bx--radio-button-wrapper--label-left="{labelPosition === 'left'}"
-  {...$$restProps}
+  class:bx--radio-button-wrapper={true}
+  class:bx--radio-button-wrapper--label-left={labelPosition === "left"}
+  class:bx--radio-button-wrapper--readonly={effectiveReadonly}
+  class:bx--radio-button-wrapper--decorator={$$slots.decorator}
+  {...wrapperProps}
 >
   <input
-    bind:this="{ref}"
+    bind:this={ref}
+    use:formReset={handleFormReset}
     type="radio"
-    id="{id}"
-    name="{name}"
-    checked="{checked}"
-    disabled="{disabled}"
-    value="{value}"
-    class:bx--radio-button="{true}"
-    on:change
-    on:change="{() => {
-      if (ctx) {
-        ctx.update(value);
+    {id}
+    name={$groupName ?? (name || fallbackName)}
+    form={$groupForm ?? form}
+    {checked}
+    {disabled}
+    required={$groupRequired ?? required}
+    {value}
+    aria-describedby={joinDescribedBy(
+      describeReadonly ? readonlyId : null,
+      $helperId,
+      ariaDescribedBy,
+    )}
+    aria-label={ariaLabel || undefined}
+    aria-labelledby={ariaLabelledBy}
+    class:bx--radio-button={true}
+    on:focus
+    on:blur
+    on:click={(event) => {
+      if (effectiveReadonly) {
+        event.preventDefault();
+        return;
       }
-    }}"
+      // No `event.preventDefault()` here: canceling the click makes the
+      // browser revert `checked` back to its pre-click value once the event
+      // finishes dispatching, which runs after Svelte's microtask-scheduled
+      // DOM update and silently reselects the radio.
+      if ($allowDeselect && checked && deselect) {
+        deselect();
+      }
+    }}
+    on:change={(event) => {
+      if (effectiveReadonly) {
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (update) {
+        // Inside RadioButtonGroup - use context
+        update(value);
+      } else if (name && registry) {
+        // Standalone with name - update local checked and notify siblings via registry
+        checked = event.currentTarget.checked;
+        updateGroupSelection(name, instanceKey);
+      } else {
+        // Standalone without name - just update local checked
+        checked = event.currentTarget.checked;
+      }
+    }}
+    on:change
   />
-  <label class:bx--radio-button__label="{true}" for="{id}">
-    <span class:bx--radio-button__appearance="{true}"></span>
-    {#if labelText || $$slots.labelText}
-      <span class:bx--visually-hidden="{hideLabel}">
-        <slot name="labelText">
-          {labelText}
-        </slot>
+  <label class:bx--radio-button__label={true} for={id}>
+    <span class:bx--radio-button__appearance={true}></span>
+    {#if labelText || $$slots.labelChildren}
+      <span
+        class:bx--radio-button__label-text={true}
+        class:bx--visually-hidden={hideLabel}
+      >
+        <slot name="labelChildren">{labelText}</slot>
       </span>
     {/if}
   </label>
+  {#if $$slots.decorator}
+    <Decorator
+      class="bx--radio-button-wrapper-inner--decorator"
+      state={aiLabelState}
+      labelSize={labelSizeForVariant}
+      labelAlign="start"
+    >
+      <slot name="decorator" />
+    </Decorator>
+  {/if}
+  {#if describeReadonly}
+    <span id={readonlyId} class:bx--visually-hidden={true}>{readonlyText}</span>
+  {/if}
 </div>

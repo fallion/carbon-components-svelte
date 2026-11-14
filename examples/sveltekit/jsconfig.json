@@ -1,9 +1,8 @@
 {
+  "extends": "$app/tsconfig",
+  "include": ["src", "test", "*"],
+  "exclude": ["src/service-worker"],
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "$lib/*": ["src/lib/*"]
-    }
-  },
-  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.svelte"]
+    "ignoreDeprecations": "5.0"
+  }
 }

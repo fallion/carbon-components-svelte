@@ -1,0 +1,123 @@
+---
+description: Aspect ratios maintain consistent proportions for content like images, videos, and media across screen sizes.
+---
+
+<script>
+  import { AspectRatio, Tile } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Display a 2:1 aspect ratio container by default. The container fills the width of its parent, and its height is derived from the ratio.
+
+<AspectRatio>
+  2x1
+</AspectRatio>
+
+## Ratios
+
+Set `ratio` to change the aspect ratio. Supported values include `2x1`, `2x3`, `16x9`, `4x3`, `1x1`, `3x4`, `3x2`, `9x16`, and `1x2`.
+
+### 2x3
+
+Display content with a 2:3 aspect ratio.
+
+<AspectRatio ratio="2x3">
+  2x3
+</AspectRatio>
+
+### 16x9
+
+Display content with a 16:9 aspect ratio.
+
+<AspectRatio ratio="16x9">
+  16x9
+</AspectRatio>
+
+### 4x3
+
+Display content with a 4:3 aspect ratio.
+
+<AspectRatio ratio="4x3">
+  4x3
+</AspectRatio>
+
+### 1x1
+
+Display content with a 1:1 (square) aspect ratio.
+
+<AspectRatio ratio="1x1">
+  1x1
+</AspectRatio>
+
+### 3x4
+
+Display content with a 3:4 aspect ratio.
+
+<AspectRatio ratio="3x4">
+  3x4
+</AspectRatio>
+
+### 3x2
+
+Display content with a 3:2 aspect ratio.
+
+<AspectRatio ratio="3x2">
+  3x2
+</AspectRatio>
+
+### 9x16
+
+Display content with a 9:16 aspect ratio.
+
+<AspectRatio ratio="9x16">
+  9x16
+</AspectRatio>
+
+### 1x2
+
+Display content with a 1:2 aspect ratio.
+
+<AspectRatio ratio="1x2">
+  1x2
+</AspectRatio>
+
+### Custom ratio
+
+Set `ratio` to any positive `"WxH"` string for a ratio outside the named list, such as `"21x9"` for ultrawide video. Decimals are allowed, for example `"2.35x1"`. A value that is neither a named ratio nor a valid `WxH` pair falls back to `2x1`.
+
+<AspectRatio ratio="21x9">
+  21x9
+</AspectRatio>
+
+## Fill
+
+Set `fill` to `true` so the slotted content stretches to fill the aspect box, instead of sizing to its own content. This replaces setting `height: 100%` by hand on the content.
+
+<AspectRatio ratio="16x9" fill>
+  <Tile>Incident postmortem recording, Q3 outage</Tile>
+</AspectRatio>
+
+## Alignment
+
+Set `align` or `justify` to position content that doesn't fill the aspect box, such as a placeholder icon or short caption. Setting either makes the aspect box a flex container.
+
+<AspectRatio ratio="16x9" align="center" justify="center">
+  <Tile>Centered</Tile>
+</AspectRatio>
+
+## Custom element
+
+The outer element renders a `<div>` by default. Set `tag` to render a semantic element such as `figure`, `section`, or `article` without wrapping the component in an extra element.
+
+<AspectRatio tag="figure" ratio="16x9" fill>
+  <Tile>Rendered as a `figure`.</Tile>
+</AspectRatio>
+
+## Usage
+
+Wrap content like tiles, images, or videos in an aspect ratio container to maintain consistent proportions across screen sizes. See [Fill](#fill) above for making that content stretch to the container.
+
+### Grid columns
+
+To keep column heights consistent within a `Grid`, use the `aspectRatio` prop on `Column` instead—see [Grid: Aspect ratio](/components/Grid#aspect-ratio) for aligning columns of differing content across a row.

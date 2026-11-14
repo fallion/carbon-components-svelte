@@ -1,0 +1,648 @@
+---
+components: ["Dropdown", "DropdownSkeleton", "FluidDropdownSkeleton"]
+description: Dropdowns provide a select input with a dropdown menu, with multiple states, sizes, and customization options.
+---
+
+<script>
+  import { AILabel, Box, Dropdown, DropdownSkeleton, FluidDropdownSkeleton, Layer, TooltipIcon } from "carbon-components-svelte";
+  import Chat from "carbon-icons-svelte/lib/Chat.svelte";
+  import Email from "carbon-icons-svelte/lib/Email.svelte";
+  import Document from "carbon-icons-svelte/lib/Document.svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+  import Star from "carbon-icons-svelte/lib/Star.svelte";
+  import StarFilled from "carbon-icons-svelte/lib/StarFilled.svelte";
+</script>
+
+## Basic
+
+Use the dropdown to create a select input with a dropdown menu. Each item needs a unique id.
+
+With the field focused, <DocKbd label="Enter" /> or <DocKbd label="Space" /> opens the menu. <DocKbd label="ArrowDown" /> and <DocKbd label="ArrowUp" /> open it on the selected item, or on the first or last item when nothing is selected. <DocKbd label="Home" /> and <DocKbd label="End" /> jump to the first and last item, and the arrow keys wrap at either end. In an open menu, <DocKbd label="PageUp" /> and <DocKbd label="PageDown" /> move the highlight 10 items and stop at either end. Type a character, with the menu open or closed, to highlight the next enabled item whose label starts with it; type quickly to match a longer prefix.
+
+<Dropdown labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+## Selection
+
+Control which item is selected through `selectedId`.
+
+### No selection
+
+Omit `selectedId` to render the dropdown with no item selected. The label appears as placeholder text until the user makes a selection.
+
+<Dropdown labelText="Contact" label="Choose a contact method" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Clearable
+
+Set `clearable` to `true` to show a clear button when an item is selected. Clearing resets `selectedId` and dispatches a `clear` event. The clear button is hidden when there is no selection. With the field focused, <DocKbd label="Delete" /> or <DocKbd label="Backspace" /> also clears the selection.
+
+A long selected label truncates with an ellipsis before the clear button instead of running underneath it.
+
+<Dropdown clearable labelText="Contact" selectedId="1" label="Choose a contact method" items={[
+  { id: "0", text: "Slack" },
+  { id: "1", text: "A very long contact method name that fills the field" },
+  { id: "2", text: "Fax" },
+]} />
+
+### Clearable (invalid)
+
+With `invalid` or `warn` set, the status icon sits left of the clear button, and a long label truncates before both.
+
+<Dropdown clearable invalid invalidText="This contact method is no longer supported" labelText="Contact" selectedId="1" items={[
+  { id: "0", text: "Slack" },
+  { id: "1", text: "Legacy pager gateway for the platform on-call rotation in us-east-1 (deprecated, migrate to Slack before the next quarter)" },
+  { id: "2", text: "Fax" },
+]} />
+
+### Clear button text
+
+Override the assistive text for the clear interaction with `clearSelectionText` (appended to the field's description whenever there is a selection to clear) and `selectionClearedText` (announced through the status live region after clearing). Both only apply when `clearable` is `true`.
+
+<Dropdown clearable clearSelectionText="Press Escape twice to clear" selectionClearedText="Contact method cleared" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Clear selection
+
+Use `bind:this` to access the component instance and call `Dropdown.clear()` to clear the selection. Pass `focus: false` in the options to prevent re-focusing the field.
+
+<FileSource src="/framed/Dropdown/DropdownClear" />
+
+### Open on clear
+
+By default, the menu is closed after clearing the selection.
+
+Set `openOnClear` to `true` to reopen the menu after clearing the selection. This lets users immediately browse all available items without needing to click the field again.
+
+<Dropdown openOnClear clearable labelText="Contact" label="Choose a contact method" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Initial selection
+
+Set `selectedId` to pre-select an item when the dropdown first renders. The trigger shows that item's label in the closed state.
+
+When the user opens the menu, if the option list is taller than the menu's maximum height, the menu scrolls so the selected option stays visible. That applies to lists rendered in full and to [virtualized lists](#large-lists).
+
+<FileSource src="/framed/Dropdown/ScrollToSelected" />
+
+## Content
+
+Customize the label, item display, and supporting text.
+
+### Custom label
+
+Use the `labelChildren` slot for custom label content instead of `labelText`.
+
+<Dropdown selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}">
+  <strong slot="labelChildren">Custom label</strong>
+</Dropdown>
+
+### Custom slot
+
+Override the default slot to customize the display of each item. Use `let:item`, `let:index`, `let:selected`, and `let:highlighted` to style highlighted and selected rows.
+
+<FileSource src="/framed/Dropdown/DropdownSlot" />
+
+### Item icons
+
+Set icon on an item for a left icon. The label sits between the icon and the checkmark. Use the icon slot for custom markup.
+
+<Dropdown labelText="Contact" selectedId="0" items={[
+  {id: "0", text: "Slack", icon: Chat},
+  {id: "1", text: "Email", icon: Email},
+  {id: "2", text: "Fax", icon: Document}]} />
+
+Use the `iconEnd` slot to replace the checkmark.
+
+<Dropdown labelText="Contact" selectedId="0" items={[
+  {id: "0", text: "Slack", icon: Chat},
+  {id: "1", text: "Email", icon: Email},
+  {id: "2", text: "Fax", icon: Document}]}>
+  <svelte:fragment slot="icon" let:item>
+    <svelte:component this={item.icon} />
+  </svelte:fragment>
+  <svelte:fragment slot="iconEnd" let:selected>
+    {#if selected}<StarFilled />{:else}<Star />{/if}
+  </svelte:fragment>
+</Dropdown>
+
+### Format display text
+
+Format item display text with `itemToString`. The function receives each item and returns the formatted string.
+
+<Dropdown itemToString={item => {
+  return item.text + ' (' + item.id +')'
+}} labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Helper text
+
+Add descriptive text below the dropdown with `helperText`.
+
+<Dropdown helperText="Choose your preferred contact method" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains
+available to screen readers.
+
+<Dropdown hideLabel labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+## Groups
+
+Set `group` on items to list them under a non-selectable header. Items without a group are listed first, without a header, followed by the groups in the order they first occur in `items`. The arrow keys move between options and skip the headers.
+
+Each group is exposed to screen readers as a group named by its label. The selection is still a single id.
+
+<Dropdown labelText="Region" label="Select a region"
+  items="{[{id: "0", text: "Frankfurt", group: "Europe"},
+    {id: "1", text: "Toronto", group: "Americas"},
+    {id: "2", text: "London", group: "Europe"},
+    {id: "3", text: "São Paulo", group: "Americas"},
+    {id: "4", text: "Global (any region)"}]}"
+/>
+
+### Custom header
+
+Override the `group` slot to customize a header. Use `let:group` for the label and `let:items` for the group's items. The slot changes the visible header only; screen readers still announce the plain label.
+
+<Dropdown labelText="Region" label="Select a region"
+  items="{[{id: "0", text: "Frankfurt", group: "Europe"},
+    {id: "1", text: "Toronto", group: "Americas"},
+    {id: "2", text: "London", group: "Europe"},
+    {id: "3", text: "São Paulo", group: "Americas"},
+    {id: "4", text: "Global (any region)"}]}"
+>
+  <svelte:fragment slot="group" let:group let:items={groupItems}>
+    {group} ({groupItems.length})
+  </svelte:fragment>
+</Dropdown>
+
+## Menu
+
+Control the menu's position, portalling, and open state.
+
+### Top direction
+
+Set `direction` to `"top"` to open the menu above the input. Useful when space below is limited.
+
+<Dropdown direction="top" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### End alignment
+
+The [inline](#inline) menu is at least 288px wide, so it can be wider than its field. It lines up with the field's left edge by default. Set `align` to `"end"` to line it up with the right edge, so an inline dropdown at the end of a row opens toward the row instead of past it. Combine with `direction="top"` for the upper corner.
+
+<Box display="flex" justify="end">
+  <Dropdown type="inline" align="end" labelText="Sort" selectedId="0" items="{[{id: "0", text: "Name"},
+    {id: "1", text: "Date modified (newest first)"},
+    {id: "2", text: "Size"}]}" />
+</Box>
+
+### Portal menu
+
+A dropdown menu that a container would cut off, such as a box with `overflow: hidden` or a scroll area, opens in a floating portal. The container in the example below hides its overflow, so the menu moves to a portal when it opens. Inside a [Modal](/components/Modal#modal-with-dropdowns), the menu always opens in a portal.
+
+Set `portalMenu` to `true` to always render the menu in a portal, for example to escape a z-index stacking context. Set it to `false` to keep the menu in place. A portalled menu leaves its container in the DOM, so CSS that targets the menu as a descendant of the container does not match it.
+
+<FileSource src="/framed/Dropdown/DropdownPortalMenu" />
+
+### Open by default
+
+Set `open` to `true` to render the dropdown already expanded. The prop is bindable (`bind:open`), so you can also drive it externally, such as from a trigger elsewhere on the page.
+
+<Dropdown open labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Loading
+
+Set `loading` to `true` to show a loading row after the options, such as while fetching items the first time the menu opens. The menu is marked busy for screen readers, and any options already listed stay selectable.
+
+Set `loadingText` to change the row's text.
+
+Set `loadingDelay` to wait a number of milliseconds after `loading` becomes `true` before showing the loading row. Work that finishes within the delay shows no row. Once shown, the row stays for at least 500 ms so it does not flash. The menu is marked busy, and the empty state held back, as soon as `loading` is `true`.
+
+<FileSource src="/framed/Dropdown/DropdownLoading" />
+
+### Empty state
+
+When `items` is empty, the open menu shows "No options". `loading` holds the message back until the items arrive. Screen readers hear it through the dropdown's live region.
+
+Set `emptyText` to change the message, or set it to `""` to leave the menu empty instead.
+
+<Dropdown labelText="Contact" label="Select a contact method" emptyText="No contact methods yet" items={[]} />
+
+Use the `empty` slot for richer content. The slot changes the visible row only; screen readers still hear `emptyText`.
+
+<Dropdown labelText="Contact" label="Select a contact method" emptyText="No contact methods yet" items={[]}>
+  <svelte:fragment slot="empty">
+    No contact methods yet. Add one in Settings.
+  </svelte:fragment>
+</Dropdown>
+
+### Wrapped options
+
+Option labels are truncated to one line. At a 320px viewport, that hides text and can leave two options looking identical, a WCAG 1.4.10 Reflow failure.
+
+Set `wrapOptions` to let a label take as many lines as it needs. Lines break between words, and mid-word only when a word is too long to fit a line by itself. A [custom slot](#custom-slot) wraps with the label.
+
+It defaults to `false` because wrapping changes option heights.
+
+<FileSource src="/framed/Dropdown/WrapOptions" />
+
+## Virtualization
+
+Virtualization renders only the items currently visible in the viewport, improving performance for large lists.
+
+### Large lists
+
+By default, the dropdown virtualizes lists with more than 100 items.
+
+In the example below, 10,000 items are provided to the dropdown but only 11 items (8 visible items + 3 overscan items) are rendered in the DOM.
+
+Set `virtualize={false}` to explicitly disable virtualization, even for large lists. Or customize the threshold at which virtualization activates. See [Custom threshold](#custom-threshold).
+
+<FileSource src="/framed/Dropdown/VirtualizedDropdown" />
+
+### Load more
+
+`scrollend` fires when the menu is scrolled near the bottom so you can append the next page of `items`. Same pattern as [ComboBox load more](/components/ComboBox#load-more): handle `on:scrollend`, keep prior items visible while loading, and set `loading` while the next page is in flight to show a loading row after them. The event is a near-bottom load-more signal, not the browser's native `scrollend`.
+
+<FileSource src="/framed/Dropdown/ScrollEndDropdown" />
+
+### Custom overscan
+
+Overscanning is the process of rendering extra items above and below the viewport to ensure smooth scrolling. The default overscan value is 3.
+
+Specify a custom value for `overscan` to control how many extra items render above and below the viewport for smoother scrolling.
+
+During very fast scrolling, higher overscan values may cause more flickering due to increased DOM updates. For fast-scrolling scenarios, use a lower overscan value.
+
+<FileSource src="/framed/Dropdown/VirtualizeOverscan" />
+
+### Fast scrolling
+
+During a scroll faster than the menu can render, such as a quick drag of the scrollbar, the options can briefly disappear. Set `optimizeFastScroll: true` to keep the options already rendered in view until the new ones arrive.
+
+The options then follow the scroll a frame behind, and pause while the page is busy running scripts. Leave it off when the menu sits on a page that often does heavy work.
+
+<FileSource src="/framed/Dropdown/VirtualizeFastScroll" />
+
+### Custom threshold
+
+The threshold is the minimum number of items required before virtualization activates. The default threshold value is 100, meaning lists with fewer than 100 items will not be virtualized and all items will be rendered normally.
+
+Specify a custom value for `threshold` to control when virtualization activates. Below the threshold, all items render normally without virtualization.
+
+<FileSource src="/framed/Dropdown/VirtualizeThreshold" />
+
+### Custom item height
+
+By default, item height matches the menu row for each size: 24px (`xs`), 32px (`sm`), 40px (`md`), 48px (`lg`, `xl`). Set `itemHeight` when custom slots change row height.
+
+<FileSource src="/framed/Dropdown/VirtualizeItemHeight" />
+
+### Custom container height
+
+The virtualized menu's scrollable container defaults to a maximum height of 300px. Set `containerHeight` within the `virtualize` object to change it. Providing any `virtualize` object (even with a short list, as below) activates the sizing behavior, though items only get windowed once the list reaches `threshold`.
+
+<Dropdown virtualize={{ containerHeight: 150 }} labelText="Contact" items={[
+  { id: "0", text: "Slack" },
+  { id: "1", text: "Email" },
+  { id: "2", text: "Fax" },
+  { id: "3", text: "Phone" },
+  { id: "4", text: "Mail" },
+  { id: "5", text: "SMS" },
+  { id: "6", text: "WhatsApp" },
+  { id: "7", text: "Teams" },
+  { id: "8", text: "Zoom" },
+  { id: "9", text: "In person" },
+]} />
+
+Set `maxItems` within the same object to cap the number of items rendered in the DOM window at once, independent of `overscan`. This only takes effect once the list is windowed (at or above `threshold`), and is rarely needed outside of extreme item counts or very expensive item templates—set it too low and items can appear to go blank near the scroll edges.
+
+## Multiple dropdowns
+
+Create multiple dropdowns that work together.
+
+<FileSource src="/framed/Dropdown/MultipleDropdown" />
+
+## Events
+
+Respond to selection, clearing, and the menu opening and closing.
+
+### Select
+
+Use `on:select` to listen for a new selection. The event detail includes the selected item's id and the full item. From the keyboard, <DocKbd label="Enter" /> or <DocKbd label="Space" /> selects the highlighted item. On an item highlighted only by hovering, or on the item that is already selected, they close the menu without dispatching `select`.
+
+<Dropdown
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+  on:select={(e) => {
+    console.log(e.detail.selectedId);
+    console.log(e.detail.selectedItem);
+  }}
+/>
+
+### Clear
+
+Use `on:clear` to listen for the selection being cleared, either via the clear button or the Delete/Backspace shortcut. Only fires when `clearable` is `true`. The event detail is the original `KeyboardEvent` or `MouseEvent`.
+
+<Dropdown
+  clearable
+  selectedId="0"
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+  on:clear={(e) => console.log(e)}
+/>
+
+### Open
+
+Use `on:open` to know when the menu opens and why. `event.detail.trigger` is `"click"` or `"keydown"`, or `"programmatic"` when `open` is set from outside, such as through `bind:open`. It fires once per open, after the menu renders, and not for a dropdown rendered already open.
+
+<Dropdown
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+  on:open={(e) => console.log(e.detail.trigger)}
+/>
+
+### Close
+
+Use `on:close` to know when the menu closes and why. `event.detail.trigger` is `"escape-key"`, `"outside-click"`, or `"select"`. <DocKbd label="Escape" />, <DocKbd label="Alt" /> + <DocKbd label="ArrowUp" />, and <DocKbd label="Tab" /> close the menu without selecting and report `"escape-key"`.
+
+<Dropdown
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+  on:close={(e) => console.log(e.detail.trigger)}
+/>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<Dropdown labelText="Region" selectedId="us-east-1" items={[{ id: "us-east-1", text: "US East (N. Virginia)" }, { id: "eu-west-1", text: "EU West (Ireland)" }]}>
+  <AILabel slot="decorator">
+    <p>Picked as the region closest to most of your users.</p>
+  </AILabel>
+</Dropdown>
+
+## Sizes
+
+Set `size` to adjust the height of the dropdown. The default is medium.
+
+### Extra-large
+
+Set `size` to `"xl"` for an extra-large dropdown.
+
+<Dropdown size="xl" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Extra-small
+
+Set `size` to `"xs"` for an extra-small dropdown.
+
+<Dropdown size="xs" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Small
+
+Set `size` to `"sm"` for a small dropdown. Useful for compact layouts or secondary selections.
+
+<Dropdown size="sm" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` to show an error message.
+
+<Dropdown invalid invalidText="Secondary contact method must be different from the primary contact" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` to show a warning message.
+
+<Dropdown warn warnText="This contact method is not associated with your account" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Disabled
+
+Set `disabled` to `true` to prevent interaction with the dropdown.
+
+<Dropdown disabled labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Disabled items
+
+Mark individual items with `disabled: true` for finer control over available selections. The arrow keys still highlight disabled items so screen reader users can discover them, but they cannot be selected.
+
+<Dropdown
+  selectedId="0"
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email", disabled: true },
+    { id: "2", text: "Fax" },
+  ]}
+/>
+
+### Read-only
+
+Set `readonly` to `true` to display a non-editable value. The field stays focusable but ignores keyboard input.
+
+<Dropdown
+  readonly
+  selectedId="0"
+  labelText="Contact"
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+/>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <Dropdown
+      labelText="Contact"
+      selectedId="0"
+      items={[
+        { id: "0", text: "Slack" },
+        { id: "1", text: "Email" },
+        { id: "2", text: "Fax" },
+      ]}
+    />
+  </Box>
+</Layer>
+
+## Inline
+
+Set `type` to `"inline"` to display the dropdown inline with other content. This variant removes the background and border. Its menu is at least 288px wide; use [end alignment](#end-alignment) when the field sits at the end of a row.
+
+<Dropdown type="inline" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+## Fluid
+
+Set `fluid` to `true` to use the fluid variant, which embeds the label
+inside the field. Fluid dropdowns can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically. The fluid variant cannot be combined with the inline variant.
+
+<Dropdown fluid labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<Dropdown fluid labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}">
+  <svelte:fragment slot="labelChildren">
+    Contact
+    <TooltipIcon tooltipText="Your contact method is used for account notifications." icon={Information} />
+  </svelte:fragment>
+</Dropdown>
+
+### Condensed
+
+By default, the fluid variant renders taller menu items to match the taller
+field. Set `condensed` to `true` to render menu items at their default
+height instead.
+
+<Dropdown fluid condensed labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Invalid
+
+Fluid dropdowns display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<Dropdown fluid invalid invalidText="Secondary contact method must be different from the primary contact. Slack is already configured as your primary contact method; choose Email or Fax instead." labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Warning
+
+<Dropdown fluid warn warnText="This contact method is not associated with your account" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Disabled
+
+Invalid and warning states are not displayed while the dropdown is disabled.
+
+<Dropdown fluid disabled invalid invalidText="Secondary contact method must be different from the primary contact" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Read-only
+
+Invalid and warning states are not displayed while the dropdown is read-only.
+
+<Dropdown fluid readonly warn warnText="This contact method is not associated with your account" labelText="Contact" selectedId="0" items="{[{id: "0", text: "Slack"},
+  {id: "1", text: "Email"},
+  {id: "2", text: "Fax"}]}" />
+
+### Skeleton
+
+Display a loading skeleton for the fluid dropdown variant.
+
+<FluidDropdownSkeleton />
+
+## Form name
+
+Set `name` so the selection participates in native form submission (for
+example SvelteKit form actions and `FormData`). A hidden input mirrors
+`selectedId`, submitting an empty string when nothing is selected or when
+the selected item is disabled. A disabled dropdown is left out of the
+submission, like a disabled native `<select>`.
+
+```svelte
+<script>
+  import { Form, Dropdown, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/contact">
+  <Dropdown
+    name="contactMethod"
+    labelText="Contact"
+    items={[
+      { id: "0", text: "Slack" },
+      { id: "1", text: "Email" },
+      { id: "2", text: "Fax" },
+    ]}
+  />
+  <Button type="submit">Submit</Button>
+</Form>
+```
+
+## Required
+
+Set `required` to keep a surrounding form from submitting until an item is selected. A selected item that is disabled counts as no selection, as it does for `name`. With `form`, it holds back the form it names even from outside it. The field is marked required for screen readers.
+
+When a submit is blocked, the field shows its invalid state instead of the browser's error bubble, and the first invalid field takes focus. Calling `checkValidity()` from code shows nothing. The state clears once the field has a value or the form resets.
+
+Set `requiredInvalidText` to change the message, which defaults to "Select an item". Your own `invalid` and `invalidText` take precedence.
+
+<FileSource src="/framed/Dropdown/DropdownRequired" />
+
+## Skeleton
+
+Show a loading state with the dropdown skeleton.
+
+<DropdownSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<DropdownSkeleton size="xs" />

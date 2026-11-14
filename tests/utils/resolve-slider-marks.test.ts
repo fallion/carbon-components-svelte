@@ -1,0 +1,164 @@
+// @vitest-environment node
+import {
+  getMarkLabels,
+  markNearPointer,
+  nearestMark,
+  resolveSliderMarks,
+  stepMarks,
+} from "../../src/utils/resolve-slider-marks.js";
+
+describe("resolveSliderMarks", () => {
+  it("returns empty array for falsy marks", () => {
+    expect(resolveSliderMarks(false, 0, 100, 1)).toEqual([]);
+  });
+
+  it("generates a tick at every step when marks is true", () => {
+    expect(resolveSliderMarks(true, 0, 10, 5)).toEqual([
+      { value: 0 },
+      { value: 5 },
+      { value: 10 },
+    ]);
+  });
+
+  it("filters array marks to the min/max range", () => {
+    expect(
+      resolveSliderMarks(
+        [
+          { value: -1, label: "below" },
+          { value: 0, label: "Off" },
+          { value: 2, label: "Med" },
+          { value: 99, label: "above" },
+        ],
+        0,
+        3,
+        1,
+      ),
+    ).toEqual([
+      { value: 0, label: "Off" },
+      { value: 2, label: "Med" },
+    ]);
+  });
+
+  it("generates decimal ticks without floating-point noise", () => {
+    expect(
+      resolveSliderMarks(true, 0, 0.5, 0.1).map((mark) => mark.value),
+    ).toEqual([0, 0.1, 0.2, 0.3, 0.4, 0.5]);
+  });
+
+  it("returns empty array when step is not positive in boolean mode", () => {
+    expect(resolveSliderMarks(true, 0, 10, 0)).toEqual([]);
+  });
+});
+
+describe("getMarkLabels", () => {
+  it("maps labeled marks by value and skips unlabeled ones", () => {
+    expect(
+      getMarkLabels([
+        { value: 0, label: "Off" },
+        { value: 1 },
+        { value: 2, label: "" },
+        { value: 3, label: "High" },
+      ]),
+    ).toEqual(
+      new Map([
+        [0, "Off"],
+        [3, "High"],
+      ]),
+    );
+  });
+});
+
+describe("nearestMark", () => {
+  it("returns undefined for no marks", () => {
+    expect(nearestMark(5, [])).toBeUndefined();
+  });
+
+  it("returns the closest mark, including a mark at 0", () => {
+    const marks = [{ value: 0 }, { value: 25 }, { value: 100 }];
+    expect(nearestMark(3, marks)).toBe(marks[0]);
+    expect(nearestMark(27, marks)).toBe(marks[1]);
+    expect(nearestMark(80, marks)).toBe(marks[2]);
+  });
+
+  it("resolves ties to the earlier mark", () => {
+    const marks = [{ value: 0 }, { value: 10 }];
+    expect(nearestMark(5, marks)).toBe(marks[0]);
+  });
+});
+
+describe("stepMarks", () => {
+  const marks = [{ value: 50 }, { value: 0 }, { value: 100 }, { value: 25 }];
+
+  it.each([
+    { value: 25, count: 1, expected: 50 },
+    { value: 25, count: -1, expected: 0 },
+    { value: 0, count: 3, expected: 100 },
+    { value: 0, count: -1, expected: 0 },
+    { value: 100, count: 9, expected: 100 },
+    { value: 30, count: 1, expected: 50 },
+  ])("moves $count from $value to $expected", ({ value, count, expected }) => {
+    expect(stepMarks(value, marks, count)).toBe(expected);
+  });
+
+  it("returns the value unchanged without marks", () => {
+    expect(stepMarks(42, [], 1)).toBe(42);
+  });
+});
+
+describe("markNearPointer", () => {
+  const rect = { left: 0, right: 200, width: 200, bottom: 0, height: 2 };
+  const marks = [{ value: 25 }, { value: 50, label: "Neutral" }];
+  const options = {
+    orientation: "horizontal" as const,
+    min: 0,
+    max: 100,
+    marks,
+    distance: 8,
+  };
+
+  it.each([
+    { clientX: 100, expected: 50 },
+    { clientX: 108, expected: 50 },
+    { clientX: 92, expected: 50 },
+    { clientX: 109, expected: undefined },
+    { clientX: 150, expected: undefined },
+  ])("at x=$clientX finds $expected", ({ clientX, expected }) => {
+    const event = { clientX } as MouseEvent;
+    expect(markNearPointer(event, rect, options)?.value).toBe(expected);
+  });
+
+  it("measures after subtracting the grab offset", () => {
+    const event = { clientX: 115 } as MouseEvent;
+    expect(
+      markNearPointer(event, rect, { ...options, offset: 10 })?.value,
+    ).toBe(50);
+  });
+
+  it("measures from the right edge in RTL", () => {
+    const event = { clientX: 146 } as MouseEvent;
+    expect(markNearPointer(event, rect, options)?.value).toBeUndefined();
+    expect(markNearPointer(event, rect, { ...options, rtl: true })?.value).toBe(
+      25,
+    );
+  });
+
+  it("measures along a vertical track", () => {
+    const vertical = { left: 0, right: 2, width: 2, bottom: 200, height: 200 };
+    const event = { clientY: 104 } as MouseEvent;
+    expect(
+      markNearPointer(event, vertical, { ...options, orientation: "vertical" })
+        ?.value,
+    ).toBe(50);
+  });
+
+  it.each([
+    { name: "distance is 0", override: { distance: 0 } },
+    { name: "there are no marks", override: { marks: [] } },
+    { name: "min equals max", override: { min: 50, max: 50 } },
+  ])("returns undefined when $name", ({ override }) => {
+    const event = { clientX: 100 } as MouseEvent;
+    expect(
+      markNearPointer(event, rect, { ...options, ...override }),
+    ).toBeUndefined();
+  });
+});

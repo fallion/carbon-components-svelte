@@ -1,0 +1,266 @@
+import { render, screen } from "@testing-library/svelte";
+import { user } from "../utils/user";
+import ListBoxField from "./ListBoxField.test.svelte";
+
+describe("ListBoxField", () => {
+  it("should render with default props", () => {
+    render(ListBoxField, { props: { slotContent: "Field content" } });
+
+    const field = screen
+      .getByText("Field content")
+      .closest(".bx--list-box__field");
+    expect(field).toBeInTheDocument();
+    expect(field).toHaveAttribute("role", "combobox");
+  });
+
+  it("should handle disabled state", () => {
+    render(ListBoxField, {
+      props: {
+        disabled: true,
+        tabindex: "0",
+        slotContent: "Disabled field",
+      },
+    });
+
+    const field = screen
+      .getByText("Disabled field")
+      .closest(".bx--list-box__field");
+    expect(field).toHaveAttribute("aria-disabled", "true");
+    expect(field).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("should handle enabled state with custom tabindex", () => {
+    render(ListBoxField, {
+      props: {
+        disabled: false,
+        tabindex: "0",
+        slotContent: "Enabled field",
+      },
+    });
+
+    const field = screen
+      .getByText("Enabled field")
+      .closest(".bx--list-box__field");
+    expect(field).toHaveAttribute("tabindex", "0");
+  });
+
+  it("should handle custom role", () => {
+    render(ListBoxField, {
+      props: {
+        role: "button",
+        slotContent: "Custom role",
+      },
+    });
+
+    const field = screen
+      .getByText("Custom role")
+      .closest(".bx--list-box__field");
+    expect(field).toHaveAttribute("role", "button");
+  });
+
+  it("should handle aria-expanded", () => {
+    render(ListBoxField, {
+      props: {
+        "aria-expanded": true,
+        slotContent: "Expanded field",
+      },
+    });
+
+    const field = screen
+      .getByText("Expanded field")
+      .closest(".bx--list-box__field");
+    expect(field).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it.each([{ "aria-expanded": true }, { "aria-expanded": false }])(
+    "should not set an aria-label when %o as that would override the <label for>",
+    (props) => {
+      render(ListBoxField, {
+        props: {
+          ...props,
+          slotContent: "Test field",
+        },
+      });
+
+      const field = screen
+        .getByText("Test field")
+        .closest(".bx--list-box__field");
+      expect(field).not.toHaveAttribute("aria-label");
+    },
+  );
+
+  it("should generate menu id based on field id", () => {
+    render(ListBoxField, {
+      props: {
+        id: "test-field",
+        "aria-expanded": true,
+        slotContent: "ID test",
+      },
+    });
+
+    const field = screen.getByText("ID test").closest(".bx--list-box__field");
+    expect(field).not.toHaveAttribute("aria-owns");
+    expect(field).toHaveAttribute("aria-controls", "menu-test-field");
+  });
+
+  it("should not set aria-owns and aria-controls when collapsed", () => {
+    render(ListBoxField, {
+      props: {
+        id: "test-field",
+        "aria-expanded": false,
+        slotContent: "Collapsed field",
+      },
+    });
+
+    const field = screen
+      .getByText("Collapsed field")
+      .closest(".bx--list-box__field");
+    expect(field).not.toHaveAttribute("aria-owns");
+    expect(field).not.toHaveAttribute("aria-controls");
+  });
+
+  it("should handle click events", async () => {
+    const clickHandler = vi.fn();
+    render(ListBoxField, {
+      props: { slotContent: "Clickable field", onclick: clickHandler },
+    });
+
+    const field = screen
+      .getByText("Clickable field")
+      .closest(".bx--list-box__field");
+    assert(field);
+    await user.click(field);
+
+    expect(clickHandler).toHaveBeenCalled();
+  });
+
+  it("should handle keydown events", async () => {
+    const keydownHandler = vi.fn();
+    render(ListBoxField, {
+      props: {
+        slotContent: "Keyboard field",
+        tabindex: "0",
+        onkeydown: keydownHandler,
+      },
+    });
+
+    const field = screen
+      .getByText("Keyboard field")
+      .closest(".bx--list-box__field");
+    assert(field instanceof HTMLElement);
+
+    field.focus();
+    await user.keyboard("{Enter}");
+
+    expect(keydownHandler).toHaveBeenCalled();
+  });
+
+  it.each(["Enter", " ", "ArrowDown", "Tab", "a"])(
+    "stops %j keydown from bubbling to a parent",
+    async (key) => {
+      const onParentKeydown = vi.fn();
+      const { container } = render(ListBoxField, {
+        props: { slotContent: "Bubbling field", tabindex: "0" },
+      });
+      container.addEventListener("keydown", onParentKeydown);
+
+      screen.getByRole("combobox").focus();
+      await user.keyboard(key === " " ? " " : `{${key}}`);
+
+      expect(onParentKeydown).not.toHaveBeenCalled();
+    },
+  );
+
+  it("lets Escape keydown bubble to a parent", async () => {
+    const onParentKeydown = vi.fn();
+    const { container } = render(ListBoxField, {
+      props: { slotContent: "Escape field", tabindex: "0" },
+    });
+    container.addEventListener("keydown", onParentKeydown);
+
+    screen.getByRole("combobox").focus();
+    await user.keyboard("{Escape}");
+
+    expect(onParentKeydown).toHaveBeenCalledTimes(1);
+  });
+
+  it("should handle focus and blur events", () => {
+    const focusHandler = vi.fn();
+    const blurHandler = vi.fn();
+    render(ListBoxField, {
+      props: {
+        slotContent: "Focus field",
+        tabindex: "0",
+        onfocus: focusHandler,
+        onblur: blurHandler,
+      },
+    });
+
+    const field = screen
+      .getByText("Focus field")
+      .closest(".bx--list-box__field");
+    assert(field instanceof HTMLElement);
+
+    field.focus();
+    expect(focusHandler).toHaveBeenCalled();
+
+    field.blur();
+    expect(blurHandler).toHaveBeenCalled();
+  });
+
+  it("should handle mouse events", async () => {
+    const mouseoverHandler = vi.fn();
+    const mouseenterHandler = vi.fn();
+    const mouseleaveHandler = vi.fn();
+    render(ListBoxField, {
+      props: {
+        slotContent: "Mouse field",
+        onmouseover: mouseoverHandler,
+        onmouseenter: mouseenterHandler,
+        onmouseleave: mouseleaveHandler,
+      },
+    });
+
+    const field = screen
+      .getByText("Mouse field")
+      .closest(".bx--list-box__field");
+    assert(field);
+
+    await user.hover(field);
+    expect(mouseoverHandler).toHaveBeenCalled();
+    expect(mouseenterHandler).toHaveBeenCalled();
+
+    await user.unhover(field);
+    expect(mouseleaveHandler).toHaveBeenCalled();
+  });
+
+  it("should expose ref", () => {
+    const { component } = render(ListBoxField, {
+      props: { slotContent: "Ref field" },
+    });
+
+    expect(component.ref).toBeInstanceOf(HTMLButtonElement);
+  });
+
+  it("should set aria-readonly when readonly is true", () => {
+    render(ListBoxField, {
+      props: { readonly: true, slotContent: "Readonly field" },
+    });
+
+    const field = screen
+      .getByText("Readonly field")
+      .closest(".bx--list-box__field");
+    expect(field).toHaveAttribute("aria-readonly", "true");
+  });
+
+  it("should not set aria-readonly when readonly is false", () => {
+    render(ListBoxField, {
+      props: { readonly: false, slotContent: "Editable field" },
+    });
+
+    const field = screen
+      .getByText("Editable field")
+      .closest(".bx--list-box__field");
+    expect(field).not.toHaveAttribute("aria-readonly");
+  });
+});

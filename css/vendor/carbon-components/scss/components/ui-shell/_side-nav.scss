@@ -1,0 +1,828 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/css--helpers';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/vars';
+@import 'functions';
+@import 'theme';
+
+/// ccs: `padding-left` for a link or submenu trigger inside a
+/// `SideNavMenu`. Each nesting level adds a `mini-units(2)` step, and each
+/// menu with an icon on the way down adds the `mini-units(5)` its icon
+/// takes, so a row's text starts past its parent's text and a row's own
+/// icon sits in its siblings' text column, as at the top level. The
+/// component sets both custom properties only below the first level.
+/// @access private
+/// @group ui-shell
+/// @param {Number} $icon-depth - first-level fallback: `1` under a menu with an icon
+/// @return {String} a `calc()` expression
+@function side-nav-menu-indent($icon-depth) {
+  @return calc(
+    #{mini-units(4)} + #{mini-units(2)} * (var(--ccs-side-nav-menu-depth, 1) - 1) +
+      #{mini-units(5)} * var(--ccs-side-nav-menu-icon-depth, #{$icon-depth})
+  );
+}
+
+/// Helper to add in text overflow styles to a particular node. Useful if we
+/// don't want to have display-inline: block from the text helper classes
+/// @access private
+/// @group ui-shell
+/// @example
+///   .my-custom-selector {
+///     @include text-overflow();
+///   }
+@mixin text-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/// Helper for handling selectors for the expansion state of the side-nav.
+/// This helper makes it easier to write code for children that need to respond
+/// to whether the side-nav is open, or closed. For convenience, we also
+/// optionally set properties for opacity and visibility to help with the
+/// transition animation.
+/// @access private
+/// @group ui-shell
+/// @param {Bool} $opacity [false]
+/// @param {Bool} $visibility [false]
+/// @content
+@mixin expanded($opacity: false, $visibility: false) {
+  @if $opacity == true {
+    opacity: 0;
+  }
+
+  @if $visibility == true {
+    visibility: hidden;
+  }
+
+  .#{$prefix}--side-nav--expanded & {
+    @if $visibility == true {
+      visibility: inherit;
+    }
+    @if $opacity == true {
+      opacity: 1;
+    }
+    @content;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--side-nav:hover & {
+      @if $visibility == true {
+        visibility: inherit;
+      }
+      @if $opacity == true {
+        opacity: 1;
+      }
+      @content;
+    }
+  }
+}
+
+/// UI shell side nav
+/// @access private
+/// @group ui-shell
+@mixin carbon-side-nav {
+  .#{$prefix}--side-nav {
+    position: fixed;
+    z-index: z('header');
+    top: 0;
+    bottom: 0;
+    // Useful to toggle this property to see what's going on when not expanded
+    overflow: hidden;
+    width: mini-units(6);
+    max-width: mini-units(32);
+    background-color: $shell-side-nav-bg-01;
+    color: $shell-side-nav-text-01;
+    transition: width 0.11s cubic-bezier(0.2, 0, 1, 0.9);
+    @include ccs-inset-inline($start: 0);
+  }
+
+  // ccs: opt-in border separating the side nav from its content, since both
+  // typically share the same background and otherwise blend together.
+  .#{$prefix}--side-nav--border {
+    border-inline-end: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--side-nav--ux {
+    top: 2.25rem; // ccs
+    width: mini-units(32);
+
+    @include carbon--breakpoint-down('lg') {
+      width: 0;
+    }
+  }
+
+
+  .#{$prefix}--side-nav--rail {
+    width: mini-units(6);
+    // ccs: a transition takes its delay from the state it moves to, so
+    // collapsing waits `leaveDelayMs` and the `:hover` rule's delay
+    // (`enterDelayMs`) applies to expanding. `SideNav` sets both inline.
+    transition-delay: var(--ccs-side-nav-rail-leave-delay, 0ms);
+  }
+
+  .#{$prefix}--side-nav--expanded {
+    width: mini-units(32);
+    transition-delay: 0ms; // ccs: open a rail from the menu button at once
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--side-nav.#{$prefix}--side-nav--rail:not(.#{$prefix}--side-nav--fixed):hover {
+      width: mini-units(32);
+      transition-delay: var(--ccs-side-nav-rail-enter-delay, 0ms); // ccs
+    }
+  }
+
+  .#{$prefix}--side-nav__overlay {
+    position: fixed;
+    top: to-rem(48px);
+    left: 0;
+    width: 0;
+    height: 0;
+    background-color: transparent;
+    opacity: 0;
+    transition: opacity $transition--expansion $carbon--standard-easing,
+      background-color $transition--expansion $carbon--standard-easing;
+  }
+
+  .#{$prefix}--side-nav__overlay-active {
+    background-color: rgba(0, 0, 0, 0.65); // ccs
+
+    @include carbon--breakpoint-down('lg') {
+      width: 100vw;
+      height: 100vh;
+      opacity: 1;
+      transition: opacity $transition--expansion $carbon--standard-easing,
+        background-color $transition--expansion $carbon--standard-easing;
+    }
+  }
+
+  // When used alongside the header, we update the `top` positioning so that we
+  // can fit both widgets on the same page without overlapping.
+  .#{$prefix}--header ~ .#{$prefix}--side-nav {
+    top: mini-units(6);
+    height: calc(100% - 48px);
+  }
+
+  .#{$prefix}--side-nav--collapsed {
+    width: mini-units(32);
+    transform: translateX(mini-units(-32));
+
+    [dir='rtl'] & {
+      transform: ccs-dir(translateX(mini-units(-32)), translateX(mini-units(32)));
+    }
+  }
+
+  .#{$prefix}--side-nav__navigation {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+  }
+
+  .#{$prefix}--side-nav__items {
+    overflow: hidden;
+    flex: 1 1 0%;
+    padding: 1rem 0; // ccs: bottom padding too (#3742)
+
+    @include expanded() {
+      overflow-y: auto;
+    }
+  }
+
+  .#{$prefix}--side-nav--ux .#{$prefix}--side-nav__items {
+    overflow-y: auto;
+  }
+
+  .#{$prefix}--side-nav__item {
+    overflow: hidden;
+    width: auto;
+    height: auto;
+  }
+
+  .#{$prefix}--side-nav--ux .#{$prefix}--side-nav__item {
+    width: auto;
+    height: auto;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--side-nav__item:hover
+      .#{$prefix}--side-nav__item:not(.#{$prefix}--side-nav__item--active) // ccs: an active menu keeps its selected surface on hover
+      > .#{$prefix}--side-nav__submenu:hover,
+    .#{$prefix}--side-nav__item
+      > .#{$prefix}--side-nav__link:hover,
+    .#{$prefix}--side-nav__menu
+      .#{$prefix}--side-nav__link:not(.#{$prefix}--side-nav__link--current):not([aria-current='page']):hover,
+    .#{$prefix}--side-nav .#{$prefix}--header__menu-item:hover,
+    .#{$prefix}--side-nav
+      .#{$prefix}--header__menu-title[aria-expanded='true']:hover { // ccs: flatten
+      background-color: $shell-side-nav-bg-04;
+      color: $text-primary;
+    }
+
+    .#{$prefix}--side-nav__item
+      > .#{$prefix}--side-nav__link:hover
+      > span,
+    .#{$prefix}--side-nav__item
+      .#{$prefix}--side-nav__menu-item
+      > .#{$prefix}--side-nav__link:hover
+      > span {
+      color: $text-primary;
+    }
+  }
+
+  .#{$prefix}--side-nav__item--large {
+    height: mini-units(6);
+  }
+
+  .#{$prefix}--side-nav__divider {
+    height: 1px;
+    margin: $spacing-03 $spacing-05;
+    background-color: $border-subtle; // ccs
+    list-style-type: none; // ccs: rendered as an `li`
+
+    hr {
+      margin: 0; // ccs
+      border: none; // ccs
+    }
+  }
+
+  .#{$prefix}--side-nav__submenu {
+    @include button-reset($width: true, $omit: (display, padding));
+    @include type-style('heading-compact-01');
+    @include focus-outline('reset');
+
+    display: flex;
+    height: mini-units(4);
+    align-items: center;
+
+    padding: 0 mini-units(2);
+    color: $shell-side-nav-text-01;
+    // ccs: productive easing, matching the links below; no `outline`, so
+    // the focus ring snaps
+    transition: color $duration--fast-02 motion(standard, productive),
+      background-color $duration--fast-02 motion(standard, productive);
+    user-select: none;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--side-nav__submenu:hover {
+      background-color: $shell-side-nav-bg-04;
+      color: $text-primary;
+    }
+  }
+
+  .#{$prefix}--side-nav__submenu:focus {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--side-nav__submenu-title {
+    @include text-overflow();
+
+    text-align: start;
+  }
+
+  .#{$prefix}--side-nav__icon.#{$prefix}--side-nav__submenu-chevron {
+    display: flex;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  // ccs: with a badge, the chevron stops filling the row so the badge's
+  // `margin-inline-start: auto` pushes it to the row's end, next to the chevron, as
+  // `SideNavLink` places its badge.
+  .#{$prefix}--side-nav__submenu-badge
+    + .#{$prefix}--side-nav__icon.#{$prefix}--side-nav__submenu-chevron {
+    flex: 0 0 auto;
+    margin-inline-start: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--side-nav__submenu-chevron > svg {
+    width: to-rem(16px);
+    height: to-rem(16px);
+    transition: transform $duration--fast-02 motion(standard, productive); // ccs
+  }
+
+  .#{$prefix}--side-nav__submenu[aria-expanded='true']
+    .#{$prefix}--side-nav__submenu-chevron
+    > svg {
+    transform: rotate(180deg);
+  }
+
+  .#{$prefix}--side-nav__item--large > .#{$prefix}--side-nav__submenu { // ccs: own row only, was a descendant selector
+    height: mini-units(6);
+  }
+
+  .#{$prefix}--side-nav__item--active
+    > .#{$prefix}--side-nav__submenu[aria-expanded='false'] { // ccs: child combinator, so nested collapsed menus don't inherit
+    position: relative;
+    background-color: $layer-selected; // ccs: matches the current link
+    color: $text-primary;
+
+    &::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px; // ccs: matches the current link's accent
+      background-color: $shell-side-nav-accent-01;
+      content: '';
+      @include ccs-inset-inline($start: 0);
+    }
+  }
+
+  .#{$prefix}--side-nav__menu {
+    display: block;
+    max-height: 0;
+    visibility: hidden;
+  }
+
+  .#{$prefix}--side-nav__submenu[aria-expanded='true']
+    + .#{$prefix}--side-nav__menu {
+    max-height: to-rem(1500px);
+    visibility: inherit;
+  }
+
+  .#{$prefix}--side-nav__menu .#{$prefix}--side-nav__link { // ccs: flatten
+    height: mini-units(4);
+    min-height: mini-units(4);
+    padding-inline-start: side-nav-menu-indent(0); // ccs: depth-scaled, was a bare mini-units(4)
+    font-weight: 400;
+  }
+
+  .#{$prefix}--side-nav__item.#{$prefix}--side-nav__item--icon
+    .#{$prefix}--side-nav__link { // ccs: flatten, depth-scaled
+    padding-inline-start: side-nav-menu-indent(1); // ccs: was a bare mini-units(9)
+  }
+
+  // ccs: Carbon has no submenu-in-submenu, so a nested trigger kept the base
+  // `padding: 0 mini-units(2)` at any depth instead of lining up with its
+  // sibling links.
+  .#{$prefix}--side-nav__menu .#{$prefix}--side-nav__submenu {
+    padding-inline-start: side-nav-menu-indent(0);
+  }
+
+  // ccs: needs the `__menu` ancestor, unlike the link rule above: the
+  // outermost trigger is a direct child of the icon'd item.
+  .#{$prefix}--side-nav__item.#{$prefix}--side-nav__item--icon
+    .#{$prefix}--side-nav__menu
+    .#{$prefix}--side-nav__submenu {
+    padding-inline-start: side-nav-menu-indent(1);
+  }
+  .#{$prefix}--side-nav__menu .#{$prefix}--side-nav__link--current,
+  .#{$prefix}--side-nav__menu .#{$prefix}--side-nav__link[aria-current='page'],
+  .#{$prefix}--side-nav__link--current { // ccs: flatten
+    background-color: $layer-selected; // ccs
+
+    > span {
+      color: $text-primary;
+      font-weight: 600;
+    }
+  }
+
+  .#{$prefix}--side-nav__link,
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-item,
+  .#{$prefix}--side-nav
+    .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu { // ccs: flatten
+    @include focus-outline('reset');
+    @include type-style('heading-compact-01');
+
+    position: relative;
+    display: flex;
+    min-height: mini-units(4);
+    align-items: center;
+    padding: 0 mini-units(2);
+    text-decoration: none;
+    // ccs: productive easing; no `outline`, so the focus ring snaps
+    transition: color $duration--fast-02 motion(standard, productive),
+      background-color $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--side-nav__item--large > .#{$prefix}--side-nav__link { // ccs: flatten, own row only (was a descendant selector)
+    height: mini-units(6);
+  }
+
+  // The span SideNavLink and SideNavMenuItem render inside the link.
+  .#{$prefix}--side-nav__link-text { // ccs: flatten
+    @include text-overflow();
+
+    color: $shell-side-nav-text-01;
+    font-size: to-rem(14px);
+    letter-spacing: 0.1px;
+    line-height: 1.25rem;
+    user-select: none;
+  }
+
+  .#{$prefix}--side-nav__link:focus,
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-item:focus { // ccs: flatten
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--side-nav__link[aria-current='page'],
+  .#{$prefix}--side-nav__link--current { // ccs: flatten
+    background-color: $layer-selected; // ccs
+    font-weight: 600;
+  }
+
+  .#{$prefix}--side-nav__link[aria-current='page']
+    .#{$prefix}--side-nav__link-text,
+  .#{$prefix}--side-nav__link--current .#{$prefix}--side-nav__link-text { // ccs: flatten
+    color: $text-primary;
+  }
+
+  .#{$prefix}--side-nav__link[aria-current='page']::before,
+  .#{$prefix}--side-nav__link--current::before { // ccs: flatten
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px; // ccs
+    background-color: $shell-side-nav-accent-01;
+    content: '';
+    @include ccs-inset-inline($start: 0);
+  }
+
+  .#{$prefix}--side-nav__icon {
+    display: flex;
+    // Helpful in flex containers so the icon does not have less than the
+    // expected width
+    flex: 0 0 mini-units(2);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .#{$prefix}--side-nav__icon:not(.#{$prefix}--side-nav__submenu-chevron) {
+    margin-inline-end: mini-units(3);
+  }
+
+  .#{$prefix}--side-nav__icon > svg {
+    width: mini-units(2);
+    height: mini-units(2);
+    fill: $shell-side-nav-icon-01;
+  }
+
+  .#{$prefix}--side-nav .#{$prefix}--header__nav {
+    @include carbon--breakpoint-down('lg') {
+      display: block;
+    }
+  }
+
+  .#{$prefix}--side-nav__header-navigation {
+    display: none;
+
+    @include carbon--breakpoint-down('lg') {
+      position: relative;
+      display: block;
+      margin-bottom: to-rem(32px);
+    }
+  }
+
+  .#{$prefix}--side-nav__header-divider::after {
+    position: absolute;
+    bottom: to-rem(-16px);
+    left: to-rem(16px);
+    width: calc(100% - 32px);
+    height: to-rem(1px);
+    background: $border-subtle; // ccs
+    content: '';
+  }
+
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-item { // ccs: flatten
+    justify-content: space-between;
+    color: $shell-side-nav-text-01;
+    white-space: nowrap;
+
+    &[aria-expanded='true'] {
+      background-color: transparent;
+    }
+  }
+
+  // ccs: a current header nav item mirrored into the side nav gets the side
+  // nav's current-page treatment (selected surface and leading accent bar)
+  // instead of the header bar's bottom underline.
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-item[aria-current='page'],
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-item--current {
+    background-color: $layer-selected;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--side-nav
+    .#{$prefix}--header__menu-item[aria-current='page']::after,
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-item--current::after {
+    // Offset by the item's 2px transparent border so the bar lines up with
+    // `SideNavLink`'s at the panel edge.
+    top: -2px;
+    bottom: -2px;
+    width: 3px;
+    border-bottom: 0;
+    background-color: $shell-side-nav-accent-01;
+    @include ccs-inset-inline($start: -2px, $end: auto);
+  }
+
+  .#{$prefix}--side-nav
+    .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu {
+    bottom: inherit;
+    width: 100%;
+    padding: 0;
+    background-color: transparent;
+    box-shadow: none;
+    transform: none;
+
+    li {
+      width: 100%;
+    }
+
+    .#{$prefix}--header__menu-item { // ccs: flatten
+      padding-inline-start: 4.25rem;
+      font-weight: 400;
+    }
+
+    // ccs: weight and surface match a current `SideNavMenuItem`.
+    .#{$prefix}--header__menu-item[aria-current='page'],
+    .#{$prefix}--header__menu-item--current {
+      background-color: $layer-selected;
+      color: $text-primary;
+      font-weight: 600;
+    }
+
+    @media (any-hover: hover) {
+      .#{$prefix}--header__menu-item:hover { // ccs: flatten
+        background-color: $shell-side-nav-bg-04;
+        color: $text-primary;
+      }
+
+      // ccs: a current item keeps its selected surface on hover
+      .#{$prefix}--header__menu-item--current:hover { // ccs: flatten
+        background-color: $layer-selected-hover;
+      }
+    }
+  }
+
+  .#{$prefix}--side-nav
+    .#{$prefix}--header__menu
+    .#{$prefix}--header__menu-item { // ccs: flatten
+    height: inherit;
+  }
+
+  .#{$prefix}--side-nav
+    .#{$prefix}--header__menu-item:focus
+    .#{$prefix}--header__menu-arrow,
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-arrow { // ccs: flatten
+    fill: $shell-side-nav-text-01;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--side-nav
+      .#{$prefix}--header__menu-item:hover
+      .#{$prefix}--header__menu-arrow { // ccs: flatten
+      fill: $shell-side-nav-text-01;
+    }
+
+    // ccs: a current header nav item keeps its selected surface on hover.
+    // Shares this block to stay under the hover-block budget.
+    .#{$prefix}--side-nav
+      .#{$prefix}--header__menu-item[aria-current='page']:hover,
+    .#{$prefix}--side-nav .#{$prefix}--header__menu-item--current:hover {
+      background-color: $layer-selected-hover;
+    }
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--side-nav__icon > svg,
+  .#{$prefix}--side-nav
+    .#{$prefix}--header__menu-item:focus
+    .#{$prefix}--header__menu-arrow,
+  .#{$prefix}--side-nav .#{$prefix}--header__menu-arrow { // ccs: flatten
+    @include high-contrast-mode('icon-fill');
+  }
+
+  // Windows HCM fix
+  @media (any-hover: hover) {
+    .#{$prefix}--side-nav
+      .#{$prefix}--header__menu-item:hover
+      .#{$prefix}--header__menu-arrow { // ccs: flatten
+      @include high-contrast-mode('icon-fill');
+    }
+  }
+}
+
+@include exports('carbon-side-nav') {
+  @if feature-flag-enabled('ui-shell') {
+    @include carbon-side-nav;
+  }
+}
+
+// carbon-components-svelte patch
+/// Expand `rail` mode on keyboard focus, matching the existing `:hover`
+/// expansion above. Carbon v10 only expands the collapsed rail on
+/// `:hover`, so a keyboard user tabbing through a rail-mode `SideNav`
+/// never gets the width change that reveals link text — the label stays
+/// visually clipped at the rail's icon-only width even while focused.
+/// @access private
+/// @group components
+@mixin side-nav-rail-focus {
+  .#{$prefix}--side-nav.#{$prefix}--side-nav--rail:not(.#{$prefix}--side-nav--fixed):focus-within {
+    width: mini-units(32);
+    // Skip the hover enter delay.
+    transition-delay: 0ms;
+  }
+}
+
+@include exports('side-nav-rail-focus') {
+  @include side-nav-rail-focus;
+}
+
+// carbon-components-svelte patch
+/// Position a badge slot as a layout sibling to the link/submenu text,
+/// not nested inside it — nesting it in `bx--side-nav__link-text` would
+/// put it inside that element's single-line ellipsis truncation. The
+/// wrapper is pushed to the row's trailing edge with `margin-inline-start: auto`
+/// (not `justify-content: space-between` on the row, which would also
+/// shove the text flex item away from the icon).
+///
+/// `BadgeIndicator` is `position: absolute; top: 0; right: 0`, meant to
+/// overlay the corner of a `position: relative` icon button (see
+/// `bx--btn__badge-wrapper`). Used here as a trailing row chip instead,
+/// so it must be reset to participate in normal flow — otherwise it
+/// escapes to the nearest positioned ancestor, which for `SideNavMenu`
+/// is `.bx--side-nav` itself (`position: fixed`), and renders pinned to
+/// the whole panel's top-right corner instead of next to its own item.
+/// @access private
+/// @group components
+@mixin side-nav-badge {
+  .#{$prefix}--side-nav__link-badge,
+  .#{$prefix}--side-nav__submenu-badge {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-inline-start: auto;
+    padding-inline-start: $carbon--spacing-03;
+
+    .#{$prefix}--badge-indicator {
+      position: static;
+      margin: 0;
+    }
+  }
+}
+
+@include exports('side-nav-badge') {
+  @include side-nav-badge;
+}
+
+// carbon-components-svelte patch
+/// A draggable vertical handle at the resizable SideNav's trailing edge.
+/// @access private
+/// @group components
+@mixin side-nav-resize {
+  // The component sets `--ccs-side-nav-width` to its clamped `width`.
+  // `max-width` lifts Carbon's 16rem cap while keeping a mobile overlay
+  // within the viewport. `100%` of the viewport leaves out a classic
+  // scrollbar, which `100vw` counts, so the handle stays clear of it. No
+  // width transition: the drag should track the pointer, and `Content`'s
+  // margin (which doesn't animate) follows it.
+  .#{$prefix}--side-nav--resizable {
+    width: var(--ccs-side-nav-width, #{mini-units(32)});
+    max-width: 100%;
+    transition: none;
+  }
+
+  // Below `lg`, Carbon collapses a side nav that isn't expanded to zero
+  // width. Keep that for the resizable variant too, since it's also what
+  // server-rendered markup shows before JS decides mobile vs. desktop.
+  @include carbon--breakpoint-down('lg') {
+    .#{$prefix}--side-nav--resizable:not(.#{$prefix}--side-nav--expanded) {
+      width: 0;
+    }
+  }
+
+  // Carbon hides a collapsed side nav with a fixed `translateX(-16rem)`,
+  // which leaves part of a wider nav on screen.
+  .#{$prefix}--side-nav--resizable.#{$prefix}--side-nav--collapsed {
+    transform: translateX(-100%);
+
+    [dir='rtl'] & {
+      transform: ccs-dir(translateX(-100%), translateX(100%));
+    }
+  }
+
+  // Let the handle straddle the trailing edge (below) instead of sitting
+  // fully inside it, where it would cover the item list's scrollbar. Only
+  // while expanded: a zero-width collapsed nav relies on `overflow: hidden`
+  // to hide its content.
+  .#{$prefix}--side-nav--resizable.#{$prefix}--side-nav--expanded {
+    overflow: visible;
+  }
+
+  // Before hydration (see the `Content` patch in _content.scss), draw a
+  // resizable nav at its width on large screens, not the 16rem default,
+  // so it doesn't narrow once JS marks it expanded.
+  @include carbon--breakpoint('lg') {
+    .#{$prefix}--side-nav--resizable:not(.#{$prefix}--side-nav--collapsed):not(.#{$prefix}--side-nav--rail) {
+      width: var(--ccs-side-nav-width, #{mini-units(32)});
+    }
+  }
+
+  // A wider hit/hover target than the visible accent line (below), so the
+  // handle stays easy to grab without widening what's drawn at the edge.
+  // Mostly outside the nav, over the content's padding.
+  .#{$prefix}--side-nav__resize-handle {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    width: to-rem(8px);
+    height: 100%;
+    // Without this, a touch drag pans or scrolls the page instead of
+    // delivering `pointermove` events to the handle.
+    touch-action: none;
+    @include ccs-inset-inline($end: to-rem(-6px));
+
+    // Drawn over the nav's own trailing 2px.
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: to-rem(2px);
+      height: 100%;
+      background-color: transparent;
+      // No delay leaving hover, so the highlight clears immediately.
+      transition: background-color $duration--fast-02 motion(standard, productive);
+      @include ccs-inset-inline($start: 0);
+    }
+
+    // `cursor` can't be delayed in CSS, so the component adds this class
+    // once `resizeEnterDelayMs` has passed, and both the cursor and the
+    // accent line follow it. Leaving drops the class at once.
+    &--hover {
+      cursor: col-resize;
+
+      &::after {
+        background-color: $focus;
+      }
+    }
+
+    &:focus-visible {
+      @include focus-outline('outline');
+    }
+  }
+
+  // A fast drag can outrun `:hover` (the pointer ends up ahead of the
+  // handle's own repositioned bounds between pointermove events, e.g. past
+  // `minWidth`), which would otherwise flicker the accent line off
+  // mid-drag. Force it while actively resizing instead of relying on
+  // `:hover`, and skip the entry transition/delay for the same reason.
+  // The component toggles this class on `<body>`.
+  .#{$prefix}--side-nav-resizing {
+    // Dragging can otherwise select page text as the pointer crosses it.
+    user-select: none;
+    // Descendant links inside the side nav set their own `cursor`, which
+    // would otherwise win over this while the pointer passes over them;
+    // `pointer-events: none` below (so they stop capturing the cursor) is
+    // what makes this actually take effect everywhere during a drag.
+    cursor: col-resize;
+
+    .#{$prefix}--side-nav__resize-handle::after {
+      background-color: $focus;
+      transition: none;
+    }
+  }
+
+  // Prevent other side nav content (links, menus) from responding to
+  // hover/click while a drag is in progress.
+  .#{$prefix}--side-nav--resizing > *:not(.#{$prefix}--side-nav__resize-handle) {
+    pointer-events: none;
+  }
+}
+
+@include exports('side-nav-resize') {
+  @include side-nav-resize;
+}
+
+// carbon-components-svelte patch (header side nav items expansion breakpoint)
+/// `HeaderSideNavItems` shows below Carbon's `lg` media query by default.
+/// When `expansionBreakpoint` is custom, the component adds a marker class
+/// from its measured window width. `--collapsed` (below the breakpoint)
+/// shows the items, matching the vendored rule's layout.
+/// @access private
+/// @group components
+@mixin side-nav-header-navigation-breakpoint {
+  .#{$prefix}--side-nav__header-navigation--expanded {
+    display: none;
+  }
+
+  .#{$prefix}--side-nav__header-navigation--collapsed {
+    position: relative;
+    display: block;
+    margin-bottom: to-rem(32px);
+  }
+}
+
+@include exports('side-nav-header-navigation-breakpoint') {
+  @include side-nav-header-navigation-breakpoint;
+}

@@ -1,0 +1,136 @@
+---
+components: ["Toggle", "ToggleSkeleton"]
+description: Toggles are a switch-like control for turning options on or off, with support for custom labels, sizes, and states.
+---
+
+<script>
+  import { Text, Toggle, ToggleSkeleton } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Display a basic toggle in its untoggled state by default.
+
+<Toggle labelText="Email notifications" />
+
+## Toggled
+
+Display the toggle in its on state with `toggled`.
+
+<Toggle labelText="Auto-save" toggled />
+
+## Labels
+
+Customize or hide the toggle labels.
+
+### Hidden
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<Toggle labelText="Dark mode" hideLabel />
+
+### Custom
+
+Customize toggle labels with `labelA` and `labelB`. The toggle's width includes the longer of the two, so it does not shift neighboring content when the state changes. Set both to `""` to show the switch alone.
+
+<Toggle labelText="Maintenance mode" labelA="No" labelB="Yes" />
+
+### Slottable
+
+Use slots to customize the toggle labels with additional styling or content.
+
+<Toggle labelText="Two-factor authentication">
+  <Text slot="labelA" tag="span" type="inherit" color="error">No</Text>
+  <Text slot="labelB" tag="span" type="inherit" color="success">Yes</Text>
+</Toggle>
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom label content instead of `labelText`.
+
+<Toggle labelText="Fallback label">
+  <svelte:fragment slot="labelChildren">
+    Automatic security updates <strong>(recommended)</strong>
+  </svelte:fragment>
+</Toggle>
+
+## States
+
+Reflect validation and interaction states.
+
+### Helper text
+
+Set `helperText` to explain what the setting does. It shows under the switch and describes it for assistive technology.
+
+<Toggle labelText="Auto-scaling" helperText="Adds instances when CPU stays over 70%" />
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` when the setting must change before the form can be submitted, such as accepting terms. An invalid state takes precedence over a warning and replaces the helper text.
+
+<Toggle labelText="Accept the terms" invalid invalidText="Accept the terms to continue" />
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` when a setting is valid but has consequences worth calling out. Tie `warn` to the state it describes so the message clears when the toggle changes.
+
+<FileSource src="/framed/Toggle/ToggleWarning" />
+
+### Disabled
+
+Disable interaction with `disabled`.
+
+<Toggle labelText="Enforce single sign-on (SSO)" disabled />
+
+### Read-only
+
+Display a non-editable value with `readonly`.
+
+<Toggle readonly toggled labelText="Session timeout enforcement (on)" />
+
+## Small
+
+Use the small size variant by setting `size` to `"sm"`.
+
+<Toggle size="sm" labelText="Compact density" />
+
+## Reactive
+
+Use two-way binding with `bind:toggled` to track and update the toggle state programmatically.
+
+<FileSource src="/framed/Toggle/ToggleReactive" />
+
+## Events
+
+Use `on:toggle` to listen for state changes. The event dispatches `{ toggled: boolean }` as `event.detail`.
+
+<Toggle labelText="Email digest" on:toggle={e => console.log(e.detail)} />
+
+## Form value
+
+Set `name` so the toggle submits with the form. A toggled switch submits
+`value` (`"on"` by default); an untoggled one submits nothing, so read it on
+the server with `formData.has(name)` or compare against `value`.
+
+```svelte
+<script>
+  import { Form, Toggle, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/preferences">
+  <Toggle name="digest" value="weekly" labelText="Weekly digest" />
+  <Button type="submit">Save</Button>
+</Form>
+```
+
+## Skeleton
+
+Show a loading state with the skeleton component.
+
+<ToggleSkeleton />
+
+### Small
+
+Use the small size variant for the skeleton component.
+
+<ToggleSkeleton size="sm" />

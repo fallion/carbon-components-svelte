@@ -1,0 +1,819 @@
+---
+components: ["MultiSelect", "MultiSelectSkeleton", "FluidMultiSelectSkeleton"]
+description: Multi-selects provide a dropdown for selecting multiple options with checkboxes, with filtering, custom formatting, and multiple states.
+---
+
+<script>
+  import { AILabel, Box, FluidMultiSelectSkeleton, Layer, MultiSelect, MultiSelectSkeleton, Tag, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a basic multi-select dropdown with three contact methods. Every item must have a unique id. By default, items are ordered alphabetically.
+
+With the menu open, type a character to move the highlight to the next enabled item whose text starts with it; type several characters quickly to match a longer prefix. Typing highlights an item without selecting it. <DocKbd label="PageUp" /> and <DocKbd label="PageDown" /> move the highlight 10 items and stop at either end.
+
+<MultiSelect labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+## Content
+
+Customize how items render and what supporting text appears around the field.
+
+### Custom slot
+
+Override the default slot to customize item rendering. Use `let:item`, `let:index`, `let:selected`, and `let:highlighted` to access each item's data and its derived selected and highlighted state.
+
+<FileSource src="/framed/MultiSelect/MultiSelectSlot" />
+
+### Display text
+
+Format the display text of items using the `itemToString` prop. This example appends the item ID in parentheses.
+
+<MultiSelect itemToString={item => {
+  return item.text + ' (' + item.id +')'
+}} labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+    sortItem="{() => {}}"
+  />
+
+### Helper text
+
+Add descriptive text below the multi-select using the `helperText` prop.
+
+<MultiSelect helperText="Select one or more contact methods" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<MultiSelect labelText="Contact" label="Select contact methods..." hideLabel
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Title attribute
+
+Set `useTitleInItem` to `true` to add a native `title` attribute to each option, using the resolved `itemToString` text. This surfaces a browser tooltip when an item's label is truncated by the field width.
+
+<MultiSelect useTitleInItem labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Checkbox values
+
+`MultiSelect` mounts a hidden `<input>` for every selected item, derived
+from the current selection -- not from what's rendered in the dropdown. This
+keeps native form submission (`FormData`) working while the menu is closed,
+while filtering, and with `virtualize`.
+
+By default, each hidden input uses `name={item.id}` and an empty `value`,
+matching the option checkbox's own defaults. Use `itemToInput` to override
+`name`/`value` per item, or set the `name` prop to submit every selected
+item's `id` under one shared name (`contact=0&contact=1`), unless
+`itemToInput` returns its own `name` or `value`. `name` is
+only used for the hidden inputs -- with `filterable`, the visible text input
+is a query box and is never included in `FormData`. A disabled multi-select
+is left out of the submission, like a disabled native control.
+
+```js
+itemToInput={(item) => {
+  return {
+    name: 'contact',
+    value: item.id
+  }
+}}
+```
+
+The above function sets every hidden input's name to `contact` and its value
+to the respective item's id, so a submission looks like `contact=0&contact=1`.
+
+<MultiSelect
+  itemToInput={(item) => ({name: 'contact', value: item.id})}
+  labelText="Contact"
+  label="Select contact methods..."
+  items="{[
+    {id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}
+  ]}"
+/>
+
+```svelte
+<script>
+  import { Form, MultiSelect, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/subscribe">
+  <MultiSelect
+    name="contact"
+    labelText="Contact"
+    label="Select contact methods..."
+    items={[
+      {id: "0", text: "Slack"},
+      {id: "1", text: "Email"},
+      {id: "2", text: "Fax"}
+    ]}
+  />
+  <Button type="submit">Save</Button>
+</Form>
+```
+
+## Selection
+
+Control which items start selected, how selections reorder the list, and how to read the resolved order.
+
+### Range selection
+
+Hold <DocKbd label="Shift" /> while clicking an item to select every item between it and the last item clicked. From the keyboard, hold <DocKbd label="Shift" /> while pressing <DocKbd label="Enter" /> or <DocKbd label="Space" /> on the highlighted item. Press <DocKbd label="Ctrl" /> + <DocKbd label="A" /> (<DocKbd label="Cmd" /> + <DocKbd label="A" /> on macOS) with the menu open to select every enabled item, or to clear them if all are already selected. In a filterable multi-select, <DocKbd label="Ctrl" /> + <DocKbd label="A" /> selects the filter text instead.
+
+<MultiSelect labelText="Regions" label="Select regions..."
+    items="{[{id: "0", text: "Frankfurt"},
+    {id: "1", text: "London"},
+    {id: "2", text: "Mumbai"},
+    {id: "3", text: "Sydney"},
+    {id: "4", text: "Tokyo"},
+    {id: "5", text: "Toronto"}]}"
+  />
+
+### Initial selection
+
+Pre-select items by passing an array of item IDs to `selectedIds`. This example pre-selects Slack and Email.
+
+<MultiSelect selectedIds="{["0", "1"]}" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Selection feedback
+
+Move selected items to the top of the list immediately after selection by setting `selectionFeedback` to `"top"`. The default behavior (top-after-reopen) only reorders items when the dropdown is reopened.
+
+<MultiSelect selectionFeedback="top" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Maximum selection
+
+Limit how many items a user can select by setting `maxSelectedItems`. Once the cap is reached, remaining unchecked items are disabled until a selection is cleared. Select-all is unavailable when a cap is set.
+
+<MultiSelect maxSelectedItems="{3}" labelText="Preferences" label="Select preferences..."
+    items="{[{id: "0", text: "Email"},
+    {id: "1", text: "Slack"},
+    {id: "2", text: "SMS"},
+    {id: "3", text: "Push"}]}"
+  />
+
+### Select all
+
+Add a "select all" item by setting isSelectAll to true on an item. Clicking this item selects or deselects all non-disabled items. Disabled items are not affected by "select all".
+
+The select-all option is styled differently from regular options (with a separator border) so it is visually distinct as a group toggle. Its checkbox supports an `indeterminate` state when only a subset of non-disabled items are selected; it shows checked when all are selected and unchecked when none are selected.
+
+<FileSource src="/framed/MultiSelect/MultiSelectSelectAll" />
+
+### Sorted items
+
+Bind to `sortedItems` to read the resolved list after sorting and selection feedback is applied. This avoids recomputing the order from items, selectedIds, and sortItem in consumer code.
+
+<FileSource src="/framed/MultiSelect/MultiSelectSortedItems" />
+
+### Locale
+
+Set `locale` to a BCP 47 language tag to control how the default `sortItem` orders items. The default sort uses `Intl.Collator` with numeric-aware comparison, so locale affects the ordering of accented characters and numbers embedded in text. Only used when `sortItem` is left at its default -- a custom `sortItem` ignores `locale`.
+
+<MultiSelect locale="de-DE" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Öl"},
+    {id: "1", text: "Apfel"},
+    {id: "2", text: "Zebra"}]}"
+  />
+
+### No alphabetical ordering
+
+Set `sortItem` to `false` to keep items in their original `items` order, skipping the sort entirely. A no-op function (`sortItem="{() => {}}"`) still works the same way, but pays for a sort that changes nothing. Prefer `false`.
+
+If `items` is already sorted the way you want (for example, sorted server-side), leaving `sortItem` at its default still works: sorting an already-sorted array costs about `n` comparisons rather than `n log n`, so it's nearly free.
+
+<MultiSelect labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+    sortItem="{false}"
+  />
+
+### Clear selection
+
+Use `bind:this` to access the component instance and call `MultiSelect.clear()` to clear the selection. Pass `focus: false` in the options to prevent re-focusing the field.
+
+<FileSource src="/framed/MultiSelect/MultiSelectClear" />
+
+### Open on clear
+
+By default, the menu stays as-is after clearing the selection (open if it was open, closed if it was closed).
+
+Set `openOnClear` to `true` to open the menu after clearing the selection via the clear button or the Delete/Backspace shortcut. This lets users immediately browse all available items without needing to click the field again.
+
+<MultiSelect openOnClear selectedIds="{["0", "1"]}" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+## Selected tags
+
+Set `selectionDisplay` to `"tags"` to list each selected item as a tag below the field, so users can see and change the selection without opening the menu. Closing a tag deselects the item, the same as unchecking its option. The count in the field still clears everything at once.
+
+The tags are a single tab stop after the field: the arrow keys move between them, and <DocKbd label="Delete" /> or <DocKbd label="Backspace" /> removes the focused one. Tags follow the order of `items`, so they don't move as the menu re-sorts.
+
+<MultiSelect selectionDisplay="tags" selectedIds="{["us-east", "eu-de", "jp-tok"]}" labelText="Regions" label="Select regions..."
+    items="{[{id: "us-east", text: "US East"},
+    {id: "us-south", text: "US South"},
+    {id: "eu-de", text: "EU Germany"},
+    {id: "eu-gb", text: "EU United Kingdom"},
+    {id: "jp-tok", text: "Tokyo"},
+    {id: "au-syd", text: "Sydney"}]}"
+  />
+
+### Collapsed overflow
+
+Tags wrap onto as many rows as they need. Set `tagOverflow` to `"collapse"` to keep them on one row, with the rest behind a "+N" button. The button opens the hidden tags in a popover, where they can still be removed.
+
+<Box maxWidth="20rem">
+  <MultiSelect selectionDisplay="tags" tagOverflow="collapse" selectedIds="{["us-east", "us-south", "eu-de", "eu-gb", "jp-tok"]}" labelText="Regions" label="Select regions..."
+      items="{[{id: "us-east", text: "US East"},
+      {id: "us-south", text: "US South"},
+      {id: "eu-de", text: "EU Germany"},
+      {id: "eu-gb", text: "EU United Kingdom"},
+      {id: "jp-tok", text: "Tokyo"},
+      {id: "au-syd", text: "Sydney"}]}"
+    />
+</Box>
+
+### Custom tags
+
+Use the `tag` slot to render each selected item's tag yourself, for example with a color `type` or an icon. Spread the slot's `props` onto the tag so closing it still deselects the item. Leave out `filter` to lock a tag in place.
+
+<MultiSelect selectionDisplay="tags" selectedIds="{["critical", "low"]}" labelText="Severity" label="Select severities..."
+    items="{[{id: "critical", text: "Critical"},
+    {id: "high", text: "High"},
+    {id: "low", text: "Low"}]}"
+  >
+  <svelte:fragment slot="tag" let:item let:props>
+    <Tag {...props} type={item.id === "critical" ? "red" : "gray"}>{item.text}</Tag>
+  </svelte:fragment>
+</MultiSelect>
+
+In Svelte 5, pass a snippet instead: `{#snippet tag({ item, props })}`.
+
+### Your own tag set
+
+For full control over where and how the selection shows, keep the default `selectionDisplay` and render a `TagSet` from the bound `selectedIds`. Closing a tag then needs its own handler to deselect the item.
+
+<FileSource src="/framed/MultiSelect/MultiSelectOwnTags" />
+
+## Groups
+
+Set `group` on items to list them under a non-selectable header. Groups appear in the order they first occur in `items`, and sorting and selection feedback apply within each group. Items without a group are listed first, without a header.
+
+Each group is exposed to screen readers as a group named by its label. The selection is still a flat list of ids.
+
+<MultiSelect labelText="Regions" label="Select regions..."
+    items="{[{id: "0", text: "Frankfurt", group: "Europe"},
+    {id: "1", text: "Toronto", group: "Americas"},
+    {id: "2", text: "London", group: "Europe"},
+    {id: "3", text: "São Paulo", group: "Americas"},
+    {id: "4", text: "Mumbai", group: "Asia Pacific"},
+    {id: "5", text: "Tokyo", group: "Asia Pacific"}]}"
+  />
+
+### Custom header
+
+Override the `group` slot to customize a header. Use `let:group` for the label and `let:items` for the group's items, each with a `checked` flag. The slot changes the visible header only; screen readers still announce the plain label.
+
+<FileSource src="/framed/MultiSelect/MultiSelectGroupHeader" />
+
+### Virtualized
+
+Grouped lists virtualize like ungrouped ones, including automatically above 100 items. Headers scroll with the options and stay aligned across group boundaries. This example groups 3,000 nodes by region, and only the rows in view are rendered.
+
+<FileSource src="/framed/MultiSelect/MultiSelectGroupVirtualized" />
+
+## Filterable
+
+Enable filtering by setting `filterable` to `true`. This example includes a placeholder text for the filter input.
+
+<MultiSelect spellcheck="false" filterable labelText="Contact" placeholder="Filter contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Fuzzy filter
+
+Provide a custom `filterItem` to override the default substring matching. This example reuses the built-in `fuzzyMatch` utility, exported from `carbon-components-svelte`, as the predicate. It matches items whose text contains the typed characters in order (for example, "pr" matches "Production" and "Preview"). Only the `matched` boolean is used here; the `score` and `indices` it also returns rank and highlight matches, as shown in [Highlight matches](#highlight-matches) below.
+
+<FileSource src="/framed/MultiSelect/MultiSelectFuzzyFilter" />
+
+### Highlight matches
+
+Besides `matched`, `fuzzyMatch` returns the `indices` of the characters that matched. Pass them to the `highlightSegments` utility (also exported from `carbon-components-svelte`) to split the item text into matched and unmatched runs, then bold the matched runs in the default slot. Bind `value` to read the filter text inside the slot.
+
+<FileSource src="/framed/MultiSelect/MultiSelectHighlightMatch" />
+
+### Select on focus
+
+Set `selectTextOnFocus` to select the full filter value when the field receives focus. Only applies when `filterable` is `true`.
+
+<MultiSelect selectTextOnFocus filterable labelText="Contact" value="Slack"
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Empty state
+
+When the filter matches nothing, the menu shows "No results" in place of the options. Screen readers already hear the count from `filterResultsText`, so the message is hidden from them.
+
+Set `emptyText` to change the message, or pass a function that builds it from the filter text. Set it to `""` to leave the menu empty instead.
+
+<MultiSelect filterable labelText="Contact" placeholder="Filter contact methods..." emptyText="No matching contact methods"
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+Use the `empty` slot for richer content. `let:value` is the filter text.
+
+<MultiSelect filterable labelText="Contact" placeholder="Filter contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  >
+  <svelte:fragment slot="empty" let:value>
+    No contact method named "{value}".
+  </svelte:fragment>
+</MultiSelect>
+
+Without `filterable`, an empty `items` list shows "No options" instead, such as before async options arrive. `loading` holds the message back, and screen readers hear it through the multi-select's live region.
+
+<MultiSelect labelText="Contact" label="Select contact methods..." emptyText="No contact methods yet" items={[]} />
+
+### Async
+
+For async (for example, server-side) filtering, bind to `value` and replace `items` with the server's results. Set `filterItem` to return `true` so the menu shows every result as sent. This example simulates the request with a debounced value change.
+
+Keep the selected options in `items`. An option missing from `items` has no tag.
+
+Set `loading` to `true` while a request is in flight. The menu shows a loading row after the options, is marked busy for screen readers, and holds back the empty state until the results arrive.
+
+<FileSource src="/framed/MultiSelect/AsyncMultiSelect" />
+
+## Multiple multi-selects
+
+Manage multiple dropdowns in a form with coordinated state.
+
+<FileSource src="/framed/MultiSelect/MultipleMultiSelect" />
+
+## Events
+
+Respond to selection, clearing, and the menu opening and closing.
+
+### Select
+
+Use `on:select` to listen for selection changes. `event.detail` includes `selectedIds`, `selected` (the checked items), and `unselected` (the rest). A [select-all](#select-all) item is left out of all three. It fires when the user toggles an option, selects a [range](#range-selection) with <DocKbd label="Shift" />, selects all with the select-all item or <DocKbd label="Ctrl" /> + <DocKbd label="A" />, or clears the selection.
+
+<MultiSelect labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+    on:select="{(e) => console.log(e.detail)}"
+  />
+
+### Clear
+
+Use `on:clear` to listen for the clear ("x") button that appears once there is a selection, activated by click or by keyboard. `event.detail` is the originating `MouseEvent` or `KeyboardEvent`. Clearing with <DocKbd label="Delete" /> or <DocKbd label="Backspace" />, or calling [`clear()`](#clear-selection), does not dispatch `clear`. All three still dispatch `select`.
+
+<MultiSelect selectedIds="{["0", "1"]}" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+    on:clear="{(e) => console.log(e.detail)}"
+  />
+
+### Open
+
+Use `on:open` to know when the menu opens and why. `event.detail.trigger` is `"click"`, `"keydown"`, `"input"` (typing a filter opened it), or `"programmatic"` when `open` is set from outside, such as through `bind:open`. It fires once per open, after the menu renders, and not for a multi-select rendered already open.
+
+<MultiSelect
+  labelText="Contact"
+  label="Select contact methods..."
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+  on:open={(e) => console.log(e.detail.trigger)}
+/>
+
+### Close
+
+Use `on:close` to know when the menu is dismissed and why. `event.detail.trigger` is `"escape-key"` (<DocKbd label="Escape" />, or <DocKbd label="Alt" /> + <DocKbd label="ArrowUp" /> on an open menu) or `"outside-click"` (a click or focus outside the multi-select and its menu). Selecting an option keeps the menu open. Clicking the field to collapse it, or pressing <DocKbd label="Tab" />, closes the menu without dispatching `close`.
+
+<MultiSelect labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+    on:close="{(e) => console.log(e.detail.trigger)}"
+  />
+
+## Loading
+
+Set `loading` to `true` to show a loading row after the options, such as while fetching more items. The menu is marked busy for screen readers, the options stay selectable, and the [empty state](#empty-state) is held back.
+
+Set `loadingText` to change the row's text.
+
+Set `loadingDelay` to wait a number of milliseconds after `loading` becomes `true` before showing the loading row. Work that finishes within the delay shows no row. Once shown, the row stays for at least 500 ms so it does not flash. The menu is marked busy, and the empty state held back, as soon as `loading` is `true`.
+
+<MultiSelect loading labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"}]}"
+  />
+
+## Virtualization
+
+Virtualization renders only the items currently visible in the viewport, improving performance for large lists. By default, the multi-select virtualizes lists with more than 100 items.
+
+### Large lists
+
+In the example below, 10,000 items are provided to the multi-select but only 11 items (8 visible items + 3 overscan items) are rendered in the DOM.
+
+Set `virtualize={false}` to explicitly disable virtualization, even for large lists. Or, customize the threshold at which virtualization activates. See [Custom threshold](#custom-threshold).
+
+<FileSource src="/framed/MultiSelect/VirtualizedMultiSelect" />
+
+### Load more
+
+`scrollend` fires when the menu is scrolled near the bottom so you can append the next page of `items`. Same pattern as [ComboBox load more](/components/ComboBox#load-more): handle `on:scrollend`, keep prior items visible while loading, and set `loading` while the next page is in flight to show a loading row after them. The event is a near-bottom load-more signal, not the browser's native `scrollend`.
+
+<FileSource src="/framed/MultiSelect/ScrollEndMultiSelect" />
+
+### Custom overscan
+
+Overscanning is the process of rendering extra items above and below the viewport to ensure smooth scrolling. The default overscan value is 3.
+
+Specify a custom value for `overscan` to control how many extra items are rendered above/below the viewport for smoother scrolling.
+
+During very fast scrolling, higher overscan values may cause more flickering due to increased DOM updates. For fast-scrolling scenarios, use a lower overscan value.
+
+<FileSource src="/framed/MultiSelect/VirtualizeOverscan" />
+
+### Fast scrolling
+
+During a scroll faster than the menu can render, such as a quick drag of the scrollbar, the options can briefly disappear. Set `optimizeFastScroll: true` to keep the options already rendered in view until the new ones arrive.
+
+The options then follow the scroll a frame behind, and pause while the page is busy running scripts. Leave it off when the menu sits on a page that often does heavy work.
+
+<FileSource src="/framed/MultiSelect/VirtualizeFastScroll" />
+
+### Custom threshold
+
+The threshold is the minimum number of items required before virtualization activates. The default threshold value is 100, meaning lists with fewer than 100 items will not be virtualized and all items will be rendered normally.
+
+Specify a custom value for `threshold` to control when virtualization activates. Below the threshold, all items are rendered normally without virtualization.
+
+<FileSource src="/framed/MultiSelect/VirtualizeThreshold" />
+
+### Custom item height
+
+By default, item height matches the menu row for each size: 24px (xs), 32px (sm), 40px (md), 48px (lg, xl). Set `itemHeight` when custom slots change row height.
+
+<FileSource src="/framed/MultiSelect/VirtualizeItemHeight" />
+
+## Wrapped options
+
+Option labels are truncated to one line. At a 320px viewport, that hides text and can leave two options looking identical, a WCAG 1.4.10 Reflow failure.
+
+Set `wrapOptions` to let a label take as many lines as it needs. Lines break between words, and mid-word only when a word is too long to fit a line by itself. Default slot markup wraps with the label: a [highlighted match](#highlight-matches) stays marked across the break it is split by.
+
+It defaults to `false` because wrapping changes option heights.
+
+<FileSource src="/framed/MultiSelect/WrapOptions" />
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<MultiSelect labelText="Regions" selectedIds={["us-east-1"]} items={[{ id: "us-east-1", text: "US East (N. Virginia)" }, { id: "eu-west-1", text: "EU West (Ireland)" }]}>
+  <AILabel slot="decorator">
+    <p>Picked as the regions closest to most of your users.</p>
+  </AILabel>
+</MultiSelect>
+
+## Sizes
+
+Set `size` to control the field height. The default is medium.
+
+### Extra-small
+
+Set `size` to `"xs"` for an extra-small multiselect.
+
+<MultiSelect size="xs" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Small
+
+Use the small size for compact layouts by setting `size` to `"sm"`. This is ideal for secondary selections.
+
+<MultiSelect size="sm" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Extra-large
+
+Use the extra-large size for prominent selections by setting `size` to `"xl"`.
+
+<MultiSelect size="xl" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <MultiSelect
+      labelText="Contact"
+      label="Select contact methods..."
+      items={[
+        { id: "0", text: "Slack" },
+        { id: "1", text: "Email" },
+        { id: "2", text: "Fax" },
+      ]}
+    />
+  </Box>
+</Layer>
+
+## Inline
+
+Set `type` to `"inline"` to display the dropdown inline with other content. This variant removes the background and border.
+
+<MultiSelect type="inline" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+## Top direction
+
+Display the dropdown menu above the input by setting `direction` to `"top"`. This is useful when space below is limited.
+
+<MultiSelect direction="top" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+## Fluid
+
+Set `fluid` to `true` to use the fluid variant, which embeds the label
+inside the field. Fluid multi-selects can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically.
+
+<MultiSelect fluid labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Filterable
+
+Filterable multi-selects support the fluid variant. Set both `fluid` and
+`filterable` to `true`.
+
+<MultiSelect fluid filterable labelText="Contact" placeholder="Filter contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<MultiSelect fluid labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}">
+  <svelte:fragment slot="labelChildren">
+    Contact
+    <TooltipIcon tooltipText="Your contact methods are used for account notifications." icon={Information} />
+  </svelte:fragment>
+</MultiSelect>
+
+### Condensed
+
+By default, the fluid variant renders taller menu items to match the taller
+field. Set `condensed` to `true` to render menu items at their default
+height instead.
+
+<MultiSelect fluid condensed labelText="Contact" label="Select contact methods..." selectedIds="{['0']}"
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Invalid
+
+Fluid multi-selects display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<MultiSelect fluid invalid invalidText="At least one contact method must be selected. Choose Slack, Email, or Fax to receive account notifications and security alerts." labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Warning
+
+<MultiSelect fluid warn warnText="One or more contact methods are not associated with your account" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Disabled
+
+Invalid and warning states are not displayed while the multi-select is disabled.
+
+<MultiSelect fluid disabled invalid invalidText="At least one contact method must be selected" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Read-only
+
+Invalid and warning states are not displayed while the multi-select is read-only.
+
+<MultiSelect fluid readonly warn warnText="One or more contact methods are not associated with your account" labelText="Contact" label="Select contact methods..." selectedIds="{['0', '1']}"
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Skeleton
+
+Display a loading skeleton for the fluid multi-select variant.
+
+<FluidMultiSelectSkeleton />
+
+## Portal menu
+
+A dropdown menu that a container would cut off, such as a box with `overflow: hidden` or a scroll area, opens in a floating portal. The container in the example below hides its overflow, so the menu moves to a portal when it opens. Inside a [Modal](/components/Modal#modal-with-dropdowns), the menu always opens in a portal.
+
+Set `portalMenu` to `true` to always render the menu in a portal, for example to escape a z-index stacking context. Set it to `false` to keep the menu in place. A portalled menu leaves its container in the DOM, so CSS that targets the menu as a descendant of the container does not match it.
+
+<FileSource src="/framed/MultiSelect/MultiSelectPortalMenu" />
+
+## States
+
+Reflect validation and interaction states. Invalid and warning states each have a filterable counterpart.
+
+### Invalid
+
+Indicate an invalid selection by setting `invalid` to `true`. This example shows a required field error.
+
+<MultiSelect invalid invalidText="A contact method is required" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Invalid (filterable)
+
+Combine `filterable` and `invalid` to show validation errors on a filterable multi-select.
+
+<MultiSelect filterable invalid invalidText="A contact method is required" labelText="Contact" placeholder="Filter contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Invalid (filterable with selection)
+
+The invalid outline wraps the whole field, selection tag included.
+
+<MultiSelect filterable invalid invalidText="Choose at least two contact methods" labelText="Contact" placeholder="Filter contact methods..."
+    selectedIds={["1"]}
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Warning
+
+Indicate a warning state by setting `warn` to `true`. This example shows a warning about unassociated accounts.
+
+<MultiSelect warn warnText="One or more contact methods are not associated with your account" labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Warning (filterable)
+
+Combine `filterable` and `warn` to show warnings on a filterable multi-select.
+
+<MultiSelect filterable warn warnText="One or more contact methods are not associated with your account" labelText="Contact" placeholder="Filter contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Disabled
+
+Disable the entire dropdown by setting `disabled` to `true`.
+
+<MultiSelect disabled labelText="Contact" label="Select contact methods..."
+    items="{[{id: "0", text: "Slack"},
+    {id: "1", text: "Email"},
+    {id: "2", text: "Fax"}]}"
+  />
+
+### Disabled items
+
+Disable specific items using the disabled property in the items array. This example disables the Email option.
+
+<MultiSelect
+  labelText="Contact"
+  label="Select contact methods..."
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email", disabled: true },
+    { id: "2", text: "Fax" },
+  ]}
+/>
+
+### Read-only
+
+Set `readonly` to `true` to display non-editable values. The menu can still be opened and navigated to review the selected values, but the selection cannot be changed or cleared.
+
+<MultiSelect
+  readonly
+  selectedIds={["0", "1"]}
+  labelText="Contact"
+  label="Select contact methods..."
+  items={[
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ]}
+/>
+
+## Required
+
+Set `required` to keep a surrounding form from submitting until at least one item is selected. Disabled items do not count, as they are left out of the submission. The field is marked required for screen readers.
+
+When a submit is blocked, the field shows its invalid state instead of the browser's error bubble, and the first invalid field takes focus. Calling `checkValidity()` from code shows nothing. The state clears once the field has a value or the form resets.
+
+Set `requiredInvalidText` to change the message, which defaults to "Select at least one item". Your own `invalid` and `invalidText` take precedence.
+
+<FileSource src="/framed/MultiSelect/MultiSelectRequired" />
+
+## Skeleton
+
+Show a loading state with `MultiSelectSkeleton`.
+
+<MultiSelectSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<MultiSelectSkeleton size="xs" />

@@ -1,0 +1,45 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import RadioButton from "carbon-components-svelte/RadioButton/RadioButton.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let value: ComponentProps<RadioButton>["value"] = "";
+  export let checked: ComponentProps<RadioButton>["checked"] = false;
+  export let disabled: ComponentProps<RadioButton>["disabled"] = false;
+  export let required: ComponentProps<RadioButton>["required"] = false;
+  export let labelPosition: ComponentProps<RadioButton>["labelPosition"] =
+    "right";
+  export let labelText: ComponentProps<RadioButton>["labelText"] = "Option 1";
+  export let hideLabel: ComponentProps<RadioButton>["hideLabel"] = false;
+  export let id: ComponentProps<RadioButton>["id"] = "ccs-test";
+  export let name: ComponentProps<RadioButton>["name"] = "test-group";
+  export let ref: ComponentProps<RadioButton>["ref"] = null;
+  export let readonly: ComponentProps<RadioButton>["readonly"] = false;
+  export let readonlyText: ComponentProps<RadioButton>["readonlyText"] =
+    undefined;
+  export let customClass = "";
+  export let onFocus: () => void = () => {};
+  export let onBlur: () => void = () => {};
+  export let onChange: () => void = () => {};
+</script>
+
+<RadioButton
+  bind:value
+  {checked}
+  {disabled}
+  {required}
+  {labelPosition}
+  {labelText}
+  {hideLabel}
+  {id}
+  {name}
+  {readonly}
+  {readonlyText}
+  bind:ref
+  class={customClass}
+  {...$$restProps}
+  on:focus={onFocus}
+  on:blur={onBlur}
+  on:change={onChange}
+/>

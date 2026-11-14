@@ -1,8 +1,7 @@
-// This is a recipe for dynamic, client-side theming
-// All Carbon themes are included (White, Gray 10, Gray 90, Gray 100)
+// Client-side theme switching (white, g10, g80, g90, g100, and system).
 
 $feature-flags: (
-  // Custom CSS properties must be enabled to dynamically switch themes
+  // Required for runtime theme switch
   enable-css-custom-properties: true,
   ui-shell: true,
   grid-columns-16: true
@@ -16,66 +15,77 @@ $css--reset: true;
 $css--default-type: true;
 $css--plex: true;
 
-// Use all Carbon themes
-@import "carbon-components/scss/globals/scss/vendor/@carbon/themes/scss";
-@import "carbon-components/scss/globals/scss/component-tokens";
-@import "carbon-components/src/components/tag/tag";
-@import "carbon-components/src/components/notification/inline-notification";
-@import "carbon-components/src/components/notification/toast-notification";
-@import "carbon-components-10.47/src/components/popover/popover";
+$ccs-theme-switching: true;
+// `:root` below always declares every token, so `var()` needs no fallback.
+$ccs-omit-token-fallbacks: true;
 
-// The default theme is "white" (White)
-:root {
-  @include carbon--theme($carbon--theme--white, true) {
-    @include emit-component-tokens($tag-colors);
-    @include emit-component-tokens($notification-colors);
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/themes/themes";
+@import "./theme-token-properties";
+
+@import "./carbon-styles";
+
+// Theme zones (`ThemeZone`, Carbon React's `<Theme>`): a `.bx--{theme}`
+// element takes a theme's full token set, whatever it is nested in. It
+// matches the white block, which declares every token, then its own theme's
+// block, which re-declares what differs from white. So the zones share the
+// `:root` blocks and add no declarations of their own.
+$ccs-non-default-themes: (
+  g10: $carbon--theme--g10,
+  g80: $carbon--theme--g80,
+  g90: $carbon--theme--g90,
+  g100: $carbon--theme--g100,
+);
+
+// The classic UI Shell is a Gray 100 header over a White side nav, on any
+// page theme. Its two parts are zones like the ones above, so they share
+// the theme blocks too.
+$ccs-classic-header: ".#{$prefix}--header--ui-shell-classic";
+$ccs-classic-side-nav: ".#{$prefix}--side-nav--ui-shell-classic";
+
+// Default: white
+:root,
+.#{$prefix}--white,
+.#{$prefix}--g10,
+.#{$prefix}--g80,
+.#{$prefix}--g90,
+.#{$prefix}--g100,
+.#{$prefix}--system,
+#{$ccs-classic-header},
+#{$ccs-classic-side-nav} {
+  @include ccs-theme-tokens($carbon--theme--white);
+}
+
+// Non-default themes only re-declare the tokens that differ from white, which
+// the block above always provides.
+@each $name, $theme in $ccs-non-default-themes {
+  // <html theme="…">
+  :root[theme="#{$name}"],
+  .#{$prefix}--#{$name}#{if($name == g100, ", #{$ccs-classic-header}", "")} {
+    @include ccs-theme-tokens($theme, $carbon--theme--white);
   }
 }
 
-// Set the <html> theme attribute to "g10" to use the Gray 10 theme
-// <html theme="g10">
-:root[theme="g10"] {
-  @include carbon--theme($carbon--theme--g10, true) {
-    @include emit-component-tokens($tag-colors);
-    @include emit-component-tokens($notification-colors);
-  }
+// A zone paints its own surface. Portalled content carries the zone's theme
+// class without this one, so it isn't painted.
+.#{$prefix}--theme-zone {
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
 }
 
-// Set the <html> theme attribute to "g80" to use the Gray 80 theme
-// <html theme="g80">
-:root[theme="g80"] {
-  @include carbon--theme($carbon--theme--g80, true) {
-    @include emit-component-tokens($tag-colors);
-    @include emit-component-tokens($notification-colors);
-  }
+// The dark blocks set `color-scheme: dark`; a light zone nested in one
+// resets it.
+.#{$prefix}--white,
+.#{$prefix}--g10,
+.#{$prefix}--system {
+  color-scheme: light;
 }
 
-// Set the <html> theme attribute to "g90" to use the Gray 90 theme
-// <html theme="g90">
-:root[theme="g90"] {
-  @include carbon--theme($carbon--theme--g90, true) {
-    @include emit-component-tokens($tag-colors);
-    @include emit-component-tokens($notification-colors);
+// <html theme="system">: White, or Gray 100 when the operating system
+// prefers dark, with no JavaScript. Like `Theme`'s default `systemThemes`.
+// The white block above covers light; dark adds what Gray 100 changes.
+@media (prefers-color-scheme: dark) {
+  :root[theme="system"],
+  .#{$prefix}--system {
+    @include ccs-theme-tokens($carbon--theme--g100, $carbon--theme--white);
   }
 }
-
-// Set the <html> theme attribute to "g100" to use the Gray 100 theme
-// <html theme="g100">
-:root[theme="g100"] {
-  @include carbon--theme($carbon--theme--g100, true) {
-    @include emit-component-tokens($tag-colors);
-    @include emit-component-tokens($notification-colors);
-  }
-}
-
-// Programmatically update the theme in JavaScript:
-// document.documentElement.setAttribute("theme", "g90");
-
-@import "carbon-components/scss/globals/scss/_css--reset";
-@import "carbon-components/scss/globals/scss/_css--font-face";
-@import "carbon-components/scss/globals/scss/_css--helpers";
-@import "carbon-components/scss/globals/scss/_css--body";
-@import "carbon-components/scss/globals/grid/grid";
-
-// Import all component styles
-@import "carbon-components/scss/globals/scss/styles";

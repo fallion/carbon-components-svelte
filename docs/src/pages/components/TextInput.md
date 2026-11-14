@@ -1,0 +1,245 @@
+---
+components: ["TextInput", "TextInputSkeleton", "FluidTextInputSkeleton"]
+description: Text inputs provide a single-line field for short text like usernames or search terms, with support for various sizes and states.
+---
+
+<script>
+  import { AILabel, Box, FluidTextInputSkeleton, Layer, TextInput, TextInputSkeleton, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a basic text input with a label and placeholder text.
+
+<TextInput labelText="Workspace name" placeholder="Enter workspace name..." />
+
+## Helper text
+
+Add helper text below the input to provide additional context or instructions.
+
+<TextInput labelText="Workspace name" helperText="This name appears in your workspace URL and can be changed later in settings" placeholder="Enter workspace name..." />
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<TextInput hideLabel labelText="Workspace name" placeholder="Enter workspace name..." />
+
+## Custom label
+
+Use the `labelChildren` slot to provide custom label content.
+
+<TextInput labelText="" placeholder="Enter workspace name...">
+  <strong slot="labelChildren">Workspace name</strong>
+</TextInput>
+
+## Maximum character count
+
+Specify the max character count with `maxCount`. A character counter appears to the right of the label. Use the native maxlength attribute instead if you prefer not to show a counter.
+
+Screen readers hear the count read as words (for example, "3 of 10 characters"), and hear "Character limit reached" once typing pauses at the limit. Override either message with the `counterText` and `limitReachedText` props.
+
+<TextInput labelText="Tag name" placeholder="Enter tag name..." maxCount={10} />
+
+## Events
+
+Respond to value changes.
+
+### Value change
+
+Use `on:input` to listen for every keystroke, and `on:change` to listen for
+committed changes on blur. Both events dispatch the current value directly as
+`event.detail`.
+
+<TextInput
+  labelText="Workspace name"
+  placeholder="Enter workspace name..."
+  on:input={(e) => console.log(e.detail)} // string | null
+  on:change={(e) => console.log(e.detail)} // string | null
+/>
+
+### Numeric values
+
+Set the native `type` attribute to `"number"` to parse `value` as a number.
+The bound value—and the event detail dispatched by `on:input` and `on:change`—is
+`null` when the input is empty, otherwise a `number`.
+
+<TextInput type="number" labelText="Port number" placeholder="Enter port number..." />
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<TextInput selectTextOnFocus labelText="Workspace name" value="acme-production" />
+
+### Native text fields
+
+`TextInput`, `TextArea`, `NumberInput`, `Search`, and the other text fields keep the selection after a click in Safari, where the `mouseup` that ends a click would collapse it. For a native field you build yourself, use the `preserveFocusSelection` action. It does not select anything itself: select the text in your own `focus` handler and pass `true` to turn the action on.
+
+<FileSource src="/framed/TextInput/PreserveFocusSelectionBasic" />
+
+The action takes a boolean, so pass an expression to turn it on and off. Pass `false` when the field is disabled or when selecting on focus is switched off, which mirrors how [TimePicker](/components/TimePicker) applies it.
+
+<FileSource src="/framed/TextInput/PreserveFocusSelectionToggling" />
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<TextInput labelText="Workspace name" value="analytics-prod">
+  <AILabel slot="decorator">
+    <p>Suggested from the project you selected.</p>
+  </AILabel>
+</TextInput>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <TextInput labelText="Workspace name" placeholder="Enter workspace name..." />
+  </Box>
+</Layer>
+
+## Fluid
+
+Use the fluid variant with `fluid`, which embeds the label
+inside the field. Fluid text inputs can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically. The fluid variant cannot be combined with the inline variant.
+
+<TextInput fluid labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Maximum character count
+
+The character counter sits at the trailing edge of the field, opposite the
+embedded label.
+
+<TextInput fluid labelText="Region code" placeholder="Enter region code..." maxCount={10} />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<TextInput fluid labelText="Workspace name" placeholder="Enter workspace name...">
+  <svelte:fragment slot="labelChildren">
+    Workspace name
+    <TooltipIcon tooltipText="This name is also used to generate your workspace's URL." icon={Information} />
+  </svelte:fragment>
+</TextInput>
+
+### Invalid
+
+Fluid text inputs display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<TextInput fluid invalid invalidText="This workspace name is already taken. Please choose a different name that is not in use by another organization on this platform." labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Warning
+
+<TextInput fluid warn warnText="This name will appear in your workspace URL and cannot be changed after creation." labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Disabled
+
+Invalid and warning states are not displayed while the input is disabled.
+
+<TextInput fluid disabled invalid invalidText="Workspace name is already taken." labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Read-only
+
+Invalid and warning states are not displayed while the input is read-only.
+
+<TextInput fluid readonly warn warnText="This name will appear in your workspace URL and cannot be changed after creation." labelText="Workspace name" value="acme-production" />
+
+### Skeleton
+
+Display a loading skeleton for the fluid text input variant.
+
+<FluidTextInputSkeleton />
+
+## Inline
+
+Use the inline variant to display the label and input on the same line with `inline`.
+
+<TextInput inline labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom inline label content.
+
+<TextInput inline labelText="" placeholder="Enter workspace name...">
+  <strong slot="labelChildren">Workspace name</strong>
+</TextInput>
+
+## Sizes
+
+Set `size` to control input height. The default is `md`.
+
+Carbon v11's names also work. `"md"` sets the 40px default explicitly, even inside a sized `Form`, and `"lg"` renders as `"xl"`.
+
+### Extra-large
+
+Use the extra-large size for more prominent inputs by setting `size` to `"xl"`.
+
+<TextInput size="xl" labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Small
+
+Use the small size for more compact inputs by setting `size` to `"sm"`.
+
+<TextInput size="sm" labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Extra-small
+
+Use the extra-small size for the most compact inputs by setting `size` to `"xs"`.
+
+<TextInput size="xs" labelText="Workspace name" placeholder="Enter workspace name..." />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Indicate an invalid state with an error message by setting `invalid` and providing `invalidText`.
+
+<TextInput invalid invalidText="Workspace name is already taken. Please try another." labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Warning
+
+Indicate a warning state with a message by setting `warn` and providing `warnText`.
+
+<TextInput warn warnText="This name will appear in your workspace URL and cannot be changed after creation." labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Disabled
+
+Set `disabled` to `true` to prevent user interaction.
+
+<TextInput disabled labelText="Workspace name" placeholder="Enter workspace name..." />
+
+### Read-only
+
+Display a non-editable value with `readonly`.
+
+<TextInput readonly labelText="Workspace name" value="acme-production" />
+
+## Skeleton
+
+Show a loading state with the default skeleton variant.
+
+<TextInputSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<TextInputSkeleton size="xs" />
+
+### Without label
+
+Show a loading state without a label by setting `hideLabel` to `true`.
+
+<TextInputSkeleton hideLabel />

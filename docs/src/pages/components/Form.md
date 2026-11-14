@@ -1,0 +1,556 @@
+---
+components: ["Form", "FormGroup", "FormItem", "FormLabel", "FormHelperText", "FormRequirement"]
+description: Forms provide a structured way to collect user input, working with controls like checkboxes, radio buttons, and selects.
+---
+
+<script>
+  import { Form,
+    FormGroup,
+    Checkbox,
+    RadioButtonGroup,
+    RadioButton,
+    Select,
+    SelectItem,
+    Stack,
+    Button,
+    TextInput,
+    NumberInput,
+    Dropdown,
+    DatePicker,
+    DatePickerInput,} from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Group related controls with `FormGroup`, and give every field a `name` so it
+submits. The placeholder option has an empty value and the select is
+`required`, so the browser asks for a plan before it submits.
+
+<Form on:submit={(e) => e.preventDefault()}>
+  <FormGroup legendText="Security settings">
+    <Checkbox name="sso" labelText="Enable single sign-on (SSO)" checked />
+    <Checkbox name="mfa" labelText="Require multi-factor authentication" />
+    <Checkbox name="audit" labelText="Enable audit logging" disabled />
+  </FormGroup>
+  <Stack gap={7}>
+    <RadioButtonGroup legendText="Storage tier" name="tier" selected="standard">
+      <RadioButton value="free" labelText="Free (1 GB)" />
+      <RadioButton value="standard" labelText="Standard (10 GB)" />
+      <RadioButton value="pro" labelText="Pro (128 GB)" disabled />
+    </RadioButtonGroup>
+    <Select name="plan" labelText="Account plan" required>
+      <SelectItem disabled hidden value="" text="Choose a plan" />
+      <SelectItem value="free" text="Free" />
+      <SelectItem value="starter" text="Starter" />
+      <SelectItem value="team" text="Team" />
+    </Select>
+    <Button type="submit">Submit</Button>
+  </Stack>
+</Form>
+
+## Sizes
+
+Set `size` on `Form` to size every field inside it. Text inputs, number
+inputs, selects, dropdowns, date and time pickers, and their skeletons all
+inherit it. Buttons take the same height (`xs`, `small` for `sm`, and the
+48px default for `xl`), unless inside an `ActionSet`. A field's or
+button's own `size` takes precedence.
+
+<Form size="xs" on:submit={(e) => e.preventDefault()}>
+  <Stack gap={5}>
+    <TextInput name="service" labelText="Service name" value="billing-api" />
+    <NumberInput name="replicas" labelText="Replicas" value={3} />
+    <Dropdown
+      labelText="Region"
+      selectedId="us-east-1"
+      items={[
+        { id: "us-east-1", text: "US East (N. Virginia)" },
+        { id: "eu-west-1", text: "EU West (Ireland)" },
+      ]}
+    />
+    <DatePicker datePickerType="single">
+      <DatePickerInput labelText="Maintenance window" placeholder="mm/dd/yyyy" />
+    </DatePicker>
+    <TextInput size="sm" name="owner" labelText="Owner (small)" value="platform-team" />
+    <Button type="submit">Deploy</Button>
+  </Stack>
+</Form>
+
+## Form group
+
+Use `FormGroup` to wrap related controls in a `fieldset`, with an optional
+`legend` rendered from `legendText`.
+
+### Disabled
+
+Set `disabled` on FormGroup to disable every field inside it, with no
+`disabled` on the fields themselves. Each field, list boxes and sliders
+included, takes its disabled state and styles from the fieldset, and
+disabled controls are left out of the submission. A plain
+`<fieldset disabled>` works the same way.
+
+<Form>
+  <FormGroup legendText="Account details" disabled>
+    <Stack gap={6}>
+      <div>
+        <Checkbox name="email" labelText="Email notifications" checked />
+        <Checkbox name="sms" labelText="SMS notifications" />
+      </div>
+      <Select name="language" labelText="Preferred language">
+        <SelectItem value="en" text="English" />
+        <SelectItem value="es" text="Spanish" />
+      </Select>
+      <Dropdown
+        name="team"
+        labelText="Team"
+        selectedId="design"
+        items={[
+          { id: "design", text: "Design" },
+          { id: "engineering", text: "Engineering" },
+        ]}
+      />
+    </Stack>
+  </FormGroup>
+</Form>
+
+### No margin
+
+Set `noMargin` to `true` to remove the default bottom margin below a fieldset,
+useful when stacking form groups without extra spacing between them.
+
+<Form>
+  <FormGroup legendText="Default spacing">
+    <Checkbox labelText="Show advanced settings" />
+  </FormGroup>
+  <FormGroup legendText="No margin" noMargin>
+    <Checkbox labelText="Show advanced settings" />
+  </FormGroup>
+</Form>
+
+### Validation
+
+Set `invalid` to `true` to mark the fieldset invalid via the `data-invalid`
+attribute. Set `message` to `true` with `messageText` to render a requirement
+below the fieldset's controls; when the group is invalid, the message shows as
+an error with a warning icon.
+
+<Form>
+  <FormGroup
+    legendText="Contact preferences"
+    invalid
+    message
+    messageText="Select at least one contact method"
+  >
+    <Checkbox name="contact" value="email" labelText="Email" />
+    <Checkbox name="contact" value="sms" labelText="SMS" />
+  </FormGroup>
+</Form>
+
+### Helper text and messages
+
+Place `FormHelperText` and `FormRequirement` directly in a `FormGroup` to
+describe the whole group. Their ids derive from the group's `id`, and the
+fieldset's `aria-describedby` lists them while they're mounted, so screen
+readers read them when focus enters the group. Render `FormRequirement` with
+`{#if}` while there is an error. Check a box to clear the error.
+
+<FileSource src="/framed/Form/FormGroupParts" />
+
+## Custom controls
+
+`FormLabel`, `FormHelperText`, and `FormRequirement` are the label, helper
+text, and invalid or warn message that fields like `TextInput` render. Use
+them to give a native or third-party control the same look.
+
+### Associate parts with a control
+
+Wrap the parts in a `FormItem` and apply its `control` action to the control.
+The label's `for`, the control's `id`, and the ids its `aria-describedby`
+lists all derive from `controlId`, so no id is written by hand. Render a
+`FormRequirement` only while there is a message: while it's mounted, the
+control is described by it, and an invalid message sets `aria-invalid` and
+the `invalid` slot prop.
+
+<FileSource src="/framed/Form/FormCustomControl" />
+
+### Non-native controls
+
+A `<label for>` only names native form elements. When the `control` action is
+applied to anything else, such as a `div` with `role="combobox"`, it also sets
+`aria-labelledby` to the `FormLabel`.
+
+```svelte
+<FormItem let:control>
+  <FormLabel>Assignee</FormLabel>
+  <div
+    role="combobox"
+    tabindex="0"
+    aria-expanded="false"
+    aria-controls="assignee-menu"
+    use:control
+  >
+    Choose a person
+  </div>
+  <FormHelperText>They are notified when assigned</FormHelperText>
+</FormItem>
+```
+
+### Component controls
+
+An action can't be applied to a component. When the control is a component
+that forwards attributes to its focusable element, pass the slot props
+instead: `controlId`, `labelId`, `describedBy`, and `invalid`.
+
+```svelte
+<FormItem let:controlId let:labelId let:describedBy let:invalid>
+  <FormLabel>Assignee</FormLabel>
+  <PersonPicker
+    id={controlId}
+    aria-labelledby={labelId}
+    aria-describedby={describedBy}
+    aria-invalid={invalid || undefined}
+  />
+  <FormHelperText>They are notified when assigned</FormHelperText>
+</FormItem>
+```
+
+### Sizes and fluid forms
+
+Inside a `Form` with `size`, the `size` slot prop holds that size, and inside
+a `FluidForm` the `fluid` slot prop is `true`. Use them to style the control
+like the fields around it.
+
+```svelte
+<Form size="sm">
+  <FormItem let:control let:size>
+    <FormLabel>Work email</FormLabel>
+    <input
+      class="bx--text-input"
+      class:bx--text-input--sm={size === "sm"}
+      class:bx--text-input--xl={size === "xl"}
+      use:control
+    />
+  </FormItem>
+</Form>
+```
+
+### Without FormItem
+
+Each part also works on its own. Set `for` on the label and `id` on the helper
+text or message, then reference them from the control.
+
+```svelte
+<FormLabel for="nickname">Nickname</FormLabel>
+<input
+  id="nickname"
+  class="bx--text-input"
+  aria-describedby="nickname-helper"
+/>
+<FormHelperText id="nickname-helper">Shown on your profile</FormHelperText>
+```
+
+| Do | Why |
+| --- | --- |
+| Use `TextInput`, `Select`, and the other fields when they fit | They already pair their label, helper text, and messages with the control. |
+| Render `FormRequirement` with `{#if}` instead of hiding it | Only a mounted message describes the control or marks it invalid. |
+| Set the control's id through `controlId` on `FormItem` | The `control` action overwrites the control's `id` with `controlId`. |
+| Also pass `id={controlId}` to the control when you server render | The `control` action runs only in the browser, so without it the label's `for` matches no id in the server HTML. |
+| Style the control from the `invalid` and `warn` slot props | The parts only render text; the control's own invalid styles are up to you. |
+
+## Submission
+
+Handle form submission, including preventing the default browser behavior,
+reading what the form submits, and resetting it.
+
+### Prevent default behavior
+
+Handle form submission by preventing the default browser behavior. Use
+`e.preventDefault()` to stop the native form submission and handle the event
+programmatically.
+
+<Form on:submit={e => {
+  e.preventDefault();
+  console.log("submit", e);
+}}>
+  <Stack gap={5}>
+    <Checkbox name="confirm" labelText="Send email confirmation" checked />
+    <Button type="submit">Submit</Button>
+  </Stack>
+</Form>
+
+### Submitted values
+
+Every control that should reach the server needs a `name`. Submit this
+example to see the `FormData` entries the browser would send: a disabled field
+is left out, a read-only field is included, an unchecked checkbox is absent,
+and a multi-select sends one entry per selected item.
+
+<FileSource src="/framed/Form/FormSubmittedValues" />
+
+What each control submits under its `name`:
+
+| Component | Submitted value |
+| --- | --- |
+| `TextInput`, `PasswordInput`, `TextArea`, `Search` | The text, or `""` when empty. |
+| `NumberInput` | The number as a string (`1234.5`), or `""` when empty, even when `locale` formats the display. |
+| `Checkbox`, `Toggle` | `value` (`"on"` by default) while checked; nothing while unchecked. |
+| `RadioButtonGroup`, `TileGroup` | The selected option's `value`; nothing when none is selected. |
+| `SelectableTileGroup` | One entry per selected tile `value`; read them with `getAll`. |
+| `Select` | The selected `SelectItem` value, as a string. |
+| `Dropdown` | `selectedId`, as a string; `""` when nothing is selected. |
+| `ComboBox` | The displayed text, not `selectedId`. |
+| `MultiSelect` | One entry per selected item `id`; read them with `getAll`. |
+| `DatePicker` | Each `DatePickerInput`'s text in `dateFormat`; a range picker's two inputs each take their own `name`. |
+| `TimePicker`, `TimePickerSelect` | The time text and each select's value, under their own names. |
+| `Slider` | The value as a string; `RangeSlider` uses `name` and `nameUpper`. |
+| `PinCodeInput` | The assembled code. |
+| `FileUploader` | `File` objects; the form needs `enctype="multipart/form-data"`. See [FileUploader](/components/FileUploader#form-submission). |
+
+Disabled controls submit nothing, like native disabled inputs. Read-only
+controls still submit their value.
+
+### Tiles
+
+Tile groups submit like the controls they wrap. A `TileGroup` is a radio
+group: set `name` on the group and the checked tile's `value` is sent under
+it. A `SelectableTileGroup` is a set of checkboxes that share the group's
+`name`, so each selected tile sends its own entry. Give every tile a `value`
+(a `SelectableTile` sends `"value"` when it has none).
+
+<FileSource src="/framed/Form/FormTiles" />
+
+On the server, read the radio group with `get` and the selectable group with
+`getAll`:
+
+```js
+const data = await request.formData();
+const plan = data.get("plan"); // "team"
+const addons = data.getAll("addons"); // ["backups", "audit"]
+```
+
+### Reset
+
+A `<Button type="reset">`, `form.reset()`, or SvelteKit's `enhance` after a
+successful action resets the form. The browser restores each field to its
+markup default: empty or unchecked when the value was set on the client, and
+the server-rendered value when the page came from the server. Every component
+then updates its bound value to match what the field shows, without firing
+events, so `bind:value`, `bind:checked`, and `bind:selected` stay in step.
+
+Controls that always hold a value keep it through a reset: `Select`,
+`Slider`, `RangeSlider`, `NumberInput` (unless `allowEmpty` is set),
+`Dropdown`, and `MultiSelect`. A read-only control keeps its value too.
+
+In this example, the name clears, the region stays, and the checkbox
+unchecks.
+
+<FileSource src="/framed/Form/FormReset" />
+
+### Reset custom fields
+
+Use the `formReset` action on a field you build yourself to run a callback
+after the form that owns it resets. A native reset restores field values
+without firing an `input` event, so state derived from the field goes stale
+unless the callback clears it.
+
+The callback runs after the browser has restored the field values, so it reads
+the reset values. It does not run if a `reset` listener cancels the reset.
+Press the reset button to clear the preview along with the field.
+
+<FileSource src="/framed/Form/FormResetAction" />
+
+## SvelteKit
+
+Forms work without JavaScript first: a `method="POST"` form posts its fields to
+a [form action](https://svelte.dev/docs/kit/form-actions), and `enhance` then
+upgrades it to submit in place.
+
+### Form actions
+
+Read the submission with `request.formData()`. Every value arrives as a string
+(or a `File`), so convert and validate on the server. Return `fail` with the
+submitted values and the errors so the page can show them.
+
+```js
+// src/routes/invite/+page.server.js
+import { fail } from "@sveltejs/kit";
+
+export const actions = {
+  default: async ({ request }) => {
+    const data = await request.formData();
+    const email = String(data.get("email") ?? "").trim();
+    const seats = Number(data.get("seats"));
+    const teams = data.getAll("teams").map(String);
+    const notify = data.has("notify");
+
+    const errors = {};
+    if (!email.includes("@")) errors.email = "Enter a valid email address.";
+    if (!Number.isInteger(seats) || seats < 1) errors.seats = "Enter at least 1 seat.";
+
+    if (Object.keys(errors).length > 0) {
+      return fail(400, { values: { email, seats: data.get("seats") }, errors });
+    }
+
+    // Save the invite here.
+    return { invited: email };
+  },
+};
+```
+
+In the page, feed the returned values back into the fields and map each error
+to `invalid` and `invalidText`:
+
+```svelte
+<!-- src/routes/invite/+page.svelte -->
+<script>
+  import { enhance } from "$app/forms";
+  import {
+    Button,
+    Checkbox,
+    Form,
+    MultiSelect,
+    TextInput,
+  } from "carbon-components-svelte";
+
+  export let form;
+
+  $: values = form?.values ?? {};
+  $: errors = form?.errors ?? {};
+</script>
+
+<Form method="POST" actions={[enhance]}>
+  <TextInput
+    name="email"
+    type="email"
+    labelText="Email"
+    value={values.email ?? ""}
+    invalid={!!errors.email}
+    invalidText={errors.email}
+  />
+  <TextInput
+    name="seats"
+    type="number"
+    labelText="Seats"
+    value={values.seats ?? "1"}
+    invalid={!!errors.seats}
+    invalidText={errors.seats}
+  />
+  <MultiSelect
+    name="teams"
+    labelText="Teams"
+    items={[
+      { id: "design", text: "Design" },
+      { id: "eng", text: "Engineering" },
+    ]}
+  />
+  <Checkbox name="notify" labelText="Email me a copy" />
+  <Button type="submit">Send invite</Button>
+</Form>
+
+{#if form?.invited}
+  <p>Invited {form.invited}.</p>
+{/if}
+```
+
+### SvelteKit enhance
+
+Svelte's `use:` directive cannot target components. Set `actions` to apply
+SvelteKit's `enhance` (or any other action) to the underlying form element.
+
+```svelte
+<script>
+  import { enhance } from "$app/forms";
+  import { Form, TextInput, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/save" actions={[enhance]}>
+  <TextInput name="name" labelText="Name" />
+  <Button type="submit">Save</Button>
+</Form>
+```
+
+After a successful action, `enhance` resets the form (see [Reset](#reset)).
+A failed action leaves the fields as submitted.
+
+Pass a submit callback as a `[action, parameter]` tuple. The submit callback
+returns the function that runs after the response; call `update` in it to keep
+the default handling, here without resetting the form:
+
+```svelte
+<Form
+  method="POST"
+  action="?/save"
+  actions={[[enhance, () => async ({ update }) => update({ reset: false })]]}
+>
+  <TextInput name="name" labelText="Name" />
+  <Button type="submit">Save</Button>
+</Form>
+```
+
+### Pending state
+
+Use the submit callback to track the request and set `loading` on the submit
+button while it runs. A loading button can't be activated, so a second submit
+cannot send a duplicate request, and unlike a disabled button it keeps focus.
+Leave the fields enabled: a disabled field is left out of the submission.
+
+```svelte
+<script>
+  import { enhance } from "$app/forms";
+  import { Button, Form, TextInput } from "carbon-components-svelte";
+
+  let submitting = false;
+
+  const trackSubmit = () => {
+    submitting = true;
+    return async ({ update }) => {
+      await update();
+      submitting = false;
+    };
+  };
+</script>
+
+<Form method="POST" actions={[[enhance, trackSubmit]]}>
+  <TextInput name="email" labelText="Email" />
+  <Button type="submit" loading={submitting} loadingDescription="Saving">
+    Save
+  </Button>
+</Form>
+```
+
+### Server-side validation
+
+This example stands in for a form action in the browser. It validates on
+submit, shows the errors on the fields while keeping what was typed, and
+resets the form after a successful submission, the way `enhance` does. Set
+`novalidate` when the server owns validation, so the browser's own bubbles do
+not compete with `invalidText`.
+
+<FileSource src="/framed/Form/FormServerValidation" />
+
+### Multiple actions
+
+One form can post to different named actions. Set `formaction` on each submit
+button; `Button` passes it to the native `<button>`.
+
+```svelte
+<Form method="POST" actions={[enhance]}>
+  <TextInput name="title" labelText="Title" />
+  <Button type="submit" formaction="?/save">Save</Button>
+  <Button kind="danger" type="submit" formaction="?/delete">Delete</Button>
+</Form>
+```
+
+## Best practices
+
+| Do | Why |
+| --- | --- |
+| Give every field a `name` | Only named, enabled controls are submitted. Keep ids for labels and tests. |
+| Validate on the server | `required`, `type`, `min`, and `max` improve the form in the browser, but they are not a guarantee. |
+| Treat every value as a string | Convert numbers with `Number()` and check for `NaN`. Read checkboxes and toggles with `data.has(name)`. |
+| Read multi-value fields with `data.getAll(name)` | `MultiSelect` and checkboxes that share a `name` submit one entry per value. |
+| Use `readonly`, not `disabled`, for values the server needs | Disabled fields are left out of the submission; read-only fields are included. |
+| Return the submitted values with the errors | The user does not retype them, and `invalid` and `invalidText` can mark the field each error belongs to. |
+| Set `enctype="multipart/form-data"` with a `FileUploader` | Without it, the browser sends only the file names. |
+| Call `event.preventDefault()` in `on:reset` to reset to specific values | A reset restores the markup defaults; prevent it and set the bound values yourself instead. |
+| Prefer `method="POST"` plus `enhance` over custom `fetch` code | The form keeps working before JavaScript loads. |

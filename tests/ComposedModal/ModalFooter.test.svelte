@@ -1,0 +1,70 @@
+<script lang="ts">
+  import ComposedModal from "carbon-components-svelte/ComposedModal/ComposedModal.svelte";
+  import ModalBody from "carbon-components-svelte/ComposedModal/ModalBody.svelte";
+  import ModalFooter from "carbon-components-svelte/ComposedModal/ModalFooter.svelte";
+  import ModalHeader from "carbon-components-svelte/ComposedModal/ModalHeader.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let open = true;
+  export let primaryButtonText: ComponentProps<ModalFooter>["primaryButtonText"] =
+    "";
+  export let primaryButtonIcon: ComponentProps<ModalFooter>["primaryButtonIcon"] =
+    undefined;
+  export let primaryButtonDisabled: ComponentProps<ModalFooter>["primaryButtonDisabled"] = false;
+  export let primaryButtonLoading: ComponentProps<ModalFooter>["primaryButtonLoading"] = false;
+  export let primaryButtonLoadingDescription: ComponentProps<ModalFooter>["primaryButtonLoadingDescription"] =
+    "Loading";
+  export let primaryClass: ComponentProps<ModalFooter>["primaryClass"] =
+    undefined;
+  export let secondaryButtonText: ComponentProps<ModalFooter>["secondaryButtonText"] =
+    "";
+  export let secondaryButtonLoading: ComponentProps<ModalFooter>["secondaryButtonLoading"] = false;
+  export let secondaryButtonLoadingDescription: ComponentProps<ModalFooter>["secondaryButtonLoadingDescription"] =
+    "Loading";
+  export let secondaryButtons: ComponentProps<ModalFooter>["secondaryButtons"] =
+    [];
+  export let secondaryClass: ComponentProps<ModalFooter>["secondaryClass"] =
+    undefined;
+  export let danger: ComponentProps<ModalFooter>["danger"] = false;
+  export let slotContent = "";
+  /** When true, `on:click:button--secondary` calls preventDefault() so the modal stays open. */
+  export let preventSecondaryDefault = false;
+  export let onsubmit: (() => void) | undefined = undefined;
+  export let onprimary: (() => void) | undefined = undefined;
+  export let onsecondary: ((event: CustomEvent) => void) | undefined =
+    undefined;
+  export let onclose: (() => void) | undefined = undefined;
+</script>
+
+<ComposedModal
+  bind:open
+  on:submit={() => onsubmit?.()}
+  on:click:button--primary={() => onprimary?.()}
+  on:close={() => onclose?.()}
+>
+  <ModalHeader title="Test Modal" />
+  <ModalBody>Content</ModalBody>
+  <ModalFooter
+    {primaryButtonText}
+    {primaryButtonIcon}
+    {primaryButtonDisabled}
+    {primaryButtonLoading}
+    {primaryButtonLoadingDescription}
+    {primaryClass}
+    {secondaryButtonText}
+    {secondaryButtonLoading}
+    {secondaryButtonLoadingDescription}
+    {secondaryButtons}
+    {secondaryClass}
+    {danger}
+    on:click:button--secondary={(e) => {
+      onsecondary?.(e);
+      if (preventSecondaryDefault) e.preventDefault();
+    }}
+    {...$$restProps}
+  >
+    {#if slotContent}
+      {slotContent}
+    {/if}
+  </ModalFooter>
+</ComposedModal>

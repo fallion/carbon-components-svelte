@@ -1,0 +1,204 @@
+---
+components: ["TileGroup", "RadioTile"]
+description: Radio tiles provide a tile-based interface for choosing a single option from a set, with disabled states.
+---
+
+<script>
+  import { AILabel, Box, Layer, RadioTile, TileGroup } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a group of radio tiles with a shared name and legend. Tab moves focus to the selected tile; <DocKbd label="Up" /> and <DocKbd label="Down" /> (or <DocKbd label="Left" /> and <DocKbd label="Right" />) move the selection between tiles, and <DocKbd label="Space" /> or <DocKbd label="Enter" /> selects the focused tile. <DocKbd label="Enter" /> does not submit the surrounding form.
+
+<TileGroup legendText="Service pricing tiers" name="plan" selected="standard">
+  <RadioTile value="lite">
+    Lite plan
+  </RadioTile>
+  <RadioTile value="standard">
+    Standard plan
+  </RadioTile>
+  <RadioTile value="plus">
+    Plus plan
+  </RadioTile>
+</TileGroup>
+
+## Standalone
+
+Use `RadioTile` without `TileGroup` and bind each tile's `checked`. Tiles that share a `name` form one radio group, so checking one unchecks the others, including after a form reset.
+
+<FileSource src="/framed/RadioTile/RadioTileStandalone" />
+
+## Reactive
+
+### One-way binding
+
+Update the selected value using the `select` event.
+
+<FileSource src="/framed/RadioTile/RadioTileReactiveOneWay" />
+
+### Two-way binding
+
+Bind to `selected` for simpler state management. `selected` follows the
+tiles: it becomes `undefined` when the checked tile is removed, and follows a
+checked tile whose `value` changes.
+
+<FileSource src="/framed/RadioTile/RadioTileReactive" />
+
+## Legend
+
+### Custom content
+
+Use the `legendChildren` slot on `TileGroup` to provide custom legend content instead of `legendText`.
+
+<TileGroup name="plan-legend-slot" selected="standard">
+  <strong slot="legendChildren">Service pricing tiers</strong>
+  <RadioTile value="lite">
+    Lite plan
+  </RadioTile>
+  <RadioTile value="standard">
+    Standard plan
+  </RadioTile>
+  <RadioTile value="plus">
+    Plus plan
+  </RadioTile>
+</TileGroup>
+
+### Hidden
+
+Hide the legend visually by setting `hideLegend` to `true`. The legend remains available to screen readers.
+
+<TileGroup hideLegend legendText="Service pricing tiers" name="plan-hidden-legend" selected="standard">
+  <RadioTile value="lite">
+    Lite plan
+  </RadioTile>
+  <RadioTile value="standard">
+    Standard plan
+  </RadioTile>
+  <RadioTile value="plus">
+    Plus plan
+  </RadioTile>
+</TileGroup>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the tile's content as AI-generated. The tile shows the AI surface, and the label sits in the top-right corner at the `"xs"` size.
+
+<TileGroup legendText="Recommended region">
+  <RadioTile value="us-east-1" checked>
+    US East (N. Virginia)
+    <AILabel slot="decorator">
+      <p>Closest to most of your users, by request latency.</p>
+    </AILabel>
+  </RadioTile>
+  <RadioTile value="eu-west-1">EU West (Ireland)</RadioTile>
+</TileGroup>
+
+### Rounded corners
+
+Set `rounded` to `true` to round the corners of a tile with a decorator. Carbon reserves rounded tiles for AI content, so a tile without a decorator stays square.
+
+<TileGroup legendText="Recommended region" name="rounded-region">
+  <RadioTile value="us-east-1" checked rounded>
+    US East (N. Virginia)
+    <AILabel slot="decorator">
+      <p>Closest to most of your users, by request latency.</p>
+    </AILabel>
+  </RadioTile>
+  <RadioTile value="eu-west-1">EU West (Ireland)</RadioTile>
+</TileGroup>
+
+## Small size
+
+Set `size="sm"` on the TileGroup for compact tiles, such as rows in a list of choices: less padding, no minimum height, and the checkmark pulled in. A tile's own `size` overrides the group's.
+
+<TileGroup legendText="Delivery" name="delivery" selected="standard" size="sm">
+  <RadioTile value="standard">Standard, 3 to 5 days</RadioTile>
+  <RadioTile value="express">Express, next day</RadioTile>
+  <RadioTile value="pickup">Pick up in store</RadioTile>
+</TileGroup>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <TileGroup legendText="Service pricing tiers" name="plan-layer" selected="standard">
+      <RadioTile value="lite">
+        Lite plan
+      </RadioTile>
+      <RadioTile value="standard">
+        Standard plan
+      </RadioTile>
+      <RadioTile value="plus">
+        Plus plan
+      </RadioTile>
+    </TileGroup>
+  </Box>
+</Layer>
+
+## Disabled
+
+Disable specific tiles, or the entire group, to prevent selection.
+
+### Individual tiles
+
+Disable specific tiles to prevent selection.
+
+<TileGroup legendText="Service pricing tiers" name="plan-disabled" selected="standard">
+  <RadioTile value="lite" disabled>
+    Lite plan
+  </RadioTile>
+  <RadioTile value="standard">
+    Standard plan
+  </RadioTile>
+  <RadioTile value="plus" disabled>
+    Plus plan
+  </RadioTile>
+</TileGroup>
+
+### Entire group
+
+Disable every tile at once by setting `disabled` on `TileGroup`. The tiles take on the disabled styling without setting `disabled` on each `RadioTile`.
+
+<TileGroup legendText="Service pricing tiers" name="plan-disabled-group" selected="standard" disabled>
+  <RadioTile value="lite">
+    Lite plan
+  </RadioTile>
+  <RadioTile value="standard">
+    Standard plan
+  </RadioTile>
+  <RadioTile value="plus">
+    Plus plan
+  </RadioTile>
+</TileGroup>
+
+## Checkmark title
+
+The checkmark icon is hidden from screen readers; a tile's content is its accessible name. Set `iconDescription` to change the title shown when hovering the checkmark. Defaults to `"Tile checkmark"`.
+
+<TileGroup legendText="Service pricing tiers" name="plan-checkmark-title" selected="standard">
+  <RadioTile value="lite">
+    Lite plan
+  </RadioTile>
+  <RadioTile value="standard" iconDescription="Current plan">
+    Standard plan
+  </RadioTile>
+  <RadioTile value="plus">
+    Plus plan
+  </RadioTile>
+</TileGroup>
+
+## Form submission
+
+A checked tile submits its `value` under the radio's `name`. See
+[Form](/components/Form#tiles) for a form that submits radio and selectable
+tiles together.
+
+| Do | Why |
+| --- | --- |
+| Set `name` on `TileGroup` when the form is submitted | Without one, the tiles share a generated name, which is not a stable key for the server to read. |
+| Give every tile a unique `value` | The group tracks the selection by `value`, so tiles with equal values show as selected together. |
+| Use `TileGroup` when you need the selected value | `bind:selected` gives one value, instead of a `checked` per standalone tile. |
+| Set the initial choice with `selected` on `TileGroup`, not `checked` on a tile | When both are set, the tile's `checked` wins over `selected`. |

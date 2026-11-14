@@ -1,0 +1,232 @@
+import { trapFocus } from "../../src/utils/trap-focus.js";
+
+/**
+ * jsdom has no layout engine, so `offsetParent`/`offsetWidth`/`offsetHeight`
+ * are `null`/`0`/`0` for every element by default. `trapFocus` treats a
+ * `null` offsetParent + zero height, or zero width + zero height, as "not
+ * tabbable" (a cheap stand-in for elements collapsed by `display: none`), so
+ * fixtures that should count as visible must stub these to look like a
+ * normal laid-out element.
+ */
+function stubVisibleGeometry(el: HTMLElement) {
+  Object.defineProperty(el, "offsetParent", {
+    value: document.body,
+    configurable: true,
+  });
+  Object.defineProperty(el, "offsetWidth", {
+    value: 42,
+    configurable: true,
+  });
+  Object.defineProperty(el, "offsetHeight", {
+    value: 20,
+    configurable: true,
+  });
+}
+
+/**
+ * Build a container with `count` buttons, append it to the document, and
+ * return the container plus its buttons. Each button is stubbed to look
+ * like a normal, visible, laid-out element (see `stubVisibleGeometry`).
+ */
+function setup(count: number) {
+  const container = document.createElement("div");
+  const buttons = Array.from({ length: count }, (_, i) => {
+    const button = document.createElement("button");
+    button.textContent = `Button ${i}`;
+    stubVisibleGeometry(button);
+    container.appendChild(button);
+    return button;
+  });
+  document.body.appendChild(container);
+  return { container, buttons };
+}
+
+function tabEvent(shiftKey = false) {
+  const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey });
+  const preventDefault = vi.spyOn(event, "preventDefault");
+  return { event, preventDefault };
+}
+
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+describe("trapFocus", () => {
+  it("forward Tab from the last element wraps to the first", () => {
+    const { container, buttons } = setup(3);
+    buttons[2].focus();
+    const { event, preventDefault } = tabEvent();
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(buttons[0]);
+    expect(preventDefault).toHaveBeenCalledOnce();
+  });
+
+  it("skips a link with tabindex -1, such as a combobox's link option", () => {
+    const { container, buttons } = setup(2);
+    const option = document.createElement("a");
+    option.href = "/docs";
+    option.tabIndex = -1;
+    stubVisibleGeometry(option);
+    container.insertBefore(option, buttons[1]);
+    buttons[0].focus();
+    const { event } = tabEvent();
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(buttons[1]);
+  });
+
+  it("Shift+Tab from the first element wraps to the last", () => {
+    const { container, buttons } = setup(3);
+    buttons[0].focus();
+    const { event, preventDefault } = tabEvent(true);
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(buttons[2]);
+    expect(preventDefault).toHaveBeenCalledOnce();
+  });
+
+  it("Shift+Tab moves to the previous element mid-list", () => {
+    const { container, buttons } = setup(3);
+    buttons[2].focus();
+    const { event } = tabEvent(true);
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(buttons[1]);
+  });
+
+  it("empty container calls preventDefault and focuses nothing", () => {
+    const { container } = setup(0);
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    outside.focus();
+    const { event, preventDefault } = tabEvent();
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(outside);
+    expect(preventDefault).toHaveBeenCalledOnce();
+  });
+
+  it("active element outside the list: Tab focuses the first element", () => {
+    const { container, buttons } = setup(3);
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    outside.focus();
+    const { event } = tabEvent();
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it("active element outside the list: Shift+Tab focuses the last element", () => {
+    const { container, buttons } = setup(3);
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    outside.focus();
+    const { event } = tabEvent(true);
+
+    trapFocus({ container, event });
+
+    expect(document.activeElement).toBe(buttons[2]);
+  });
+
+  describe("focus on an element inside the container that is not a tab stop", () => {
+    // A heading with `tabindex="-1"` between two buttons.
+    function setupHeading() {
+      const { container, buttons } = setup(3);
+      const heading = document.createElement("h2");
+      heading.tabIndex = -1;
+      container.insertBefore(heading, buttons[1]);
+      return { container, buttons, heading };
+    }
+
+    it("Tab goes to the next element in the document, not the first", () => {
+      const { container, buttons, heading } = setupHeading();
+      heading.focus();
+      const { event } = tabEvent();
+
+      trapFocus({ container, event });
+
+      expect(document.activeElement).toBe(buttons[1]);
+    });
+
+    it("Shift+Tab goes to the previous element in the document, not the last", () => {
+      const { container, buttons, heading } = setupHeading();
+      heading.focus();
+      const { event } = tabEvent(true);
+
+      trapFocus({ container, event });
+
+      expect(document.activeElement).toBe(buttons[0]);
+    });
+  });
+
+  it("visibility:hidden and display:none elements are both excluded, only the visible one is focused", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    const visible = document.createElement("button");
+    visible.textContent = "Visible";
+    stubVisibleGeometry(visible);
+    container.appendChild(visible);
+
+    // The DOM env reports offsetParent: null for every element, so the
+    // geometry check never excludes this one; it is caught by the
+    // getComputedStyle display check, like the visibility:hidden one below.
+    const displayNone = document.createElement("button");
+    displayNone.textContent = "Display none";
+    displayNone.style.display = "none";
+    container.appendChild(displayNone);
+
+    // visibility:hidden elements keep their layout box in real browsers, so
+    // this fixture is stubbed to look laid-out; it must be caught by the
+    // getComputedStyle check instead of the geometry checks.
+    const visibilityHidden = document.createElement("button");
+    visibilityHidden.textContent = "Visibility hidden";
+    visibilityHidden.style.visibility = "hidden";
+    stubVisibleGeometry(visibilityHidden);
+    container.appendChild(visibilityHidden);
+
+    visible.focus();
+    const { event } = tabEvent();
+
+    trapFocus({ container, event });
+
+    // Only one tabbable candidate (`visible`), so Tab wraps back to itself.
+    expect(document.activeElement).toBe(visible);
+  });
+
+  it("uses checkVisibility when available instead of computed styles", () => {
+    const { container, buttons } = setup(3);
+    const getComputedStyle = vi.spyOn(window, "getComputedStyle");
+    for (const [index, button] of buttons.entries()) {
+      Object.defineProperty(button, "checkVisibility", {
+        configurable: true,
+        value: vi.fn(() => index !== 1),
+      });
+    }
+    buttons[0].focus();
+    const { event } = tabEvent();
+
+    trapFocus({ container, event });
+
+    // buttons[1] reports itself hidden, so Tab skips to buttons[2].
+    expect(document.activeElement).toBe(buttons[2]);
+    expect(getComputedStyle).not.toHaveBeenCalled();
+    for (const button of buttons) {
+      expect(
+        (button as unknown as { checkVisibility: ReturnType<typeof vi.fn> })
+          .checkVisibility,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ visibilityProperty: true }),
+      );
+    }
+    getComputedStyle.mockRestore();
+  });
+});

@@ -1,0 +1,173 @@
+<script lang="ts">
+  import ContainedList from "carbon-components-svelte/ContainedList/ContainedList.svelte";
+  import ContainedListItem from "carbon-components-svelte/ContainedList/ContainedListItem.svelte";
+  import VirtualList from "carbon-components-svelte/VirtualList/VirtualList.svelte";
+
+  const items = Array.from({ length: 500 }, (_, i) => ({
+    id: i,
+    label: `Item ${i}`,
+  }));
+  const shortItems = items.slice(0, 20);
+
+  export let lateList = false;
+  export let keyedItems = Array.from({ length: 10 }, (_, i) => ({
+    id: i,
+    label: `Keyed ${i}`,
+  }));
+  export let measuredItems = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    height: i < 5 ? 100 : 40,
+  }));
+  export let measuring = true;
+
+  let scrollendCount = 0;
+  let scrollendDetail = "";
+  let scroller: HTMLDivElement | null = null;
+  let listScroller: HTMLDivElement | null = null;
+  let pinnedScroller: HTMLDivElement | null = null;
+</script>
+
+<VirtualList
+  data-testid="large"
+  {items}
+  itemHeight={40}
+  containerHeight={200}
+  getKey={(item) => item.id}
+  on:scrollend={(e) => {
+    scrollendCount += 1;
+    scrollendDetail = JSON.stringify(e.detail);
+  }}
+  let:item
+  let:index
+>
+  <div data-testid="row-{index}">{item.label}</div>
+</VirtualList>
+
+<VirtualList
+  items={shortItems}
+  itemHeight={40}
+  containerHeight={200}
+  let:item
+  let:index
+>
+  <div data-testid="short-row-{index}">{item.label}</div>
+</VirtualList>
+
+<VirtualList
+  items={shortItems}
+  itemHeight={40}
+  containerHeight={200}
+  threshold={100}
+  let:item
+  let:index
+>
+  <div data-testid="unwindowed-row-{index}">{item.label}</div>
+</VirtualList>
+
+<div data-testid="scroller" bind:this={scroller} style:height="200px">
+  <VirtualList
+    data-testid="external"
+    {items}
+    itemHeight={40}
+    containerHeight={200}
+    scrollElement={scroller}
+    let:item
+    let:index
+  >
+    <div data-testid="external-row-{index}">{item.label}</div>
+  </VirtualList>
+  {#if lateList}
+    <VirtualList
+      data-testid="late"
+      {items}
+      itemHeight={40}
+      containerHeight={200}
+      scrollElement={scroller}
+      let:item
+      let:index
+    >
+      <div data-testid="late-row-{index}">{item.label}</div>
+    </VirtualList>
+  {/if}
+</div>
+
+<div data-testid="list-scroller" bind:this={listScroller} style:height="200px">
+  <ContainedList labelText="Items">
+    <VirtualList
+      {items}
+      itemHeight={40}
+      containerHeight={200}
+      scrollElement={listScroller}
+      spacerTag="li"
+      getKey={(item) => item.id}
+      let:item
+      let:index
+    >
+      <ContainedListItem data-testid="list-row-{index}">
+        {item.label}
+      </ContainedListItem>
+    </VirtualList>
+  </ContainedList>
+</div>
+
+<VirtualList
+  data-testid="pinned"
+  {items}
+  itemHeight={40}
+  containerHeight={200}
+  optimizeFastScroll
+  let:item
+  let:index
+>
+  <div data-testid="pinned-row-{index}">{item.label}</div>
+</VirtualList>
+
+<div
+  data-testid="pinned-scroller"
+  bind:this={pinnedScroller}
+  style:height="200px"
+>
+  <VirtualList
+    data-testid="pinned-external"
+    {items}
+    itemHeight={40}
+    containerHeight={200}
+    scrollElement={pinnedScroller}
+    optimizeFastScroll
+    let:item
+    let:index
+  >
+    <div data-testid="pinned-external-row-{index}">{item.label}</div>
+  </VirtualList>
+</div>
+
+<VirtualList
+  data-testid="measured"
+  items={measuredItems}
+  itemHeight={40}
+  containerHeight={200}
+  measured={measuring}
+  let:item
+  let:index
+>
+  <div
+    data-testid="measured-row-{index}"
+    data-measured-height={item.height}
+    style:height="{item.height}px"
+  >
+    {item.id}
+  </div>
+</VirtualList>
+
+<VirtualList
+  items={keyedItems}
+  itemHeight={40}
+  containerHeight={200}
+  getKey={(item) => item.id}
+  let:item
+>
+  <div data-testid="keyed-row">{item.label}</div>
+</VirtualList>
+
+<div data-testid="scrollend-count">{scrollendCount}</div>
+<div data-testid="scrollend-detail">{scrollendDetail}</div>

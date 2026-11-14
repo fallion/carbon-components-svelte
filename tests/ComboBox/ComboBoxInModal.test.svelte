@@ -1,0 +1,32 @@
+<script lang="ts">
+  import ComboBox from "carbon-components-svelte/ComboBox/ComboBox.svelte";
+  import Modal from "carbon-components-svelte/Modal/Modal.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let modalOpen = true;
+  export let comboBoxOpen = true;
+  export let portalMenu: ComponentProps<ComboBox>["portalMenu"] = undefined;
+  export let selectedId: ComponentProps<ComboBox>["selectedId"] = undefined;
+
+  const items = [
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax" },
+  ];
+</script>
+
+<Modal
+  bind:open={modalOpen}
+  modalHeading="Test"
+  primaryButtonText="OK"
+  secondaryButtonText="Cancel"
+>
+  <ComboBox
+    {items}
+    labelText="Contact"
+    placeholder="Select"
+    open={comboBoxOpen}
+    {selectedId}
+    {portalMenu}
+  />
+</Modal>

@@ -1,0 +1,41 @@
+<script lang="ts">
+  import CopyButton from "carbon-components-svelte/CopyButton/CopyButton.svelte";
+  import Checkmark from "carbon-icons-svelte/lib/Checkmark.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let portalTooltip: ComponentProps<CopyButton>["portalTooltip"] =
+    undefined;
+  export let onCopy = () => {};
+  export let onCustomCopy = (_text: string) => {};
+  export let onCopyError = (_detail: { error: unknown }) => {};
+</script>
+
+<CopyButton
+  text="text"
+  iconDescription="Basic"
+  {portalTooltip}
+  on:copy={onCopy}
+  on:copy:error={(event) => onCopyError(event.detail)}
+/>
+
+<CopyButton
+  iconDescription="Custom feedback"
+  text="text"
+  feedback="Copied to clipboard"
+  feedbackTimeout={0}
+  {portalTooltip}
+/>
+
+<CopyButton
+  text="Custom copy function"
+  iconDescription="Custom copy function"
+  copy={onCustomCopy}
+  {portalTooltip}
+/>
+
+<CopyButton
+  text="text"
+  iconDescription="Custom feedback icon"
+  feedbackIcon={Checkmark}
+  {portalTooltip}
+/>

@@ -1,0 +1,403 @@
+---
+components: ["Button", "ButtonSkeleton"]
+description: Buttons trigger actions like submitting a form or navigating, with multiple kinds and sizes to match each action's importance.
+keywords: ["btn"]
+---
+
+<script>
+  import { BadgeIndicator, Box, Button, ButtonSkeleton, Stack, TooltipGroup } from "carbon-components-svelte";
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+  import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
+  import Login from "carbon-icons-svelte/lib/Login.svelte";
+  import Notification from "carbon-icons-svelte/lib/Notification.svelte";
+</script>
+
+## Kinds
+
+Set the `kind` prop to match the importance of the action.
+
+### Primary
+
+The default button style is primary. Use it for the main action on a page.
+
+<Button>Primary button</Button>
+
+### Secondary
+
+Set `kind="secondary"` for secondary actions.
+
+<Button kind="secondary">Secondary button</Button>
+
+### Tertiary
+
+Set `kind="tertiary"` for tertiary actions.
+
+<Button kind="tertiary">Tertiary button</Button>
+
+### Ghost
+
+Set `kind="ghost"` for ghost-style buttons.
+
+<Button kind="ghost">Ghost button</Button>
+
+### Danger
+
+Set `kind="danger"` for destructive actions.
+
+<Button kind="danger">Danger button</Button>
+
+### Danger tertiary
+
+Set `kind="danger-tertiary"` for less prominent destructive actions.
+
+<Button kind="danger-tertiary">Danger tertiary button</Button>
+
+### Danger tertiary (icon-only)
+
+Create an icon-only danger tertiary button by omitting the label text and providing an icon description for accessibility.
+
+<Button kind="danger-tertiary" iconDescription="Delete" icon={TrashCan} />
+
+### Danger ghost
+
+Set `kind="danger-ghost"` for ghost-style destructive actions.
+
+<Button kind="danger-ghost">Danger ghost button</Button>
+
+## Icons
+
+Add an icon, or render an icon-only button with a tooltip.
+
+### With icon
+
+Add an icon to the button using the `icon` prop.
+
+<Button icon={Add}>With icon</Button>
+
+### Custom icon
+
+Use the `icon` named slot to render custom icon markup instead of, or with different props than, the `icon` prop.
+
+<Button>
+  <Add slot="icon" size={20} />
+  Custom icon
+</Button>
+
+### Icon-only
+
+Omit the label and provide an `iconDescription` for accessibility. This text is used as the button's tooltip and screen reader label. The pointer can move onto the tooltip, and the tooltip stays while the pointer is on it. Press Escape to hide the tooltip without moving the pointer or focus. It shows again on the next hover or focus. Focus that a component moves to the button, such as a modal's first focus or focus returned when a menu closes, doesn't show it.
+
+<Button iconDescription="Tooltip text" icon={Add} />
+
+A button is icon-only when it has an icon and no default content. A wrapper that always passes content, even empty (`{#if text}{text}{/if}`), can't produce that; set `iconOnly` instead. `iconOnly={false}` keeps a labelled button.
+
+```svelte
+<Button icon={Add} iconDescription="Add" iconOnly>{#if text}{text}{/if}</Button>
+```
+
+### Icon-only without iconDescription
+
+If you omit `iconDescription`, the button renders without Carbon's tooltip instead of an empty one. Supply your own `aria-label` (or `aria-labelledby`) so the button stays accessible.
+
+<Button icon={Add} aria-label="Custom accessible name" />
+
+### Icon-only link
+
+Set `href` to create an icon-only link button.
+
+<Button iconDescription="Login" icon={Login} href="#" />
+
+### Custom tooltip position
+
+Set `tooltipAlign` to place the tooltip: a side, then `start` or `end` along it, as Popover's `align` takes. It replaces `tooltipPosition` and `tooltipAlignment`, which still work and are deprecated.
+
+<Button tooltipAlign="right-end" iconDescription="Tooltip text" icon={Add} />
+
+### Portalled tooltip
+
+An icon-only tooltip that a container would cut off, such as a box with `overflow: hidden`, a scroll area or a [DataTable](/components/DataTable), opens in a portal. Inside a Modal, the tooltip always opens in a portal.
+
+Set `portalTooltip` to `true` to always render the tooltip in a portal, where it also flips when the preferred direction lacks viewport space, or to `false` to keep it in place. A portalled tooltip leaves its container in the DOM, so CSS that targets the tooltip as a descendant of the container does not match it.
+
+<Button portalTooltip iconDescription="Tooltip text" icon={Add} />
+
+### Hidden tooltip
+
+Set `hideTooltip` to `true` to visually hide the tooltip while maintaining accessibility for screen readers. Use this when tooltips cause layout issues, interfere with interactions, or when multiple icon buttons are densely packed, as in a toolbar. The `iconDescription` remains accessible to screen readers.
+
+<Stack orientation="horizontal" gap={2}>
+  <Button hideTooltip iconDescription="Add item" icon={Add} />
+  <Button hideTooltip iconDescription="Delete item" icon={TrashCan} kind="danger-tertiary" />
+  <Button hideTooltip iconDescription="Login" icon={Login} kind="ghost" />
+</Stack>
+
+### Selected (ghost)
+
+Set `isSelected` to `true` to enable the selected state for an icon-only, ghost button.
+
+<FileSource src="/framed/Button/SelectedIconOnlyButton" />
+
+### Adjacent
+
+When multiple icon-only buttons are placed next to each other, only one tooltip will be visible at a time. Hovering a new button automatically hides the previous tooltip. A tooltip that covers the next button closes as soon as the pointer moves onto that part of it, so the click presses the button under the pointer. A click on the rest of a tooltip does nothing.
+
+<FileSource src="/framed/Button/AdjacentIconOnlyButtons" />
+
+### Tooltip group
+
+Wrap a toolbar of icon-only buttons in a [TooltipGroup](/components/TooltipGroup) to mark them as one set. Once one tooltip is open, moving to the next button shows its tooltip right away, with no enter delay or fade-in. Moving out to a tooltip outside the group waits for the full delay.
+
+<TooltipGroup>
+  <Stack orientation="horizontal" gap={1}>
+    <Button kind="ghost" iconDescription="Add" icon={Add} />
+    <Button kind="ghost" iconDescription="Delete" icon={TrashCan} />
+    <Button kind="ghost" iconDescription="Login" icon={Login} />
+  </Stack>
+</TooltipGroup>
+
+### Badge
+
+Compose a `BadgeIndicator` in the `badge` slot to overlay a badge on an icon-only button. Size is set to `lg` automatically. See [BadgeIndicator](/components/BadgeIndicator) for the full set of examples.
+
+<Button kind="ghost" icon={Notification} iconDescription="Notifications">
+  <BadgeIndicator slot="badge" />
+</Button>
+
+## Element
+
+By default, the button renders a `button` or `a` element. Set `href` to render an anchor, or `as` to render a fully custom element.
+
+### Link
+
+Set `href` to render an [anchor element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a) instead of a button element.
+
+<Button href="#">Link button</Button>
+
+Link buttons can also have icons.
+
+<Button href="#" icon={Add}>Link button with icon</Button>
+
+### Custom element
+
+Set `as` to `true` and spread `let:props` to the element. `bind:ref` stays `null` in this mode; use `bind:this` on your own element instead.
+
+<Button as let:props>
+  <p {...props}>Custom element</p>
+</Button>
+
+## Sizes
+
+Set the `size` prop. The default is `"default"`.
+
+Carbon v11's names also work: `"sm"`, `"md"` and `"2xl"` render as `"small"`, `"field"` and `"xl"`. Button's own `"lg"` and `"xl"` keep their 64px and 80px heights. When you port code from Carbon React, use `"default"` for v11's 48px `lg` and `"lg"` for its 64px `xl`.
+
+| Height | Carbon v11 | Button |
+| :--- | :--- | :--- |
+| 24px | `xs` | `xs` |
+| 32px | `sm` | `small` or `sm` |
+| 40px | `md` | `field` or `md` |
+| 48px | `lg` | `default` |
+| 64px | `xl` | `lg` |
+| 80px | `2xl` | `xl` or `2xl` |
+
+### Field
+
+Set `size="field"` for field-sized buttons that align with form input heights.
+
+<Button size="field">Primary</Button>
+<Button size="field" kind="secondary">Secondary</Button>
+<Button size="field" kind="tertiary">Tertiary</Button>
+<Button size="field" kind="ghost">Ghost</Button>
+<Button size="field" kind="danger">Danger</Button>
+
+### Small
+
+Set `size="small"` for small buttons.
+
+<Button size="small">Primary</Button>
+<Button size="small" kind="secondary">Secondary</Button>
+<Button size="small" kind="tertiary">Tertiary</Button>
+<Button size="small" kind="ghost">Ghost</Button>
+<Button size="small" kind="danger">Danger</Button>
+
+### Extra-small
+
+Set `size="xs"` for a 24px button. Use it for icon-only buttons in dense layouts, such as table rows and toolbars.
+
+<Button size="xs" iconDescription="Add" icon={Add} />
+<Button size="xs" kind="ghost" iconDescription="Delete" icon={TrashCan} />
+<Button size="xs">Primary</Button>
+
+### Large
+
+Set `size="lg"` for large buttons.
+
+<Button size="lg">Primary</Button>
+<Button size="lg" kind="secondary">Secondary</Button>
+<Button size="lg" kind="tertiary">Tertiary</Button>
+<Button size="lg" kind="ghost">Ghost</Button>
+<Button size="lg" kind="danger">Danger</Button>
+
+### Extra-large
+
+Set `size="xl"` for extra-large buttons.
+
+<Button size="xl">Primary</Button>
+<Button size="xl" kind="secondary">Secondary</Button>
+<Button size="xl" kind="tertiary">Tertiary</Button>
+<Button size="xl" kind="ghost">Ghost</Button>
+<Button size="xl" kind="danger">Danger</Button>
+
+## Full width
+
+Set `fullWidth` to `true` so the button spans its container, for example a
+sign-in CTA or a dialog action. This replaces relying on a parent `Stack`'s
+`align="stretch"` to stretch the button, which stretches every child, not just
+the one that needs it.
+
+<Box maxWidth="20rem">
+  <Button fullWidth>Sign in</Button>
+</Box>
+
+## Disabled
+
+Set `disabled` to disable the button.
+
+<Button disabled>Disabled button</Button>
+<Button disabled iconDescription="Tooltip text" icon={Add} />
+
+## Loading
+
+Set `loading` to `true` to display a loading spinner in place of the icon and prevent the button from being activated. A ghost button with no icon has none to replace, so the spinner appears over the label and the button keeps its width. Use `loadingDescription` to set the accessible description announced while loading.
+
+Unlike `disabled`, a loading button stays focusable and keeps its place in the tab order, since removing focus from the element a user just activated is disorienting for keyboard and screen reader users. Set `disabled` as well if the button should also be removed from the tab order.
+
+<FileSource src="/framed/Button/ButtonLoading" />
+
+### Delay
+
+Set `loadingDelay` to wait a number of milliseconds after `loading` becomes `true` before showing the spinner. Work that finishes within the delay shows no spinner. Once shown, the spinner stays for at least 500 ms so it does not flash. The button blocks clicks and sets `aria-busy` as soon as `loading` is `true`.
+
+<FileSource src="/framed/Button/ButtonLoadingDelay" />
+
+### Small
+
+<Button kind="primary" size="small" loading>Loading</Button>
+<Button kind="secondary" size="small" loading>Loading</Button>
+<Button kind="tertiary" size="small" loading>Loading</Button>
+<Button kind="ghost" size="small" loading>Loading</Button>
+<Button kind="danger" size="small" loading>Loading</Button>
+
+### Field
+
+<Button kind="primary" size="field" loading>Loading</Button>
+<Button kind="secondary" size="field" loading>Loading</Button>
+<Button kind="tertiary" size="field" loading>Loading</Button>
+<Button kind="ghost" size="field" loading>Loading</Button>
+<Button kind="danger" size="field" loading>Loading</Button>
+
+### Large
+
+<Button kind="primary" size="lg" loading>Loading</Button>
+<Button kind="secondary" size="lg" loading>Loading</Button>
+<Button kind="tertiary" size="lg" loading>Loading</Button>
+<Button kind="ghost" size="lg" loading>Loading</Button>
+<Button kind="danger" size="lg" loading>Loading</Button>
+
+### Extra-large
+
+<Button kind="primary" size="xl" loading>Loading</Button>
+<Button kind="secondary" size="xl" loading>Loading</Button>
+<Button kind="tertiary" size="xl" loading>Loading</Button>
+<Button kind="ghost" size="xl" loading>Loading</Button>
+<Button kind="danger" size="xl" loading>Loading</Button>
+
+### Icon-only
+
+<Button kind="primary" icon={Add} iconDescription="Add item" loading />
+<Button kind="secondary" icon={Add} iconDescription="Add item" loading />
+<Button kind="tertiary" icon={Add} iconDescription="Add item" loading />
+<Button kind="ghost" icon={Add} iconDescription="Add item" loading />
+<Button kind="danger" icon={Add} iconDescription="Add item" loading />
+
+### Expressive
+
+<Button expressive loading>Loading</Button>
+<Button expressive kind="secondary" loading>Loading</Button>
+<Button expressive kind="tertiary" loading>Loading</Button>
+<Button expressive kind="ghost" loading>Loading</Button>
+<Button expressive kind="danger" loading>Loading</Button>
+
+### Expressive large
+
+<Button expressive size="lg" loading>Loading</Button>
+<Button expressive size="lg" kind="secondary" loading>Loading</Button>
+<Button expressive size="lg" kind="tertiary" loading>Loading</Button>
+<Button expressive size="lg" kind="ghost" loading>Loading</Button>
+<Button expressive size="lg" kind="danger" loading>Loading</Button>
+
+### Expressive extra-large
+
+<Button expressive size="xl" loading>Loading</Button>
+<Button expressive size="xl" kind="secondary" loading>Loading</Button>
+<Button expressive size="xl" kind="tertiary" loading>Loading</Button>
+<Button expressive size="xl" kind="ghost" loading>Loading</Button>
+<Button expressive size="xl" kind="danger" loading>Loading</Button>
+
+## Keyboard shortcut
+
+Set `shortcut` to show its keys after the label, in the tooltip of an icon-only button, and to the screen reader through `aria-keyshortcuts`. Pressing the keys clicks the button, so `on:click` runs, as does a form's submit or a link's navigation. `mod` is the platform's main modifier, so `"mod+s"` shows <DocKbd shortcut="mod+s" /> on your platform. The examples run in a frame, so click in one before you press its keys.
+
+<FileSource src="/framed/Button/ButtonShortcut" />
+
+The button only answers while it's enabled and shown, and while a modal is open, only if it's inside it, so a page's Save never fires behind a dialog. When two shown buttons share a shortcut, the one rendered last answers. A shortcut you bind yourself with `onShortcut` comes first.
+
+To do something other than click, handle `on:shortcut`, dispatched before the click, and call `preventDefault()` to skip the click.
+
+<FileSource src="/framed/Button/ButtonShortcutEvent" />
+
+| Do | Why |
+| :--- | :--- |
+| Use `mod` for the platform's main modifier | One shortcut reads and works on every platform |
+| Pick shortcuts the browser doesn't keep, such as `mod+s` over `mod+w` | Browsers don't let a page take `mod+w`, `mod+t` or `mod+n` |
+| Avoid the editing keys: `mod+a`, `mod+c`, `mod+v`, `mod+x` and `mod+z` | A shortcut with a modifier also fires in text fields, so it takes select all, copy, paste, cut or undo from every field |
+| Keep single-key shortcuts such as `/` for actions that make sense while reading | They don't fire while typing in a field, but they do everywhere else |
+| Let users turn off single-key shortcuts, or add a modifier to them | Speech input and stray key presses fire them by accident. WCAG 2.1.4 asks for a way to turn them off or remap them |
+
+## Expressive styles
+
+Set `expressive` to `true` to use Carbon's expressive typesetting. Use expressive styles with the default, "lg", or "xl" button sizes.
+
+<Button expressive size="xl">Primary</Button>
+<Button expressive size="xl" kind="secondary">Secondary</Button>
+<Button expressive size="xl" kind="tertiary">Tertiary</Button>
+<Button expressive size="xl" kind="ghost">Ghost</Button>
+<Button expressive size="xl" kind="danger">Danger</Button>
+<br /><br />
+<Button expressive size="lg">Primary</Button>
+<Button expressive size="lg" kind="secondary">Secondary</Button>
+<Button expressive size="lg" kind="tertiary">Tertiary</Button>
+<Button expressive size="lg" kind="ghost">Ghost</Button>
+<Button expressive size="lg" kind="danger">Danger</Button>
+<br /><br />
+<Button expressive>Primary</Button>
+<Button expressive kind="secondary">Secondary</Button>
+<Button expressive kind="tertiary">Tertiary</Button>
+<Button expressive kind="ghost">Ghost</Button>
+<Button expressive kind="danger">Danger</Button>
+
+## Skeleton
+
+Use `ButtonSkeleton` to show a loading state.
+
+<ButtonSkeleton size="xl" />
+<ButtonSkeleton size="lg" />
+<ButtonSkeleton />
+<ButtonSkeleton size="field" />
+<ButtonSkeleton size="small" />
+
+## Programmatic focus
+
+Bind to the `ref` prop to access the button element for programmatic focus.
+
+<FileSource src="/framed/Button/ProgrammaticFocus" />

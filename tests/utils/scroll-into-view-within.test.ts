@@ -1,0 +1,194 @@
+import { scrollIntoViewWithin } from "../../src/utils/scroll-into-view-within.js";
+import { virtualWindow } from "../../src/utils/virtual-window.js";
+import { rect } from "./rect";
+
+/**
+ * Build a container with a single item, stubbing the layout jsdom does not
+ * compute: the container's scrollability and both elements' bounding rects.
+ */
+function buildMenu(options: {
+  scrollable: boolean;
+  containerTop: number;
+  containerBottom: number;
+  itemTop: number;
+  itemBottom: number;
+  role?: string;
+}) {
+  const container = document.createElement("div");
+  container.setAttribute("role", options.role ?? "listbox");
+  Object.defineProperty(container, "clientHeight", { value: 100 });
+  Object.defineProperty(container, "scrollHeight", {
+    value: options.scrollable ? 300 : 100,
+  });
+  container.scrollTop = 50;
+  container.getBoundingClientRect = () =>
+    rect({ top: options.containerTop, bottom: options.containerBottom });
+
+  const item = document.createElement("div");
+  item.getBoundingClientRect = () =>
+    rect({ top: options.itemTop, bottom: options.itemBottom });
+
+  container.appendChild(item);
+  document.body.appendChild(container);
+  return { container, item };
+}
+
+describe("scrollIntoViewWithin", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("does not scroll when the menu is not scrollable", () => {
+    const { container, item } = buildMenu({
+      scrollable: false,
+      containerTop: 0,
+      containerBottom: 100,
+      itemTop: -50,
+      itemBottom: -30,
+    });
+
+    scrollIntoViewWithin(item);
+
+    expect(container.scrollTop).toBe(50);
+  });
+
+  it("scrolls the container up when the item is above the viewport", () => {
+    const { container, item } = buildMenu({
+      scrollable: true,
+      containerTop: 0,
+      containerBottom: 100,
+      itemTop: -20,
+      itemBottom: 0,
+    });
+
+    scrollIntoViewWithin(item);
+
+    // scrollTop -= containerTop(0) - itemTop(-20) => 50 - 20 = 30
+    expect(container.scrollTop).toBe(30);
+  });
+
+  it("scrolls the container down when the item is below the viewport", () => {
+    const { container, item } = buildMenu({
+      scrollable: true,
+      containerTop: 0,
+      containerBottom: 100,
+      itemTop: 110,
+      itemBottom: 130,
+    });
+
+    scrollIntoViewWithin(item);
+
+    // scrollTop += itemBottom(130) - containerBottom(100) => 50 + 30 = 80
+    expect(container.scrollTop).toBe(80);
+  });
+
+  it("does not scroll when the item is already fully visible", () => {
+    const { container, item } = buildMenu({
+      scrollable: true,
+      containerTop: 0,
+      containerBottom: 100,
+      itemTop: 40,
+      itemBottom: 60,
+    });
+
+    scrollIntoViewWithin(item);
+
+    expect(container.scrollTop).toBe(50);
+  });
+
+  describe("block alignment", () => {
+    function build() {
+      return buildMenu({
+        scrollable: true,
+        containerTop: 0,
+        containerBottom: 100,
+        itemTop: 140,
+        itemBottom: 160,
+      });
+    }
+
+    it("aligns the item to the top with start", () => {
+      const { container, item } = build();
+      scrollIntoViewWithin(item, '[role="listbox"]', "start");
+      // 50 + (140 - 0)
+      expect(container.scrollTop).toBe(190);
+    });
+
+    it("aligns the item to the bottom with end", () => {
+      const { container, item } = build();
+      scrollIntoViewWithin(item, '[role="listbox"]', "end");
+      // 50 + (160 - 100)
+      expect(container.scrollTop).toBe(110);
+    });
+
+    it("centers the item with center", () => {
+      const { container, item } = build();
+      scrollIntoViewWithin(item, '[role="listbox"]', "center");
+      // 50 + (150 - 50)
+      expect(container.scrollTop).toBe(150);
+    });
+
+    it("scrolls an already visible item with start", () => {
+      const { container, item } = buildMenu({
+        scrollable: true,
+        containerTop: 0,
+        containerBottom: 100,
+        itemTop: 40,
+        itemBottom: 60,
+      });
+      scrollIntoViewWithin(item, '[role="listbox"]', "start");
+      expect(container.scrollTop).toBe(90);
+    });
+  });
+
+  describe("container selector", () => {
+    it("ignores a menu container under the default selector", () => {
+      const { container, item } = buildMenu({
+        scrollable: true,
+        containerTop: 0,
+        containerBottom: 100,
+        itemTop: 110,
+        itemBottom: 130,
+        role: "menu",
+      });
+
+      scrollIntoViewWithin(item);
+
+      expect(container.scrollTop).toBe(50);
+    });
+
+    it("resolves a menu container when the selector is passed", () => {
+      const { container, item } = buildMenu({
+        scrollable: true,
+        containerTop: 0,
+        containerBottom: 100,
+        itemTop: 110,
+        itemBottom: 130,
+        role: "menu",
+      });
+
+      scrollIntoViewWithin(item, '[role="menu"]');
+
+      expect(container.scrollTop).toBe(80);
+    });
+  });
+
+  it("moves a pinned window with the scroll it writes", () => {
+    const { container, item } = buildMenu({
+      scrollable: true,
+      containerTop: 0,
+      containerBottom: 100,
+      itemTop: 120,
+      itemBottom: 140,
+    });
+    const layer = document.createElement("div");
+    container.appendChild(layer);
+    virtualWindow(layer, { offsetY: 40, scrollTop: 50, pinned: true });
+
+    scrollIntoViewWithin(item);
+
+    // Scrolled 40px further, to 90; the rows move with it before a render.
+    expect(container.scrollTop).toBe(90);
+    expect(layer.style.transform).toBe("translateY(-50px)");
+  });
+});

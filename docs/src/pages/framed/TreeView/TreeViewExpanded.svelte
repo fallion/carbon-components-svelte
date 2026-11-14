@@ -1,19 +1,19 @@
 <script>
-  import { TreeView } from "carbon-components-svelte";
+  import { Stack, TreeView } from "carbon-components-svelte";
 
   let activeId = 1;
   let selectedIds = [];
   let expandedIds = [1, 2, 14];
-  let children = [
+  const nodes = [
     { id: 0, text: "AI / Machine learning" },
     {
       id: 1,
       text: "Analytics",
-      children: [
+      nodes: [
         {
           id: 2,
           text: "IBM Analytics Engine",
-          children: [
+          nodes: [
             { id: 3, text: "Apache Spark" },
             { id: 4, text: "Hadoop" },
           ],
@@ -25,12 +25,12 @@
     {
       id: 7,
       text: "Blockchain",
-      children: [{ id: 8, text: "IBM Blockchain Platform" }],
+      nodes: [{ id: 8, text: "IBM Blockchain Platform" }],
     },
     {
       id: 9,
       text: "Databases",
-      children: [
+      nodes: [
         { id: 10, text: "IBM Cloud Databases for Elasticsearch" },
         { id: 11, text: "IBM Cloud Databases for Enterprise DB" },
         { id: 12, text: "IBM Cloud Databases for MongoDB" },
@@ -41,28 +41,27 @@
       id: 14,
       text: "Integration",
       disabled: true,
-      children: [{ id: 15, text: "IBM API Connect", disabled: true }],
+      nodes: [{ id: 15, text: "IBM API Connect", disabled: true }],
     },
   ];
 </script>
 
-<TreeView
-  labelText="Cloud Products"
-  children="{children}"
-  bind:activeId
-  bind:selectedIds
-  bind:expandedIds
-  on:select="{({ detail }) => console.log('select', detail)}"
-  on:toggle="{({ detail }) => console.log('toggle', detail)}"
-  on:focus="{({ detail }) => console.log('focus', detail)}"
-/>
-
-<div>Active node id: {activeId}</div>
-<div>Selected ids: {JSON.stringify(selectedIds)}</div>
-<div>Expanded ids: {JSON.stringify(expandedIds)}</div>
-
-<style>
-  div {
-    margin-top: var(--cds-spacing-05);
-  }
-</style>
+<Stack gap={6}>
+  <div>
+    <TreeView
+      labelText="Cloud Products"
+      {nodes}
+      bind:activeId
+      bind:selectedIds
+      bind:expandedIds
+      on:select={({ detail }) => console.log("select", detail)}
+      on:toggle={({ detail }) => console.log("toggle", detail)}
+      on:focus={({ detail }) => console.log("focus", detail)}
+    />
+  </div>
+  <Stack gap={4}>
+    <div>Active node id: {activeId}</div>
+    <div>Selected ids: {JSON.stringify(selectedIds)}</div>
+    <div>Expanded ids: {JSON.stringify(expandedIds)}</div>
+  </Stack>
+</Stack>

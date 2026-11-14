@@ -1,52 +1,41 @@
 # carbon-components-svelte
 
 [![NPM][npm]][npm-url]
-![GitHub](https://img.shields.io/github/license/ibm/carbon-components-svelte?color=262626&style=for-the-badge)
 ![npm downloads to date](https://img.shields.io/npm/dt/carbon-components-svelte?color=262626&style=for-the-badge)
+<a href="https://discord.gg/J7JEUEkTRX">
+<img src="https://img.shields.io/discord/689212587170201628?color=5865F2&style=for-the-badge" alt="Chat with us on Discord">
+</a>
 
-Carbon Components Svelte is a [Svelte](https://github.com/sveltejs/svelte) component library that implements the [Carbon Design System](https://github.com/carbon-design-system), an open source design system by IBM.
+Carbon Components Svelte is a [Svelte](https://github.com/sveltejs/svelte) component library that implements the [Carbon Design System](https://www.carbondesignsystem.com/), an open source design system by IBM. Ship accessible, consistent, production-ready interfaces.
 
-Design systems facilitate design and development through reuse, consistency, and extensibility.
+- **100+ components**: from inputs to data tables
+- **5 built-in themes**: two light, three dark
+- **Fully typed TypeScript API**: props, events, and slots
+- **WCAG 2.1 AA**: keyboard and screen-reader ready
 
-The Carbon Svelte portfolio also includes:
+The Carbon Svelte ecosystem also includes:
 
-- **[Carbon Icons Svelte](https://github.com/carbon-design-system/carbon-icons-svelte)**: 7000+ Carbon icons as Svelte components
-- **[Carbon Pictograms Svelte](https://github.com/carbon-design-system/carbon-pictograms-svelte)**: 700+ Carbon pictograms as Svelte components
-- **[Carbon Charts Svelte](https://github.com/carbon-design-system/carbon-charts/tree/master/packages/svelte)**: 20+ charts, powered by d3
-- **[Carbon Preprocess Svelte](https://github.com/carbon-design-system/carbon-preprocess-svelte)**: Collection of Svelte preprocessors for Carbon
+- **[Carbon Icons Svelte](https://github.com/carbon-design-system/carbon-icons-svelte)**: 2,700+ Carbon icons as Svelte components
+- **[Carbon Pictograms Svelte](https://github.com/carbon-design-system/carbon-pictograms-svelte)**: 1,500+ Carbon pictograms as Svelte components
+- **[Carbon Charts Svelte](https://github.com/carbon-design-system/carbon-charts/tree/master/packages/svelte)**: 25+ charts, powered by d3
+- **[Carbon Preprocess Svelte](https://github.com/carbon-design-system/carbon-preprocess-svelte)**: Svelte preprocessors and build plugins for Carbon
 
-## [Documentation](https://carbon-components-svelte.onrender.com)
-
-The documentation site is deployed to [Render](https://render.com) as a Static Site. See [render.yaml](render.yaml) for details.
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/carbon-design-system/carbon-components-svelte)
-
-Other forms of documentation are auto-generated:
-
-- **[TypeScript definitions](types)**: Component TypeScript definitions
-- **[Component Index](COMPONENT_INDEX.md)**: Component API in Markdown format
-- **[Component API](docs/src/COMPONENT_API.json)**: Component API in JSON format
+## [Documentation](https://svelte.carbondesignsystem.com)
 
 ## Installation
 
-Install `carbon-components-svelte` as a development dependency.
-
-**Yarn**
-
 ```sh
-yarn add -D carbon-components-svelte
-```
+# npm
+npm i carbon-components-svelte
 
-**NPM**
+# pnpm
+pnpm add carbon-components-svelte
 
-```sh
-npm i -D carbon-components-svelte
-```
+# Yarn
+yarn add carbon-components-svelte
 
-**pnpm**
-
-```sh
-pnpm i -D carbon-components-svelte
+# Bun
+bun add carbon-components-svelte
 ```
 
 ## Usage
@@ -60,9 +49,11 @@ Before importing components, you will need to first apply Carbon component style
 - **g80.css**: Gray 80 theme (dark)
 - **g90.css**: Gray 90 theme (dark)
 - **g100.css**: Gray 100 theme (dark)
-- **all.css**: All themes (White, Gray 10, Gray 90, Gray 100) using [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties)
+- **all.css**: All five themes (White, Gray 10, Gray 80, Gray 90, Gray 100) using [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties)
 
-Each StyleSheet is [generated](scripts/build-css.js) from the flagship [carbon-components](https://github.com/carbon-design-system/carbon/tree/master/packages/components) library.
+Every StyleSheet declares its theme's tokens as custom properties on `:root`, so your own CSS can use `var(--cds-text-primary)`, `var(--cds-spacing-05)` and the rest with any of them.
+
+Each StyleSheet is [compiled](scripts/build-css.ts) from Carbon's component SCSS ([carbon-components@10.58](css/vendor/carbon-components), vendored) themed with Carbon v11 tokens, and this library's own partials in [css](css).
 
 The compiled CSS is generated from the following `.scss` files:
 
@@ -72,6 +63,8 @@ The compiled CSS is generated from the following `.scss` files:
 - [css/g90.scss](css/g90.scss)
 - [css/g100.scss](css/g100.scss)
 - [css/all.scss](css/all.scss)
+
+Import one theme once at the top-level entry point of your app, like `index.js` or `src/+layout.svelte`.
 
 #### CSS StyleSheet
 
@@ -95,46 +88,15 @@ import "carbon-components-svelte/css/g100.css";
 import "carbon-components-svelte/css/all.css";
 ```
 
-#### CDN
+### Smaller CSS
 
-An alternative to loading styles is to link an external StyleSheet from a Content Delivery Network (CDN) like [unpkg.com](https://unpkg.com/).
+Each precompiled StyleSheet contains the styles for every component. To ship only the styles your app uses, add [`optimizeCss`](#optimizecss) to your production build. Set `propAware: true` to also drop the styles of prop values your app never passes; see [prop-aware pruning](#prop-aware-pruning).
 
-This is best suited for rapid prototyping.
-
-##### HTML
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/carbon-components-svelte/css/white.css"
-    />
-  </head>
-</html>
-```
-
-##### `svelte:head`
-
-```html
-<svelte:head>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/carbon-components-svelte/css/white.css"
-  />
-</svelte:head>
-```
-
-### SCSS
-
-The most performant method to load styles is to import SCSS directly from carbon-components. Although it requires more set up, you can reduce the size of the bundle CSS by importing individual component styles instead of a pre-compiled CSS StyleSheet.
-
-Refer to the [official Carbon guide on SASS](https://github.com/carbon-design-system/carbon/blob/main/docs/guides/sass.md) for documentation.
+The SCSS sources are not published. Compiling `carbon-components` v10 SCSS yourself gives v10 colors and type, and misses styles for components and variants that only this library provides.
 
 ### Dynamic theming
 
-Use the "all.css" StyleSheet for dynamic, client-side theming.
+To switch themes at runtime, import the combined "all.css" StyleSheet instead of a single theme. It bundles all five themes and toggles between them through a `theme` attribute on the HTML element.
 
 ```js
 import "carbon-components-svelte/css/all.css";
@@ -143,7 +105,7 @@ import "carbon-components-svelte/css/all.css";
 Update the theme by setting the `theme` attribute on the `html` element. The default `theme` is `"white"`.
 
 ```html
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" theme="g10">
   <body>
     ...
@@ -151,7 +113,7 @@ Update the theme by setting the `theme` attribute on the `html` element. The def
 </html>
 ```
 
-Programmatically switch between each of the five Carbon themes by setting the "theme" attribute on the HTML element.
+Or programmatically switch between each of the five Carbon themes by setting the `theme` attribute on the HTML element.
 
 ```html
 <script>
@@ -161,9 +123,11 @@ Programmatically switch between each of the five Carbon themes by setting the "t
 </script>
 ```
 
+Alternatively, use the [Theme component](https://svelte.carbondesignsystem.com/components/Theme) to manage the theme reactively.
+
 ### Importing components
 
-Import components from `carbon-components-svelte` in the `script` tag of your Svelte file. Visit the [documentation site](https://carbon-components-svelte.onrender.com) for examples.
+Import components from `carbon-components-svelte` in the `script` tag of your Svelte file. Visit the [documentation site](https://svelte.carbondesignsystem.com) for examples.
 
 ```html
 <!-- App.svelte -->
@@ -178,27 +142,38 @@ Import components from `carbon-components-svelte` in the `script` tag of your Sv
 </Accordion>
 ```
 
-**Refer to [COMPONENT_INDEX.md](COMPONENT_INDEX.md) for component API documentation.**
+**Refer to the [documentation site](https://svelte.carbondesignsystem.com) for component API documentation.**
 
-## Preprocessors
+## Preprocessors & Plugins
 
-[carbon-preprocess-svelte](https://github.com/carbon-design-system/carbon-preprocess-svelte) is a collection of Svelte preprocessors for Carbon.
+[carbon-preprocess-svelte](https://github.com/carbon-design-system/carbon-preprocess-svelte) is a collection of Svelte preprocessors and build plugins for Carbon. It trims build times and bundle size with three drop-in tools: faster compiles in development, leaner CSS and leaner JavaScript when you ship. Each works on its own.
 
-**Yarn**
-
-```sh
-yarn add -D carbon-preprocess-svelte
-```
-
-**NPM**
+> [!NOTE]
+> Using `carbon-preprocess-svelte` is optional and not a prerequisite for this library. It should be installed as a development dependency.
 
 ```sh
+# npm
 npm i -D carbon-preprocess-svelte
+
+# pnpm
+pnpm add -D carbon-preprocess-svelte
+
+# Yarn
+yarn add -D carbon-preprocess-svelte
+
+# Bun
+bun add -D carbon-preprocess-svelte
 ```
+
+| Tool | Type | What it does |
+| :--- | :--- | :--- |
+| [`optimizeImports`](#optimizeimports) | Svelte preprocessor | Rewrites barrel imports to source paths, for faster dev and build times |
+| [`optimizeCss`](#optimizecss) | Build plugin | Removes unused Carbon styles from production CSS |
+| [`optimizeComponents`](#optimizecomponents) | Build plugin | Rewrites Carbon components for the props your app passes, removing code it never runs |
 
 ### `optimizeImports`
 
-`optimizeImports` is a script preprocessor that rewrites base imports from Carbon components/icons/pictograms packages to their source Svelte code paths. This can greatly speed up compile times during development while preserving typeahead and autocompletion hinting offered by integrated development environments (IDE) like VSCode.
+`optimizeImports` is a Svelte preprocessor that rewrites barrel imports from Carbon components/icons/pictograms packages to their source Svelte code paths. This can significantly speed up development and production build compile times while preserving typeahead and autocompletion offered by integrated development environments (IDE) like VS Code.
 
 The preprocessor optimizes imports from the following packages:
 
@@ -206,40 +181,258 @@ The preprocessor optimizes imports from the following packages:
 - [carbon-icons-svelte](https://github.com/carbon-design-system/carbon-icons-svelte)
 - [carbon-pictograms-svelte](https://github.com/carbon-design-system/carbon-pictograms-svelte)
 
-**Example**
+**Before & After**
 
 ```diff
 - import { Button } from "carbon-components-svelte";
-- import { Add16 } from "carbon-icons-svelte";
-- import { Airplane } from "carbon-pictograms-svelte";
 + import Button from "carbon-components-svelte/src/Button/Button.svelte";
-+ import Add16 from "carbon-icons-svelte/lib/Add16/Add16.svelte";
-+ import Airplane from "carbon-pictograms-svelte/lib/Airplane/Airplane.svelte";
+
+- import { Add } from "carbon-icons-svelte";
++ import Add from "carbon-icons-svelte/lib/Add.svelte";
+
+- import { Airplane } from "carbon-pictograms-svelte";
++ import Airplane from "carbon-pictograms-svelte/lib/Airplane.svelte";
 ```
 
-#### Usage
+### `optimizeCss`
+
+`optimizeCss` is a build plugin that removes unused Carbon styles at build time, often removing hundreds of kilobytes from production bundles. It runs on Vite, Rollup, and Rolldown. For Webpack and Rspack, use `OptimizeCssPlugin`.
+
+`carbon-components-svelte@0.85.0` or greater is required.
+
+```diff
+$ vite build
+
+Optimized assets/index-Doxsm5Yz.css
+- Before: 557.37 kB
++ After:   46.16 kB (-91.72%)
+
+dist/index.html                  0.33 kB │ gzip:  0.23 kB
+dist/assets/index-Doxsm5Yz.css  46.16 kB │ gzip:  6.12 kB
+dist/assets/index-BoBcXTHi.js   69.61 kB │ gzip: 24.35 kB
+```
+
+> [!NOTE]
+> This is a plugin and not a Svelte preprocessor. Add it to your bundler's `plugins`. Vite runs it on `vite build` only, and `OptimizeCssPlugin` runs in Webpack's production mode only. Under Rollup and Rolldown, add it to production builds only.
+
+#### Prop-aware pruning
+
+Set `propAware: true` to also remove styles for the prop values your app never passes.
+
+```js
+optimizeCss({ propAware: true });
+```
+
+```svelte
+<Button kind="tertiary">Save</Button>
+<!-- kept:   .bx--btn, .bx--btn--tertiary
+     pruned: the other kinds and sizes, .bx--skeleton, the icon-only tooltip -->
+```
+
+It reads literal props, constants and state nothing reassigns (including constants your own modules export), your own wrapper components, props forwarded with `{...$$restProps}` or `...rest`, object and array literals, and your own `{#if}` and `{#each}`. A value it can't read keeps every variant: a reassigned variable, a writable store, `bind:`, a spread of anything but a literal or forwarded props, or data fetched at runtime.
+
+Refer to the [carbon-preprocess-svelte documentation](https://github.com/carbon-design-system/carbon-preprocess-svelte#prop-aware-pruning) for details.
+
+### `optimizeComponents`
+
+`optimizeComponents` rewrites each Carbon component your app renders for the props it passes. Values that never change become literals, and branches that can't run are removed, along with child components only those branches render (a skeleton, a tooltip portal). It is the JavaScript counterpart of prop-aware CSS pruning and uses the same analysis. In typical apps it removes 18–27% of the production JavaScript.
+
+Your own wrapper components are rewritten the same way when every place that renders them is in `content`.
+
+```js
+// vite.config.js
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import {
+  optimizeComponents,
+  optimizeCss,
+  optimizeImports,
+} from "carbon-preprocess-svelte";
+
+export default {
+  plugins: [
+    optimizeComponents(),
+    svelte({ preprocess: [optimizeImports()] }),
+    optimizeCss({ propAware: true }),
+  ],
+};
+```
+
+| Bundler | Set-up | Runs on |
+| :--- | :--- | :--- |
+| Vite, SvelteKit, Astro | add `optimizeComponents()` to `vite.plugins`; it orders itself first | `vite build` only, never `vite dev` |
+| Rollup, Rolldown | list `optimizeComponents()` before the Svelte plugin | production builds only (add it conditionally) |
+| Webpack, Rspack | add `new OptimizeComponentsPlugin()` to `plugins` | `mode: "production"` only |
+
+- It analyzes the files matched by `content` (default: source files under `src/`) before the build. If a module outside `content` renders a Carbon component, or one of your rewritten wrappers, including through a re-export or a dynamic `import()`, the build fails instead of shipping wrong code.
+- Wrappers imported through an alias (`$lib/Card.svelte`, `#lib/Card.svelte`) are resolved with the bundler's own resolver.
+- SvelteKit and Astro server and client builds are rewritten alike, so prerendered pages hydrate as before.
+- Set `report: true` to print what each build rewrote.
+
+Refer to the [carbon-preprocess-svelte documentation](https://github.com/carbon-design-system/carbon-preprocess-svelte#optimizecomponents) for every option.
+
+### Configure your bundler
+
+Add `optimizeImports` to your Svelte preprocessor and `optimizeCss` to your bundler plugins. See [examples](examples) for full configurations.
+
+**Vite**
+
+```js
+// vite.config.js
+import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import { optimizeCss, optimizeImports } from "carbon-preprocess-svelte";
+
+export default {
+  plugins: [
+    svelte({
+      preprocess: [vitePreprocess(), optimizeImports()],
+    }),
+    optimizeCss(),
+  ],
+};
+```
+
+**SvelteKit**
 
 ```js
 // svelte.config.js
+import adapter from "@sveltejs/adapter-static";
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { optimizeImports } from "carbon-preprocess-svelte";
 
 export default {
-  preprocess: [optimizeImports()],
+  preprocess: [vitePreprocess(), optimizeImports()],
+  kit: { adapter: adapter() },
 };
 ```
+
+```js
+// vite.config.js
+import { sveltekit } from "@sveltejs/kit/vite";
+import { optimizeCss } from "carbon-preprocess-svelte";
+
+export default {
+  plugins: [sveltekit(), optimizeCss()],
+};
+```
+
+**Rollup**
+
+```js
+// rollup.config.js
+import svelte from "rollup-plugin-svelte";
+import { optimizeCss, optimizeImports } from "carbon-preprocess-svelte";
+
+const production = !process.env.ROLLUP_WATCH;
+
+export default {
+  plugins: [
+    svelte({
+      preprocess: [optimizeImports()],
+    }),
+    production && optimizeCss(),
+  ],
+};
+```
+
+**Webpack**
+
+Rspack implements Webpack's plugin and loader APIs, so the same configuration works in `rspack.config.mjs`.
+
+```js
+// webpack.config.mjs
+import { OptimizeCssPlugin, optimizeImports } from "carbon-preprocess-svelte";
+
+export default {
+  module: {
+    rules: [
+      {
+        test: /\.svelte$/,
+        use: {
+          loader: "svelte-loader",
+          options: {
+            preprocess: [optimizeImports()],
+          },
+        },
+      },
+    ],
+  },
+  plugins: [new OptimizeCssPlugin()],
+};
+```
+
+## Icons and pictograms
+
+The icon and pictogram sets ship as separate packages of individual Svelte components. Each is optional, so install only what you need.
+
+### Icons
+
+2,700+ icons designed for product UI, in four sizes (16, 20, 24, and 32 pixels), set with a single prop.
+
+```sh
+# npm
+npm i carbon-icons-svelte
+
+# pnpm
+pnpm add carbon-icons-svelte
+
+# Yarn
+yarn add carbon-icons-svelte
+
+# Bun
+bun add carbon-icons-svelte
+```
+
+```svelte
+<script>
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+</script>
+
+<Add size={24} />
+```
+
+### Pictograms
+
+1,500+ illustrative pictograms for empty states, onboarding, hero sections, and feature callouts. Larger than icons, 64px by default.
+
+```sh
+# npm
+npm i carbon-pictograms-svelte
+
+# pnpm
+pnpm add carbon-pictograms-svelte
+
+# Yarn
+yarn add carbon-pictograms-svelte
+
+# Bun
+bun add carbon-pictograms-svelte
+```
+
+```svelte
+<script>
+  import Cloud from "carbon-pictograms-svelte/lib/Cloud.svelte";
+</script>
+
+<Cloud />
+```
+
+## Documentation for LLMs
+
+Documentation is available in LLM-friendly plain text for use with coding assistants, plus a standalone Markdown document for every component. Append `.md` to any component's URL to read it.
+
+- **[llms.txt](https://svelte.carbondesignsystem.com/llms.txt)**: a component index where each entry links to its per-component Markdown doc, sized for model context windows.
+- **[llms-full.txt](https://svelte.carbondesignsystem.com/llms-full.txt)**: the full component documentation in a single plain-text file.
 
 ## Examples
 
 - [examples/rollup](examples/rollup/)
-- [examples/sapper](examples/sapper/)
-- [examples/snowpack](examples/snowpack/)
 - [examples/sveltekit](examples/sveltekit/)
 - [examples/vite](examples/vite/)
 - [examples/webpack](examples/webpack/)
 
 ## TypeScript support
 
-[TypeScript definitions](types) are generated by [sveld](https://github.com/carbon-design-system/sveld).
+Every component ships TypeScript definitions for its props, events, and slots (`src/**/*.svelte.d.ts`), generated from the component source by [sveld](https://github.com/carbon-design-system/sveld).
 
 ## Contributing
 
@@ -253,3 +446,11 @@ Refer to the [Contributing guidelines](CONTRIBUTING.md).
 
 [npm]: https://img.shields.io/npm/v/carbon-components-svelte.svg?color=262626&style=for-the-badge
 [npm-url]: https://npmjs.com/package/carbon-components-svelte
+
+## <picture><source height="20" width="20" media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ibm-telemetry/telemetry-js/main/docs/images/ibm-telemetry-dark.svg"><source height="20" width="20" media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/ibm-telemetry/telemetry-js/main/docs/images/ibm-telemetry-light.svg"><img height="20" width="20" alt="IBM Telemetry" src="https://raw.githubusercontent.com/ibm-telemetry/telemetry-js/main/docs/images/ibm-telemetry-light.svg"></picture> IBM Telemetry
+
+This package uses IBM Telemetry to collect de-identified and anonymized metrics data in CI environments. By installing
+this package as a dependency you are agreeing to telemetry collection. To opt out, see
+[Opting out of IBM Telemetry data collection](https://github.com/ibm-telemetry/telemetry-js/tree/main#opting-out-of-ibm-telemetry-data-collection).
+For more information on the data being collected, please see the
+[IBM Telemetry documentation](https://github.com/ibm-telemetry/telemetry-js/tree/main#ibm-telemetry-collection-basics).

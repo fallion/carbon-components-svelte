@@ -1,0 +1,206 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "./user-avatar-tokens";
+
+/// UserAvatar component styles (circular frame, sizes, color variants).
+/// @access private
+/// @group components
+@mixin user-avatar {
+  .#{$prefix}--user-avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
+    // The dark themes lighten the fills, so the initials turn dark.
+    color: $text-inverse;
+  }
+
+  .#{$prefix}--user-avatar svg {
+    color: $icon-inverse;
+  }
+
+  // Reset native button/link chrome so `interactive` / `href` keep the circle.
+  // Offset the focus ring outside the disc so `overflow: hidden` does not hide it.
+  .#{$prefix}--user-avatar--interactive {
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font: inherit;
+    appearance: none;
+
+    &:focus {
+      outline: 2px solid $focus;
+      outline-offset: 2px;
+    }
+  }
+
+  // Images fill the circle; the icon glyph keeps its intrinsic size.
+  .#{$prefix}--user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .#{$prefix}--user-avatar--sm {
+    width: $carbon--spacing-06;
+    height: $carbon--spacing-06;
+  }
+
+  .#{$prefix}--user-avatar--md {
+    width: $carbon--spacing-07;
+    height: $carbon--spacing-07;
+  }
+
+  .#{$prefix}--user-avatar--lg {
+    width: $carbon--spacing-09;
+    height: $carbon--spacing-09;
+  }
+
+  .#{$prefix}--user-avatar--xl {
+    width: $carbon--spacing-10;
+    height: $carbon--spacing-10;
+  }
+
+  .#{$prefix}--user-avatar--sm .#{$prefix}--user-avatar__text {
+    @include type-style("label-01");
+  }
+
+  .#{$prefix}--user-avatar--md .#{$prefix}--user-avatar__text {
+    @include type-style("body-compact-01");
+  }
+
+  .#{$prefix}--user-avatar--lg .#{$prefix}--user-avatar__text {
+    @include type-style("heading-03");
+  }
+
+  .#{$prefix}--user-avatar--xl .#{$prefix}--user-avatar__text {
+    @include type-style("heading-04");
+  }
+
+  $colors: "red" "magenta" "purple" "blue" "cyan" "teal" "green" "gray"
+    "cool-gray" "warm-gray";
+
+  @each $color in $colors {
+    @each $suffix in "" "-strong" {
+      .#{$prefix}--user-avatar--#{$color}#{$suffix} {
+        background-color: ccs-theme-color(
+          $ccs-user-avatar-colors,
+          "user-avatar-#{$color}#{$suffix}"
+        );
+      }
+    }
+  }
+
+  // Status badge overlay at the bottom-right (presence indicator).
+  .#{$prefix}--user-avatar__badge-wrapper {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    // A definite height, like the avatar's own, so a flex or grid row
+    // doesn't stretch the wrapper and drop the badge below the avatar.
+    height: fit-content;
+  }
+
+  .#{$prefix}--user-avatar__badge {
+    position: absolute;
+    // Center the badge on the circle's edge at 45 degrees, which sits
+    // (1 - 1/sqrt(2)) / 2 of the avatar's size in from each side, so it
+    // hugs the circle at every size.
+    inset-block-end: 14.64%;
+    @include ccs-inset-inline($end: 14.64%);
+    display: flex;
+    border-radius: 50%;
+    // Ring separates the badge from the avatar using the surrounding surface.
+    box-shadow: 0 0 0 $carbon--spacing-01 $layer-background;
+    transform: translate(50%, 50%);
+    pointer-events: none;
+
+    [dir="rtl"] & {
+      transform: ccs-dir(translate(50%, 50%), translate(-50%, 50%));
+    }
+  }
+
+  .#{$prefix}--user-avatar__status {
+    display: block;
+    width: $carbon--spacing-03;
+    height: $carbon--spacing-03;
+    border-radius: 50%;
+  }
+
+  .#{$prefix}--user-avatar--lg + .#{$prefix}--user-avatar__badge
+    .#{$prefix}--user-avatar__status,
+  .#{$prefix}--user-avatar--xl + .#{$prefix}--user-avatar__badge
+    .#{$prefix}--user-avatar__status {
+    width: $carbon--spacing-04;
+    height: $carbon--spacing-04;
+  }
+
+  .#{$prefix}--user-avatar__status--online {
+    background-color: $support-success;
+  }
+
+  .#{$prefix}--user-avatar__status--away {
+    background-color: $support-warning;
+  }
+
+  .#{$prefix}--user-avatar__status--busy {
+    position: relative;
+    background-color: $support-error;
+
+    // Horizontal bar distinguishes busy from online when color alone is unreliable.
+    &::after {
+      content: "";
+      position: absolute;
+      inset-block-start: 50%;
+      // Centered, so it needs no RTL flip.
+      left: 20%;
+      width: 60%;
+      height: 2px;
+      background-color: $text-on-color;
+      transform: translateY(-50%);
+    }
+  }
+
+  .#{$prefix}--user-avatar__status--offline {
+    box-sizing: border-box;
+    border: 2px solid $icon-disabled;
+    background-color: $layer-background;
+  }
+
+  // Forced colors repaint the dot's fill as Canvas and drop the ring, so the
+  // status would vanish. Keep the status colors, as the shape indicator keeps
+  // its fills, and draw a CanvasText edge that shows on any Canvas.
+  @media (forced-colors: active) {
+    // The fill turns Canvas, so only the initials would show. Draw the
+    // circle's edge.
+    .#{$prefix}--user-avatar {
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
+
+    .#{$prefix}--user-avatar__status {
+      forced-color-adjust: none;
+      outline: 1px solid CanvasText;
+    }
+
+    .#{$prefix}--user-avatar__status--offline {
+      border-color: GrayText;
+      background-color: Canvas;
+    }
+  }
+
+  // Tooltip wrapper: strip the definition trigger's underline/padding so the
+  // circle renders clean when `tooltipText` is set.
+  .#{$prefix}--user-avatar-tooltip .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition {
+    margin: 0;
+    border-bottom: none;
+  }
+}
+
+@include exports("user-avatar") {
+  @include user-avatar;
+}

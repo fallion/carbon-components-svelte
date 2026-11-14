@@ -1,0 +1,26 @@
+<script>
+  import {
+    ContextMenu,
+    ContextMenuDivider,
+    ContextMenuOption,
+  } from "carbon-components-svelte";
+  import CopyFile from "carbon-icons-svelte/lib/CopyFile.svelte";
+  import Cut from "carbon-icons-svelte/lib/Cut.svelte";
+  import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
+</script>
+
+<ContextMenu>
+  <ContextMenuOption labelText="View details" />
+  <ContextMenuOption labelText="Search" shortcut="mod+k" />
+  <ContextMenuOption labelText="Copy" shortcut="mod+c" icon={CopyFile} />
+  <ContextMenuDivider />
+  <ContextMenuOption indented labelText="Rename" />
+  <ContextMenuDivider />
+  <ContextMenuOption disabled labelText="Cut" shortcut="mod+x" icon={Cut} />
+  <ContextMenuDivider />
+  <ContextMenuOption kind="danger" labelText="Delete" icon={TrashCan} />
+</ContextMenu>
+
+<div data-centered>
+  <p>Right click anywhere on this page</p>
+</div>

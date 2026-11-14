@@ -1,0 +1,188 @@
+---
+components: ["BigNumber", "BigNumberSkeleton"]
+description: Big number displays a single prominent statistic, such as a dashboard metric or KPI, with optional formatting, a fraction or percentage, a trend, and a delta.
+---
+
+<script>
+  import { Stack, BigNumber, BigNumberSkeleton, Button, Link, Text } from "carbon-components-svelte";
+  import Launch from "carbon-icons-svelte/lib/Launch.svelte";
+</script>
+
+## Basic
+
+Create a big number with `labelText` and `value`.
+
+<BigNumber labelText="Deployments" value={1240} />
+
+## Sizes
+
+Set `size` to control the visual weight of the value. The default is `"default"`. The total and percent sign step up with the value; the label steps up at extra large.
+
+### Default
+
+<BigNumber labelText="Deployments" value={1240} total={2000} />
+
+### Large
+
+<BigNumber labelText="Deployments" value={1240} total={2000} size="lg" />
+
+### Extra large
+
+<BigNumber labelText="Deployments" value={1240} total={2000} size="xl" />
+
+## Custom label
+
+Use the `labelChildren` slot for custom label content instead of `labelText`.
+
+<BigNumber labelText="Deployments" value={1240}>
+  <strong slot="labelChildren">Deployments (staging)</strong>
+</BigNumber>
+
+## With total
+
+Set `total` to render `value` as the numerator of a "value / total" fraction. The denominator is hidden when it formats identically to `value`, or when `percentage` is `true`. Set `forceShowTotal` to `true` to always render it.
+
+<Stack gap={5}>
+  <BigNumber labelText="Tickets resolved" value={42} total={120} />
+  <BigNumber labelText="Same after truncation" value={42} total={42} forceShowTotal />
+  <BigNumber labelText="Over capacity" value={130} total={120} />
+</Stack>
+
+## Percentage
+
+Set `percentage` to `true` to render `value` as a percentage instead of rendering `total` as a fraction. `value` is the number of percent, so `99.8` renders "99.8%". The percent sign follows `locale`, which puts it before the number in Turkish.
+
+<Stack gap={5}>
+  <BigNumber labelText="Uptime" value={99.8} percentage />
+  <BigNumber labelText="Çalışma süresi" value={99.8} percentage locale="tr" />
+</Stack>
+
+## Trending
+
+Set `trend` to `"up"`, `"down"`, or `"flat"` to render a trend indicator next to the value. Screen readers announce the trend direction. Set `trendDescription` to replace the default announcement.
+
+### Default color
+
+By default, an upward trend is green and a downward trend is red.
+
+<Stack gap={5}>
+  <BigNumber labelText="Revenue" value={128000} trend="up" />
+  <BigNumber labelText="Uptime" value={99.8} percentage trend="down" />
+</Stack>
+
+### Overriding color
+
+A trend's direction and its meaning aren't always the same: more failed builds is bad even though the number is trending up, and a falling error rate is good even though it's trending down. Set `trendColor` to decouple the indicator's color from its direction.
+
+<Stack gap={5}>
+  <BigNumber labelText="Failed builds" value={12} trend="up" trendColor="error" />
+  <BigNumber
+    labelText="Error rate"
+    value={0.4}
+    percentage
+    trend="down"
+    trendColor="success"
+  />
+</Stack>
+
+### Flat
+
+A metric that isn't trending up or down renders a neutral dash-shaped icon instead of an arrow.
+
+<BigNumber labelText="Active users" value={4200} trend="flat" />
+
+## Delta
+
+Set `delta` to render a signed change since the last period below the value. Its color follows `trend` when set, and falls back to a neutral color otherwise.
+
+<Stack gap={5}>
+  <BigNumber
+    labelText="Uptime"
+    value={99.8}
+    percentage
+    trend="up"
+    delta={0.2}
+    deltaPercentage
+    deltaLabel="vs last week"
+  />
+  <BigNumber
+    labelText="Revenue"
+    value={128000}
+    delta={12000}
+    formatOptions={{ style: "currency", currency: "USD" }}
+  />
+</Stack>
+
+## Formatting
+
+`value` and `total` abbreviate large numbers by default (for example, `12,400` becomes `12.4K`), and hovering an abbreviated value shows the full number in a tooltip.
+
+### Abbreviated
+
+Set `fullNumber` to `true` to render the full number instead, and `fractionDigits` to control the number of fraction digits used when formatting.
+
+<Stack gap={5}>
+  <BigNumber labelText="Page views" value={12400} />
+  <BigNumber labelText="Page views" value={12400} fullNumber />
+</Stack>
+
+### Units and currency
+
+Set `formatOptions` to pass additional `Intl.NumberFormatOptions`, merged after the component's own defaults so your keys win.
+
+<BigNumber
+  labelText="Revenue"
+  value={1250000}
+  formatOptions={{ style: "currency", currency: "USD" }}
+/>
+
+<BigNumber
+  labelText="Response time"
+  value={340}
+  fullNumber
+  formatOptions={{ style: "unit", unit: "millisecond", unitDisplay: "short" }}
+/>
+
+### Custom format
+
+Set `format` to replace Intl formatting entirely with your own function, such as one that renders a duration like `2h 14m`.
+
+<FileSource src="/framed/BigNumber/CustomFormat" />
+
+## Tooltip
+
+Set `tooltipDescription` to render an information icon next to `labelText` with additional context.
+
+<BigNumber
+  labelText="Error rate"
+  value={0.4}
+  percentage
+  tooltipDescription="Percentage of requests that returned a 5xx status in the last 24 hours."
+/>
+
+## Action
+
+Use the `action` slot to add an inline action after the value, such as an icon-only ghost button or a link to the full report. The action sits on the value's baseline: a link's text shares it, and an icon-only button's icon stands on it.
+
+<Stack gap={5}>
+  <BigNumber labelText="p95 latency" value={182} formatOptions={{ style: "unit", unit: "millisecond", unitDisplay: "short" }}>
+    <Button slot="action" kind="ghost" size="small" iconOnly icon={Launch} iconDescription="Open latency report" />
+  </BigNumber>
+  <BigNumber labelText="Open incidents" value={3}>
+    <Link slot="action" href="/components/BigNumber#action">View all</Link>
+  </BigNumber>
+</Stack>
+
+## Footer
+
+Use the default slot to render content below the value, such as a sparkline or a secondary metric.
+
+<BigNumber labelText="Deployments" value={1240}>
+  <Text type="label-01" color="secondary">Updated 5 minutes ago</Text>
+</BigNumber>
+
+## Skeleton
+
+Use `BigNumberSkeleton` to render a loading state in place of the value.
+
+<BigNumberSkeleton />

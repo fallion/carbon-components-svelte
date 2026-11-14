@@ -1,0 +1,109 @@
+---
+description: Image loaders load images with built-in loading and error states, aspect ratios, and fade-in animations.
+---
+
+<script>
+    import { ImageLoader, Button, InlineLoading } from "carbon-components-svelte";
+
+    let key = 0;
+
+    let loading = false;
+    let loaded = false;
+    let imageError = false;
+</script>
+
+## Basic
+
+Load an image with the default configuration. The component handles the loading
+process automatically.
+
+<ImageLoader src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" />
+
+## Alt text
+
+Set `alt` to provide alternative text for the image.
+
+<ImageLoader alt="IBM logo" src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" />
+
+## Aspect ratio
+
+Maintain consistent image dimensions using aspect ratios. The component uses
+[AspectRatio](/components/AspectRatio) to constrain the image.
+
+Supported aspect ratios include `"2x1"`, `"2x3"`, `"16x9"`, `"4x3"`, `"1x1"`,
+`"3x4"`, `"3x2"`, `"9x16"` and `"1x2"`.
+
+<ImageLoader ratio="16x9" src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" />
+
+## Lazy loading
+
+ImageLoader starts loading as soon as `src` is set, so an image far down the page downloads with the page. Set `lazy` to wait until the image comes within `rootMargin` (600px by default) of the viewport. The server-rendered markup then marks the image `loading="lazy"`, so the browser's preload scanner skips it too.
+
+Pair it with `ratio`, which reserves the image's space, so the page doesn't shift when it loads. Leave `lazy` off for images visible when the page opens, such as a hero image: they should load as early as possible.
+
+Raise `rootMargin`, for example to `"1200px"`, if images still appear blank during fast scrolling. The margin grows the viewport only. Inside a scroll container, such as a modal body, an image starts loading as it scrolls into the container's view.
+
+<ImageLoader lazy ratio="16x9" src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" />
+
+## Fade in
+
+Enable a smooth fade-in animation when the image loads successfully.
+
+<Button kind="ghost" on:click="{() => { key++;}}">Reload image</Button>
+{#key key}<ImageLoader fadeIn ratio="16x9" src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" />{/key}
+
+## Loading and error states
+
+ImageLoader tracks its own loading, loaded, and error state internally. Customize
+the UI shown at each stage, read the state directly, or listen for events.
+
+### Slots
+
+Customize the loading and error states using named slots.
+
+<ImageLoader src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg">
+    <svelte:fragment slot="loading">
+        <InlineLoading />
+    </svelte:fragment>
+    <svelte:fragment slot="error">
+        Unable to load company logo.
+    </svelte:fragment>
+</ImageLoader>
+
+### Bindable state
+
+Bind to `loading`, `loaded`, and `error` to read the image's state. All three
+props are readonly outside the component and are set automatically as the
+image loads.
+
+<ImageLoader bind:loading bind:loaded bind:error={imageError} src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" />
+<p>loading: {loading} · loaded: {loaded} · error: {imageError}</p>
+
+### Events
+
+Dispatches `load` when the image loads successfully, and `error` when it
+fails to load.
+
+<ImageLoader
+  on:load={() => console.log("loaded")}
+  on:error={() => console.log("error")}
+  src="https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg"
+/>
+
+## Updating the image source
+
+Change the image displayed by the same ImageLoader instance, either
+imperatively or by reacting to a changing `src` value.
+
+### Programmatic
+
+Control image loading programmatically using component references.
+
+<FileSource src="/framed/ImageLoader/ProgrammaticImageLoader" />
+
+### Dynamic
+
+Update the image source dynamically using the same image loader instance for
+smooth transitions between images.
+
+<FileSource src="/framed/ImageLoader/DynamicImageLoader" />

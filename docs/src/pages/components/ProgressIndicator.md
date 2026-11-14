@@ -1,0 +1,281 @@
+---
+components: ["ProgressIndicator", "ProgressStep", "ProgressIndicatorSkeleton"]
+description: Progress indicators show progress through a sequence of steps, with horizontal and vertical layouts and step states.
+---
+
+<script>
+  import { ProgressIndicator, ProgressStep, ProgressIndicatorSkeleton } from "carbon-components-svelte";
+  import CheckmarkFilled from "carbon-icons-svelte/lib/CheckmarkFilled.svelte";
+  import InProgress from "carbon-icons-svelte/lib/InProgress.svelte";
+  import Circle from "carbon-icons-svelte/lib/CircleDash.svelte";
+</script>
+
+## Basic
+
+Create a horizontal progress indicator with four steps. It shows progress only; for a flow the user fills in step by step, with Back and Continue, validation and a final submit, use [Stepper](/components/Stepper), which draws this indicator.
+
+<ProgressIndicator currentIndex={2}>
+  <ProgressStep complete
+    label="Build"
+    description="Build completed successfully"
+  />
+  <ProgressStep complete
+    label="Test"
+    description="Automated test suite passed"
+  />
+  <ProgressStep
+    label="Stage"
+    description="Deploying to the staging environment"
+  />
+  <ProgressStep
+    label="Deploy"
+    description="Waiting to release to production"
+  />
+</ProgressIndicator>
+
+## Step selection
+
+Control which step is active, and how clicking a step affects that selection.
+
+### Selected by id
+
+For dynamic step sets, bind `selectedId` and give each `ProgressStep` a stable `id`. Selection stays on the same logical step when steps before it are added or removed. When set, `selectedId` takes precedence over `currentIndex`.
+
+<FileSource src="/framed/ProgressIndicator/ProgressIndicatorSelectedId" />
+
+### Programmatic usage
+
+Update the current step programmatically while maintaining step completion rules. Bind to a step's `current` prop to read whether it's the active step.
+
+<FileSource src="/framed/ProgressIndicator/ProgrammaticProgressIndicator" />
+
+### Prevent change on click
+
+Disable automatic step selection when clicking completed steps. Incomplete steps are never clickable; only completed steps respond, and `preventChangeOnClick` turns those off too.
+
+<ProgressIndicator preventChangeOnClick currentIndex={2}>
+  <ProgressStep complete
+    label="Build"
+    description="Build completed successfully"
+  />
+  <ProgressStep complete
+    label="Test"
+    description="Automated test suite passed"
+  />
+  <ProgressStep
+    label="Stage"
+    description="Deploying to the staging environment"
+  />
+  <ProgressStep
+    label="Deploy"
+    description="Waiting to release to production"
+  />
+</ProgressIndicator>
+
+## Keyboard navigation
+
+<DocKbd label="Tab" /> reaches every enabled step. <DocKbd label="ArrowLeft" /> and <DocKbd label="ArrowRight" /> (or <DocKbd label="ArrowUp" /> and <DocKbd label="ArrowDown" /> when vertical) move focus between steps. <DocKbd label="Home" /> and <DocKbd label="End" /> jump to the first and last enabled step. <DocKbd label="Enter" /> or <DocKbd label="Space" /> selects a completed step.
+
+<ProgressIndicator currentIndex={2}>
+  <ProgressStep complete
+    label="Build"
+    description="Build completed successfully"
+  />
+  <ProgressStep complete
+    label="Test"
+    description="Automated test suite passed"
+  />
+  <ProgressStep
+    label="Stage"
+    description="Deploying to the staging environment"
+  />
+  <ProgressStep disabled
+    label="Deploy"
+    description="Blocked until the stage step completes"
+  />
+</ProgressIndicator>
+
+## Step states
+
+### Invalid step
+
+Mark a step as invalid to indicate an error state.
+
+<ProgressIndicator>
+  <ProgressStep complete
+    label="Build"
+    description="Build completed successfully"
+  />
+  <ProgressStep invalid
+    label="Test"
+    description="Automated tests failed"
+  />
+  <ProgressStep
+    label="Deploy"
+    description="Blocked until tests pass"
+  />
+</ProgressIndicator>
+
+### Disabled steps
+
+Disable specific steps to prevent user interaction.
+
+<ProgressIndicator>
+  <ProgressStep complete
+    label="Build"
+    description="Build completed successfully"
+  />
+  <ProgressStep disabled
+    label="Test"
+    description="Blocked until the build step completes"
+  />
+  <ProgressStep disabled
+    label="Deploy"
+    description="Blocked until testing completes"
+  />
+</ProgressIndicator>
+
+## Step content
+
+Customize what renders inside a step, beyond the default label and icon.
+
+### Icon (slot)
+
+Override the default step icon using the `icon` named slot. The slot exposes complete, current, invalid, and description so the override can mirror the step state.
+
+<ProgressIndicator currentIndex={1}>
+  <ProgressStep complete label="Build" description="Build completed successfully">
+    <CheckmarkFilled slot="icon" />
+  </ProgressStep>
+  <ProgressStep label="Test" description="Currently running the test suite">
+    <InProgress slot="icon" />
+  </ProgressStep>
+  <ProgressStep label="Deploy" description="Waiting to deploy">
+    <Circle slot="icon" />
+  </ProgressStep>
+</ProgressIndicator>
+
+### Label (slot)
+
+Override the default label using the default slot instead of `label`. The slot exposes `props`, which includes the `class` needed to keep the label styled correctly.
+
+<ProgressIndicator currentIndex={1}>
+  <ProgressStep complete let:props description="Build completed successfully">
+    <strong class={props.class}>Build</strong>
+  </ProgressStep>
+  <ProgressStep let:props description="Currently running the test suite">
+    <strong class={props.class}>Test</strong>
+  </ProgressStep>
+  <ProgressStep let:props description="Waiting to deploy">
+    <strong class={props.class}>Deploy</strong>
+  </ProgressStep>
+</ProgressIndicator>
+
+### Secondary label
+
+Set `secondaryLabel` to display supplementary text after the label, such as marking a step as optional.
+
+<ProgressIndicator currentIndex={1}>
+  <ProgressStep complete label="Create account" description="Account created successfully" />
+  <ProgressStep
+    label="Add payment method"
+    description="Add a payment method now, or skip and add one later"
+    secondaryLabel="Optional"
+  />
+  <ProgressStep label="Invite team" description="Invite teammates to your workspace" />
+</ProgressIndicator>
+
+## Layout
+
+Adjust the orientation and step spacing. By default each step is 128px
+wide and shrinks to no less than 112px, so a row of steps can be wider
+than a narrow container: four steps need at least 448px. In a narrow
+column or sidebar, use `spaceEqually`, whose steps share the space and
+truncate long labels, or `vertical`, which stacks them.
+
+### Spaced-equally
+
+Distribute steps evenly across the available space. Steps shrink to fit
+a narrow container, truncating long labels.
+
+<ProgressIndicator spaceEqually>
+  <ProgressStep
+    label="Provision infrastructure resources"
+    description="Allocate compute, storage, and networking capacity"
+  />
+  <ProgressStep
+    label="Run integration test suite"
+    description="Verify service-to-service contracts before release"
+  />
+  <ProgressStep
+    label="Deploy to production environment"
+    description="Roll out the release to all regions"
+  />
+</ProgressIndicator>
+
+### Vertical
+
+Display steps in a vertical layout, for a narrow column or sidebar.
+
+<ProgressIndicator vertical>
+  <ProgressStep
+    label="Provision infrastructure resources"
+    description="Allocate compute, storage, and networking capacity"
+  />
+  <ProgressStep
+    label="Run integration test suite"
+    description="Verify service-to-service contracts before release"
+  />
+  <ProgressStep
+    label="Deploy to production environment"
+    description="Roll out the release to all regions"
+  />
+</ProgressIndicator>
+
+## Events
+
+Respond to step selection changes.
+
+Use `on:change` to listen for the step becoming active. `change` dispatches when the user selects a completed step by click, <DocKbd label="Enter" />, or <DocKbd label="Space" />, with the new index as `event.detail`; updating `currentIndex` or `selectedId` from code does not dispatch it.
+
+<ProgressIndicator
+  currentIndex={0}
+  on:change={(e) => console.log(e.detail)} // number
+>
+  <ProgressStep complete
+    label="Build"
+    description="Build completed successfully"
+  />
+  <ProgressStep complete
+    label="Test"
+    description="Automated test suite passed"
+  />
+  <ProgressStep
+    label="Deploy"
+    description="Waiting to release to production"
+  />
+</ProgressIndicator>
+
+## Skeleton
+
+Show a loading state with the specified number of steps.
+
+<ProgressIndicatorSkeleton />
+
+### Vertical
+
+Show a vertical loading state with the specified number of steps.
+
+<ProgressIndicatorSkeleton vertical />
+
+### Spaced-equally
+
+Show a loading state with steps distributed evenly across the available space.
+
+<ProgressIndicatorSkeleton spaceEqually />
+
+### Step count
+
+Set `count` to change the number of skeleton steps rendered. Defaults to `4`.
+
+<ProgressIndicatorSkeleton count={6} />

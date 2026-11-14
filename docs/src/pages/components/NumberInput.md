@@ -1,0 +1,342 @@
+---
+components: ["NumberInput", "NumberInputSkeleton", "FluidNumberInputSkeleton"]
+description: Number inputs provide a controlled field for numeric values, with support for stepping, validation, and various states.
+---
+
+<script>
+  import { AILabel, Box, FluidNumberInputSkeleton, Layer, NumberInput, NumberInputSkeleton, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a basic number input with increment and decrement controls. The input accepts numerical values and provides visual feedback.
+
+<NumberInput labelText="Clusters" value={0} />
+
+## No value
+
+Allow empty values by setting `allowEmpty` to `true` and `value` to `null`. Both
+are required: allowEmpty enables the empty state, and null represents no value.
+
+<FileSource src="/framed/NumberInput/NumberInputEmpty" />
+
+## Helper text
+
+Add descriptive text below the input with `helperText`.
+
+<NumberInput labelText="Clusters" value={0} helperText="Clusters provisioned in your region" />
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<NumberInput hideLabel labelText="Clusters" value={0} />
+
+## Custom label
+
+Use the `labelChildren` slot to provide custom label content.
+
+<NumberInput labelText="" value={0}>
+  <strong slot="labelChildren">Clusters</strong>
+</NumberInput>
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<NumberInput selectTextOnFocus labelText="Clusters" value={12} />
+
+## Range and steps
+
+Control the allowed values and increment.
+
+### Min and max
+
+Constrain input values with `min` and `max`. Stepper buttons stop at the range
+limits. Typed values outside the range show an invalid state rather than
+silently clamping. Add `invalidText` for an error message.
+
+<NumberInput min="{4}" max="{20}" value="{4}" invalidText="Number must be between 4 and 20." helperText="Clusters provisioned in your region" labelText="Clusters (4 min, 20 max)" />
+
+### Step
+
+Control increment and decrement step size with `step`. This example uses a step
+of 0.1.
+
+<NumberInput value="{1}" helperText="Step of 0.1" step={0.1} labelText="CPU cores allocated" />
+
+### Keyboard stepping
+
+With the input focused, <DocKbd label="ArrowUp" /> and <DocKbd label="ArrowDown" /> step by `step`. <DocKbd label="PageUp" /> and <DocKbd label="PageDown" /> step by 10 × `step`, clamped to `min`/`max`.
+
+A stepper button held for 400 ms steps, then steps every 50 ms until release or `min`/`max`. A shorter press steps once, on release.
+
+<NumberInput value="{50}" step={1} min={0} max={100} helperText="Press PageUp or PageDown to step by 10" labelText="Clusters" />
+
+### Scrub by dragging the label
+
+Set `scrubbable` to `true` to change the value by dragging the label left or right: every 4 pixels of travel moves one `step`, and holding <DocKbd label="Shift" /> moves 10 steps. Dragging right raises the value, and in a right-to-left layout dragging left does. The pointer shows a horizontal resize cursor over the label. `on:input` fires while dragging and `on:change` once on release. Clicking the label still focuses the input, and typing, arrow keys, and the steppers work as usual, so scrubbing is a pointer shortcut rather than the only way to set a value. It suits dense settings panels where many numeric fields sit together.
+
+<NumberInput scrubbable value={40} min={0} max={100} labelText="Opacity (%)" />
+
+### Step start
+
+Configure a starting point for stepping when the input is empty or zero with
+`stepStartValue`. When the user clicks increment or decrement, the value jumps
+to stepStartValue instead of stepping from zero.
+
+This is useful when zero is outside the min/max range, or when a more sensible
+default exists (for example, the current year). Combined with allowEmpty, it
+ensures the user interacts with the input before submitting a value.
+
+<NumberInput stepStartValue={2026} allowEmpty min={2026} max={2100} labelText="Year" />
+
+## Formatting
+
+Control how the value is parsed and displayed.
+
+### Preserve decimals
+
+Preserve decimal input formatting like `"1.0"`, `"2.00"`, or `"3."` by setting
+`allowDecimal` to `true`. The input uses text mode with decimal input instead of
+a native number field, so trailing zeros and decimal points stay intact while
+typing. Useful for financial data or precise decimal entry.
+
+<FileSource src="/framed/NumberInput/NumberInputDecimal" />
+
+### Locale
+
+Format numbers according to a locale with `locale` and a BCP 47 language tag. The
+display value is formatted on blur using Intl.NumberFormat. When locale is set,
+the input uses text mode with decimal input.
+
+<NumberInput locale="de-DE" value={1234.5} labelText="Amount (German)" />
+
+### Locale options
+
+Combine `locale` with `formatOptions` for additional formatting control such as
+decimal precision.
+
+<NumberInput locale="en-US" formatOptions={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} value={1234.5} labelText="Price" />
+
+## Custom validation
+
+Use `validate` for custom validation logic. The function receives the raw input
+string and optional locale. Return `false` to mark invalid, `true` to force valid
+(overriding auto bounds checks), or `undefined` to use built-in validation.
+
+<NumberInput validate={(raw) => { const num = Number(raw); return Number.isNaN(num) ? undefined : num % 2 === 0; }} invalidText="Must be an even number" labelText="Even number" value={0} />
+
+## Stepper controls
+
+Control the stepper buttons and scroll-wheel interaction.
+
+### Hidden steppers
+
+Hide the increment and decrement controls by setting `hideSteppers` to `true`.
+
+<NumberInput hideSteppers labelText="Clusters" value={0} />
+
+### Disable wheel
+
+Prevent the scroll wheel from changing the input value by setting `disableWheel` to `true`. This is useful in forms where accidental scroll changes are undesirable.
+
+<NumberInput disableWheel labelText="Clusters" value={0} />
+
+## Events
+
+Respond to value changes and stepper interactions.
+
+### Value change
+
+Use `on:input` to listen for every keystroke, and `on:change` to listen for
+committed changes—on blur, or immediately after a stepper click or arrow key
+press. Both events dispatch the parsed value directly as `event.detail`.
+
+<NumberInput
+  on:input={(e) => console.log(e.detail)} // number | null
+  on:change={(e) => console.log(e.detail)} // number | null
+/>
+
+### Blur
+
+Use `on:blur` to listen for when the input loses focus. The event detail
+includes the current parsed value and the original FocusEvent.
+
+<NumberInput
+  on:blur={(e) => {
+    console.log(e.detail.value); // number | null
+    console.log(e.detail.event); // FocusEvent
+  }}
+/>
+
+### Stepper click
+
+Use `on:click:stepper` to listen for stepper button clicks. The event detail
+includes the updated value and direction (`"up"` or `"down"`). This event only
+fires on button clicks, not arrow key presses. A held button fires it once,
+on release, with the final value.
+
+<NumberInput
+  on:click:stepper={(e) => {
+    console.log(e.detail.value); // number
+    console.log(e.detail.direction); // "up" | "down"
+  }}
+/>
+
+### Stepper blur
+
+Use `on:blur:stepper` to listen for when a stepper button loses focus. The event
+detail includes the current value, direction, and original FocusEvent.
+
+<NumberInput
+  on:blur:stepper={(e) => {
+    console.log(e.detail.value); // number | null
+    console.log(e.detail.direction); // "up" | "down"
+    console.log(e.detail.event); // FocusEvent
+  }}
+/>
+
+### Stepper
+
+<FileSource src="/framed/NumberInput/NumberInputStepperEvents" />
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<NumberInput labelText="Clusters" value={3}>
+  <AILabel slot="decorator">
+    <p>Recommended from last month's peak traffic.</p>
+  </AILabel>
+</NumberInput>
+
+## Sizes
+
+`size` sets the input height. The default is `"md"`.
+
+### Extra-large
+
+Use the extra-large size for prominent inputs by setting `size` to `"xl"`.
+
+<NumberInput size="xl" labelText="Clusters" value={0} />
+
+### Small
+
+Use the small size for compact layouts by setting `size` to `"sm"`. This is ideal for secondary inputs.
+
+<NumberInput size="sm" labelText="Clusters" value={0} />
+
+### Extra-small
+
+Use the extra-small size for dense layouts, such as toolbars and table rows, by setting `size` to `"xs"`.
+
+<NumberInput size="xs" labelText="Clusters" value={0} />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <NumberInput labelText="Clusters" value={0} />
+  </Box>
+</Layer>
+
+## Fluid
+
+Set `fluid` to `true` to use the fluid variant, which embeds the label inside the field. Fluid number inputs can be used standalone or inside [FluidForm](/components/FluidForm), where the fluid variant is applied automatically.
+
+<NumberInput fluid labelText="Clusters" value={0} />
+
+### Hidden steppers
+
+The fluid variant works with `hideSteppers` to remove the increment and decrement controls.
+
+<NumberInput fluid hideSteppers labelText="Clusters" value={0} />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a tooltip icon.
+
+<NumberInput fluid value={0}>
+  <svelte:fragment slot="labelChildren">
+    Clusters
+    <TooltipIcon tooltipText="The number of clusters provisioned in your region." icon={Information} />
+  </svelte:fragment>
+</NumberInput>
+
+### Invalid
+
+Fluid number inputs display the error message inside the field boundary. Long messages wrap to multiple lines.
+
+<NumberInput fluid invalid invalidText="The number of clusters must be between 4 and 20 to provision a highly available cluster in this region." labelText="Clusters" value={0} />
+
+### Warning
+
+<NumberInput fluid warn warnText="Increasing the cluster count will incur additional charges." labelText="Clusters" value={0} />
+
+### Disabled
+
+Invalid and warning states are not displayed while the input is disabled.
+
+<NumberInput fluid disabled invalid invalidText="The number of clusters is invalid." labelText="Clusters" value={0} />
+
+### Read-only
+
+Invalid and warning states are not displayed while the input is read-only.
+
+<NumberInput fluid readonly labelText="Clusters" value={0} />
+
+### Skeleton
+
+Display a loading skeleton for the fluid number input variant.
+
+<FluidNumberInputSkeleton />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Indicate an invalid value by setting `invalid` to `true`. This example shows a validation error.
+
+<NumberInput invalid invalidText="Enter a valid cluster count" labelText="Clusters" value={0} />
+
+### Warning
+
+Indicate a warning state by setting `warn` to `true`. This example shows a warning about the input value.
+
+<NumberInput warn warnText="A high number may impact initial rollout" labelText="Clusters" value={25} />
+
+### Disabled
+
+Disable the input by setting `disabled` to `true`.
+
+<NumberInput disabled labelText="Clusters" value={0} />
+
+### Read-only
+
+Make the input read-only by setting `readonly` to `true`. This allows viewing but prevents editing.
+
+<NumberInput readonly labelText="Clusters" value={0} />
+
+## Skeleton
+
+Show a loading state with the number input skeleton. This is useful while data is being fetched.
+
+<NumberInputSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<NumberInputSkeleton size="xs" />
+
+### Without label
+
+Show a loading state without a label by setting `hideLabel` to `true`.
+
+<NumberInputSkeleton hideLabel />

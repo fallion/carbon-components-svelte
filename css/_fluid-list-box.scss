@@ -1,0 +1,327 @@
+// Fluid list-box shared styles (Dropdown, ComboBox, MultiSelect). v11 port.
+// https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/fluid-list-box/_fluid-list-box.scss
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./fluid-shared";
+
+/// Fluid list-box styles shared by `Dropdown`, `ComboBox`, and `MultiSelect`
+/// @access private
+/// @group components
+@mixin fluid-list-box {
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper {
+    position: relative;
+    background: $field;
+    block-size: 100%;
+    transition:
+      background-color $duration--fast-01 motion(standard, productive),
+      outline $duration--fast-01 motion(standard, productive);
+  }
+
+  // The wrapper owns the field background. Child segments stay transparent so
+  // inset outlines (invalid on the wrapper, focus on the field wrapper) are
+  // not painted over by list-box backgrounds or Carbon's :hover rules.
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box {
+    padding: 0;
+    min-block-size: to-rem(64px);
+    background-color: transparent;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--label {
+    @include fluid-label;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--label.#{$prefix}--label--slotted {
+    @include fluid-label-slotted;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box__field--wrapper {
+    position: relative;
+    display: inline-flex;
+    width: 100%;
+    height: calc(100% + 1px);
+    align-items: center;
+    background-color: transparent;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box__field {
+    padding-block: to-rem(33px) to-rem(13px);
+    padding-inline-start: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box__menu-icon {
+    block-size: to-rem(16px);
+    inline-size: to-rem(16px);
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--dropdown
+    .#{$prefix}--list-box__menu-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-04);
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid:not(
+      .#{$prefix}--list-box__wrapper--fluid--condensed
+    )
+    .#{$prefix}--list-box__menu-item {
+    block-size: $carbon--spacing-10;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid:not(
+      .#{$prefix}--list-box__wrapper--fluid--condensed
+    )
+    .#{$prefix}--list-box__menu-item__selected-icon {
+    inset-block-start: to-rem(20px);
+  }
+
+  // The wrapper-level ring replaces the field-level
+  // outline that v10 renders for the non-fluid variants. A ::after overlay
+  // paints above child backgrounds (including input-cell hover) so the ring
+  // stays visible until focus moves to the field.
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid:not(
+      :focus-within
+    )::after {
+    position: absolute;
+    z-index: 3;
+    content: "";
+    pointer-events: none;
+    inset: 0;
+    box-shadow: inset 0 0 0 2px $support-error;
+    transition: box-shadow $duration--fast-01 motion(standard, productive);
+
+    @media screen and (prefers-contrast) {
+      box-shadow: none;
+      outline: 2px dotted $support-error;
+      outline-offset: -2px;
+    }
+  }
+
+  // Segment backgrounds must be transparent so the parent invalid outline
+  // (inset via focus-outline) is visible around the full field, not just the
+  // footer. Specificity must beat the list-box background rules.
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box,
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box
+    .#{$prefix}--text-input,
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--form-requirement {
+    background: transparent;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--form-requirement {
+    @include fluid-requirement;
+
+    color: $text-error;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box,
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box__field:focus,
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--combo-box[data-invalid]
+    .#{$prefix}--text-input {
+    outline: none;
+    outline-offset: 0;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box
+    .#{$prefix}--text-input,
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--combo-box.#{$prefix}--list-box--warning
+    .#{$prefix}--text-input {
+    border-block-end: 1px solid transparent;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box,
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box--warning {
+    border-block-end: 1px solid transparent;
+  }
+
+  // The error/warn message renders as a sibling of the list box, inside
+  // the fluid wrapper. The base v10 styles already reveal it via the
+  // `[data-invalid] ~` and `--warning ~` general sibling selectors.
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--form-requirement {
+    padding-block: to-rem(8px);
+    padding-inline: $carbon--spacing-05 to-rem(64px);
+    margin-block-start: 0;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box--warning
+    ~ .#{$prefix}--form-requirement {
+    border-block-end: 1px solid $border-strong;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__invalid-icon,
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__invalid-icon {
+    @include fluid-status-icon(to-rem(81px));
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box[data-invalid]:not(.#{$prefix}--combo-box)
+    .#{$prefix}--list-box__field {
+    padding-inline-end: $carbon--spacing-09;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--invalid
+    .#{$prefix}--list-box[data-invalid].#{$prefix}--combo-box
+    .#{$prefix}--text-input {
+    padding-inline-end: $carbon--spacing-10;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box__divider {
+    display: none;
+    transition: border-color $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box[data-invalid]
+    ~ .#{$prefix}--list-box__divider,
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box--warning
+    ~ .#{$prefix}--list-box__divider {
+    @include fluid-divider-rule;
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    // Suppress Carbon's per-list-box hover; fluid hover is scoped below. The
+    // skeleton's inner element carries `.bx--skeleton`; exclude it so its
+    // background isn't forced transparent on hover.
+    .#{$prefix}--list-box__wrapper--fluid
+      .#{$prefix}--list-box:not(.#{$prefix}--skeleton):hover,
+    .#{$prefix}--list-box__wrapper--fluid
+      .#{$prefix}--list-box.#{$prefix}--list-box--expanded:hover {
+      background-color: transparent;
+    }
+
+    // Default fluid (no error/warn footer): hover the full wrapper.
+    // `--neutral` is set by the component only when none of
+    // invalid/warning/disabled/readonly apply, so it already encodes the
+    // same condition a `:not()` chain would spell out. It only has to beat
+    // the wrapper's own base background above, which is lower specificity
+    // and earlier in the file either way.
+    .#{$prefix}--list-box__wrapper--fluid.#{$prefix}--list-box__wrapper--fluid--neutral:hover {
+      background-color: $field-hover;
+    }
+
+    // Invalid/warn fluid (matches fluid-select): hover tint only the input
+    // cell. `--hoverable` is set by the component only when neither disabled
+    // nor readonly apply, so it already encodes the same condition the two
+    // `:not()` clauses it replaces spelled out. `:not(:focus-within)` is not
+    // a state marker (it tracks live DOM focus, not a prop), so it stays.
+    .#{$prefix}--list-box__wrapper--fluid--invalid.#{$prefix}--list-box__wrapper--fluid--hoverable:not(
+        :focus-within
+      )
+      .#{$prefix}--list-box:hover:not(.#{$prefix}--combo-box),
+    .#{$prefix}--list-box__wrapper--fluid--warning.#{$prefix}--list-box__wrapper--fluid--hoverable:not(
+        :focus-within
+      )
+      .#{$prefix}--list-box:hover:not(.#{$prefix}--combo-box),
+    .#{$prefix}--list-box__wrapper--fluid--invalid.#{$prefix}--list-box__wrapper--fluid--hoverable:not(
+        :focus-within
+      )
+      .#{$prefix}--list-box.#{$prefix}--list-box--expanded:hover:not(
+        .#{$prefix}--combo-box
+      ),
+    .#{$prefix}--list-box__wrapper--fluid--warning.#{$prefix}--list-box__wrapper--fluid--hoverable:not(
+        :focus-within
+      )
+      .#{$prefix}--list-box.#{$prefix}--list-box--expanded:hover:not(
+        .#{$prefix}--combo-box
+      ) {
+      background-color: $field-hover;
+    }
+
+    .#{$prefix}--list-box__wrapper--fluid
+      .#{$prefix}--list-box[data-invalid]:hover:not(.#{$prefix}--combo-box)
+      ~ .#{$prefix}--list-box__divider,
+    .#{$prefix}--list-box__wrapper--fluid
+      .#{$prefix}--list-box--warning:hover:not(.#{$prefix}--combo-box)
+      ~ .#{$prefix}--list-box__divider {
+      border-color: transparent;
+    }
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box__selection {
+    @include ccs-inset-inline($end: to-rem(41px));
+  }
+
+  // The fluid status icon sits apart from the clear button, so v11 drops
+  // the divider between them.
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__selection::before,
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__selection::before {
+    content: none;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box--up
+    .#{$prefix}--list-box__menu {
+    inset-block-end: $carbon--spacing-10;
+  }
+
+  // The outline renders on the field wrapper (not the fluid
+  // wrapper) so the open menu, a sibling of the field, does not paint over
+  // the bottom edge. `outline-offset: 0` on the outer wrapper is clipped by
+  // adjacent fluid-form cells; the mixin's -2px inset offset stays visible
+  // on the smaller field wrapper. Matches MultiSelect's `--input-focused`
+  // pattern and Carbon v11's `--fluid--focus` intent.
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--list-box__field--wrapper--input-focused {
+    @include focus-outline("outline");
+
+    z-index: 2;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--list-box__field:focus {
+    outline: none;
+    outline-offset: 0;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--skeleton {
+    background: $skeleton-background;
+    border-block-end: 1px solid $skeleton-element;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--skeleton
+    .#{$prefix}--list-box__field {
+    @include skeleton($omit: (position, padding));
+    @include fluid-skeleton-field;
+  }
+
+  .#{$prefix}--list-box__wrapper--fluid
+    .#{$prefix}--skeleton
+    .#{$prefix}--list-box__label {
+    @include skeleton($omit: (position));
+    @include fluid-skeleton-label;
+  }
+}
+
+@include exports("fluid-list-box") {
+  @include fluid-list-box;
+}

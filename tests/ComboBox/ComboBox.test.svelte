@@ -1,0 +1,95 @@
+<script lang="ts">
+  import ComboBox from "carbon-components-svelte/ComboBox/ComboBox.svelte";
+  import type { ComponentProps } from "svelte";
+
+  type TestItem = {
+    id: string;
+    text: string;
+    price: number;
+    disabled?: boolean;
+  };
+
+  export let items: TestItem[] = [
+    { id: "0", text: "Slack", price: 100 },
+    { id: "1", text: "Email", price: 200 },
+    { id: "2", text: "Fax", price: 300 },
+  ];
+  export let selectedId: ComponentProps<ComboBox>["selectedId"] = undefined;
+  export let value = "";
+  export let disabled = false;
+  export let invalid = false;
+  export let warn = false;
+  export let open = false;
+  export let readonly = false;
+  export let labelText = "Contact";
+  export let placeholder = "Select contact method";
+  export let invalidText = "";
+  export let warnText = "";
+  export let helperText = "";
+  export let hideLabel = false;
+  export let size: ComponentProps<ComboBox>["size"] = undefined;
+  export let shouldFilterItem: ComponentProps<ComboBox>["shouldFilterItem"] = (
+    item,
+    value,
+  ) => item.text.toLowerCase().includes(value.toLowerCase());
+  /** Leave `shouldFilterItem` unset so ComboBox applies its own default. */
+  export let defaultFilter = false;
+  export let translateWithIdSelection: ComponentProps<ComboBox>["translateWithIdSelection"] =
+    undefined;
+  export let allowCustomValue = false;
+  export let clearFilterOnOpen = false;
+  export let selectTextOnFocus = false;
+  export let openOnClear = false;
+  export let typeahead = false;
+  export let autoHighlight: ComponentProps<ComboBox>["autoHighlight"] = "none";
+  export let virtualize: ComponentProps<ComboBox>["virtualize"] = undefined;
+  export let filterMode: ComponentProps<ComboBox>["filterMode"] = undefined;
+  export let portalMenu: ComponentProps<ComboBox>["portalMenu"] = false;
+  export let wrapOptions: ComponentProps<ComboBox>["wrapOptions"] = false;
+  export let ariaLabel: ComponentProps<ComboBox>["aria-label"] = undefined;
+  export let fluid: ComponentProps<ComboBox>["fluid"] = false;
+  export let condensed: ComponentProps<ComboBox>["condensed"] = false;
+  export let id: ComponentProps<ComboBox>["id"] = undefined;
+  export let onSelect: (detail: unknown) => void = () => {};
+  export let onClear: (event: Event) => void = () => {};
+</script>
+
+<ComboBox
+  {id}
+  aria-label={ariaLabel}
+  {fluid}
+  {condensed}
+  {disabled}
+  {helperText}
+  {hideLabel}
+  {invalid}
+  {invalidText}
+  {items}
+  {open}
+  {readonly}
+  {placeholder}
+  {selectedId}
+  {size}
+  {labelText}
+  {value}
+  {warn}
+  {warnText}
+  shouldFilterItem={defaultFilter ? undefined : shouldFilterItem}
+  {translateWithIdSelection}
+  {allowCustomValue}
+  {clearFilterOnOpen}
+  {selectTextOnFocus}
+  {openOnClear}
+  {typeahead}
+  {autoHighlight}
+  {virtualize}
+  {filterMode}
+  {portalMenu}
+  {wrapOptions}
+  on:select={(e) => onSelect(e.detail)}
+  on:clear={(e) => {
+    onClear(e);
+    value = "";
+    selectedId = undefined;
+  }}
+/>

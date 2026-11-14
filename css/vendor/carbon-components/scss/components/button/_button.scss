@@ -1,0 +1,549 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--helpers';
+@import '../../globals/scss/tooltip';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import 'mixins';
+@import '../../globals/scss/css--reset';
+
+/// Button styles
+/// @access private
+/// @group button
+@mixin button {
+  .#{$prefix}--btn {
+    @include button-base;
+  }
+
+  // One low-weight fill for every kind. Each kind sets `color` (and the ghost
+  // icon-only rule below sets `$icon-primary`), so `currentColor` carries it and a
+  // consumer's `.my-btn svg { fill }` (0,1,1) wins. Paths carry no fill of
+  // their own and inherit this. // ccs: flatten
+  .#{$prefix}--btn__icon {
+    fill: currentColor;
+  }
+
+  // Reset intrinsic padding in Firefox (see #731)
+  .#{$prefix}--btn::-moz-focus-inner {
+    padding: 0;
+    border: 0;
+  }
+
+  .#{$prefix}--btn--primary {
+    @include button-theme(
+      $button-primary,
+      transparent,
+      $text-on-color,
+      $button-primary-hover,
+      $button-primary-active
+    );
+
+    &:hover {
+      color: $text-on-color;
+    }
+  }
+
+  .#{$prefix}--btn--secondary {
+    @include button-theme(
+      $button-secondary,
+      transparent,
+      $text-on-color,
+      $button-secondary-hover,
+      $button-secondary-active
+    );
+
+    &:hover,
+    &:focus {
+      color: $text-on-color;
+    }
+  }
+
+  .#{$prefix}--btn--tertiary {
+    @include button-theme(
+      transparent,
+      $button-tertiary,
+      $button-tertiary,
+      $button-tertiary-hover,
+      $button-tertiary-active
+    );
+
+    &:hover {
+      color: $text-inverse;
+    }
+
+    &:focus {
+      background-color: $button-tertiary;
+      color: $text-inverse;
+    }
+
+    &:active {
+      border-color: transparent;
+      color: $text-inverse;
+    }
+
+    &:disabled,
+    &:hover:disabled,
+    &:focus:disabled,
+    &.#{$prefix}--btn--disabled,
+    &.#{$prefix}--btn--disabled:hover,
+    &.#{$prefix}--btn--disabled:focus {
+      background: transparent;
+      color: $text-on-color-disabled;
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--btn--ghost {
+    @include button-theme(
+      transparent,
+      transparent,
+      $link-primary,
+      $layer-hover,
+      $layer-active
+    );
+
+    padding: $button-padding-ghost;
+
+    .#{$prefix}--btn__icon {
+      position: static;
+      margin-inline-start: $carbon--spacing-03;
+    }
+
+    &:hover,
+    &:active {
+      color: $link-primary-hover;
+    }
+
+    &:disabled,
+    &:hover:disabled,
+    &:focus:disabled,
+    &.#{$prefix}--btn--disabled,
+    &.#{$prefix}--btn--disabled:hover,
+    &.#{$prefix}--btn--disabled:focus {
+      border-color: transparent;
+      background: transparent;
+      color: $text-disabled; // ccs: v11, ghost text has no fill behind it
+      outline: none;
+    }
+
+    &.#{$prefix}--btn--sm {
+      padding: $button-padding-ghost-sm;
+    }
+
+    // ccs: xs size
+    &.#{$prefix}--btn--xs {
+      padding: to-rem(2px) $carbon--spacing-05;
+    }
+
+    // V11: remove field
+    &.#{$prefix}--btn--field { // ccs: dropped unrendered --md alias
+      padding: $button-padding-ghost-field;
+    }
+  }
+
+  // The trigger mixin itself is emitted by the position blocks below
+  // (`.bx--tooltip__trigger.bx--btn--icon-only--*`) and, for triggers using the
+  // tooltip partial's `bx--tooltip--*` position classes, by that partial. Every
+  // icon-only trigger this library renders carries one of those, so the
+  // position-agnostic include upstream had here was a duplicate. // ccs: dedupe
+  .#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger { // ccs: flatten
+    // (The trigger's `svg` fill lives in the tooltip partial's
+    // carbon-components-svelte patch: it has to emit after that partial's
+    // `.bx--tooltip__trigger svg`.)
+
+    // Outranks the `:hover` / `:focus` reveal of every position block, both
+    // the `bx--btn--icon-only--*` ones below and the tooltip partial's
+    // `bx--tooltip--*` ones, which emit later at (0,4,x).
+    &.#{$prefix}--btn.#{$prefix}--btn--disabled.#{$prefix}--tooltip--a11y::before, // ccs: specificity
+    &.#{$prefix}--btn.#{$prefix}--btn--disabled.#{$prefix}--tooltip--a11y::after, // ccs: specificity
+    &.#{$prefix}--btn.#{$prefix}--btn--disabled .#{$prefix}--assistive-text { // ccs: specificity
+      position: fixed; // ccs: hidden, see `tooltip--trigger`
+      overflow: hidden;
+      margin: -1px 0; // ccs: no inline margin, see `.bx--visually-hidden`
+      clip: rect(0, 0, 0, 0);
+      opacity: 0;
+    }
+  }
+
+  // Upstream's `:focus { border-color: $focus }` for the trigger is gone: every
+  // kind sets it in button-theme, and the one kind-less trigger
+  // (PasswordInput's toggle) has `border: 0`. // ccs: dedupe
+
+  // Scoped to triggers: icon-only buttons without one (pagination) keep their
+  // own border while active.
+  .#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger:active:not([disabled]) { // ccs: flatten
+    border-color: transparent;
+  }
+
+  .#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger[disabled]:hover, // ccs: flatten
+  .#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger[disabled]:focus, // ccs: flatten
+  .#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger[disabled]:active { // ccs: flatten
+    cursor: not-allowed;
+    fill: $icon-on-color-disabled;
+  }
+
+  // ccs: every icon-only tooltip trigger here matches one of
+  // components/tooltip/_tooltip.scss's shared
+  // `.#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--a11y` (state),
+  // `.#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--{top,right,bottom,left}`
+  // (trigger body), and `tooltip--placement` (offsets/transform/caret)
+  // rules, which fold this component's selectors in alongside
+  // `.#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--{top,right,bottom,left}`'s
+  // (identical output for both) instead of each family repeating its own
+  // copy.
+
+  // Outranks the `:focus svg` outline of every position block, including
+  // the tooltip partial's `bx--tooltip--*` ones that emit later at (0,3,1).
+  // (Upstream's `pointer-events: all` rule for the visible tooltip is gone:
+  // the tooltip partial's `.bx--tooltip__trigger:not(.bx--tooltip--hidden)
+  // .bx--assistive-text` covers every trigger.) // ccs: dedupe
+  .#{$prefix}--btn.#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger:focus svg { // ccs: specificity
+    outline-color: transparent;
+  }
+
+  .#{$prefix}--btn--icon-only {
+    padding-right: to-rem(15px);
+    padding-left: to-rem(15px);
+
+    .#{$prefix}--btn__icon {
+      position: static;
+    }
+
+    &.#{$prefix}--btn--ghost .#{$prefix}--btn__icon { // ccs: dropped unrendered danger--ghost alias
+      margin: 0;
+    }
+  }
+
+  .#{$prefix}--btn--icon-only.#{$prefix}--btn--selected {
+    background: $layer-selected;
+  }
+
+  .#{$prefix}--btn path[data-icon-path='inner-path'] {
+    fill: none;
+  }
+
+  // A ghost icon-only button paints its icon in `$icon-primary`, not the link color
+  // of its text sibling. The icon fills with `currentColor`, so the button's
+  // `color` carries it. Emitted after the ghost kind's own `color` (including
+  // its hover/active), so it wins at the same weight.
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only {
+    color: $icon-primary;
+  }
+
+  // Outranks the position blocks' `cursor: pointer` (0,2,0) for a disabled
+  // ghost trigger at rest; `.bx--btn:disabled` (0,2,0) emits before them.
+  // Also restores the disabled color the rule above would otherwise replace,
+  // in the same gray as a disabled ghost button with a label. Carbon v11
+  // uses `$icon-on-color-disabled` here, a token for an icon on a disabled
+  // fill; a ghost button has no fill.
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only[disabled] { // ccs: specificity
+    color: $icon-disabled; // ccs: matches the labeled ghost, departs from v11
+    cursor: not-allowed;
+  }
+
+  // V11: remove field
+  .#{$prefix}--btn--field.#{$prefix}--btn--icon-only { // ccs: dropped unrendered --md alias
+    padding-right: to-rem(11px);
+    padding-left: to-rem(11px);
+  }
+
+  .#{$prefix}--btn--sm.#{$prefix}--btn--icon-only {
+    padding-right: to-rem(7px);
+    padding-left: to-rem(7px);
+  }
+
+  // ccs: xs size, a 24px square around the 16px icon
+  .#{$prefix}--btn--xs.#{$prefix}--btn--icon-only {
+    padding: to-rem(3px);
+  }
+
+  .#{$prefix}--btn--danger {
+    @include button-theme(
+      $button-danger-primary,
+      transparent,
+      $text-on-color,
+      $button-danger-hover,
+      $button-danger-active
+    );
+
+    &:hover {
+      color: $text-on-color;
+    }
+
+    // ccs: single dash is the only form Button renders; dropped `&--tertiary`
+    &-tertiary {
+      @include button-theme(
+        transparent,
+        $button-danger-secondary,
+        $button-danger-secondary,
+        $button-danger-hover,
+        $button-danger-active
+      );
+
+      &:hover {
+        border-color: $button-danger-hover;
+        color: $text-on-color;
+      }
+
+      &:focus {
+        background-color: $button-danger-primary;
+        color: $text-on-color;
+      }
+
+      &:active {
+        border-color: $button-danger-active;
+        color: $text-on-color;
+      }
+
+      &:disabled,
+      &:hover:disabled,
+      &:focus:disabled,
+      &.#{$prefix}--btn--disabled,
+      &.#{$prefix}--btn--disabled:hover,
+      &.#{$prefix}--btn--disabled:focus {
+        background: transparent;
+        color: $text-on-color-disabled;
+        outline: none;
+      }
+    }
+
+    // ccs: single dash is the only form Button renders; dropped `&--ghost`
+    &-ghost {
+      @include button-theme(
+        transparent,
+        transparent,
+        $button-danger-secondary,
+        $button-danger-hover,
+        $button-danger-active
+      );
+
+      padding: $button-padding-ghost;
+
+      .#{$prefix}--btn__icon {
+        position: static;
+        margin-inline-start: $carbon--spacing-03;
+      }
+
+      &:hover,
+      &:active {
+        color: $text-on-color;
+      }
+
+      &:disabled,
+      &:hover:disabled,
+      &:focus:disabled,
+      &.#{$prefix}--btn--disabled,
+      &.#{$prefix}--btn--disabled:hover,
+      &.#{$prefix}--btn--disabled:focus {
+        border-color: transparent;
+        background: transparent;
+        color: $disabled;
+        outline: none;
+      }
+
+      &.#{$prefix}--btn--sm {
+        padding: $button-padding-ghost-sm;
+      }
+
+      // ccs: xs size
+      &.#{$prefix}--btn--xs {
+        padding: to-rem(2px) $carbon--spacing-05;
+      }
+
+      // V11: Remove field
+      &.#{$prefix}--btn--field { // ccs: dropped unrendered --md alias
+        padding: $button-padding-ghost-field;
+      }
+    }
+  }
+
+  .#{$prefix}--btn--sm {
+    min-height: to-rem(32px);
+    @include button-padding($button-padding-sm);
+  }
+
+  // ccs: xs size (Carbon React IconButton `size="xs"`), 24px tall
+  .#{$prefix}--btn--xs {
+    min-height: to-rem(24px);
+    @include button-padding(to-rem(2px) to-rem(40px) to-rem(2px) to-rem(12px));
+  }
+
+  // V11: change xl to 2xl
+  .#{$prefix}--btn--xl:not(.#{$prefix}--btn--icon-only) {
+    @include button-padding-large;
+
+    min-height: to-rem(80px);
+  }
+
+  // V11: change lg to xl
+  .#{$prefix}--btn--lg:not(.#{$prefix}--btn--icon-only) {
+    @include button-padding-large;
+
+    min-height: to-rem(64px);
+  }
+
+  // V11: Remove field
+  .#{$prefix}--btn--field { // ccs: dropped unrendered --md alias
+    min-height: to-rem(40px);
+    @include button-padding($button-padding-field);
+  }
+
+  .#{$prefix}--btn--expressive {
+    @include carbon--type-style('body-compact-02');
+
+    min-height: 3rem;
+  }
+
+  .#{$prefix}--btn--icon-only.#{$prefix}--btn--expressive {
+    padding: 12px 13px;
+  }
+
+  .#{$prefix}--btn--expressive .#{$prefix}--btn__icon { // ccs: flatten
+    width: to-rem(20px);
+    height: to-rem(20px);
+  }
+
+  .#{$prefix}--btn.#{$prefix}--skeleton {
+    @include skeleton;
+
+    width: to-rem(150px);
+  }
+
+  .#{$prefix}--btn-set {
+    display: flex;
+  }
+
+  .#{$prefix}--btn-set--stacked {
+    flex-direction: column;
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn {
+    width: 100%;
+    // 196px from design kit
+    max-width: to-rem(196px);
+    flex: 1 1 0; // ccs: allow shrink below max-width
+    min-width: 0; // ccs: allow shrink below max-width
+
+    // ccs: the divider sits at the inline start, `--ccs-inline-sign` flips it
+    // under `dir="rtl"`
+    &:not(:focus) {
+      box-shadow: calc(#{to-rem(-1px)} * var(--ccs-inline-sign, 1)) 0 0 0
+        $button-separator;
+    }
+
+    &:first-of-type:not(:focus) {
+      box-shadow: inherit;
+    }
+  }
+
+  // After `.bx--btn-set .bx--btn` so the wider max-width wins by order.
+  .#{$prefix}--btn-set .#{$prefix}--btn--expressive { // ccs: flatten
+    max-width: to-rem(320px);
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn:focus + .#{$prefix}--btn {
+    box-shadow: inherit;
+  }
+
+  .#{$prefix}--btn-set--stacked .#{$prefix}--btn:not(:focus) {
+    box-shadow: 0 to-rem(-1px) 0 0 $button-separator;
+  }
+
+  .#{$prefix}--btn-set--stacked .#{$prefix}--btn:first-of-type:not(:focus) {
+    box-shadow: inherit;
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn.#{$prefix}--btn--disabled {
+    box-shadow: calc(#{to-rem(-1px)} * var(--ccs-inline-sign, 1)) 0 0 0
+      $text-on-color-disabled;
+
+    &:first-of-type {
+      box-shadow: none;
+    }
+  }
+
+  .#{$prefix}--btn-set--stacked .#{$prefix}--btn.#{$prefix}--btn--disabled {
+    box-shadow: 0 to-rem(-1px) 0 0 $text-on-color-disabled;
+
+    &:first-of-type {
+      box-shadow: none;
+    }
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--btn:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  // Windows HCM fix
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only .#{$prefix}--btn__icon {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('button') {
+  @include button;
+}
+
+// carbon-components-svelte patch (button-full-width)
+
+/// Full width button, overriding the button's max-width caps
+/// @access private
+/// @group components
+@mixin button-full-width {
+  .#{$prefix}--btn--full-width {
+    width: 100%;
+    max-width: none;
+  }
+
+  // After `.bx--btn-set .bx--btn` (same specificity) so full-width wins by
+  // order when the button also sits inside a ButtonSet/ActionSet, which
+  // would otherwise cap it back to 196px.
+  .#{$prefix}--btn-set .#{$prefix}--btn--full-width {
+    max-width: none;
+  }
+}
+
+@include exports('button-full-width') {
+  @include button-full-width;
+}
+
+// carbon-components-svelte patch (button-forced-colors)
+// A selected icon-only button is a background fill, which forced-colors mode
+// repaints, so it looked like an unselected one. It fills with `Highlight`
+// and opts out of forcing (forced content sits on a `Canvas` backplate). The
+// focus styling that unforcing brings back is replaced: the HCM focus rule's
+// `Highlight` text would vanish on the fill.
+
+/// Selected icon-only button in forced-colors mode.
+/// @access private
+/// @group button
+@mixin button-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--btn--icon-only.#{$prefix}--btn--selected,
+    .#{$prefix}--btn--icon-only.#{$prefix}--btn--selected:hover,
+    .#{$prefix}--btn--icon-only.#{$prefix}--btn--selected:focus {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background-color: Highlight;
+      box-shadow: none;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--btn--icon-only.#{$prefix}--btn--selected .#{$prefix}--btn__icon {
+      fill: HighlightText;
+    }
+  }
+}
+
+@include exports("button-forced-colors") {
+  @include button-forced-colors;
+}

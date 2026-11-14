@@ -1,0 +1,489 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+
+/// Treeview styles
+/// @access private
+/// @group treeview
+@mixin treeview {
+  // ccs: TreeViewSkeleton holds its label bar and rows in a flow root,
+  // the bar block-level: inline, as a label is, an empty bar sits on a
+  // line box 2px taller than the label's.
+  .#{$prefix}--tree__skeleton {
+    display: flow-root;
+  }
+
+  .#{$prefix}--tree__skeleton > .#{$prefix}--label {
+    display: block;
+  }
+
+  .#{$prefix}--tree {
+    overflow: hidden;
+
+    .#{$prefix}--tree-node {
+      padding-inline-start: $spacing-05;
+      background-color: $layer;
+      color: $text-secondary;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    .#{$prefix}--tree-node:focus > .#{$prefix}--tree-node__label {
+      @include focus-outline('outline');
+    }
+
+    .#{$prefix}--tree-node--disabled:focus > .#{$prefix}--tree-node__label {
+      outline: none;
+    }
+
+    .#{$prefix}--tree-node--disabled {
+      background-color: $field;
+      color: $text-disabled;
+    }
+
+    .#{$prefix}--tree-node--disabled .#{$prefix}--tree-parent-node__toggle-icon,
+    .#{$prefix}--tree-node--disabled .#{$prefix}--tree-node__icon {
+      fill: $icon-disabled;
+    }
+
+    .#{$prefix}--tree-node--disabled {
+      cursor: not-allowed;
+    }
+
+    .#{$prefix}--tree-node__label {
+      // ccs: match v11, which sets `body-compact-01` instead of inheriting.
+      @include type-style('body-compact-01');
+
+      display: flex;
+      min-height: to-rem(32px);
+      flex: 1;
+      align-items: center;
+    }
+
+    .#{$prefix}--tree-leaf-node {
+      display: flex;
+      padding-inline-start: $spacing-08;
+    }
+
+    // ccs: TreeViewSkeleton: a bar where each leaf's text sits, in the
+    // row's height (32px, 24px compact), its widths varied.
+    .#{$prefix}--tree-node__skeleton {
+      @include skeleton;
+
+      width: 60%;
+      height: to-rem(14px);
+    }
+
+    .#{$prefix}--tree-node:nth-child(3n + 2) .#{$prefix}--tree-node__skeleton {
+      width: 45%;
+    }
+
+    .#{$prefix}--tree-node:nth-child(3n) .#{$prefix}--tree-node__skeleton {
+      width: 70%;
+    }
+
+    .#{$prefix}--tree-leaf-node.#{$prefix}--tree-node--with-icon {
+      padding-inline-start: $spacing-07;
+    }
+
+    .#{$prefix}--tree-node__label__details {
+      display: flex;
+      align-items: center;
+    }
+
+    .#{$prefix}--tree-node--with-icon .#{$prefix}--tree-parent-node__toggle {
+      margin-inline-end: 0;
+    }
+
+    .#{$prefix}--tree-parent-node__toggle {
+      // ccs: a flex box drops the line box, so the caret no longer sits on
+      // the text baseline 2px above the row's center.
+      display: flex;
+      padding: 0;
+      border: 0;
+      margin-inline-end: $spacing-03;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    .#{$prefix}--tree-parent-node__toggle-icon {
+      fill: $icon-secondary;
+      transform: rotate(-90deg);
+      // ccs: only transform (expanded) and fill (hover, selected, disabled)
+      // differ; avoid `all` so the browser doesn't interpolate the rest of
+      // the animatable property set.
+      transition: transform $duration--fast-02 motion(standard, productive),
+        fill $duration--fast-02 motion(standard, productive);
+
+      // ccs: in RTL, child rows indent toward the left, so a collapsed
+      // caret points left. Expanded, it points down in both directions.
+      [dir='rtl'] &:not(.#{$prefix}--tree-parent-node__toggle-icon--expanded) {
+        transform: ccs-dir(rotate(-90deg), rotate(90deg));
+      }
+    }
+
+    .#{$prefix}--tree-parent-node__toggle-icon--expanded {
+      transform: rotate(0);
+    }
+
+    .#{$prefix}--tree-node__icon {
+      flex-shrink: 0;
+      margin-inline-end: $spacing-03;
+      fill: $icon-secondary;
+    }
+
+    .#{$prefix}--tree-node--selected > .#{$prefix}--tree-node__label {
+      background-color: $layer-selected;
+      color: $text-primary;
+    }
+
+    .#{$prefix}--tree-node--selected
+      > .#{$prefix}--tree-node__label
+      .#{$prefix}--tree-parent-node__toggle-icon,
+    .#{$prefix}--tree-node--selected
+      > .#{$prefix}--tree-node__label
+      .#{$prefix}--tree-node__icon {
+      fill: $icon-primary;
+    }
+
+    // ccs: grouped this component's any-hover rules into one block
+    // (order-safe: each disabled/selected rule below has strictly higher
+    // specificity than the generic label/toggle rule it could tie with, so
+    // precedence here is spec-, not order-, determined)
+    @media (any-hover: hover) {
+      .#{$prefix}--tree-node--disabled .#{$prefix}--tree-node__label:hover,
+      .#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-node__label__details {
+        background-color: $field;
+        color: $text-disabled;
+      }
+
+      .#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-parent-node__toggle-icon,
+      .#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-node__icon {
+        fill: $icon-disabled;
+      }
+
+      .#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-parent-node__toggle-icon:hover {
+        cursor: not-allowed;
+      }
+
+      .#{$prefix}--tree-node__label:hover {
+        background-color: $layer-hover;
+        color: $text-primary;
+      }
+
+      .#{$prefix}--tree-node__label:hover .#{$prefix}--tree-node__label__details {
+        color: $text-primary;
+      }
+
+      .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-parent-node__toggle-icon,
+      .#{$prefix}--tree-node__label:hover .#{$prefix}--tree-node__icon {
+        fill: $icon-primary;
+      }
+
+      .#{$prefix}--tree-parent-node__toggle:hover {
+        cursor: pointer;
+      }
+
+      .#{$prefix}--tree-node--selected > .#{$prefix}--tree-node__label:hover {
+        background-color: $layer-selected-hover;
+      }
+    }
+
+    .#{$prefix}--tree-node--active > .#{$prefix}--tree-node__label {
+      position: relative;
+
+      &::before {
+        position: absolute;
+        top: 0;
+        width: to-rem(4px);
+        height: 100%;
+        background-color: $interactive;
+        content: '';
+        @include ccs-inset-inline($start: 0);
+      }
+    }
+  }
+
+  .#{$prefix}--tree--compact .#{$prefix}--tree-node__label {
+    min-height: to-rem(24px);
+  }
+}
+
+@include exports('treeview') {
+  @include treeview;
+}
+
+// carbon-components-svelte patch (formerly css/_treeview.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+@mixin treeview-hidden {
+  .#{$prefix}--tree-node--hidden {
+    display: none;
+  }
+}
+
+@mixin treeview-multiselect-overrides {
+  .#{$prefix}--tree--multiselect
+    .#{$prefix}--tree-node--selected
+    > .#{$prefix}--tree-node__label::before {
+    position: absolute;
+    top: 0;
+    width: to-rem(4px);
+    height: 100%;
+    background-color: $interactive;
+    content: "";
+    @include ccs-inset-inline($start: 0);
+  }
+
+  .#{$prefix}--tree--multiselect
+    .#{$prefix}--tree-node--selected
+    > .#{$prefix}--tree-node__label {
+    position: relative;
+  }
+
+  // Hide the active-node accent bar when the row is focused but not part of the selection.
+  .#{$prefix}--tree--multiselect
+    .#{$prefix}--tree-node--active:not(.#{$prefix}--tree-node--selected)
+    > .#{$prefix}--tree-node__label::before {
+    content: none;
+  }
+
+  // Disable text selection while Ctrl/Cmd/Shift are held (multi-select gestures).
+  .#{$prefix}--tree--multiselect.#{$prefix}--tree--multiselect-modifier
+    .#{$prefix}--tree-node__label {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+@include exports('treeview-hidden') {
+  @include treeview-hidden;
+}
+
+@include exports('treeview-multiselect') {
+  @include treeview-multiselect-overrides;
+}
+
+// carbon-components-svelte patch (formerly css/_treeview-checkbox.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Tri-state checkbox control rendered in each node label when TreeView runs
+/// in `selectionMode="checkbox"`. Carbon v10's treeview ships no checkbox
+/// styling, so the control is a `bx--checkbox` reshaped to sit in a tree row.
+/// @access private
+/// @group components
+@mixin treeview-checkbox {
+  // Carbon pads leaf rows for a missing caret so text lines up with parents.
+  // The checkbox sits ahead of that pad, so reset it or leaf checkboxes
+  // drift toward the inline end of their parent siblings.
+  .#{$prefix}--tree--checkbox .#{$prefix}--tree-leaf-node,
+  .#{$prefix}--tree--checkbox
+    .#{$prefix}--tree-leaf-node.#{$prefix}--tree-node--with-icon {
+    padding-inline-start: $carbon--spacing-05;
+  }
+
+  // `bx--form-item` stretches to fill its flex parent and would shove the
+  // node text to the end of the row.
+  .#{$prefix}--tree--checkbox
+    .#{$prefix}--tree-node__label
+    > .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper {
+    position: relative;
+    flex: 0 0 auto;
+    margin-top: 0;
+    // Nudge the checkbox back into the row inset and widen the gap after it
+    // by the same amount so the text column does not move.
+    margin-inline: -$carbon--spacing-03 $carbon--spacing-04;
+    margin-bottom: 0;
+  }
+
+  // Parents put a caret between checkbox and text. Leaves have no caret,
+  // so widen a leaf's post-checkbox gap by that footprint to keep text aligned.
+  .#{$prefix}--tree--checkbox
+    .#{$prefix}--tree-leaf-node
+    .#{$prefix}--tree-node__label
+    > .#{$prefix}--form-item.#{$prefix}--checkbox-wrapper {
+    margin-inline-end: $carbon--spacing-04 + $carbon--spacing-05 + $carbon--spacing-03;
+  }
+
+  // Carbon pads the label for ascenders of label text. There is none here,
+  // so drop the pad and center the box on the row.
+  .#{$prefix}--tree--checkbox
+    .#{$prefix}--tree-node__label
+    > .#{$prefix}--checkbox-wrapper
+    .#{$prefix}--checkbox-label {
+    min-height: $carbon--spacing-06;
+    padding-top: 0;
+  }
+
+  // The checkbox's box and check sit 1px higher in its 20px label. Move
+  // them back down, as DataTable does, so they stay centered on the row.
+  .#{$prefix}--tree--checkbox .#{$prefix}--checkbox-label::before {
+    margin-top: to-rem(2px);
+  }
+
+  .#{$prefix}--tree--checkbox .#{$prefix}--checkbox-label::after {
+    top: to-rem(7.5px);
+  }
+
+  .#{$prefix}--tree--checkbox
+    .#{$prefix}--checkbox-label[data-contained-checkbox-state="mixed"]::after {
+    top: to-rem(11px);
+  }
+}
+
+@include exports("treeview-checkbox") {
+  @include treeview-checkbox;
+}
+
+// carbon-components-svelte patch (treeview-forced-colors)
+// The selected node is a background tint (and a bar in multiselect) and the
+// disabled node a lighter text colour. Forced-colors mode repaints both, so
+// selected, disabled and plain nodes looked identical.
+//
+// These rules use system colors only. The selected label also opts out of
+// forcing: forced text gets a `Canvas` backplate, which hid its
+// `HighlightText` name. Its hover fill and focus ring are system colors too.
+// Every state is re-asserted because the base hover rules (up to 0,5,0)
+// outrank the plain state rules, and a non-system hover value would be forced
+// to `Canvas` under `HighlightText`. Disabled wins over selected, so the
+// selected rules exclude disabled nodes, and the disabled rules carry the
+// node's own class to outrank the base disabled hover rules.
+
+/// Tree view selection and disabled state in forced-colors mode.
+/// @access private
+/// @group treeview
+@mixin treeview-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--tree {
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled)
+        > .#{$prefix}--tree-node__label,
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled)
+        > .#{$prefix}--tree-node__label:hover {
+        forced-color-adjust: none;
+        background-color: Highlight;
+        color: HighlightText;
+      }
+
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled)
+        > .#{$prefix}--tree-node__label
+        .#{$prefix}--tree-node__label__details {
+        color: HighlightText;
+      }
+
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled)
+        > .#{$prefix}--tree-node__label
+        .#{$prefix}--tree-parent-node__toggle-icon,
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled)
+        > .#{$prefix}--tree-node__label
+        .#{$prefix}--tree-node__icon {
+        fill: HighlightText;
+      }
+
+      // The focus ring is a real `$focus` colour; `Highlight` fill needs a
+      // contrasting system colour instead.
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled):focus
+        > .#{$prefix}--tree-node__label {
+        outline-color: HighlightText;
+      }
+
+      // The active (and multiselect selected) bar is a `$interactive`
+      // background, which forcing turns into `Canvas`: invisible.
+      .#{$prefix}--tree-node--active:not(.#{$prefix}--tree-node--selected):not(
+          .#{$prefix}--tree-node--disabled
+        )
+        > .#{$prefix}--tree-node__label::before {
+        background-color: CanvasText;
+      }
+
+      // A selected row's bar contrasts with its `Highlight` fill instead.
+      .#{$prefix}--tree-node--selected:not(.#{$prefix}--tree-node--disabled)
+        > .#{$prefix}--tree-node__label::before {
+        background-color: HighlightText;
+      }
+
+      // Disabled nodes (and their hover states) read as GrayText, with no
+      // selection fill.
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label
+        .#{$prefix}--tree-node__label__details,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-node__label__details {
+        color: GrayText;
+      }
+
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label
+        .#{$prefix}--tree-parent-node__toggle-icon,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label
+        .#{$prefix}--tree-node__icon,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-parent-node__toggle-icon,
+      .#{$prefix}--tree-node.#{$prefix}--tree-node--disabled
+        .#{$prefix}--tree-node__label:hover
+        .#{$prefix}--tree-node__icon {
+        fill: GrayText;
+      }
+    }
+  }
+}
+
+@include exports("treeview-forced-colors") {
+  @include treeview-forced-colors;
+}
+
+// carbon-components-svelte patch (treeview-long-names)
+// A node's name too long for its row ran under the tree's edge, cut off
+// with no ellipsis. It ends in an ellipsis instead; TreeView titles it with
+// the full name on hover while it's cut off.
+
+/// Tree node names that truncate.
+/// @access private
+/// @group treeview
+@mixin treeview-long-names {
+  .#{$prefix}--tree .#{$prefix}--tree-node__label,
+  .#{$prefix}--tree .#{$prefix}--tree-node__label__details {
+    min-width: 0;
+  }
+
+  .#{$prefix}--tree .#{$prefix}--tree-node__label__text {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@include exports("treeview-long-names") {
+  @include treeview-long-names;
+}

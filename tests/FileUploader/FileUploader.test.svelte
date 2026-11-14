@@ -1,0 +1,87 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import FileUploader from "carbon-components-svelte/FileUploader/FileUploader.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let files: ComponentProps<FileUploader>["files"] = [];
+  export let ref: ComponentProps<FileUploader>["ref"] = null;
+  export let fileUploader: FileUploader | undefined = undefined;
+
+  export let onAdd:
+    ((e: CustomEvent<ReadonlyArray<File>>) => void) | undefined = undefined;
+  export let onRemove:
+    ((e: CustomEvent<ReadonlyArray<File>>) => void) | undefined = undefined;
+  export let onChange:
+    ((e: CustomEvent<ReadonlyArray<File>>) => void) | undefined = undefined;
+  export let onClear: ((e: CustomEvent<void>) => void) | undefined = undefined;
+  export let onClick: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onKeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
+  export let onRejected:
+    | ((e: CustomEvent<Array<{ file: File; reason: string }>>) => void)
+    | undefined = undefined;
+
+  export let disabled: ComponentProps<FileUploader>["disabled"] = false;
+  export let accept: ComponentProps<FileUploader>["accept"] = [];
+  export let capture: ComponentProps<FileUploader>["capture"] = undefined;
+  export let directory: ComponentProps<FileUploader>["directory"] = false;
+  export let multiple: ComponentProps<FileUploader>["multiple"] = true;
+  export let status: ComponentProps<FileUploader>["status"] = "edit";
+  export let labelTitle: ComponentProps<FileUploader>["labelTitle"] = "";
+  export let labelDescription: ComponentProps<FileUploader>["labelDescription"] =
+    "";
+  export let buttonLabel: ComponentProps<FileUploader>["buttonLabel"] =
+    "Add files";
+  export let name: ComponentProps<FileUploader>["name"] = "";
+  export let minFileSize: ComponentProps<FileUploader>["minFileSize"] =
+    undefined;
+  export let maxFileSize: ComponentProps<FileUploader>["maxFileSize"] =
+    undefined;
+  export let preventDuplicate: ComponentProps<FileUploader>["preventDuplicate"] = false;
+  export let orderFiles: ComponentProps<FileUploader>["orderFiles"] = "append";
+  export let iconDescription: ComponentProps<FileUploader>["iconDescription"] =
+    undefined;
+  export let fileStatus: ComponentProps<FileUploader>["fileStatus"] = undefined;
+  export let fileInvalid: ComponentProps<FileUploader>["fileInvalid"] =
+    undefined;
+  export let fileErrorSubject: ComponentProps<FileUploader>["fileErrorSubject"] =
+    undefined;
+  export let fileErrorBody: ComponentProps<FileUploader>["fileErrorBody"] =
+    undefined;
+  export let fileSize: ComponentProps<FileUploader>["fileSize"] = false;
+</script>
+
+<form data-testid="file-form">
+  <FileUploader
+    bind:this={fileUploader}
+    {multiple}
+    {status}
+    {buttonLabel}
+    {disabled}
+    {accept}
+    {capture}
+    {directory}
+    {labelTitle}
+    {labelDescription}
+    {name}
+    {minFileSize}
+    {maxFileSize}
+    {preventDuplicate}
+    {orderFiles}
+    {iconDescription}
+    {fileStatus}
+    {fileInvalid}
+    {fileErrorSubject}
+    {fileErrorBody}
+    {fileSize}
+    bind:ref
+    bind:files
+    on:add={(e) => onAdd?.(e)}
+    on:remove={(e) => onRemove?.(e)}
+    on:change={(e) => onChange?.(e)}
+    on:clear={(e) => onClear?.(e)}
+    on:rejected={(e) => onRejected?.(e)}
+    on:click={(e) => onClick?.(e)}
+    on:keydown={(e) => onKeydown?.(e)}
+  />
+</form>

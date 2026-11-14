@@ -1,0 +1,485 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/theme-tokens';
+@import '../../globals/scss/tooltip';
+@import '../../globals/scss/keyframes';
+@import 'mixins';
+
+/// Code snippet styles
+/// @access private
+/// @group code-snippet
+@mixin snippet {
+  .#{$prefix}--snippet {
+    @include reset;
+  }
+
+  .#{$prefix}--snippet--disabled,
+  .#{$prefix}--snippet--disabled
+    .#{$prefix}--btn.#{$prefix}--snippet-btn--expand {
+    background-color: $field;
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--snippet--disabled .#{$prefix}--snippet-btn--expand:hover,
+  .#{$prefix}--snippet--disabled .#{$prefix}--copy-btn:hover {
+    background-color: $field;
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--snippet--disabled .#{$prefix}--snippet__icon,
+  .#{$prefix}--snippet--disabled
+    .#{$prefix}--snippet-btn--expand
+    .#{$prefix}--icon-chevron--down {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--snippet code {
+    @include type-style('code-01');
+  }
+
+  // ccs: code reads left to right in any language. In RTL the code area
+  // stays LTR, so its lines keep their order, start at the left and scroll
+  // to the right. Only the buttons, and the room kept for them, mirror. The
+  // fade stays on the right, where the clipped code is.
+  .#{$prefix}--snippet-container {
+    direction: ltr;
+    text-align: start;
+  }
+
+  .#{$prefix}--snippet--inline {
+    @include reset;
+
+    position: relative;
+    display: inline;
+    padding: 0;
+    border: 2px solid transparent;
+    // ccs: v11 draws the inline snippet on layer, with its hover and active.
+    background-color: $layer;
+    border-radius: 4px;
+    color: $text-primary;
+    cursor: pointer;
+
+    &:hover {
+      background-color: $layer-hover;
+    }
+
+    &:active {
+      background-color: $layer-active;
+    }
+
+    &:focus {
+      border: 2px solid $focus;
+      outline: none;
+    }
+
+    &::before {
+      @include tooltip--caret;
+
+      display: none;
+    }
+
+    .#{$prefix}--copy-btn__feedback {
+      @include tooltip--content('icon');
+
+      display: none;
+      overflow: visible;
+      box-sizing: content-box;
+      margin: auto;
+      clip: auto;
+    }
+
+    @include tooltip--placement('icon', 'bottom', 'center');
+  }
+
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--animating::before,
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--animating
+    .#{$prefix}--copy-btn__feedback {
+    display: block;
+  }
+
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-out::before,
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-out
+    .#{$prefix}--copy-btn__feedback {
+    // ccs: leaves on the exit curve
+    animation: $duration--fast-02 motion(exit, productive) hide-feedback;
+
+    // ccs: an instant swap, not a fade
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-in::before,
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-in
+    .#{$prefix}--copy-btn__feedback {
+    // ccs: appears on the entrance curve
+    animation: $duration--fast-02 motion(entrance, productive) show-feedback;
+
+    // ccs: an instant swap, not a fade
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  .#{$prefix}--snippet--inline code {
+    padding: 0 $spacing-03;
+    // ccs: left to right inside right-to-left text, as the code area above
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  .#{$prefix}--snippet--inline.#{$prefix}--snippet--no-copy {
+    display: inline-block;
+
+    &:hover {
+      background-color: $field;
+      cursor: auto;
+    }
+  }
+
+  .#{$prefix}--snippet--single {
+    @include bx--snippet;
+
+    display: flex;
+    height: $carbon--spacing-08;
+    align-items: center;
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--snippet--single.#{$prefix}--snippet--no-copy {
+    padding: 0;
+
+    &::after {
+      right: $carbon--spacing-05;
+    }
+  }
+
+  .#{$prefix}--snippet--single .#{$prefix}--snippet-container {
+    position: relative;
+    display: flex;
+    height: 100%;
+    align-items: center;
+    padding-left: $carbon--spacing-05;
+    overflow-x: auto;
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  .#{$prefix}--snippet--single pre {
+    @include type-style('code-01');
+
+    padding-right: $spacing-03;
+  }
+
+  // Preserve whitespace, but don't allow wrapping for inline and single
+  .#{$prefix}--snippet--single pre,
+  .#{$prefix}--snippet--inline code {
+    white-space: pre;
+  }
+
+  .#{$prefix}--snippet--multi {
+    @include bx--snippet;
+
+    display: flex;
+    padding: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--snippet--multi .#{$prefix}--snippet-container {
+    position: relative;
+    min-height: 100%;
+    max-height: 100%;
+    order: 1;
+    overflow-y: auto;
+    transition: max-height $duration--moderate-01 motion(standard, productive);
+
+    &:focus {
+      @include focus-outline('outline', $omit: (outline-offset));
+
+      outline-offset: 0;
+    }
+  }
+
+  .#{$prefix}--snippet--multi.#{$prefix}--snippet--expand
+    .#{$prefix}--snippet-container {
+    padding-bottom: $spacing-05;
+    transition: max-height $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--snippet--multi.#{$prefix}--snippet--wraptext pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .#{$prefix}--snippet--multi .#{$prefix}--snippet-container pre {
+    padding-right: $carbon--spacing-08;
+    padding-bottom: to-rem(24px);
+
+    // ccs: the code area is LTR, so physical sides: in RTL the room for
+    // the copy button moves to the left, where the button is
+    [dir="rtl"] & {
+      padding-right: ccs-dir($carbon--spacing-08, 0);
+      padding-left: ccs-dir(0, $carbon--spacing-08);
+    }
+  }
+
+  .#{$prefix}--snippet--multi.#{$prefix}--snippet--no-copy
+    .#{$prefix}--snippet-container
+    pre {
+    padding-right: 0;
+
+    [dir="rtl"] & {
+      padding-left: 0;
+    }
+  }
+
+  .#{$prefix}--snippet--multi .#{$prefix}--snippet-container pre code {
+    overflow: hidden;
+  }
+
+  .#{$prefix}--snippet__icon {
+    width: to-rem(16px);
+    height: to-rem(16px);
+    fill: $icon-primary;
+    // ccs: only fill differs (disabled, ghost copy button); the expand
+    // chevron's rotation has its own transition. Avoid `all` so the browser
+    // doesn't interpolate the rest of the animatable property set.
+    transition: fill $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--snippet .#{$prefix}--copy-btn {
+    position: absolute;
+    top: 0;
+
+    // Override inherited rule in code snippet
+    @include carbon--font-family('sans');
+    @include ccs-inset-inline($end: 0);
+  }
+
+  .#{$prefix}--snippet-btn--expand {
+    @include type-style('body-compact-01');
+    @include carbon--font-family('sans');
+
+    position: absolute;
+    z-index: 10;
+    bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-03 $spacing-05;
+    border: 0;
+    background-color: $field;
+    color: $text-primary;
+    @include ccs-inset-inline($end: 0);
+  }
+
+  .#{$prefix}--snippet-btn--expand .#{$prefix}--snippet-btn--text {
+    position: relative;
+    top: to-rem(-1px);
+  }
+
+  .#{$prefix}--snippet-btn--expand .#{$prefix}--icon-chevron--down {
+    margin-inline-start: $spacing-03;
+    fill: $icon-primary;
+    transform: rotate(0deg);
+    // ccs: the rotation and the disabled fill, not `all`
+    transition: transform $duration--moderate-01 motion(standard, productive),
+      fill $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--snippet-btn--expand:hover {
+    background: $layer-hover;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--snippet-btn--expand:active {
+    background-color: $copy-active;
+  }
+
+  .#{$prefix}--snippet-btn--expand:focus {
+    @include focus-outline('outline');
+
+    border-color: transparent;
+  }
+
+  .#{$prefix}--snippet--expand
+    .#{$prefix}--snippet-btn--expand
+    .#{$prefix}--icon-chevron--down {
+    transform: rotate(180deg);
+    transition: transform $transition--expansion;
+  }
+
+  .#{$prefix}--snippet.#{$prefix}--skeleton .#{$prefix}--snippet-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  .#{$prefix}--snippet--multi .#{$prefix}--copy-btn {
+    z-index: 10;
+    top: $carbon--spacing-03;
+    width: $carbon--spacing-07;
+    height: $carbon--spacing-07;
+    @include ccs-inset-inline($end: $carbon--spacing-03);
+  }
+
+  // ccs: as tall as the snippets they stand in for. A multi snippet's
+  // code area is its 16px rows plus 24px below, between its minimum and
+  // maximum collapsed rows (3 and 15 by default), inside 32px of padding;
+  // a single one is 40px.
+  .#{$prefix}--snippet--multi.#{$prefix}--skeleton {
+    height: calc(
+      clamp(
+          var(--ccs-code-snippet-min-rows, 3) * #{to-rem(16px)},
+          var(--ccs-code-snippet-rows, 3) * #{to-rem(16px)} + #{to-rem(24px)},
+          var(--ccs-code-snippet-max-rows, 15) * #{to-rem(16px)}
+        ) +
+        #{$carbon--spacing-07}
+    );
+  }
+
+  .#{$prefix}--snippet--single.#{$prefix}--skeleton {
+    height: $carbon--spacing-08;
+  }
+
+  // ccs: an inline snippet's skeleton sits in its line of text, as tall as
+  // the snippet and about as wide as its code: `--ccs-code-snippet-chars`
+  // characters of the code font, plus the code's padding and the border.
+  .#{$prefix}--snippet--inline.#{$prefix}--skeleton {
+    @include skeleton($omit: (padding));
+    @include type-style('code-01');
+
+    display: inline-block;
+    width: calc(
+      var(--ccs-code-snippet-chars, 12) * 1ch + #{2 * $carbon--spacing-03} +
+        4px
+    );
+    // Stands in for the snippet's 2px border, which `skeleton` removes.
+    padding: 2px 0;
+    border-radius: 4px;
+
+    // A hidden character of the code font gives the skeleton the snippet's
+    // baseline, so it lines up with the text around it as the snippet does.
+    // ASCII, so the stylesheet's encoding can't garble it.
+    &::after {
+      content: '0';
+      visibility: hidden;
+    }
+  }
+
+  .#{$prefix}--snippet.#{$prefix}--skeleton span {
+    @include skeleton;
+
+    display: block;
+    width: 100%;
+    height: 1rem;
+    margin-top: 0.5rem;
+
+    &:first-child {
+      margin: 0;
+    }
+
+    &:nth-child(2) {
+      width: 85%;
+    }
+
+    &:nth-child(3) {
+      width: 95%;
+    }
+  }
+
+  .#{$prefix}--snippet--single.#{$prefix}--skeleton
+    .#{$prefix}--snippet-container {
+    padding-bottom: 0;
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--snippet__icon {
+    @include high-contrast-mode('icon-fill');
+  }
+
+  .#{$prefix}--snippet--inline:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  .#{$prefix}--snippet--single,
+  .#{$prefix}--snippet--multi {
+    @include high-contrast-mode('outline');
+  }
+  /* stylelint-enable */
+}
+
+@include exports('snippet') {
+  @include snippet;
+}
+
+// carbon-components-svelte patch (formerly css/_code-snippet.scss)
+@import "carbon-components/scss/globals/scss/vars";
+
+/// Edge fade for code snippets (Carbon React v11 parity). v10 uses
+/// `--overflow-indicator` gradient elements that this library's markup does not
+/// render. v11 masks the scroll container instead, which is background-agnostic
+/// and works across themes, the light variant, and skeleton state.
+/// @access private
+/// @group components
+@mixin code-snippet-fade {
+  .#{$prefix}--snippet--single .#{$prefix}--snippet-container {
+    mask-image: linear-gradient(
+      90deg,
+      $black-100 calc(100% - #{$carbon--spacing-07}),
+      transparent 100%
+    );
+
+    // The focus outline is drawn on this same element, so the edge fade would
+    // clip the ring. Drop the mask while focused so the outline is unbroken.
+    &:focus {
+      mask-image: none;
+    }
+  }
+
+  // Top/bottom fade only appear once there's scrolled-past content in that
+  // direction (ScrollGradient parity), toggled via these custom properties so
+  // JS only needs to flip a class rather than rewrite the whole mask.
+  .#{$prefix}--snippet--multi .#{$prefix}--snippet-container {
+    --snippet-scroll-fade-top: #{$black-100}, #{$black-100};
+    --snippet-scroll-fade-bottom: #{$black-100}, #{$black-100};
+
+    mask-image: linear-gradient(
+        90deg,
+        $black-100 calc(100% - #{$carbon--spacing-07}),
+        transparent 100%
+      ),
+      linear-gradient(var(--snippet-scroll-fade-top)),
+      linear-gradient(to top, var(--snippet-scroll-fade-bottom));
+    mask-composite: intersect;
+
+    &:focus {
+      mask-image: none;
+    }
+  }
+
+  .#{$prefix}--snippet--multi
+    .#{$prefix}--snippet-container.#{$prefix}--snippet-container--fade-top {
+    --snippet-scroll-fade-top: transparent, #{$black-100} #{$carbon--spacing-05};
+  }
+
+  .#{$prefix}--snippet--multi
+    .#{$prefix}--snippet-container.#{$prefix}--snippet-container--fade-bottom {
+    --snippet-scroll-fade-bottom: transparent, #{$black-100} #{$carbon--spacing-05};
+  }
+}
+
+@include exports("code-snippet-fade") {
+  @include code-snippet-fade;
+}

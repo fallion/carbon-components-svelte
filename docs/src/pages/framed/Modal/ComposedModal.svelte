@@ -1,10 +1,10 @@
 <script>
   import {
+    Checkbox,
     ComposedModal,
-    ModalHeader,
     ModalBody,
     ModalFooter,
-    Checkbox,
+    ModalHeader,
   } from "carbon-components-svelte";
 
   let checked = false;
@@ -15,5 +15,5 @@
   <ModalBody hasForm>
     <Checkbox labelText="I have reviewed the changes" bind:checked />
   </ModalBody>
-  <ModalFooter primaryButtonText="Proceed" primaryButtonDisabled="{!checked}" />
+  <ModalFooter primaryButtonText="Proceed" primaryButtonDisabled={!checked} />
 </ComposedModal>

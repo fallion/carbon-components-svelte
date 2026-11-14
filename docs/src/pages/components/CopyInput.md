@@ -1,0 +1,287 @@
+---
+components: ["CopyInput", "CopyInputSkeleton", "FluidCopyInputSkeleton"]
+description: Copy inputs display a read-only value in a text field with a built-in copy button, for labeled copyable values like API tokens or endpoint URLs.
+---
+
+<script>
+  import { Box, Button, CopyInput, CopyInputSkeleton, FluidCopyInputSkeleton, Layer, Stack, TooltipIcon } from "carbon-components-svelte";
+  import Checkmark from "carbon-icons-svelte/lib/Checkmark.svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+  import View from "carbon-icons-svelte/lib/View.svelte";
+  import ViewOff from "carbon-icons-svelte/lib/ViewOff.svelte";
+
+  let shown = false;
+</script>
+
+## Basic
+
+Set `value` to the string to show and copy. For install commands, see [CodeSnippet](/components/CodeSnippet); for display-only values, use [TextInput](/components/TextInput#read-only).
+
+<CopyInput labelText="API endpoint" value="https://api.acme.io/v1" />
+
+## Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<CopyInput labelText="API token" value="sk-1234567890abcdef">
+  <svelte:fragment slot="labelChildren">
+    API token
+    <TooltipIcon tooltipText="Use this token to authenticate API requests." icon={Information} />
+  </svelte:fragment>
+</CopyInput>
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<CopyInput selectTextOnFocus labelText="API endpoint" value="https://api.acme.io/v1" />
+
+## Async copy
+
+Pass an async `copy` function when the text is not available at render time, for example a token fetched on click. Feedback appears after `copy()` resolves.
+
+While `copy()` is pending, the copy button shows a busy state and ignores clicks. On failure, the button shows `errorFeedback` (default `"Failed to copy"`) and emits `copy:error`.
+
+Prefetch on hover with `on:mouseenter:copy-button`; `on:mouseleave:copy-button` fires when the pointer leaves the button.
+
+<FileSource src="/framed/CopyInput/CopyInputAsync" />
+
+## Obscured value
+
+Set `type` to `"password"` to obscure the value. By default the value stays obscured; the copy button still copies the full value.
+
+<CopyInput labelText="API token" type="password" value="sk-1234567890abcdef" />
+
+Set `revealMode` to opt into revealing the value on interaction.
+
+### Reveal on focus
+
+Use `"focus"` to reveal while the input is focused.
+
+<CopyInput labelText="API token" type="password" revealMode="focus" value="sk-1234567890abcdef" />
+
+### Reveal on hover or focus
+
+Use `"hover-focus"` to reveal while the field is hovered or focused. The value stays revealed while the pointer is over the copy button. A disabled field never reveals its value.
+
+<CopyInput labelText="API token" type="password" revealMode="hover-focus" value="sk-1234567890abcdef" />
+
+## Masked value
+
+Set `maskedValue` to show other text in place of `value`, such as a key with only its prefix and last characters. The copy button still copies `value`, and a form submits `value`. Unlike `type="password"`, browsers don't offer to save it as a password. `revealMode` works the same way.
+
+<CopyInput
+  labelText="Secret key"
+  value="key_9a8f2c4e1b7d34f2a"
+  maskedValue="key_••••••••4f2a"
+/>
+
+### Reveal with a button
+
+To reveal on click, clear `maskedValue` from a button beside the field.
+
+<Stack orientation="horizontal" align="end" gap={2}>
+  <CopyInput
+    labelText="Signing secret"
+    value="sig_8c1f0a6e2b9d47a3e5f1c4b7a91f"
+    maskedValue={shown ? undefined : "sig_••••••••••••a91f"}
+  />
+  <Button
+    kind="ghost"
+    size="field"
+    icon={shown ? ViewOff : View}
+    iconDescription={shown ? "Hide secret" : "Show secret"}
+    on:click={() => (shown = !shown)}
+  />
+</Stack>
+
+## Truncation
+
+Long values truncate with an ellipsis when the field is narrower than the text. Focus or select the field to see the full value. Copy always uses the complete value.
+
+<Box maxWidth="20rem">
+  <CopyInput
+    labelText="Repository"
+    value="git@github.com:carbon-design-system/carbon-components-svelte.git"
+  />
+</Box>
+
+## Helper text
+
+<CopyInput
+  labelText="Cluster ID"
+  value="prod-cluster-9f2a"
+  helperText="Use this ID when contacting support."
+/>
+
+## Hidden label
+
+Set `hideLabel` to visually hide the label text. The label remains available to screen readers.
+
+<CopyInput hideLabel labelText="API token" value="sk-1234567890abcdef" />
+
+## Inline
+
+<CopyInput inline labelText="Token" value="sk-1234567890abcdef" />
+
+## Sizes
+
+Set `size` to control the input height. The default is `md`.
+
+### Extra-large
+
+Use the extra-large size for more prominent inputs by setting `size` to `"xl"`.
+
+<CopyInput size="xl" labelText="Extra large" value="npm install carbon-components-svelte" />
+
+### Small
+
+Use the small size for more compact inputs by setting `size` to `"sm"`.
+
+<CopyInput size="sm" labelText="Small" value="npm install carbon-components-svelte" />
+
+### Extra-small
+
+Use the extra-small size for dense layouts by setting `size` to `"xs"`.
+
+<CopyInput size="xs" labelText="Extra small" value="npm install carbon-components-svelte" />
+
+## Disabled
+
+Set `disabled` to disable the input and copy button.
+
+<CopyInput disabled labelText="API token" value="sk-1234567890abcdef" />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <CopyInput labelText="API endpoint" value="https://api.acme.io/v1" />
+  </Box>
+</Layer>
+
+## Custom feedback
+
+Customize the message and icon shown after copying.
+
+### Text
+
+Set `feedback` to customize the message shown after copying. Set `errorFeedback` to customize the message shown when copying fails (default `"Failed to copy"`).
+
+<CopyInput labelText="Repository" value="git@github.com:carbon-design-system/carbon-components-svelte.git" feedback="Copied to clipboard" />
+
+### Icon
+
+Set `feedbackIcon` to show a different icon while feedback is visible. The copy icon returns when feedback closes.
+
+<CopyInput labelText="API endpoint" value="https://api.acme.io/v1" feedbackIcon={Checkmark} />
+
+### Duration
+
+Set `feedbackTimeout` to change how long the feedback stays visible, in milliseconds. Defaults to `2000`.
+
+<CopyInput labelText="API endpoint" value="https://api.acme.io/v1" feedbackTimeout={5000} />
+
+## Copy behavior
+
+Replace or disable the default clipboard behavior.
+
+### Override
+
+Pass a function to `copy` to replace the default Clipboard API behavior.
+
+This example calls the Clipboard API directly, without the `document.execCommand("copy")` fallback.
+
+<FileSource src="/framed/CopyInput/CopyInputOverride" />
+
+### Prevent
+
+Set `copy` to a no-op function to disable copying.
+
+<CopyInput labelText="Read-only value" value="This value should not be copied" copy={() => {}} />
+
+## Tooltip
+
+On hover or focus, the copy button shows a tooltip with `iconDescription`. It renders in a floating portal so it is not clipped and flips when space is tight.
+
+### Direction
+
+Set `tooltipAlign` to place the tooltip relative to the copy button, with Popover's `align` names. The default is `"bottom-end"`. It replaces `tooltipPosition` and `tooltipAlignment`, which still work and are deprecated.
+
+<CopyInput labelText="Top" value="https://api.acme.io/v1" iconDescription="Top" tooltipAlign="top" />
+<CopyInput labelText="Right" value="https://api.acme.io/v1" iconDescription="Right" tooltipAlign="right" />
+<CopyInput labelText="Bottom" value="https://api.acme.io/v1" iconDescription="Bottom" tooltipAlign="bottom" />
+<CopyInput labelText="Left" value="https://api.acme.io/v1" iconDescription="Left" tooltipAlign="left" />
+
+### Alignment
+
+Add `-start` or `-end` to align the tooltip with one end of the copy button.
+
+<CopyInput labelText="Start" value="https://api.acme.io/v1" iconDescription="Start" tooltipAlign="bottom-start" />
+<CopyInput labelText="Center" value="https://api.acme.io/v1" iconDescription="Center" tooltipAlign="bottom" />
+<CopyInput labelText="End" value="https://api.acme.io/v1" iconDescription="End" tooltipAlign="bottom-end" />
+
+## Portal tooltip
+
+The copy feedback tooltip is rendered in a floating portal by default, so it shares the same surface as the hover tooltip (the text swaps in place) and is never clipped by an `overflow: hidden` container. Set `portalTooltip` to `false` to use Carbon's inline feedback caret instead. A non-default `tooltipPosition` or `tooltipAlignment` is always portalled because the inline caret only supports the default placement.
+
+<FileSource src="/framed/CopyInput/CopyInputPortalTooltip" />
+
+## Inside a modal
+
+Because the feedback tooltip is portalled by default, it is not clipped inside a [Modal](/components/Modal). Set `portalTooltip` to `false` to use the inline caret.
+
+<FileSource src="/framed/CopyInput/CopyInputInModal" />
+
+## Fluid
+
+Use the fluid variant with `fluid`, which embeds the label
+inside the field. Fluid copy inputs can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically. The fluid variant cannot be combined with the inline variant.
+`helperText` is not displayed in the fluid variant.
+
+<CopyInput fluid labelText="API token" value="sk-1234567890abcdef" />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<CopyInput fluid labelText="API token" value="sk-1234567890abcdef">
+  <svelte:fragment slot="labelChildren">
+    API token
+    <TooltipIcon tooltipText="Use this token to authenticate API requests." icon={Information} />
+  </svelte:fragment>
+</CopyInput>
+
+### Disabled
+
+<CopyInput fluid disabled labelText="API token" value="sk-1234567890abcdef" />
+
+### Skeleton
+
+Display a loading skeleton for the fluid copy input variant.
+
+<FluidCopyInputSkeleton />
+
+## Skeleton
+
+Show a loading state with the default skeleton variant.
+
+<CopyInputSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<CopyInputSkeleton size="xs" />
+
+### Without label
+
+Set `hideLabel` to hide the skeleton label.
+
+<CopyInputSkeleton hideLabel />

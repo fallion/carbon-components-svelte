@@ -1,0 +1,313 @@
+---
+components: ["PinCodeInput", "PinCodeInputSkeleton", "FluidPinCodeInputSkeleton"]
+description: Pin code inputs collect a short verification code across a row of single-character segments, with shared validation, keyboard navigation, paste, and autofill support.
+---
+
+<script>
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+  import { Box, FluidPinCodeInputSkeleton, Layer, Link, PinCodeInput, PinCodeInputSkeleton, TooltipIcon } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+By default, four numeric segments are rendered. Typing a digit advances focus to the next segment; <DocKbd label="Backspace" /> moves to the previous segment, <DocKbd label="Delete" /> clears the focused segment, and <DocKbd label="←" /> / <DocKbd label="→" /> move between segments.
+
+<PinCodeInput labelText="Verification code" />
+
+## Helper text
+
+Add helper text below the input to provide additional context or instructions.
+
+<PinCodeInput
+  labelText="Verification code"
+  helperText="Enter the 4-digit code sent to your device"
+/>
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<PinCodeInput hideLabel labelText="Verification code" />
+
+## Custom label
+
+Use the `labelChildren` slot to render custom label content.
+
+<PinCodeInput labelText="Verification code">
+  <svelte:fragment slot="labelChildren">
+    Verification code (<Link href="/">resend</Link>)
+  </svelte:fragment>
+</PinCodeInput>
+
+## Segment labels
+
+Screen readers announce each segment as "Verification code digit 1 of 4" by default, or "character" when `type` is `"alphanumeric"`. Use `segmentLabelText` to override the label, for example to translate it. The function receives the 1-based position, the segment count, `labelText`, and `type`.
+
+<PinCodeInput
+  labelText="Código de verificación"
+  segmentLabelText={(position, count) => `Dígito ${position} de ${count}`}
+/>
+
+## Input rules
+
+Control how many segments render and which characters are accepted.
+
+### Custom length
+
+Use `count` to set the number of segments. For example, six is common for SMS, email, and authenticator OTP flows.
+
+<PinCodeInput count={6} labelText="Verification code" />
+
+### Alphanumeric
+
+The default input mode is `"numeric"`. Set `type` to `"alphanumeric"` to allow letters and digits.
+
+<PinCodeInput type="alphanumeric" labelText="Invite code" />
+
+### Custom pattern
+
+Use `pattern` to override the per-character test used for typing and paste. Pass a `RegExp` or a string compiled with `new RegExp(...)`. The pattern is matched against each individual character, not the full assembled value. When `pattern` is unset, `type` selects the numeric or alphanumeric preset. `type` still sets the on-screen keyboard, so set `type="alphanumeric"` when the pattern accepts letters, as below.
+
+<PinCodeInput
+  count={6}
+  pattern={/^[0-9a-fA-F]$/}
+  type="alphanumeric"
+  uppercase
+  labelText="Serial number"
+  helperText="Enter the 6-character hex serial"
+/>
+
+### Uppercase display
+
+Set `uppercase` to `true` to display characters in uppercase. The bound value and code retain the original casing.
+
+<PinCodeInput type="alphanumeric" uppercase labelText="Invite code" />
+
+## Masked
+
+Set `mask` to `true` to obscure the entered characters. Each segment is masked while it is not focused and reveals its character when focused.
+
+<PinCodeInput mask labelText="Security code" />
+
+## Placeholder
+
+Non-fluid pin code inputs do not show a placeholder by default. Set `placeholder` to hint at empty segments and indicate expected length.
+
+<PinCodeInput placeholder="0" labelText="Verification code" />
+
+## Sizes
+
+Set `size` to control the segment height. The default is `md`.
+
+### Extra-small
+
+Set `size` to `"xs"` to render extra-small segments.
+
+<PinCodeInput size="xs" labelText="Verification code" />
+
+### Small
+
+Set `size` to `"sm"` to render small segments.
+
+<PinCodeInput size="sm" labelText="Verification code" />
+
+### Extra-large
+
+Set `size` to `"xl"` to render extra-large segments.
+
+<PinCodeInput size="xl" labelText="Verification code" />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <PinCodeInput labelText="Verification code" />
+  </Box>
+</Layer>
+
+## Select on focus
+
+Set `selectTextOnFocus` to `true` to select a segment's value when it receives focus. Without this prop, browsers typically select the value only when the segment receives keyboard focus (for example, via <DocKbd label="Tab" />), not on click.
+
+<PinCodeInput selectTextOnFocus labelText="Verification code" />
+
+## Events
+
+Respond to edits, completion, clearing, and paste or autofill.
+
+### Edits, completion, and clearing
+
+The component emits the following events:
+
+| Event | When |
+| --- | --- |
+| `on:change` | Any edit (type, paste, delete). |
+| `on:complete` | All segments become filled. This does not fire on mount with a prefilled value, but fires after user interaction fills every segment. |
+| `on:clear` | All segments are emptied. |
+
+<PinCodeInput
+  labelText="Verification code"
+  on:complete={(e) => console.log("complete", e.detail)}
+  on:change={(e) => console.log("change", e.detail)}
+  on:clear={() => console.log("clear")}
+/>
+
+### Paste and autofill
+
+Paste a full code into any segment to fill all segments at once. A partial paste fills from the focused segment forward. Non-matching characters are ignored. The `on:paste` event fires with the clipboard value (whitespace stripped) before segments are updated.
+
+OS and password-manager autofill that inserts the whole code into one segment is distributed the same way. The first segment also sets `autocomplete="one-time-code"`, which lets browsers and mobile OSes offer a one-time-code autofill suggestion (for example, from an incoming SMS) for it.
+
+<PinCodeInput
+  labelText="Verification code"
+  on:paste={(e) => console.log("paste", e.detail)}
+/>
+
+## Form name
+
+Set `name` so the assembled code participates in native form submission
+(for example SvelteKit form actions and `FormData`). A hidden input mirrors
+`value`. `required` stays on each segment, so the browser blocks submission
+until every segment is filled.
+
+```svelte
+<script>
+  import { Form, PinCodeInput, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/verify">
+  <PinCodeInput
+    name="code"
+    required
+    count={6}
+    labelText="Verification code"
+  />
+  <Button type="submit">Verify</Button>
+</Form>
+```
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` to describe the error. Invalid takes precedence over the [warning state](#warning) when both are set.
+
+<PinCodeInput invalid value="018" invalidText="The code you entered is incorrect" labelText="Verification code" />
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` to surface a non-blocking warning.
+
+<PinCodeInput warn value="018" warnText="This code is about to expire" labelText="Verification code" />
+
+### Disabled
+
+Set `disabled` to `true` to disable every segment.
+
+<PinCodeInput disabled value="0182" labelText="Verification code" />
+
+### Read-only
+
+Set `readonly` to `true` to display a code that cannot be edited.
+
+<PinCodeInput readonly value="0182" labelText="Verification code" />
+
+## Skeleton
+
+Show a loading state with the default skeleton variant.
+
+<PinCodeInputSkeleton />
+
+### Without label
+
+Show a loading state without a label by setting `hideLabel` to `true`.
+
+<PinCodeInputSkeleton hideLabel />
+
+## Fluid
+
+Set `fluid` to `true` to use the fluid variant, which embeds the label
+inside the field. Fluid pin code inputs can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically. Because fluid segments use an underline affordance rather than
+boxed fields, empty segments show a placeholder by default so the expected
+length remains visible. Set `placeholder=""` to remove it, or pass any other
+string to override the default in either variant.
+
+<PinCodeInput fluid labelText="Verification code" />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<PinCodeInput fluid labelText="Verification code">
+  <svelte:fragment slot="labelChildren">
+    Verification code
+    <TooltipIcon tooltipText="Enter the code sent to your device." icon={Information} />
+  </svelte:fragment>
+</PinCodeInput>
+
+### Invalid
+
+Fluid pin code inputs display the error message inside the field boundary. Long
+messages wrap to multiple lines. Invalid takes precedence over the [warning state](#warning) when both are set.
+
+<PinCodeInput fluid invalid value="018" invalidText="The code you entered is incorrect. Please check the message we sent to your device and try again, or request a new code if it has expired." labelText="Verification code" />
+
+### Warning
+
+Fluid pin code inputs display the warning message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<PinCodeInput fluid warn value="018" warnText="This code is about to expire. Request a new code from your account settings if you need more time to complete verification." labelText="Verification code" />
+
+### Disabled
+
+Invalid and warning states are not displayed while the pin code input is disabled.
+
+<PinCodeInput fluid disabled invalid invalidText="The code you entered is incorrect" value="0182" labelText="Verification code" />
+
+### Read-only
+
+Invalid and warning states are not displayed while the pin code input is read-only.
+
+<PinCodeInput fluid readonly warn warnText="This code is about to expire" value="0182" labelText="Verification code" />
+
+### Skeleton
+
+Display a loading skeleton for the fluid pin code input variant.
+
+<FluidPinCodeInputSkeleton />
+
+## Bindable value
+
+Bind to `value` for the concatenated code, to `complete` when every segment is filled, or to `code` for per-segment characters. Useful for controlled UI state; for OTP submission, prefer the dispatched change and complete payloads instead of branching on bound values locally.
+
+<FileSource src="/framed/PinCodeInput/PinCodeInputBindable" />
+
+## Programmatic usage
+
+Use `bind:this` to obtain a reference to the component instance and call its accessor methods.
+
+| Method | Description | Signature |
+| --- | --- | --- |
+| `focusFirstInput` | Focus the first segment. | `(options?: { selectTextOnFocus?: boolean }) => void` |
+| `focusLastInput` | Focus the last segment. | `(options?: { selectTextOnFocus?: boolean }) => void` |
+| `focusNextEmptyInput` | Focus the first empty segment, or the last if all are filled. | `(options?: { selectTextOnFocus?: boolean }) => void` |
+| `focusNext` | Focus the next segment from the active or last focused one; does not wrap at the last segment. Uses the last focused segment when focus has moved elsewhere (for example, a submit button). | `(options?: { selectTextOnFocus?: boolean }) => void` |
+| `clear` | Clear all segments. Focus is not moved by default; pass `{ focus: true }` to focus the first segment afterward. | `(options?: { focus?: boolean }) => void` |
+
+<FileSource src="/framed/PinCodeInput/PinCodeInputProgrammatic" />
+
+## UX example
+
+End-to-end flow using the complete event: normalize the payload, simulate an async verification request, then set invalid / invalidText or show success from the response.
+
+The hardcoded expected code is for demo purposes only. In production, POST the submitted value to your verification API and derive UI state from the server response.
+
+<FileSource src="/framed/PinCodeInput/PinCodeInputUx" />

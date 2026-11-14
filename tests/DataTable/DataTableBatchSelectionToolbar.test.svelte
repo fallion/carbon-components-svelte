@@ -1,0 +1,68 @@
+<script lang="ts">
+  import Button from "carbon-components-svelte/Button/Button.svelte";
+  import DataTable from "carbon-components-svelte/DataTable/DataTable.svelte";
+  import Toolbar from "carbon-components-svelte/DataTable/Toolbar.svelte";
+  import ToolbarBatchActions from "carbon-components-svelte/DataTable/ToolbarBatchActions.svelte";
+  import ToolbarContent from "carbon-components-svelte/DataTable/ToolbarContent.svelte";
+  import type { ComponentProps } from "svelte";
+  import { tick } from "svelte";
+
+  const headers = [
+    { key: "name", value: "Name" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" },
+  ] as const;
+
+  const rows = [
+    { id: "a", name: "Load Balancer 3", port: 3000, rule: "Round robin" },
+    { id: "b", name: "Load Balancer 1", port: 443, rule: "Round robin" },
+    { id: "c", name: "Load Balancer 2", port: 80, rule: "DNS delegation" },
+    { id: "d", name: "Load Balancer 6", port: 3000, rule: "Round robin" },
+    { id: "e", name: "Load Balancer 4", port: 443, rule: "Round robin" },
+    { id: "f", name: "Load Balancer 5", port: 80, rule: "DNS delegation" },
+  ];
+
+  export let selectedRowIds: ComponentProps<DataTable>["selectedRowIds"] = [];
+  export let active: ComponentProps<ToolbarBatchActions>["active"] = undefined;
+  export let controlled = false;
+  export let moveFocusOnDelete = false;
+  export let ondelete:
+    ((ids: ComponentProps<DataTable>["selectedRowIds"]) => void) | undefined =
+    undefined;
+  export let onrestart:
+    ((ids: ComponentProps<DataTable>["selectedRowIds"]) => void) | undefined =
+    undefined;
+
+  let elsewhere: HTMLInputElement;
+</script>
+
+<div data-testid="selected-ids">{JSON.stringify(selectedRowIds)}</div>
+
+<DataTable batchSelection {headers} {rows} bind:selectedRowIds>
+  <Toolbar>
+    <ToolbarBatchActions
+      {active}
+      on:cancel={(e) => {
+        if (controlled) e.preventDefault();
+      }}
+    >
+      <Button
+        kind="danger"
+        on:click={async () => {
+          ondelete?.(selectedRowIds);
+          if (moveFocusOnDelete) {
+            selectedRowIds = [];
+            await tick();
+            elsewhere.focus();
+          }
+        }}
+      >
+        Delete
+      </Button>
+      <Button on:click={() => onrestart?.(selectedRowIds)}>Restart</Button>
+    </ToolbarBatchActions>
+    <ToolbarContent><Button>Create balancer</Button></ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+<input aria-label="Elsewhere" bind:this={elsewhere} />

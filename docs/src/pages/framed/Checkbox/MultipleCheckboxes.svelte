@@ -1,15 +1,21 @@
 <script>
-  import { Checkbox } from "carbon-components-svelte";
+  import { Button, Checkbox, Stack } from "carbon-components-svelte";
 
-  let options = ["Apple", "Banana", "Coconut"];
-  let selection = options.slice(0, 2);
+  const values = ["Production", "Staging", "Development"];
+  let group = values.slice(0, 2);
 </script>
 
-{#each options as option}
-  <Checkbox bind:group="{selection}" labelText="{option}" value="{option}" />
-{/each}
+<Stack inline gap={4}>
+  <div>
+    {#each values as value}
+      <Checkbox bind:group labelText={value} {value} />
+    {/each}
+  </div>
 
-<div style="margin: var(--cds-layout-01) 0">
-  Selected options:
-  <strong>{selection.join(", ")}</strong>
-</div>
+  <Button on:click={() => (group = ["Staging"])}>Set to ["Staging"]</Button>
+
+  <div>
+    <strong>Selected:</strong>
+    {JSON.stringify(group)}
+  </div>
+</Stack>

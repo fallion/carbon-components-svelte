@@ -1,0 +1,70 @@
+<script lang="ts">
+  import TreeView from "carbon-components-svelte/TreeView/TreeView.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let autoCollapse = true;
+
+  let treeview: TreeView;
+  export let activeId: ComponentProps<TreeView>["activeId"] = "";
+  let selectedIds: ComponentProps<TreeView>["selectedIds"] = [];
+  let expandedIds: ComponentProps<TreeView>["expandedIds"] = [];
+  const nodes: ComponentProps<TreeView>["nodes"] = [
+    {
+      id: "folder1",
+      text: "Folder 1",
+      nodes: [
+        { id: "item1", text: "Item 1" },
+        { id: "item2", text: "Item 2" },
+      ],
+    },
+    {
+      id: "folder2",
+      text: "Folder 2",
+      nodes: [
+        { id: "item3", text: "Item 3" },
+        { id: "item4", text: "Item 4" },
+      ],
+    },
+    {
+      id: "folder3",
+      text: "Folder 3",
+      nodes: [
+        {
+          id: "subfolder1",
+          text: "Subfolder 1",
+          nodes: [
+            {
+              id: "subitem1",
+              text: "Subitem 1",
+              nodes: [{ id: "subsubitem1", text: "Subsubitem 1" }],
+            },
+          ],
+        },
+        {
+          id: "subfolder2",
+          text: "Subfolder 2",
+          nodes: [
+            {
+              id: "subitem2",
+              text: "Subitem 2",
+              nodes: [{ id: "subsubitem2", text: "Subsubitem 2" }],
+            },
+          ],
+        },
+      ],
+    },
+  ];
+</script>
+
+<TreeView
+  bind:this={treeview}
+  {autoCollapse}
+  labelText="Auto Collapse Test"
+  {nodes}
+  bind:activeId
+  bind:selectedIds
+  bind:expandedIds
+  let:node
+>
+  {node.text}
+</TreeView>

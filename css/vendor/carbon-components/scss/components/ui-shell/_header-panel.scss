@@ -1,0 +1,48 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/css--helpers';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/vars';
+@import 'functions';
+@import 'theme';
+
+/// UI shell side nav
+/// @access private
+/// @group ui-shell
+@mixin carbon-header-panel {
+  .#{$prefix}--header-panel {
+    // The `transition` shorthand below resets transition-timing-function,
+    // so a `carbon--motion` easing curve here would always be dead.
+    position: fixed;
+    z-index: z('header');
+    top: carbon--mini-units(6);
+    bottom: 0;
+    overflow: hidden;
+    overflow-y: auto; // ccs: long panels scroll
+    width: 0;
+    border: none;
+    background-color: $shell-panel-bg-01;
+    color: $shell-panel-text-01;
+    transition: width 0.11s;
+    @include ccs-inset-inline($end: 0);
+  }
+
+  .#{$prefix}--header-panel--expanded {
+    width: carbon--mini-units(32);
+    border-right: 1px solid $shell-panel-border;
+    border-left: 1px solid $shell-panel-border;
+  }
+}
+
+@include exports('carbon-header-panel') {
+  @if feature-flag-enabled('ui-shell') {
+    @include carbon-header-panel;
+  }
+}

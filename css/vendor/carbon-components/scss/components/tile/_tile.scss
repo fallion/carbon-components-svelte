@@ -1,0 +1,485 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+
+/// Tile styles
+/// @access private
+/// @group tile
+@mixin tile {
+  .#{$prefix}--tile-group {
+    @include reset;
+  }
+
+  .#{$prefix}--tile {
+    // ccs: set body text like `.#{$prefix}--tile--clickable` does, rather
+    // than inheriting the reset's `line-height: 1`
+    @include type-style("body-compact-01");
+
+    display: block;
+    min-width: 8rem;
+    min-height: 4rem;
+    padding: $spacing-05;
+    background-color: $layer;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  // ccs: the expandable tile's `transition` here never won (the later
+  // `.#{$prefix}--tile--expandable` rule sets its own), so it is split out
+  // rather than raised to the `:not()` weight below.
+  .#{$prefix}--tile--clickable,
+  .#{$prefix}--tile--selectable {
+    // ccs: list the hover background and the selected border instead of
+    // `all`, which also faded the focus outline in
+    transition:
+      background-color $duration--moderate-01 motion(standard, productive),
+      border-color $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--tile--clickable,
+  .#{$prefix}--tile--selectable,
+  // ccs: an interactive expandable tile toggles only from its chevron, so
+  // the tile itself keeps the default cursor and resting background
+  .#{$prefix}--tile--expandable:not(.#{$prefix}--tile--expandable--interactive) {
+    cursor: pointer;
+
+    &:hover {
+      background: $layer-hover;
+    }
+  }
+  .#{$prefix}--tile--expandable .#{$prefix}--link {
+    color: $link-secondary;
+  }
+
+  // ccs: a pressed clickable tile keeps the tile's own outline instead of
+  // the ring `.#{$prefix}--link:active` adds; `:focus` below still wins
+  .#{$prefix}--tile--clickable:active {
+    outline: 2px solid transparent;
+  }
+
+  .#{$prefix}--tile--clickable,
+  .#{$prefix}--tile--expandable {
+    &:focus {
+      @include focus-outline('outline');
+    }
+
+    &:hover,
+    &:focus {
+      .#{$prefix}--tile__checkmark {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Removes Firefox automatic border on buttons
+  .#{$prefix}--tile--expandable::-moz-focus-inner {
+    border: 0;
+  }
+
+  .#{$prefix}--tile--clickable {
+    @include reset;
+    @include type-style('body-compact-01');
+
+    color: $text-primary;
+    text-decoration: none;
+  }
+
+  .#{$prefix}--tile--clickable:hover,
+  .#{$prefix}--tile--clickable:active,
+  // ccs: also `:focus`, which `.#{$prefix}--link:focus` now underlines
+  .#{$prefix}--tile--clickable:focus,
+  .#{$prefix}--tile--clickable:visited,
+  .#{$prefix}--tile--clickable:visited:hover {
+    color: $text-primary;
+    text-decoration: none;
+  }
+
+  .#{$prefix}--tile--clickable.#{$prefix}--link--disabled {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--tile--clickable:hover.#{$prefix}--link--disabled {
+    display: block;
+    background-color: $field;
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--tile--selectable {
+    position: relative;
+    // ccs: the inline end, so the checkbox clears the text in RTL too
+    padding-inline-end: $carbon--spacing-09;
+    border: 1px solid transparent;
+  }
+
+  .#{$prefix}--tile__checkmark,
+  .#{$prefix}--tile__chevron {
+    position: absolute;
+    border: none;
+    background: transparent;
+    // ccs: only the opacity changes; `all` also faded the interactive
+    // chevron's focus outline in
+    transition: opacity $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--tile__checkmark {
+    top: 1rem;
+    height: 1rem;
+    opacity: 0;
+    // ccs: the inline end, as in v11
+    @include ccs-inset-inline($end: 1rem);
+
+    svg {
+      border-radius: 50%;
+      fill: $icon-secondary;
+    }
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  // ccs: v11's selectable tile shows its checkbox in every state, empty
+  // until selected
+  .#{$prefix}--tile__checkmark--persistent {
+    opacity: 1;
+  }
+
+  .#{$prefix}--tile__chevron {
+    position: absolute;
+    right: $carbon--spacing-05;
+    bottom: $carbon--spacing-05;
+    display: flex;
+    height: 1rem;
+    align-items: flex-end;
+
+    svg {
+      margin-left: $carbon--spacing-03;
+      fill: $layer-selected-inverse;
+      transform-origin: center;
+      transition: transform $duration--fast-02 motion(standard, productive); // ccs
+
+      @media screen and (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+
+      // Windows, Firefox HCM Fix
+      @media screen and (prefers-contrast) {
+        // `ButtonText` is a CSS2 system color to help improve colors in HCM
+        fill: ButtonText;
+      }
+    }
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--tile--expandable {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    border: 0;
+    color: inherit;
+    font-size: inherit;
+    text-align: left;
+    transition: max-height $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--tile-content__above-the-fold {
+    display: block;
+  }
+
+  .#{$prefix}--tile-content__below-the-fold {
+    display: block;
+    opacity: 0;
+    transition: opacity $duration--fast-02 motion(standard, productive),
+      visibility $duration--fast-02 motion(standard, productive);
+    visibility: hidden;
+  }
+
+  // ccs: the collapsed height is measured once the tile mounts. Until then
+  // (the server's markup), content below the fold takes no space, so the
+  // tile is as tall as it is once measured instead of fully open.
+  .#{$prefix}--tile--unmeasured .#{$prefix}--tile-content__below-the-fold {
+    display: none;
+  }
+
+  .#{$prefix}--tile--is-expanded {
+    overflow: visible;
+    transition: max-height $duration--fast-02 motion(standard, productive);
+
+    .#{$prefix}--tile__chevron svg {
+      transform: rotate(180deg);
+    }
+
+    .#{$prefix}--tile-content__below-the-fold {
+      opacity: 1;
+      transition: opacity $duration--fast-02 motion(standard, productive),
+        visibility $duration--fast-02 motion(standard, productive);
+      visibility: inherit;
+
+      // Safari-only media query
+      // Fixes an issue with scrolling
+      // and absolutely positioned elements (#8119)
+      @media not all and (min-resolution: 0.001dpcm) {
+        @supports (-webkit-appearance: none) and (stroke-color: transparent) {
+          overflow-y: auto;
+        }
+      }
+    }
+  }
+
+  .#{$prefix}--tile--is-selected {
+    border: 1px solid $border-inverse;
+  }
+
+  .#{$prefix}--tile--is-selected .#{$prefix}--tile__checkmark {
+    opacity: 1;
+  }
+
+  .#{$prefix}--tile--is-selected .#{$prefix}--tile__checkmark svg {
+    fill: $layer-selected-inverse;
+
+    // Windows, Firefox HCM Fix
+    @media screen and (prefers-contrast) {
+      // `ButtonText` is a CSS2 system color to help improve colors in HCM
+      fill: ButtonText;
+    }
+  }
+
+  .#{$prefix}--tile-content {
+    width: 100%;
+    height: 100%;
+  }
+
+  .#{$prefix}--tile-input {
+    @include hidden;
+  }
+
+  // Tiles in a group sit edge to edge, so an inset ring left a neighbor's
+  // selected border touching the blue. Reach 1px out over that shared edge
+  // and paint above the neighbor.
+  .#{$prefix}--tile-input:focus + .#{$prefix}--tile {
+    @include focus-outline('outline', $omit: (outline-offset));
+
+    z-index: 1;
+    outline-offset: -1px;
+  }
+
+  .#{$prefix}--tile--disabled.#{$prefix}--tile--selectable {
+    background-color: $layer;
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--tile--disabled.#{$prefix}--tile--is-selected {
+    border-color: $icon-disabled;
+  }
+
+  // ccs: every disabled tile, as in v11, so an unselected tile's empty
+  // checkbox grays out too
+  .#{$prefix}--tile--disabled .#{$prefix}--tile__checkmark svg {
+    fill: $icon-disabled;
+  }
+}
+
+@include exports('tile') {
+  @include tile;
+}
+
+// carbon-components-svelte patch (tile-full-height)
+
+/// Full height tile (stretches to fill a flex/grid container)
+/// @access private
+/// @group components
+@mixin tile-full-height {
+  .#{$prefix}--tile--full-height {
+    height: 100%;
+  }
+
+  .#{$prefix}--tile--no-padding {
+    padding: 0;
+  }
+}
+
+@include exports('tile-full-height') {
+  @include tile-full-height;
+}
+
+// carbon-components-svelte patch (tile-expandable-interactive)
+
+/// Expandable tile with interactive content, where the chevron is the
+/// toggle button
+/// @access private
+/// @group components
+@mixin tile-expandable-interactive {
+  // A native `<button>` brings its own padding, font and color, and the base
+  // fixed `height` let the label overflow it upward, so the focus ring sat
+  // tight above the text and loose below it. Size the button to its label
+  // plus even padding, and pull its offsets in by that padding so the label
+  // stays on the tile's padding edge.
+  .#{$prefix}--tile--expandable--interactive .#{$prefix}--tile__chevron {
+    right: $carbon--spacing-04;
+    bottom: to-rem(14px);
+    height: auto;
+    align-items: center;
+    padding: $carbon--spacing-01 $carbon--spacing-02;
+    color: inherit;
+    font: inherit;
+  }
+
+  // The chevron is a `<button>` here, so it needs the ring the base
+  // `.#{$prefix}--tile__chevron:focus` rule removes. The button is only
+  // as tall as its label, so the ring sits outside it rather than inset.
+  .#{$prefix}--tile--expandable--interactive .#{$prefix}--tile__chevron:focus {
+    @include focus-outline("outline", $omit: (outline-offset));
+
+    outline-offset: 2px;
+  }
+}
+
+@include exports("tile-expandable-interactive") {
+  @include tile-expandable-interactive;
+}
+
+// carbon-components-svelte patch (tile-checkbox-forced-colors)
+
+/// `SelectableTile`'s checkbox and `RadioTile`'s checkmark in forced-colors mode
+/// @access private
+/// @group components
+@mixin tile-checkbox-forced-colors {
+  // Forced colors leave an SVG fill alone, so the empty box kept its token
+  // gray and a selected box its token fill. Follow the tile's text, fill a
+  // selected box with `Highlight`, and gray out a disabled tile's box. A
+  // selected RadioTile's checkmark fills with `Highlight` too.
+  @media (forced-colors: active) {
+    .#{$prefix}--tile__checkmark--persistent svg {
+      fill: currentColor;
+    }
+
+    .#{$prefix}--tile--is-selected .#{$prefix}--tile__checkmark svg {
+      fill: Highlight;
+    }
+
+    .#{$prefix}--tile--disabled .#{$prefix}--tile__checkmark--persistent svg {
+      fill: GrayText;
+    }
+  }
+}
+
+@include exports("tile-checkbox-forced-colors") {
+  @include tile-checkbox-forced-colors;
+}
+
+// carbon-components-svelte patch (tile-rounded)
+
+/// Rounded corners on a tile with a decorator (`rounded`), backported from
+/// Carbon v11
+/// @access private
+/// @group components
+@mixin tile-rounded {
+  .#{$prefix}--tile--decorator-rounded {
+    border-radius: $carbon--spacing-03;
+  }
+}
+
+@include exports("tile-rounded") {
+  @include tile-rounded;
+}
+
+// carbon-components-svelte patch (tile-clickable-icon)
+
+/// `ClickableTile`'s `icon` in the bottom inline-end corner, backported
+/// from Carbon v11
+/// @access private
+/// @group components
+@mixin tile-clickable-icon {
+  // v11 sets this on every tile. The icon needs it to sit in the corner.
+  .#{$prefix}--tile--clickable {
+    position: relative;
+  }
+
+  .#{$prefix}--tile--clickable .#{$prefix}--tile--icon {
+    position: absolute;
+    bottom: $carbon--spacing-04;
+    width: to-rem(20px);
+    height: to-rem(20px);
+    fill: ccs-token("icon-interactive");
+    @include ccs-inset-inline($end: $carbon--spacing-04);
+    // Carbon's icon here is an arrow to the destination.
+    @include ccs-mirror-rtl;
+  }
+
+  .#{$prefix}--tile--clickable.#{$prefix}--link--disabled
+    .#{$prefix}--tile--icon {
+    fill: $icon-disabled;
+  }
+
+  // Forced colors leave an SVG fill alone, so the token blue stayed on a
+  // dark Canvas. Follow the tile's forced text color instead, and gray out
+  // a disabled tile's icon.
+  @media (forced-colors: active) {
+    .#{$prefix}--tile--clickable .#{$prefix}--tile--icon {
+      fill: currentColor;
+    }
+
+    .#{$prefix}--tile--clickable.#{$prefix}--link--disabled
+      .#{$prefix}--tile--icon {
+      fill: GrayText;
+    }
+  }
+}
+
+@include exports("tile-clickable-icon") {
+  @include tile-clickable-icon;
+}
+
+// carbon-components-svelte patch (tile-forced-colors)
+// Forced-colors mode paints a disabled SelectableTile, RadioTile or
+// ClickableTile like an enabled one. It reads `GrayText`, checkmark included.
+// A disabled ClickableTile is a disabled link, whose own patch the tile's
+// color rules outrank.
+
+/// Disabled tiles in forced-colors mode.
+/// @access private
+/// @group tile
+@mixin tile-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--tile--disabled.#{$prefix}--tile--selectable {
+      border-color: GrayText;
+      color: GrayText;
+      outline-color: GrayText;
+    }
+
+    .#{$prefix}--tile--disabled .#{$prefix}--tile__checkmark svg {
+      fill: GrayText;
+    }
+
+    .#{$prefix}--tile--clickable.#{$prefix}--link--disabled,
+    .#{$prefix}--tile--clickable.#{$prefix}--link--disabled:hover {
+      color: GrayText;
+      outline-color: GrayText;
+    }
+  }
+}
+
+@include exports("tile-forced-colors") {
+  @include tile-forced-colors;
+}

@@ -1,0 +1,571 @@
+import { render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
+import { flushMacrotask } from "../utils/flush-macrotask";
+import { user } from "../utils/user";
+import ExpandableTile from "./ExpandableTile.test.svelte";
+import ExpandableTileCustom from "./ExpandableTileCustom.test.svelte";
+import ExpandableTileToggle from "./ExpandableTileToggle.test.svelte";
+import ExpandableTileVariants from "./ExpandableTileVariants.test.svelte";
+
+describe("ExpandableTile", () => {
+  it("should render with default props", () => {
+    render(ExpandableTile);
+
+    const tile = screen.getByRole("button");
+    expect(tile).toBeInTheDocument();
+    expect(tile).toHaveClass("bx--tile", "bx--tile--expandable");
+    expect(tile).toHaveAttribute("aria-expanded", "false");
+    expect(tile).toHaveAttribute("title", "Interact to expand Tile");
+
+    const aboveContent = screen.getByTestId("above-content");
+    const belowContent = screen.getByTestId("below-content");
+    expect(aboveContent).toHaveTextContent("Above the fold content here");
+    expect(belowContent).toHaveTextContent("Below the fold content here");
+  });
+
+  it("should handle expanded state", () => {
+    render(ExpandableTile, { props: { expanded: true } });
+
+    const tile = screen.getByRole("button");
+    expect(tile).toHaveAttribute("aria-expanded", "true");
+    expect(tile).toHaveAttribute("title", "Interact to collapse Tile");
+    expect(tile).toHaveClass("bx--tile--is-expanded");
+  });
+
+  it("should handle custom icon text", async () => {
+    render(ExpandableTile, {
+      props: {
+        tileCollapsedIconText: "Custom collapsed text",
+        tileExpandedIconText: "Custom expanded text",
+      },
+    });
+
+    const tile = screen.getByRole("button");
+    expect(tile).toHaveAttribute("title", "Custom collapsed text");
+
+    await user.click(tile);
+    expect(tile).toHaveAttribute("title", "Custom expanded text");
+  });
+
+  it("should handle custom labels", async () => {
+    render(ExpandableTile, {
+      props: {
+        tileCollapsedLabel: "Show more",
+        tileExpandedLabel: "Show less",
+      },
+    });
+
+    expect(screen.getByText("Show more")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button"));
+    expect(screen.getByText("Show less")).toBeInTheDocument();
+  });
+
+  it("should handle custom tabindex", () => {
+    render(ExpandableTile, { props: { tabindex: "1" } });
+
+    expect(screen.getByRole("button")).toHaveAttribute("tabindex", "1");
+  });
+
+  it("should handle custom id", () => {
+    render(ExpandableTile, { props: { id: "custom-id" } });
+
+    expect(screen.getByRole("button")).toHaveAttribute("id", "custom-id");
+  });
+
+  it("should toggle expanded state on click", async () => {
+    render(ExpandableTile);
+
+    const tile = screen.getByRole("button");
+    expect(tile).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(tile);
+    expect(tile).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(tile);
+    expect(tile).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("should handle keyboard events", async () => {
+    render(ExpandableTile);
+
+    const tile = screen.getByRole("button");
+    await user.tab();
+    expect(tile).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(tile).toHaveAttribute("aria-expanded", "true");
+
+    await user.keyboard(" ");
+    expect(tile).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("forwards click", async () => {
+    const onClick = vi.fn();
+    render(ExpandableTile, { props: { onClick } });
+
+    await user.click(screen.getByRole("button"));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("should forward keydown", async () => {
+    const onKeydown = vi.fn();
+    render(ExpandableTile, { props: { onKeydown } });
+
+    await user.tab();
+    await user.keyboard("{ArrowDown}");
+
+    expect(onKeydown).toHaveBeenCalledTimes(1);
+    expect(onKeydown.mock.calls[0][0].key).toBe("ArrowDown");
+  });
+
+  describe("toggle event", () => {
+    it("dispatches the next expanded state on click", async () => {
+      const onToggle = vi.fn();
+      render(ExpandableTile, { props: { onToggle } });
+
+      const tile = screen.getByRole("button");
+      await user.click(tile);
+      await user.click(tile);
+
+      expect(onToggle).toHaveBeenCalledTimes(2);
+      expect(onToggle.mock.calls[0][0].detail).toEqual({ expanded: true });
+      expect(onToggle.mock.calls[1][0].detail).toEqual({ expanded: false });
+    });
+
+    it("keeps the current state when the event is prevented", async () => {
+      render(ExpandableTile, {
+        props: { onToggle: (e: CustomEvent) => e.preventDefault() },
+      });
+
+      const tile = screen.getByRole("button");
+      await user.click(tile);
+
+      expect(tile).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("does not dispatch when `expanded` is set programmatically", async () => {
+      const onToggle = vi.fn();
+      const { rerender } = render(ExpandableTile, { props: { onToggle } });
+
+      await rerender({ expanded: true });
+
+      expect(screen.getByRole("button")).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      expect(onToggle).not.toHaveBeenCalled();
+    });
+
+    it("dispatches from the chevron button with interactive content", async () => {
+      const onToggle = vi.fn();
+      render(ExpandableTileCustom, { props: { onToggle } });
+
+      await user.click(screen.getByRole("button", { name: "View more" }));
+
+      expect(onToggle).toHaveBeenCalledTimes(1);
+      expect(onToggle.mock.calls[0][0].detail).toEqual({ expanded: true });
+    });
+  });
+
+  describe("with interactive content", () => {
+    it("should not toggle expanded state when clicking an interactive child element", async () => {
+      render(ExpandableTileVariants);
+
+      const tile = screen.getByTestId("interactive");
+      const link = screen.getByTestId("inner-link");
+
+      expect(tile).not.toHaveClass("bx--tile--is-expanded");
+
+      await user.click(link);
+      expect(tile).not.toHaveClass("bx--tile--is-expanded");
+    });
+
+    it("should only toggle expanded state when clicking the chevron button", async () => {
+      render(ExpandableTileVariants);
+
+      const tile = screen.getByTestId("interactive");
+      expect(tile).not.toHaveClass("bx--tile--is-expanded");
+
+      const chevronButton = tile.querySelector("button.bx--tile__chevron");
+      assert(chevronButton);
+      expect(chevronButton).toHaveAttribute("aria-expanded", "false");
+
+      await user.click(chevronButton);
+      expect(tile).toHaveClass("bx--tile--is-expanded");
+      expect(chevronButton).toHaveAttribute("aria-expanded", "true");
+
+      await user.click(chevronButton);
+      expect(tile).not.toHaveClass("bx--tile--is-expanded");
+      expect(chevronButton).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("should link the chevron button to the below-the-fold region via aria-controls", () => {
+      render(ExpandableTileVariants);
+
+      const tile = screen.getByTestId("interactive");
+      const chevronButton = tile.querySelector("button.bx--tile__chevron");
+      assert(chevronButton);
+      expect(chevronButton).toHaveAttribute(
+        "aria-controls",
+        "interactive-tile-content",
+      );
+
+      const belowFold = tile.querySelector(".bx--tile-content__below-the-fold");
+      expect(belowFold).toHaveAttribute("id", "interactive-tile-content");
+    });
+
+    it("should render as a div (not button) when it contains interactive content", () => {
+      render(ExpandableTileVariants);
+
+      const tile = screen.getByTestId("interactive");
+      expect(tile.tagName).not.toBe("BUTTON");
+      expect(tile).toHaveClass("bx--tile--expandable--interactive");
+      expect(screen.getByTestId("basic")).not.toHaveClass(
+        "bx--tile--expandable--interactive",
+      );
+    });
+
+    it("should give the chevron button an accessible name when no labels are provided", () => {
+      render(ExpandableTileVariants);
+
+      const tile = screen.getByTestId("interactive");
+      const chevronButton = tile.querySelector("button.bx--tile__chevron");
+      assert(chevronButton);
+
+      expect(chevronButton).toHaveAttribute(
+        "aria-label",
+        "Interact to expand Tile",
+      );
+    });
+
+    it("should name the chevron button by its visible label when one is provided", async () => {
+      render(ExpandableTileCustom);
+
+      const chevronButton = screen.getByRole("button", { name: "View more" });
+      expect(chevronButton).not.toHaveAttribute("aria-label");
+      expect(chevronButton).toHaveAccessibleDescription(
+        "Interact to expand Tile",
+      );
+
+      await user.click(chevronButton);
+      expect(chevronButton).toHaveAccessibleName("View less");
+      expect(chevronButton).toHaveAccessibleDescription(
+        "Interact to collapse Tile",
+      );
+    });
+
+    it("should not toggle when clicking interactive button or link", async () => {
+      // Let the clicks bubble to the tile, so only the tile ignoring them
+      // keeps it collapsed.
+      render(ExpandableTileCustom, { props: { stopClicks: false } });
+
+      const tile = document.querySelector(".bx--tile--expandable");
+      const chevronButton = tile?.querySelector("button.bx--tile__chevron");
+      const link = screen.getByTestId("test-link");
+      const button = screen.getByTestId("test-button");
+
+      expect(chevronButton).toHaveAttribute("aria-expanded", "false");
+
+      await user.click(link);
+      expect(chevronButton).toHaveAttribute("aria-expanded", "false");
+
+      await user.click(button);
+      expect(chevronButton).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("should apply tabindex to the chevron button", () => {
+      render(ExpandableTileCustom, { props: { tabindex: "-1" } });
+
+      const chevronButton = screen.getByRole("button", { name: "View more" });
+      expect(chevronButton).toHaveAttribute("tabindex", "-1");
+      expect(
+        document.querySelector(".bx--tile--expandable"),
+      ).not.toHaveAttribute("tabindex");
+    });
+
+    it("should forward focus and blur from the chevron button", () => {
+      const onFocus = vi.fn();
+      const onBlur = vi.fn();
+      render(ExpandableTileCustom, { props: { onFocus, onBlur } });
+
+      const chevronButton = document.querySelector("button.bx--tile__chevron");
+      assert(chevronButton instanceof HTMLButtonElement);
+
+      chevronButton.focus();
+      expect(onFocus).toHaveBeenCalledTimes(1);
+      expect(onFocus.mock.calls[0][0].target).toBe(chevronButton);
+
+      chevronButton.blur();
+      expect(onBlur).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("should forward mouse events", async () => {
+    const onMouseover = vi.fn();
+    const onMouseenter = vi.fn();
+    const onMouseleave = vi.fn();
+    render(ExpandableTile, {
+      props: { onMouseover, onMouseenter, onMouseleave },
+    });
+
+    const tile = screen.getByRole("button");
+    await user.hover(tile);
+    expect(onMouseover).toHaveBeenCalledTimes(1);
+    expect(onMouseenter).toHaveBeenCalledTimes(1);
+    expect(onMouseleave).not.toHaveBeenCalled();
+
+    await user.unhover(tile);
+    expect(onMouseleave).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not recompute padding on every re-render", async () => {
+    const getComputedStyle = vi.spyOn(window, "getComputedStyle");
+    render(ExpandableTile);
+    // Query before taking the baseline: `getByRole` and user-event both call
+    // getComputedStyle themselves, which would pollute the count.
+    const tile = screen.getByRole("button");
+    await tick();
+    await tick();
+    const afterMount = getComputedStyle.mock.calls.length;
+    expect(afterMount).toBeGreaterThan(0);
+
+    tile.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    await tick();
+    tile.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await tick();
+    tile.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await tick();
+    tile.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+    await tick();
+
+    expect(getComputedStyle.mock.calls.length).toBe(afterMount);
+    getComputedStyle.mockRestore();
+  });
+
+  it("measures the above-the-fold height once while it reads as zero", async () => {
+    // A tile in a hidden parent measures 0 until the observer reports a
+    // height, so stub an observer that never reports.
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const getBoundingClientRect = vi.spyOn(
+      Element.prototype,
+      "getBoundingClientRect",
+    );
+
+    try {
+      render(ExpandableTile);
+      const tile = screen.getByRole("button");
+      const aboveReads = () =>
+        getBoundingClientRect.mock.contexts.filter(
+          (el) => el instanceof Element && el.matches(".bx--tile-content"),
+        ).length;
+      await tick();
+      expect(aboveReads()).toBe(1);
+
+      tile.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      await tick();
+      tile.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await tick();
+      tile.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await tick();
+      tile.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await tick();
+      expect(tile).toHaveAttribute("aria-expanded", "true");
+      expect(aboveReads()).toBe(1);
+    } finally {
+      getBoundingClientRect.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("should handle max height and padding", async () => {
+    render(ExpandableTile, {
+      props: {
+        tileMaxHeight: 200,
+        tilePadding: 20,
+      },
+    });
+
+    const tile = screen.getByRole("button");
+    expect(tile.getAttribute("style")).toBe("max-height: 220px;");
+
+    await user.click(tile);
+    expect(tile.getAttribute("style")).toBe("max-height: none;");
+  });
+
+  it("should set max-height to none when tileMaxHeight is 0 to prevent height animation on initial load", () => {
+    render(ExpandableTile, {
+      props: {
+        tileMaxHeight: 0,
+        tilePadding: 20,
+      },
+    });
+
+    const tile = screen.getByRole("button");
+    expect(tile.getAttribute("style")).toBe("max-height: none;");
+  });
+
+  it("should not overwrite consumer-bound tilePadding after afterUpdate runs", async () => {
+    const { component } = render(ExpandableTileVariants, {
+      props: { tilePadding: 50, tileMaxHeight: 300 },
+    });
+
+    await tick();
+
+    expect(component.tilePadding).toBe(50);
+  });
+
+  it("should not overwrite consumer-bound tileMaxHeight after the ResizeObserver measures", async () => {
+    const { component } = render(ExpandableTileVariants, {
+      props: { tilePadding: 50, tileMaxHeight: 300 },
+    });
+
+    await flushMacrotask();
+    await tick();
+
+    expect(component.tileMaxHeight).toBe(300);
+  });
+
+  it("should render and toggle without ResizeObserver", async () => {
+    vi.stubGlobal("ResizeObserver", undefined);
+
+    try {
+      render(ExpandableTile);
+
+      const tile = screen.getByRole("button");
+      await user.click(tile);
+      expect(tile).toHaveAttribute("aria-expanded", "true");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("should re-observe the above-the-fold element when hasInteractiveContent toggles", async () => {
+    // Toggling `hasInteractiveContent` swaps the root tag via <svelte:element>,
+    // which destroys and re-creates the subtree — including the element bound
+    // to `refAbove`. The ResizeObserver must follow the new node, otherwise it
+    // keeps watching the detached original and `tileMaxHeight` stops updating.
+    const observed = new Set<Element>();
+    const OriginalResizeObserver = globalThis.ResizeObserver;
+
+    class TrackingResizeObserver {
+      private elements = new Set<Element>();
+      observe(el: Element) {
+        this.elements.add(el);
+        observed.add(el);
+      }
+      unobserve(el: Element) {
+        this.elements.delete(el);
+        observed.delete(el);
+      }
+      disconnect() {
+        for (const el of this.elements) observed.delete(el);
+        this.elements.clear();
+      }
+    }
+
+    globalThis.ResizeObserver =
+      TrackingResizeObserver as unknown as typeof ResizeObserver;
+
+    try {
+      const { rerender } = render(ExpandableTileToggle, {
+        props: { interactive: false },
+      });
+
+      const firstRefAbove = screen
+        .getByTestId("toggle")
+        .querySelector(".bx--tile-content");
+      assert(firstRefAbove);
+      expect(observed.has(firstRefAbove)).toBe(true);
+
+      await rerender({ interactive: true });
+
+      const newRefAbove = screen
+        .getByTestId("toggle")
+        .querySelector(".bx--tile-content");
+      assert(newRefAbove);
+      // The root element is recreated, so the above-the-fold node is new.
+      expect(newRefAbove).not.toBe(firstRefAbove);
+      // The observer must follow the new node…
+      expect(observed.has(newRefAbove)).toBe(true);
+      // …and let go of the detached original.
+      expect(observed.has(firstRefAbove)).toBe(false);
+    } finally {
+      globalThis.ResizeObserver = OriginalResizeObserver;
+    }
+  });
+
+  describe("shared ResizeObserver", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("shares one ResizeObserver across tiles", async () => {
+      let created = 0;
+      const Base = globalThis.ResizeObserver;
+      vi.stubGlobal(
+        "ResizeObserver",
+        class extends Base {
+          constructor(callback: ResizeObserverCallback) {
+            super(callback);
+            created++;
+          }
+        },
+      );
+      for (let i = 0; i < 3; i++) {
+        render(ExpandableTile);
+      }
+      await tick();
+      expect(created).toBe(1);
+    });
+
+    it("sizes the collapsed tile from the above-the-fold height the observer reports", async () => {
+      let deliver: ResizeObserverCallback = () => {};
+      const observed = new Set<Element>();
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            deliver = callback;
+          }
+          observe(element: Element) {
+            observed.add(element);
+          }
+          unobserve(element: Element) {
+            observed.delete(element);
+          }
+          disconnect() {}
+        },
+      );
+      const { unmount } = render(ExpandableTile);
+      await tick();
+
+      const tile = screen.getByRole("button");
+      const above = tile.querySelector(".bx--tile-content");
+      assert(above);
+      expect(observed.has(above)).toBe(true);
+      expect(observed.has(tile)).toBe(true);
+      expect(tile.getAttribute("style")).toBe("max-height: none;");
+
+      deliver(
+        [
+          { target: above, contentRect: { height: 120 } },
+        ] as unknown as ResizeObserverEntry[],
+        {} as ResizeObserver,
+      );
+      await tick();
+      expect(tile.getAttribute("style")).toBe("max-height: 120px;");
+
+      unmount();
+      expect(observed.size).toBe(0);
+    });
+  });
+});

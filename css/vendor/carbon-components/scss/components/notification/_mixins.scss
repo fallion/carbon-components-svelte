@@ -1,0 +1,75 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+/// @access private
+/// @group notification
+@mixin notification--experimental($color, $background-color) {
+  border-inline-start: 3px solid $color;
+  background: $background-color;
+}
+
+/// ccs: points the text, icon, link and focus tokens at their inverse
+/// values, so components in a high-contrast notification's text, such as
+/// an UnorderedList, read on its inverse background.
+/// @access private
+/// @group notification
+@mixin notification--inverse-content {
+  @each $token, $inverse in (
+    text-primary: text-inverse,
+    text-secondary: text-inverse,
+    icon-primary: icon-inverse,
+    icon-secondary: icon-inverse,
+    link-primary: link-inverse,
+    link-primary-hover: link-inverse-hover,
+    focus: focus-inverse
+  ) {
+    --#{$custom-property-prefix}-#{$token}: var(--#{$custom-property-prefix}-#{$inverse});
+  }
+}
+
+/// Icon fill per kind. NotificationIcon emits exactly one of these markers on
+/// the svg, so every rule is a single class and one consumer class can
+/// override it.
+/// @access private
+/// @group notification
+@mixin notification--icon-fills($type) {
+  .#{$prefix}--#{$type}-notification__icon--error { // ccs: flatten
+    fill: $support-error-inverse;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--success { // ccs: flatten
+    fill: $support-success-inverse;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--info, // ccs: flatten
+  .#{$prefix}--#{$type}-notification__icon--info-square { // ccs: flatten
+    fill: $support-info-inverse;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--warning, // ccs: flatten
+  .#{$prefix}--#{$type}-notification__icon--warning-alt { // ccs: flatten
+    fill: $support-warning-inverse;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--low-contrast-error { // ccs: flatten
+    fill: $support-error;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--low-contrast-success { // ccs: flatten
+    fill: $support-success;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--low-contrast-info, // ccs: flatten
+  .#{$prefix}--#{$type}-notification__icon--low-contrast-info-square { // ccs: flatten
+    fill: $support-info;
+  }
+
+  .#{$prefix}--#{$type}-notification__icon--low-contrast-warning, // ccs: flatten
+  .#{$prefix}--#{$type}-notification__icon--low-contrast-warning-alt { // ccs: flatten
+    fill: $support-warning;
+  }
+}

@@ -1,19 +1,22 @@
 <script>
   /**
    * @typedef {boolean | number} ColumnSize
-   * @typedef {{span?: ColumnSize; offset: number;}} ColumnSizeDescriptor
+   * @typedef ColumnSizeDescriptor
+   * @property {ColumnSize} [span]
+   * @property {number} [offset]
    * @typedef {ColumnSize | ColumnSizeDescriptor} ColumnBreakpoint
-   * @restProps {div}
    * @slot {{props: { class: string; [key: string]: any; }}}
    */
 
   /**
-   * @slot {{ props?: { class: string; } }}
-   */
-
-  /**
-   * Set to `true` to render a custom HTML element
-   * Props are destructured as `props` in the default slot (e.g., <Column let:props><article {...props}>...</article></Column>)
+   * Set to `true` to render a custom HTML element.
+   * Props are destructured as `props` in the default slot.
+   * @example
+   * ```svelte
+   * <Column let:props>
+   *   <article {...props}>Content</article>
+   * </Column>
+   * ```
    */
   export let as = false;
 
@@ -30,40 +33,46 @@
   export let padding = false;
 
   /**
-   * Specify the aspect ratio of the column
-   * @type {"2x1" | "16x9" | "9x16" | "1x2" | "4x3" | "3x4" | "1x1"}
+   * Specify the aspect ratio of the column.
+   * @type {"2x1" | "2x3" | "16x9" | "9x16" | "1x2" | "4x3" | "3x4" | "3x2" | "1x1" | undefined}
    */
   export let aspectRatio = undefined;
 
   /**
-   * Set the small breakpoint
-   * @type {ColumnBreakpoint}
+   * Set the small breakpoint.
+   * @type {ColumnBreakpoint | undefined}
    */
   export let sm = undefined;
 
   /**
-   * Set the medium breakpoint
-   * @type {ColumnBreakpoint}
+   * Set the medium breakpoint.
+   * @type {ColumnBreakpoint | undefined}
    */
   export let md = undefined;
 
   /**
-   * Set the large breakpoint
-   * @type {ColumnBreakpoint}
+   * Set the large breakpoint.
+   * @type {ColumnBreakpoint | undefined}
    */
   export let lg = undefined;
 
   /**
-   * Set the extra large breakpoint
-   * @type {ColumnBreakpoint}
+   * Set the extra large breakpoint.
+   * @type {ColumnBreakpoint | undefined}
    */
   export let xlg = undefined;
 
   /**
-   * Set the maximum breakpoint
-   * @type {ColumnBreakpoint}
+   * Set the maximum breakpoint.
+   * @type {ColumnBreakpoint | undefined}
    */
   export let max = undefined;
+
+  /**
+   * Set the cross-axis self-alignment of the column within its row.
+   * @type {"start" | "center" | "end" | "stretch" | undefined}
+   */
+  export let align = undefined;
 
   const breakpoints = ["sm", "md", "lg", "xlg", "max"];
 
@@ -75,7 +84,8 @@
         return `bx--col-${name}`;
       } else if (typeof breakpoint === "number") {
         return `bx--col-${name}-${breakpoint}`;
-      } else if (typeof breakpoint === "object") {
+      } else if (breakpoint && typeof breakpoint === "object") {
+        /** @type {string[]} */
         let bp = [];
 
         if (typeof breakpoint.span === "number") {
@@ -90,6 +100,8 @@
 
         return bp.join(" ");
       }
+
+      return undefined;
     })
     .filter(Boolean)
     .join(" ");
@@ -104,6 +116,7 @@
       noGutterRight && "bx--no-gutter--right",
       aspectRatio && `bx--aspect-ratio bx--aspect-ratio--${aspectRatio}`,
       padding && "bx--col-padding",
+      align && `bx--col--align-${align}`,
     ]
       .filter(Boolean)
       .join(" "),
@@ -111,9 +124,7 @@
 </script>
 
 {#if as}
-  <slot props="{props}" />
+  <slot {props} />
 {:else}
-  <div {...props}>
-    <slot />
-  </div>
+  <div {...props}><slot /></div>
 {/if}

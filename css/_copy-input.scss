@@ -1,0 +1,156 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Room for the copy button at the page's inline end. The field has
+/// `dir="auto"`, so its own direction follows the value, not the page.
+/// Logical padding would resolve against the value and leave the room on
+/// the wrong side, so this side is physical, with a twin for an RTL page.
+/// 16px is the text input's own inline padding.
+/// @access private
+/// @group components
+@mixin copy-input-end-padding($value) {
+  padding-right: $value;
+
+  [dir="rtl"] & {
+    padding-right: ccs-dir($value, $carbon--spacing-05);
+    padding-left: ccs-dir($carbon--spacing-05, $value);
+  }
+}
+
+/// CopyInput: a read-only text input with a trailing copy button
+/// @access private
+/// @group components
+@mixin copy-input {
+  // Reserve room so the value never sits under the copy button.
+  .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input {
+    @include copy-input-end-padding(to-rem(40px));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input--xs {
+    @include copy-input-end-padding(to-rem(24px));
+  }
+
+  .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input--sm {
+    @include copy-input-end-padding(to-rem(32px));
+  }
+
+  .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input--xl {
+    @include copy-input-end-padding(to-rem(48px));
+  }
+
+  // Fluid form shorthand padding must not collapse the end padding below
+  // the button width.
+  .#{$prefix}--form--fluid,
+  .#{$prefix}--text-input--fluid {
+    .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input {
+      @include copy-input-end-padding($carbon--spacing-08);
+    }
+
+    // The fluid copy button stays 32px at every size.
+    .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input--xs,
+    .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input--sm {
+      @include copy-input-end-padding($carbon--spacing-07);
+    }
+
+    .#{$prefix}--copy-input__field-wrapper .#{$prefix}--text-input--xl {
+      @include copy-input-end-padding($carbon--spacing-09);
+    }
+  }
+
+  .#{$prefix}--copy-input__field-wrapper .#{$prefix}--copy-btn {
+    @include focus-outline("reset");
+
+    position: absolute;
+    display: flex;
+    width: to-rem(40px);
+    height: 100%;
+    min-height: auto;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    @include ccs-inset-inline($end: 0);
+
+    &:active {
+      background: none;
+    }
+
+    // Show the button's own focus ring when it (not the input) is focused.
+    &:focus {
+      @include focus-outline("outline");
+    }
+
+    .#{$prefix}--snippet__icon {
+      fill: $icon-secondary;
+      transition: fill $duration--fast-01 motion(standard, productive);
+    }
+
+    // Hover only where a pointer can hover, so a tap does not leave it stuck.
+    // Stays ahead of `:disabled`, which must keep beating it.
+    @media (any-hover: hover) {
+      &:hover {
+        background: none;
+      }
+
+      &:hover .#{$prefix}--snippet__icon {
+        fill: $icon-primary;
+      }
+    }
+
+    &:focus .#{$prefix}--snippet__icon {
+      fill: $icon-primary;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &:disabled .#{$prefix}--snippet__icon {
+      fill: $icon-disabled;
+    }
+  }
+
+  .#{$prefix}--copy-input__field-wrapper
+    .#{$prefix}--text-input--xs
+    ~ .#{$prefix}--copy-btn {
+    width: to-rem(24px);
+  }
+
+  .#{$prefix}--copy-input__field-wrapper
+    .#{$prefix}--text-input--sm
+    ~ .#{$prefix}--copy-btn {
+    width: to-rem(32px);
+  }
+
+  .#{$prefix}--copy-input__field-wrapper
+    .#{$prefix}--text-input--xl
+    ~ .#{$prefix}--copy-btn {
+    width: to-rem(48px);
+  }
+
+  // Fluid copy button matches the password visibility toggle in
+  // `_fluid-text-input.scss` (32×32px on the value row).
+  .#{$prefix}--form--fluid,
+  .#{$prefix}--text-input--fluid {
+    .#{$prefix}--copy-input__field-wrapper .#{$prefix}--copy-btn {
+      block-size: to-rem(32px);
+      inline-size: to-rem(32px);
+      min-height: to-rem(32px);
+      inset-block-start: to-rem(26px);
+      align-items: center;
+      padding: 0;
+      @include ccs-inset-inline($end: $carbon--spacing-03);
+    }
+  }
+}
+
+@include exports("copy-input") {
+  @include copy-input;
+}

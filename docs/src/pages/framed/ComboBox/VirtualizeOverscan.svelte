@@ -1,0 +1,22 @@
+<script>
+  import { ComboBox } from "carbon-components-svelte";
+
+  const items = Array.from({ length: 10_000 }, (_, i) => ({
+    id: i,
+    text: `Server ${i + 1}`,
+  }));
+
+  let value = "";
+  let selectedId;
+</script>
+
+<ComboBox
+  virtualize={{ overscan: 100 }}
+  labelText="High overscan (10,000 items, overscan: 100)"
+  placeholder="Filter..."
+  {items}
+  shouldFilterItem={(item, value) =>
+    item.text.toLowerCase().includes(value.toLowerCase())}
+  bind:selectedId
+  bind:value
+/>

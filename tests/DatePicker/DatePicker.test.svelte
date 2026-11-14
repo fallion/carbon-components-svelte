@@ -1,0 +1,106 @@
+<script lang="ts">
+  import DatePicker from "carbon-components-svelte/DatePicker/DatePicker.svelte";
+  import DatePickerInput from "carbon-components-svelte/DatePicker/DatePickerInput.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let datePickerType: ComponentProps<DatePicker>["datePickerType"] =
+    "simple";
+  export let value: ComponentProps<DatePicker>["value"] = "";
+  export let valueFrom = "";
+  export let valueTo = "";
+  export let dateFormat = "m/d/Y";
+  export let maxDate: ComponentProps<DatePicker>["maxDate"] = null;
+  export let minDate: ComponentProps<DatePicker>["minDate"] = null;
+  export let disabledDates: ComponentProps<DatePicker>["disabledDates"] = [];
+  export let enabledDates: ComponentProps<DatePicker>["enabledDates"] = [];
+  export let initialMonth: ComponentProps<DatePicker>["initialMonth"] = null;
+  export let locale: ComponentProps<DatePicker>["locale"] = "en";
+  export let firstDayOfWeek: ComponentProps<DatePicker>["firstDayOfWeek"] =
+    undefined;
+  export let weekNumbers = false;
+  export let short = false;
+  export let fullWidth = false;
+  export let fluid = false;
+  export let displayFormat: ComponentProps<DatePicker>["displayFormat"] =
+    undefined;
+  export let inline = false;
+  export let months: ComponentProps<DatePicker>["months"] = 1;
+  export let closeOnSelect = true;
+  export let conjunction = ", ";
+  export let monthLabel: ComponentProps<DatePicker>["monthLabel"] = "long";
+  export let animate = false;
+  export let allowInput = true;
+  export let formatDate: ComponentProps<DatePicker>["formatDate"] = undefined;
+  export let anchor: ComponentProps<DatePicker>["anchor"] = undefined;
+  export let disabled = false;
+  export let readonly = false;
+  export let invalid = false;
+  export let invalidText = "";
+  export let warn = false;
+  export let warnText = "";
+  export let helperText = "";
+  export let hideLabel = false;
+  export let portalMenu = false;
+  export let pattern: ComponentProps<DatePickerInput>["pattern"] = undefined;
+  export let selectTextOnFocus: ComponentProps<DatePickerInput>["selectTextOnFocus"] = false;
+  export let size: ComponentProps<DatePickerInput>["size"] = undefined;
+  export let onchange: ((event: CustomEvent) => void) | undefined = undefined;
+  export let onfocus: ((event: FocusEvent) => void) | undefined = undefined;
+  export let onerror: ((event: CustomEvent) => void) | undefined = undefined;
+  export let clearable = false;
+  export let clearButtonLabelText: ComponentProps<DatePicker>["clearButtonLabelText"] =
+    undefined;
+  export let onclear: ((event: CustomEvent) => void) | undefined = undefined;
+</script>
+
+<DatePicker
+  {datePickerType}
+  {value}
+  {valueFrom}
+  {valueTo}
+  {dateFormat}
+  {maxDate}
+  {minDate}
+  {disabledDates}
+  {enabledDates}
+  {initialMonth}
+  {locale}
+  {firstDayOfWeek}
+  {weekNumbers}
+  {short}
+  {fullWidth}
+  {fluid}
+  {displayFormat}
+  {inline}
+  {months}
+  {closeOnSelect}
+  {conjunction}
+  {monthLabel}
+  {animate}
+  {allowInput}
+  {formatDate}
+  {anchor}
+  {portalMenu}
+  {clearable}
+  {...clearButtonLabelText === undefined ? {} : { clearButtonLabelText }}
+  on:change={(e) => onchange?.(e)}
+  on:clear={(e) => onclear?.(e)}
+  on:error={(e) => onerror?.(e)}
+>
+  <DatePickerInput
+    labelText="Date"
+    placeholder="mm/dd/yyyy"
+    {disabled}
+    {readonly}
+    {invalid}
+    {invalidText}
+    {warn}
+    {warnText}
+    {helperText}
+    {hideLabel}
+    {pattern}
+    {selectTextOnFocus}
+    {size}
+    on:focus={(e) => onfocus?.(e)}
+  />
+</DatePicker>

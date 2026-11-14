@@ -1,0 +1,120 @@
+import { expect, test } from "./helpers/host";
+
+test.describe("FloatingPortal", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/floating-portal.html");
+  });
+
+  test("does not render when open is false", async ({ page }) => {
+    const content = page.getByTestId("floating-inner");
+    await expect(content).not.toBeVisible();
+
+    const portalElement = page.locator("[data-floating-portal]");
+    await expect(portalElement).not.toBeVisible();
+  });
+
+  test("renders floating content when open is true", async ({ page }) => {
+    await page.getByTestId("toggle").click();
+
+    const content = page.getByTestId("floating-inner");
+    await expect(content).toHaveText("Floating content");
+    await expect(content).toBeVisible();
+  });
+
+  test("portal has data-floating-portal and data-floating-direction", async ({
+    page,
+  }) => {
+    await page.getByTestId("toggle").click();
+
+    const portalElement = page.locator("[data-floating-portal]");
+    await expect(portalElement).toHaveAttribute("data-floating-portal", "true");
+    await expect(portalElement).toHaveAttribute(
+      "data-floating-direction",
+      "bottom",
+    );
+  });
+
+  test("portal is child of document.body", async ({ page }) => {
+    await page.getByTestId("toggle").click();
+
+    const isChildOfBody = await page.evaluate(() => {
+      const portal = document.querySelector("[data-floating-portal]");
+      return portal?.parentElement === document.body;
+    });
+    expect(isChildOfBody).toBe(true);
+  });
+
+  test("hides when toggle is clicked again", async ({ page }) => {
+    await page.getByTestId("toggle").click();
+    await expect(page.getByTestId("floating-inner")).toBeVisible();
+
+    await page.getByTestId("toggle").click();
+    await expect(page.getByTestId("floating-inner")).not.toBeVisible();
+  });
+
+  test("applies position styles when open", async ({ page }) => {
+    await page.getByTestId("toggle").click();
+
+    const style = await page
+      .locator("[data-floating-portal]")
+      .getAttribute("style");
+    expect(style).toContain("position: absolute");
+    expect(style).toMatch(/top:\s*\d+px/);
+    expect(style).toMatch(/left:\s*\d+px/);
+    expect(style).toContain("z-index: 9200");
+  });
+
+  test("floating content is visible and within viewport when open", async ({
+    page,
+  }) => {
+    await page.getByTestId("toggle").click();
+    const content = page.getByTestId("floating-inner");
+    await expect(content).toBeVisible();
+    const box = await content.boundingBox();
+    expect(box).not.toBeNull();
+    const viewport = page.viewportSize();
+    if (box && viewport) {
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 2);
+      expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 2);
+    }
+  });
+});
+
+test.describe("FloatingPortal (intrinsic width)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/floating-portal-intrinsic.html");
+  });
+
+  test("exposes intrinsicAlign on portal when intrinsicWidth is true", async ({
+    page,
+  }) => {
+    await page.getByTestId("toggle").click();
+
+    const portal = page.locator("[data-floating-portal]");
+    await expect(portal).toBeVisible();
+    await expect(portal).toHaveAttribute(
+      "data-floating-intrinsic-align",
+      "start",
+    );
+  });
+
+  test("portal content is narrower than a wide anchor when intrinsicWidth is true", async ({
+    page,
+  }) => {
+    await page.getByTestId("toggle").click();
+
+    const anchorBox = await page.getByTestId("anchor").boundingBox();
+    const portalBox = await page
+      .locator("[data-floating-portal]")
+      .boundingBox();
+    const innerBox = await page.getByTestId("floating-inner").boundingBox();
+
+    expect(anchorBox).not.toBeNull();
+    expect(portalBox).not.toBeNull();
+    expect(innerBox).not.toBeNull();
+    if (anchorBox && portalBox && innerBox) {
+      expect(portalBox.width).toBeLessThan(anchorBox.width - 4);
+      expect(innerBox.width).toBeLessThanOrEqual(portalBox.width + 2);
+    }
+  });
+});

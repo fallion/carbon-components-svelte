@@ -1,0 +1,41 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Text an app supplies (a label, a title, a link, a tile's content, a
+/// notification) can
+/// hold a word longer than its line: a compound word, a URL, an id. It
+/// breaks inside the word rather than running past the component, and
+/// only when nothing else fits. `word-break: break-word` rather than
+/// `overflow-wrap: anywhere` (Safari 15.4+); both let the box shrink.
+/// Truncating text (`white-space: nowrap`) is unaffected.
+/// @access private
+/// @group components
+@mixin long-words {
+  .#{$prefix}--label,
+  .#{$prefix}--form__helper-text,
+  .#{$prefix}--checkbox-label-text,
+  .#{$prefix}--radio-button__label-text,
+  .#{$prefix}--toggle-input__label,
+  .#{$prefix}--accordion__title,
+  .#{$prefix}--inline-notification__title,
+  .#{$prefix}--toast-notification__caption,
+  .#{$prefix}--tile,
+  .#{$prefix}--link,
+  .#{$prefix}--btn {
+    word-break: break-word;
+  }
+
+  // `word-break` also lets a box shrink below its longest word, so in a
+  // row short of space an inline Dropdown's or MultiSelect's label went to
+  // a letter a line ("R/e/g/i/o/n/s"). Words stay whole here and the label
+  // still wraps between them. A single word wider than the room left beside
+  // the control now runs past its box instead of breaking.
+  .#{$prefix}--list-box__wrapper--inline > .#{$prefix}--label {
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+}
+
+@include exports("long-words") {
+  @include long-words;
+}

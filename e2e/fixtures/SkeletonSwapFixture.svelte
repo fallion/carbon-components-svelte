@@ -1,0 +1,534 @@
+<script>
+  import {
+    BigNumber,
+    BigNumberSkeleton,
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbSkeleton,
+    CodeSnippet,
+    CodeSnippetSkeleton,
+    ComboBox,
+    ComboBoxSkeleton,
+    ContentSwitcher,
+    ContentSwitcherSkeleton,
+    CopyInput,
+    CopyInputSkeleton,
+    DatePicker,
+    DatePickerInput,
+    DatePickerSkeleton,
+    Dropdown,
+    DropdownSkeleton,
+    FileUploader,
+    FileUploaderSkeleton,
+    FluidDatePickerSkeleton,
+    FluidPinCodeInputSkeleton,
+    FluidTextAreaSkeleton,
+    MultiSelect,
+    MultiSelectSkeleton,
+    NumberInput,
+    NumberInputSkeleton,
+    PageHeader,
+    PageHeaderSkeleton,
+    Pagination,
+    PaginationSkeleton,
+    PasswordInput,
+    PasswordInputSkeleton,
+    PinCodeInput,
+    PinCodeInputSkeleton,
+    ProgressIndicator,
+    ProgressIndicatorSkeleton,
+    ProgressStep,
+    RadioButton,
+    RadioButtonSkeleton,
+    RangeSlider,
+    RangeSliderSkeleton,
+    Search,
+    SearchSkeleton,
+    Select,
+    SelectItem,
+    SelectSkeleton,
+    Slider,
+    SliderSkeleton,
+    StructuredList,
+    StructuredListBody,
+    StructuredListCell,
+    StructuredListHead,
+    StructuredListRow,
+    StructuredListSkeleton,
+    Switch,
+    Tab,
+    Tabs,
+    TabsSkeleton,
+    TextArea,
+    TextAreaSkeleton,
+    TextInput,
+    TextInputSkeleton,
+    TimePicker,
+    TimePickerSelect,
+    TimePickerSkeleton,
+    Toggle,
+    ToggleSkeleton,
+    TreeView,
+    TreeViewSkeleton,
+  } from "carbon-components-svelte";
+
+  const sizes = ["xs", "sm", undefined, "xl"];
+  const listBoxSizes = ["xs", "sm", undefined, "lg", "xl"];
+  const items = [{ id: "eu", text: "Europe" }];
+</script>
+
+<!-- Each case renders a component and the skeleton that stands in for it,
+     at the same size, in equal-width boxes. -->
+<div style="width: 320px; display: grid; gap: 2rem;">
+  {#each sizes as size}
+    {@const at = size ?? "md"}
+    <div data-testid="text-input-{at}">
+      <div data-part="real"><TextInput {size} labelText="Name" /></div>
+      <div data-part="skeleton"><TextInputSkeleton {size} /></div>
+    </div>
+    <div data-testid="password-input-{at}">
+      <div data-part="real">
+        <PasswordInput {size} labelText="Password" />
+      </div>
+      <div data-part="skeleton"><PasswordInputSkeleton {size} /></div>
+    </div>
+    <div data-testid="number-input-{at}">
+      <div data-part="real">
+        <NumberInput {size} labelText="Count" value={1} />
+      </div>
+      <div data-part="skeleton"><NumberInputSkeleton {size} /></div>
+    </div>
+    <div data-testid="select-{at}">
+      <div data-part="real">
+        <Select {size} labelText="Region"><SelectItem value="eu" /></Select>
+      </div>
+      <div data-part="skeleton"><SelectSkeleton {size} /></div>
+    </div>
+    <div data-testid="copy-input-{at}">
+      <div data-part="real">
+        <CopyInput {size} labelText="Key" value="abc" />
+      </div>
+      <div data-part="skeleton"><CopyInputSkeleton {size} /></div>
+    </div>
+    <div data-testid="date-picker-{at}">
+      <div data-part="real">
+        <DatePicker datePickerType="single">
+          <DatePickerInput {size} labelText="Date" />
+        </DatePicker>
+      </div>
+      <div data-part="skeleton">
+        <DatePickerSkeleton {size} datePickerType="single" />
+      </div>
+    </div>
+  {/each}
+  {#each listBoxSizes as size}
+    {@const at = size ?? "md"}
+    <div data-testid="dropdown-{at}">
+      <div data-part="real">
+        <Dropdown {size} labelText="Region" {items} selectedId="eu" />
+      </div>
+      <div data-part="skeleton"><DropdownSkeleton {size} /></div>
+    </div>
+    <div data-testid="combo-box-{at}">
+      <div data-part="real">
+        <ComboBox {size} labelText="Region" {items} />
+      </div>
+      <div data-part="skeleton"><ComboBoxSkeleton {size} /></div>
+    </div>
+    <div data-testid="multi-select-{at}">
+      <div data-part="real">
+        <MultiSelect {size} labelText="Region" {items} />
+      </div>
+      <div data-part="skeleton"><MultiSelectSkeleton {size} /></div>
+    </div>
+  {/each}
+  <div data-testid="dropdown-inline">
+    <div data-part="real">
+      <Dropdown type="inline" labelText="Region" {items} selectedId="eu" />
+    </div>
+    <div data-part="skeleton"><DropdownSkeleton inline /></div>
+  </div>
+  <div data-testid="multi-select-inline">
+    <div data-part="real">
+      <MultiSelect type="inline" labelText="Region" {items} />
+    </div>
+    <div data-part="skeleton"><MultiSelectSkeleton inline /></div>
+  </div>
+  <div data-testid="dropdown-hidden-label">
+    <div data-part="real">
+      <Dropdown hideLabel labelText="Region" {items} selectedId="eu" />
+    </div>
+    <div data-part="skeleton"><DropdownSkeleton hideLabel /></div>
+  </div>
+  {#each ["xs", "sm", "lg", "xl"] as size}
+    <div data-testid="search-{size}">
+      <div data-part="real"><Search {size} labelText="Search" /></div>
+      <div data-part="skeleton"><SearchSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each [1, 2, 4, 8] as rows}
+    <div data-testid="text-area-{rows}">
+      <div data-part="real"><TextArea {rows} labelText="Notes" /></div>
+      <div data-part="skeleton"><TextAreaSkeleton {rows} /></div>
+    </div>
+    <div data-testid="fluid-text-area-{rows}">
+      <div data-part="real"><TextArea fluid {rows} labelText="Notes" /></div>
+      <div data-part="skeleton"><FluidTextAreaSkeleton {rows} /></div>
+    </div>
+  {/each}
+  {#each ["default", "sm"] as size}
+    <div data-testid="toggle-{size}">
+      <div data-part="real"><Toggle {size} labelText="Alerts" /></div>
+      <div data-part="skeleton">
+        <ToggleSkeleton {size} labelText="Alerts" />
+      </div>
+    </div>
+    <div data-testid="toggle-{size}-hidden-label">
+      <div data-part="real">
+        <Toggle {size} hideLabel labelText="Alerts" />
+      </div>
+      <div data-part="skeleton">
+        <ToggleSkeleton {size} hideLabel labelText="Alerts" />
+      </div>
+    </div>
+    <div data-testid="toggle-{size}-no-label">
+      <div data-part="real"><Toggle {size} /></div>
+      <div data-part="skeleton"><ToggleSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each ["xs", undefined] as size}
+    {@const at = size ?? "md"}
+    <div data-testid="slider-{at}">
+      <div data-part="real">
+        <Slider {size} labelText="Volume" value={40} />
+      </div>
+      <div data-part="skeleton"><SliderSkeleton {size} /></div>
+    </div>
+    <div data-testid="range-slider-{at}">
+      <div data-part="real">
+        <RangeSlider {size} labelText="Price" valueFrom={20} valueTo={60} />
+      </div>
+      <div data-part="skeleton"><RangeSliderSkeleton {size} /></div>
+    </div>
+  {/each}
+  <div data-testid="slider-hidden-input">
+    <div data-part="real">
+      <Slider hideTextInput labelText="Volume" value={40} />
+    </div>
+    <div data-part="skeleton"><SliderSkeleton hideTextInput /></div>
+  </div>
+  <div data-testid="radio-button">
+    <div data-part="real"><RadioButton labelText="Daily" value="d" /></div>
+    <div data-part="skeleton"><RadioButtonSkeleton /></div>
+  </div>
+  <div data-testid="date-picker-range">
+    <div data-part="real">
+      <DatePicker datePickerType="range">
+        <DatePickerInput labelText="From" />
+        <DatePickerInput labelText="To" />
+      </DatePicker>
+    </div>
+    <div data-part="skeleton">
+      <DatePickerSkeleton datePickerType="range" />
+    </div>
+  </div>
+  {#each [320, 200] as width}
+    <div data-testid="fluid-date-picker-{width}" style:width="{width}px">
+      <div data-part="real">
+        <DatePicker fluid datePickerType="single">
+          <DatePickerInput labelText="Date" />
+        </DatePicker>
+      </div>
+      <div data-part="skeleton"><FluidDatePickerSkeleton /></div>
+    </div>
+  {/each}
+  {#each sizes as size}
+    {@const at = size ?? "md"}
+    <div data-testid="time-picker-{at}">
+      <div data-part="real">
+        <TimePicker {size} labelText="Time" placeholder="hh:mm">
+          <TimePickerSelect value="pm" labelText="AM or PM">
+            <SelectItem value="am" text="AM" />
+            <SelectItem value="pm" text="PM" />
+          </TimePickerSelect>
+          <TimePickerSelect value="pdt" labelText="Time zone">
+            <SelectItem value="pdt" text="PDT" />
+            <SelectItem value="gmt" text="GMT" />
+          </TimePickerSelect>
+        </TimePicker>
+      </div>
+      <div data-part="skeleton"><TimePickerSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each ["xs", "sm", "md", "lg"] as size}
+    <div data-testid="pagination-{size}">
+      <div data-part="real">
+        <Pagination {size} totalItems={120} pageSizes={[10, 20]} />
+      </div>
+      <div data-part="skeleton"><PaginationSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each ["small", "field", "default"] as size}
+    <div data-testid="file-uploader-{size}">
+      <div data-part="real">
+        <FileUploader
+          {size}
+          labelTitle="Upload files"
+          labelDescription="Max file size is 500 MB."
+          buttonLabel="Add file"
+        />
+      </div>
+      <div data-part="skeleton"><FileUploaderSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each ["sm", "md"] as size}
+    <div data-testid="breadcrumb-{size}" style="width: 340px">
+      <div data-part="real">
+        <Breadcrumb {size}>
+          <BreadcrumbItem href="/">Projects</BreadcrumbItem>
+          <BreadcrumbItem href="/">billing-api</BreadcrumbItem>
+          <BreadcrumbItem href="/" isCurrentPage>Settings</BreadcrumbItem>
+        </Breadcrumb>
+      </div>
+      <div data-part="skeleton"><BreadcrumbSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each [{}, { spaceEqually: true }, { vertical: true }] as layout, i}
+    <div data-testid="progress-indicator-{i}">
+      <div data-part="real">
+        <ProgressIndicator currentIndex={1} {...layout}>
+          <ProgressStep label="Account" complete />
+          <ProgressStep label="Billing" />
+          <ProgressStep label="Review" />
+        </ProgressIndicator>
+      </div>
+      <div data-part="skeleton">
+        <ProgressIndicatorSkeleton count={3} {...layout} />
+      </div>
+    </div>
+  {/each}
+  {#each [{}, { condensed: true }, { flush: true }] as variant, i}
+    <div data-testid="structured-list-{i}">
+      <div data-part="real">
+        <StructuredList {...variant}>
+          <StructuredListHead>
+            <StructuredListRow head>
+              <StructuredListCell head>Instance</StructuredListCell>
+              <StructuredListCell head>Region</StructuredListCell>
+            </StructuredListRow>
+          </StructuredListHead>
+          <StructuredListBody>
+            <StructuredListRow>
+              <StructuredListCell>api-gateway</StructuredListCell>
+              <StructuredListCell>us-east</StructuredListCell>
+            </StructuredListRow>
+            <StructuredListRow>
+              <StructuredListCell>auth-service</StructuredListCell>
+              <StructuredListCell>eu-de</StructuredListCell>
+            </StructuredListRow>
+          </StructuredListBody>
+        </StructuredList>
+      </div>
+      <div data-part="skeleton">
+        <StructuredListSkeleton rows={2} columns={2} {...variant} />
+      </div>
+    </div>
+  {/each}
+  {#each [{}, { dismissible: true }, { dismissible: true, size: "sm" }, { dismissible: true, size: "xl" }, { type: "container" }, { type: "container", dismissible: true }] as variant, i}
+    <div data-testid="tabs-{i}">
+      <div data-part="real">
+        <Tabs {...variant}>
+          <Tab label="Overview" />
+          <Tab label="Alerts" />
+          <Tab label="Settings" />
+        </Tabs>
+      </div>
+      <div data-part="skeleton">
+        <TabsSkeleton count={3} type={variant.type} size={variant.size} />
+      </div>
+    </div>
+  {/each}
+  {#each ["sm", undefined, "xl"] as size}
+    {@const at = size ?? "md"}
+    <div data-testid="content-switcher-{at}">
+      <div data-part="real">
+        <ContentSwitcher {size}>
+          <Switch text="All" />
+          <Switch text="Active" />
+          <Switch text="Archived" />
+        </ContentSwitcher>
+      </div>
+      <div data-part="skeleton"><ContentSwitcherSkeleton {size} /></div>
+    </div>
+  {/each}
+  <div data-testid="tree-view-hidden-label">
+    <div data-part="real">
+      <TreeView
+        labelText="Files"
+        hideLabel
+        nodes={[{ id: "a", text: "Reports" }]}
+      />
+    </div>
+    <div data-part="skeleton"><TreeViewSkeleton count={1} hideLabel /></div>
+  </div>
+  {#each ["default", "compact"] as size}
+    <div data-testid="tree-view-{size}">
+      <div data-part="real">
+        <TreeView
+          {size}
+          labelText="Files"
+          nodes={[
+            { id: "a", text: "Reports" },
+            { id: "b", text: "Invoices" },
+            { id: "c", text: "Receipts" },
+            { id: "d", text: "Archive" },
+          ]}
+        />
+      </div>
+      <div data-part="skeleton"><TreeViewSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each ["default", "lg", "xl"] as size}
+    <div data-testid="big-number-{size}">
+      <div data-part="real">
+        <BigNumber {size} labelText="Revenue" value={128400} />
+      </div>
+      <div data-part="skeleton"><BigNumberSkeleton {size} /></div>
+    </div>
+  {/each}
+  {#each ["default", "sm"] as size}
+    <div data-testid="page-header-{size}">
+      <div data-part="real">
+        <PageHeader
+          {size}
+          title="Billing"
+          subtitle="Invoices and payment methods"
+        />
+      </div>
+      <div data-part="skeleton"><PageHeaderSkeleton {size} /></div>
+    </div>
+  {/each}
+  <div data-testid="code-snippet-single">
+    <div data-part="real">
+      <CodeSnippet code="npm i carbon-components-svelte" />
+    </div>
+    <div data-part="skeleton"><CodeSnippetSkeleton /></div>
+  </div>
+  <div data-testid="code-snippet-inline">
+    <p data-part="real">
+      Run <CodeSnippet type="inline" code="rm -rf node_modules/" /> to clean up.
+    </p>
+    <p data-part="skeleton">
+      Run <CodeSnippet type="inline" skeleton code="rm -rf node_modules/" /> to clean
+      up.
+    </p>
+  </div>
+  <div data-testid="code-snippet-multi">
+    <div data-part="real">
+      <CodeSnippet type="multi" code={"one\ntwo\nthree"} />
+    </div>
+    <div data-part="skeleton"><CodeSnippetSkeleton type="multi" /></div>
+  </div>
+  {#each [1, 4, 8, 15] as lines}
+    <div data-testid="code-snippet-multi-{lines}">
+      <div data-part="real">
+        <CodeSnippet
+          type="multi"
+          code={Array.from({ length: lines }, (_, i) => `line ${i + 1}`).join(
+            "\n",
+          )}
+        />
+      </div>
+      <div data-part="skeleton">
+        <CodeSnippetSkeleton type="multi" rows={lines} />
+      </div>
+    </div>
+    <div data-testid="code-snippet-skeleton-prop-{lines}">
+      <div data-part="real">
+        <CodeSnippet
+          type="multi"
+          code={Array.from({ length: lines }, (_, i) => `line ${i + 1}`).join(
+            "\n",
+          )}
+        />
+      </div>
+      <div data-part="skeleton">
+        <CodeSnippet
+          skeleton
+          type="multi"
+          code={Array.from({ length: lines }, (_, i) => `line ${i + 1}`).join(
+            "\n",
+          )}
+        />
+      </div>
+    </div>
+  {/each}
+  <div data-testid="code-snippet-skeleton-prop-rows">
+    <div data-part="real">
+      <CodeSnippet
+        type="multi"
+        minCollapsedNumberOfRows={1}
+        maxCollapsedNumberOfRows={5}
+        code={"one\ntwo\nthree\nfour\nfive\nsix\nseven\n"}
+      />
+    </div>
+    <div data-part="skeleton">
+      <CodeSnippet
+        skeleton
+        type="multi"
+        minCollapsedNumberOfRows={1}
+        maxCollapsedNumberOfRows={5}
+        code={"one\ntwo\nthree\nfour\nfive\nsix\nseven\n"}
+      />
+    </div>
+  </div>
+  <div data-testid="code-snippet-skeleton-prop-one-row">
+    <div data-part="real">
+      <CodeSnippet
+        type="multi"
+        minCollapsedNumberOfRows={0}
+        maxCollapsedNumberOfRows={0}
+        code={"one\n"}
+      />
+    </div>
+    <div data-part="skeleton">
+      <CodeSnippet
+        skeleton
+        type="multi"
+        minCollapsedNumberOfRows={0}
+        maxCollapsedNumberOfRows={0}
+        code={"one\n"}
+      />
+    </div>
+  </div>
+  <div data-testid="date-picker-simple">
+    <div data-part="real">
+      <DatePicker><DatePickerInput labelText="Date" /></DatePicker>
+    </div>
+    <div data-part="skeleton"><DatePickerSkeleton /></div>
+  </div>
+  <div data-testid="date-picker-short">
+    <div data-part="real">
+      <DatePicker short><DatePickerInput labelText="Date" /></DatePicker>
+    </div>
+    <div data-part="skeleton"><DatePickerSkeleton short /></div>
+  </div>
+  {#each [4, 6] as count}
+    <div data-testid="fluid-pin-code-input-{count}">
+      <div data-part="real">
+        <PinCodeInput fluid {count} labelText="Code" />
+      </div>
+      <div data-part="skeleton"><FluidPinCodeInputSkeleton {count} /></div>
+    </div>
+  {/each}
+  {#each ["xs", "sm", "default", "xl"] as size}
+    <div data-testid="pin-code-input-{size}">
+      <div data-part="real">
+        <PinCodeInput {size} count={6} labelText="Code" />
+      </div>
+      <div data-part="skeleton">
+        <PinCodeInputSkeleton {size} count={6} />
+      </div>
+    </div>
+  {/each}
+</div>

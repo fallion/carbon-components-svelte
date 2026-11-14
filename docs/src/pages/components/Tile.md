@@ -1,0 +1,86 @@
+---
+description: Tiles provide a container for displaying content in a structured, card-like format, with light and dark variants.
+---
+
+<script>
+  import { AILabel, Box, Column, Grid, Layer, Row, Tile } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic tile container for your content.
+
+<Tile>Payments API — Operational, 99.98% uptime</Tile>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the tile's content as AI-generated. The tile shows the AI surface, and the label sits in the top-right corner at the `"xs"` size.
+
+<Tile>
+  <h4>Usage forecast</h4>
+  <p>Spend is projected to grow 12% next month.</p>
+  <AILabel slot="decorator">
+    <p>Generated from 90 days of billing data.</p>
+  </AILabel>
+</Tile>
+
+### Rounded corners
+
+Set `rounded` to `true` to round the corners of a tile with a decorator. Carbon reserves rounded tiles for AI content, so a tile without a decorator stays square.
+
+<Tile rounded>
+  <h4>Usage forecast</h4>
+  <p>Spend is projected to grow 12% next month.</p>
+  <AILabel slot="decorator">
+    <p>Generated from 90 days of billing data.</p>
+  </AILabel>
+</Tile>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <Tile>Object storage — 82% capacity used</Tile>
+  </Box>
+</Layer>
+
+## Full height
+
+Set `fullHeight` to `true` so the tile fills the height of its container. This
+is useful for tiles placed in a `Row`, where sibling columns stretch to the
+tallest column by default but the tile inside does not.
+
+<Grid>
+  <Row>
+    <Column>
+      <Tile fullHeight>Requests per minute: 4,201</Tile>
+    </Column>
+    <Column>
+      <Tile fullHeight
+        >Error rate: 0.3% over the last hour, down from 0.8% yesterday</Tile
+      >
+    </Column>
+  </Row>
+</Grid>
+
+## Small size
+
+Set `size="sm"` for a compact tile with less padding and no minimum height.
+
+<Tile size="sm">Compact tile</Tile>
+
+## No padding
+
+Set `noPadding` to `true` to remove the tile's padding, so media or a chart can bleed to its edge.
+
+<Tile noPadding>
+  <Box fill="layer-03" height="8rem" />
+</Tile>
+
+## Custom interaction
+
+The tile forwards `on:click`, `on:mouseover`, `on:mouseenter`, and `on:mouseleave` for custom interactions. Unlike `ClickableTile`, a plain tile has no `tabindex` and doesn't respond to <DocKbd label="Enter" /> or <DocKbd label="Space" />—use `ClickableTile` if you need built-in keyboard accessibility.
+
+<Tile on:click={() => console.log("clicked")}>Storage cluster — 3 nodes degraded</Tile>

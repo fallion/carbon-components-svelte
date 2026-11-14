@@ -1,125 +1,536 @@
 <script>
+  import { copyText } from "../utils/copy-text.js";
+
   /**
-   * Set the type of code snippet
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
+   */
+
+  /**
+   * @event {null} expand
+   * @event {null} collapse
+   * @event {null} copy
+   * @event {{ error: unknown }} copy:error
+   * @event {MouseEvent} mouseenter:copy-button
+   * @event {MouseEvent} mouseleave:copy-button
+   * @restProps {div | button | span} Rest props are spread to the root div (single/multi, except `aria-label`, `aria-labelledby`, and `aria-describedby`, which go on the code container), the copy button (inline), or the span (inline with `hideCopyButton`).
+   */
+
+  /**
+   * Set the type of code snippet.
    * @type {"single" | "inline" | "multi"}
    */
   export let type = "single";
 
   /**
-   * Set the code snippet text
-   * Alternatively, use the default slot (e.g., <CodeSnippet>{`code`}</CodeSnippet>)
-   * You must use the `code` prop to copy the code
-   * @type {string}
+   * Set the code snippet text.
+   * Alternatively, use the default slot.
+   *
+   * When `code` is unset, the copy button copies the rendered text of the default slot.
+   * @type {string | undefined}
+   * @example
+   * ```svelte
+   * <CodeSnippet>{code}</CodeSnippet>
+   * ```
    */
   export let code = undefined;
 
   /**
-   * Override the default copy behavior of using the navigator.clipboard.writeText API to copy text
-   * @type {(code: string) => void}
+   * By default, this component uses `navigator.clipboard.writeText` API to copy text to the user's clipboard,
+   * with a `document.execCommand("copy")` fallback. Failures reject so the component can show
+   * `errorFeedback` and dispatch `copy:error`.
+   *
+   * Provide a custom function to override this behavior.
+   * @type {(code: string) => void | Promise<void>}
    */
-  export let copy = async (code) => {
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch (e) {
-      console.log(e);
-    }
-  };
+  export let copy = copyText;
 
-  /** Set to `true` to expand a multi-line code snippet (type="multi") */
+  /**
+   * Set to `true` to expand a multi-line code snippet (type="multi").
+   * @bindable writable
+   */
   export let expanded = false;
 
   /** Set to `true` to hide the copy button */
   export let hideCopyButton = false;
 
-  /**
-   * Set to `true` for the disabled variant
-   * Only applies to the "single", "multi" types
-   */
+  /** Set to `true` for the disabled variant. */
   export let disabled = false;
 
   /**
-   * Set to `true` to wrap the text
-   * Note that `type` must be "multi"
+   * Set to `true` to wrap the text.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
    */
   export let wrapText = false;
 
-  /** Set to `true` to enable the light variant */
-  export let light = false;
+  /**
+   * Set to `true` for a single-line or multi-line snippet to fill its
+   * container instead of stopping at 48rem.
+   */
+  export let fullWidth = false;
 
   /** Set to `true` to display the skeleton state */
   export let skeleton = false;
 
   /**
-   * Specify the ARIA label for the copy button icon
-   * @type {string}
+   * Specify the ARIA label for the copy button icon.
+   * @type {string | undefined}
    */
   export let copyButtonDescription = undefined;
 
   /**
-   * Specify the ARIA label of the copy button
+   * Specify the ARIA label of the copy button.
    * @type {string}
    */
-  export let copyLabel = undefined;
+  export let copyLabel = "Copy code";
+
+  /**
+   * Specify the ARIA label of the code snippet container (single/multi variants).
+   */
+  export let codeLabel = "Code snippet";
 
   /** Specify the feedback text displayed when clicking the snippet */
   export let feedback = "Copied!";
 
+  /** Specify the feedback text displayed when copying fails */
+  export let errorFeedback = "Failed to copy";
+
   /** Set the timeout duration (ms) to display feedback text */
-  export let feedbackTimeout = 2000;
+  export let feedbackTimeout = COPY_FEEDBACK_TIMEOUT_MS;
 
   /**
-   * Specify the show less text
-   * `type` must be "multi"
+   * Specify an icon to render on the copy button during the feedback window
+   * (e.g. after copying). When unset, the copy icon is always shown.
+   *
+   * NOTE: this prop does not apply to the `type="inline"` variant.
+   * @type {Icon | undefined}
+   */
+  export let feedbackIcon = /** @type {Icon | undefined} */ (undefined);
+
+  /**
+   * Specify the show less text.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
    */
   export let showLessText = "Show less";
 
   /**
-   * Specify the show more text
-   * `type` must be "multi"
+   * Specify the show more text.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
    */
   export let showMoreText = "Show more";
 
-  /** Set to `true` to enable the show more/less button */
-  export let showMoreLess = false;
+  /**
+   * Set to `false` to hide the show more/less button.
+   *
+   * When hidden, overflowing multi-line content scrolls inside the
+   * collapsed container instead of being clipped with no affordance.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
+   * @bindable writable
+   */
+  export let showMoreLess = true;
+
+  /**
+   * Specify the maximum number of rows shown when collapsed.
+   * Set to `0` for no maximum.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
+   * A row is 1rem, the code's line height (16px by default).
+   * @type {number}
+   */
+  export let maxCollapsedNumberOfRows = 15;
+
+  /**
+   * Specify the maximum number of rows shown when expanded.
+   * Set to `0` for no maximum (default).
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
+   * A row is 1rem, the code's line height (16px by default).
+   * @type {number}
+   */
+  export let maxExpandedNumberOfRows = 0;
+
+  /**
+   * Specify the minimum number of rows shown when collapsed.
+   * Set to `0` for no minimum.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
+   * A row is 1rem, the code's line height (16px by default).
+   * @type {number}
+   */
+  export let minCollapsedNumberOfRows = 3;
+
+  /**
+   * Specify the minimum number of rows shown when expanded.
+   * Set to `0` for no minimum.
+   *
+   * NOTE: this prop only works with the `type="multi"` variant.
+   * A row is 1rem, the code's line height (16px by default).
+   * @type {number}
+   */
+  export let minExpandedNumberOfRows = 16;
 
   /** Set an id for the code element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
-  /** Obtain a reference to the pre HTML element */
+  /**
+   * Obtain a reference to the pre HTML element.
+   * @bindable readonly
+   * @type {null | HTMLPreElement}
+   */
   export let ref = null;
 
-  import { createEventDispatcher, tick } from "svelte";
-  import ChevronDown16 from "../icons/ChevronDown16.svelte";
+  /**
+   * Obtain a reference to the underlying copy button element.
+   * @type {null | HTMLButtonElement}
+   */
+  export let copyRef = null;
+
+  /**
+   * Set how the "Copied!" feedback tooltip is rendered.
+   * By default, it is rendered in a portal so it is never clipped by an
+   * `overflow: hidden` container. Set to `false` to use Carbon's inline
+   * feedback caret instead.
+   * @type {boolean | undefined}
+   */
+  export let portalTooltip = undefined;
+
+  /**
+   * Set the tooltip placement in floating-ui form: the side, then `start`
+   * or `end` along it, as Popover's `align` takes. Above and below,
+   * `start` and `end` name inline sides, so they swap under `dir="rtl"`.
+   * When set, takes precedence over `tooltipPosition` and `tooltipAlignment`.
+   * @type {"top" | "top-start" | "top-end" | "bottom" | "bottom-start" | "bottom-end" | "left" | "left-start" | "left-end" | "right" | "right-start" | "right-end" | undefined}
+   */
+  export let tooltipAlign = undefined;
+
+  /**
+   * Set the position of the feedback tooltip relative to the copy button.
+   * @deprecated use `tooltipAlign`
+   * @type {"top" | "right" | "bottom" | "left"}
+   */
+  export let tooltipPosition = "bottom";
+
+  /**
+   * Set the alignment of the feedback tooltip relative to the copy button.
+   * @deprecated use `tooltipAlign`
+   * @type {"start" | "center" | "end"}
+   */
+  export let tooltipAlignment = "center";
+
+  import { createEventDispatcher, onMount } from "svelte";
   import Button from "../Button/Button.svelte";
-  import Copy from "../Copy/Copy.svelte";
   import CopyButton from "../CopyButton/CopyButton.svelte";
+  import PortalTooltip from "../Portal/PortalTooltip.svelte";
+  import { iconTooltipPortalGaps } from "../Portal/icon-tooltip-portal-gaps.js";
+  import { observeModalClose } from "../Portal/portal-utils.js";
+  import ChevronDown from "../icons/ChevronDown.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import {
+    COPY_FEEDBACK_TIMEOUT_MS,
+    createCopyFeedbackState,
+  } from "../utils/copy-feedback.js";
+  import { dismiss } from "../utils/dismiss.js";
+  import { joinDescribedBy } from "../utils/field-status.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { isScrollNearEnd } from "../utils/is-scroll-near-end.js";
+  import { noop } from "../utils/noop.js";
+  import { observeResize } from "../utils/shared-observer.js";
+  import { tooltipPlacement } from "../utils/tooltip-align.js";
+  import { uniqueId } from "../utils/unique-id.js";
   import CodeSnippetSkeleton from "./CodeSnippetSkeleton.svelte";
 
   const dispatch = createEventDispatcher();
 
-  function setShowMoreLess() {
-    const { height } = ref.getBoundingClientRect();
-    if (height > 0) showMoreLess = ref.getBoundingClientRect().height > 255;
+  // Single/multi: naming and description belong on the `role="textbox"`
+  // container, not the root `div`. A consumer `aria-label` wins over
+  // `codeLabel`.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
+
+  // Feedback is portalled by default; only an explicit `portalTooltip={false}`
+  // opts back into Carbon's inline caret.
+  $: effectivePortalTooltip =
+    portalTooltip === undefined ? true : portalTooltip;
+
+  // Caret spacing + alignment nudges for the inline variant's portalled
+  // feedback. Single/multi variants delegate to CopyButton, which computes
+  // its own from the same util.
+  $: portalGaps = iconTooltipPortalGaps(
+    effectiveTooltipPosition,
+    effectiveTooltipAlignment,
+  );
+
+  const copyFeedback = createCopyFeedbackState(syncCopyFeedback);
+
+  /** @type {"fade-in" | "fade-out" | undefined} */
+  let animation;
+  let feedbackOpen = false;
+  let copyPending = false;
+  let copyFailed = false;
+  let prevExpanded = expanded;
+  let exceedsThreshold = false;
+  /** Whether the content's height has been measured, which then decides. */
+  let measured = false;
+  let mounted = false;
+  let stopObserving = noop;
+
+  /** @type {null | HTMLDivElement} */
+  let containerRef = null;
+  let yScrollable = false;
+  let atTop = true;
+  let atBottom = true;
+
+  /**
+   * A row is the code's line height, 1rem, so the row-count props follow
+   * the reader's font size as the text does.
+   */
+  const rowHeightInRem = 1;
+
+  /** @type {string | undefined} */
+  let minHeight;
+  /** @type {string | undefined} */
+  let maxHeight;
+  /** @type {"auto" | undefined} */
+  let overflowY;
+
+  function syncCopyFeedback() {
+    animation = copyFeedback.animation;
+    feedbackOpen = copyFeedback.feedbackOpen;
+    copyPending = copyFeedback.copyPending;
+    copyFailed = copyFeedback.isError;
   }
 
-  function copyCode() {
-    copy(code);
-    dispatch("copy");
+  $: feedbackText = copyFailed ? errorFeedback : feedback;
+
+  // Escape hides the inline snippet's copy feedback, as it does
+  // CopyButton's. Listens on `window` in the capture phase, so an ancestor
+  // such as a Modal doesn't also see the Escape that hid it.
+  /** @param {KeyboardEvent} event */
+  function handleFeedbackKeydown(event) {
+    if (event.key !== "Escape" || !feedbackOpen) return;
+    // Escape that cancels an IME composition is not a dismissal.
+    if (isImeComposition(event)) return;
+    event.stopPropagation();
+    copyFeedback.dismiss();
   }
+
+  /** @type {null | HTMLElement} */
+  let inlineCodeRef = null;
+
+  /**
+   * Text to copy: `code` when defined, otherwise the rendered slot text.
+   * @returns {string}
+   */
+  function getCopyText() {
+    if (code !== undefined) return code;
+    // The inline <code> pads the slot with template spaces; trim only there.
+    // Single/multi read the <pre>, where leading indentation is content.
+    if (type === "inline") return inlineCodeRef?.textContent?.trim() ?? "";
+    return ref?.textContent ?? "";
+  }
+
+  function copySnippet() {
+    return copy(getCopyText());
+  }
+
+  function dismissFeedback() {
+    copyFeedback.dismiss();
+  }
+
+  function measureHeight() {
+    if (!ref) return;
+    // Measure the snippet's full (unclipped) content height. The <pre> is never
+    // the element with a max-height, so its rendered height always reflects the
+    // true content height regardless of expanded state. Comparing the measured
+    // height keeps this correct across any consumer font size or line height.
+    // Subtract the <pre>'s own vertical padding so only the text counts toward
+    // the threshold; otherwise the decorative bottom padding inflates the height
+    // and the expand button appears when only padding, not content, is clipped.
+    const style = getComputedStyle(ref);
+    const padding =
+      Number.parseFloat(style.paddingTop) +
+      Number.parseFloat(style.paddingBottom);
+    const boxHeight = ref.getBoundingClientRect().height;
+    // A hidden snippet has no box; keep its state. Empty content still has
+    // its padding box, so it falls through and clears the expand control.
+    if (boxHeight <= 0) return;
+    const height = boxHeight - padding;
+    const remInPixels =
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+      16;
+    const collapsedMaxHeight =
+      maxCollapsedNumberOfRows * rowHeightInRem * remInPixels;
+    measured = true;
+    exceedsThreshold = canExpand && height > collapsedMaxHeight;
+    // If the content no longer overflows, collapse so the expanded min-height
+    // doesn't leave the snippet taller than its (now shorter) content.
+    if (!exceedsThreshold && expanded) expanded = false;
+  }
+
+  function updateScrollState() {
+    if (!containerRef) return;
+    yScrollable = containerRef.scrollHeight > containerRef.clientHeight;
+    atTop = containerRef.scrollTop <= 0;
+    // `isScrollNearEnd` itself returns false when the content doesn't
+    // overflow (`scrollHeight <= clientHeight`); the original inline
+    // formula didn't guard that case and always came out `true` there
+    // (`scrollTop` is pinned at 0 when there's nothing to scroll, so
+    // `clientHeight >= scrollHeight - 1` trivially holds). `!yScrollable ||`
+    // keeps that same "true when not scrollable" value.
+    atBottom =
+      !yScrollable ||
+      isScrollNearEnd({
+        scrollTop: containerRef.scrollTop,
+        scrollHeight: containerRef.scrollHeight,
+        clientHeight: containerRef.clientHeight,
+        threshold: 1,
+      });
+  }
+
+  $: showTopFade = type === "multi" && yScrollable && !atTop;
+  $: showBottomFade = type === "multi" && yScrollable && !atBottom;
 
   $: expandText = expanded ? showLessText : showMoreText;
-  $: minHeight = expanded ? 16 * 15 : 48;
-  $: maxHeight = expanded ? "none" : 16 * 15 + "px";
-  $: if (type === "multi" && ref) {
-    if (code === undefined) setShowMoreLess();
-    if (code) tick().then(setShowMoreLess);
+
+  // Mirror Carbon React: the expand control is only useful when collapsed
+  // content is capped and expanding can reveal more rows than that cap.
+  $: canExpand =
+    maxCollapsedNumberOfRows > 0 &&
+    (maxExpandedNumberOfRows <= 0 ||
+      maxExpandedNumberOfRows > maxCollapsedNumberOfRows);
+
+  // Until the snippet is first measured, and in server-rendered HTML, the
+  // line count decides, so the expand control is there from the start
+  // instead of adding a row when the measurement lands. A trailing newline
+  // renders no line. Wrapped text can take more rows than it has lines, so
+  // it waits for the measurement.
+  $: if (!measured) {
+    exceedsThreshold =
+      type === "multi" &&
+      showMoreLess &&
+      !wrapText &&
+      typeof code === "string" &&
+      canExpand &&
+      code.replace(/\n$/, "").split("\n").length > maxCollapsedNumberOfRows;
   }
+
+  // Multi-line min/max heights come from row-count props (1rem a row).
+  // A value of `0` means no constraint for that axis (Carbon React parity).
+  $: if (type === "multi") {
+    if (expanded) {
+      minHeight =
+        minExpandedNumberOfRows > 0
+          ? `${minExpandedNumberOfRows * rowHeightInRem}rem`
+          : undefined;
+      maxHeight =
+        maxExpandedNumberOfRows > 0
+          ? `${maxExpandedNumberOfRows * rowHeightInRem}rem`
+          : "none";
+    } else {
+      minHeight =
+        minCollapsedNumberOfRows > 0
+          ? `${minCollapsedNumberOfRows * rowHeightInRem}rem`
+          : undefined;
+      maxHeight =
+        maxCollapsedNumberOfRows > 0
+          ? `${maxCollapsedNumberOfRows * rowHeightInRem}rem`
+          : undefined;
+    }
+    // Without the show-more control, overflowing content must remain reachable
+    // via scroll rather than hard-clipping with no affordance.
+    overflowY = showMoreLess ? undefined : "auto";
+  } else {
+    minHeight = undefined;
+    maxHeight = undefined;
+    overflowY = undefined;
+  }
+
+  function onResize() {
+    measureHeight();
+    updateScrollState();
+  }
+
+  // Re-measure whenever the snippet resizes (font load, content change, width
+  // change causing reflow, expand/collapse transition), so the expand button
+  // and scroll fades only reflect real overflow. Observing queues a first
+  // measurement, so it runs with every other snippet's in one batch after
+  // layout instead of forcing a layout per snippet.
+  $: if (mounted) {
+    stopObserving();
+    /** @type {Array<() => void>} */
+    const stops = [];
+    if (type === "multi" && showMoreLess && ref) {
+      // Row-count props change the overflow threshold without a resize, so
+      // observe again to queue a fresh measurement.
+      maxCollapsedNumberOfRows;
+      maxExpandedNumberOfRows;
+      stops.push(observeResize(ref, onResize));
+    } else {
+      exceedsThreshold = false;
+    }
+    if (type === "multi" && containerRef) {
+      // The container only changes its scroll state. The content's own
+      // resize, observed above, covers the height threshold.
+      stops.push(observeResize(containerRef, updateScrollState));
+    } else {
+      yScrollable = false;
+      atTop = true;
+      atBottom = true;
+    }
+    stopObserving = () => {
+      for (const stop of stops) stop();
+    };
+  }
+
+  $: showExpandButton = showMoreLess && type === "multi" && exceedsThreshold;
+
+  $: if (type === "multi" && prevExpanded !== expanded) {
+    const nextExpanded = expanded;
+    prevExpanded = expanded;
+    dispatch(nextExpanded ? "expand" : "collapse");
+  }
+
+  let disconnectModalObserver = noop;
+
+  $: {
+    const node = copyRef || ref;
+    disconnectModalObserver();
+    disconnectModalObserver =
+      effectivePortalTooltip && node
+        ? observeModalClose(node, dismissFeedback)
+        : () => {};
+  }
+
+  onMount(() => {
+    mounted = true;
+
+    return () => {
+      stopObserving();
+      copyFeedback.cleanup();
+      disconnectModalObserver();
+    };
+  });
+
+  $: ({
+    position: effectiveTooltipPosition,
+    alignment: effectiveTooltipAlignment,
+  } = tooltipPlacement(tooltipAlign, tooltipPosition, tooltipAlignment));
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 {#if skeleton}
   <CodeSnippetSkeleton
-    type="{type}"
+    {type}
+    rows={code ? code.replace(/\n$/, "").split("\n").length : undefined}
+    chars={code ? code.length : undefined}
+    {minCollapsedNumberOfRows}
+    {maxCollapsedNumberOfRows}
     {...$$restProps}
     on:click
     on:mouseover
@@ -129,96 +540,171 @@
 {:else if type === "inline"}
   {#if hideCopyButton}
     <span
-      class:bx--snippet="{true}"
-      class:bx--snippet--expand="{expanded}"
-      class:bx--snippet--light="{light}"
-      class:bx--snippet--no-copy="{hideCopyButton}"
-      class:bx--snippet--wraptext="{wrapText}"
-      class:bx--snippet--single="{type === 'single'}"
-      class:bx--snippet--inline="{type === 'inline'}"
-      class:bx--snippet--multi="{type === 'multi'}"
+      class:bx--snippet={true}
+      class:bx--snippet--expand={expanded}
+      class:bx--snippet--no-copy={hideCopyButton}
+      class:bx--snippet--wraptext={wrapText}
+      class:bx--snippet--inline={true}
       {...$$restProps}
     >
-      <code id="{id}">
-        <slot>{code}</slot>
-      </code>
+      <code {id}> <slot>{code}</slot> </code>
     </span>
   {:else}
-    <Copy
-      aria-label="{copyLabel}"
-      aria-describedby="{id}"
-      feedback="{feedback}"
-      feedbackTimeout="{feedbackTimeout}"
-      class="bx--snippet {type && `bx--snippet--${type}`}
-          {type === 'inline' && 'bx--btn--copy'}
-          {expanded && 'bx--snippet--expand'}
-          {light && 'bx--snippet--light'}
-          {hideCopyButton && 'bx--snippet--no-copy'}
-          {wrapText && 'bx--snippet--wraptext'}"
+    <button
+      bind:this={copyRef}
+      use:dismiss={{
+        enabled: feedbackOpen,
+        type: "keydown",
+        handler: handleFeedbackKeydown,
+        options: { capture: true },
+      }}
+      type="button"
+      {disabled}
+      aria-busy={copyPending ? "true" : undefined}
+      class:bx--copy={true}
+      class:bx--btn--copy={true}
+      class:bx--copy-btn--animating={animation}
+      class:bx--copy-btn--fade-in={animation === "fade-in"}
+      class:bx--copy-btn--fade-out={animation === "fade-out"}
+      class:bx--copy-btn--portal-active={effectivePortalTooltip}
+      class:bx--snippet={true}
+      class:bx--snippet--inline={type === "inline"}
+      class:bx--snippet--expand={expanded}
+      class:bx--snippet--wraptext={wrapText}
+      aria-label={copyLabel}
       {...$$restProps}
+      aria-describedby={joinDescribedBy(id, $$restProps["aria-describedby"])}
       on:click
-      on:click="{copyCode}"
+      on:click={async () => {
+        try {
+          await copyFeedback.onClick(async () => {
+            await copy(getCopyText());
+            dispatch("copy");
+          }, feedbackTimeout);
+        } catch (error) {
+          dispatch("copy:error", { error });
+        }
+      }}
+      on:animationend={(event) => {
+        copyFeedback.onAnimationEnd(event);
+      }}
       on:mouseover
       on:mouseenter
       on:mouseleave
+      on:mouseenter={(event) => dispatch("mouseenter:copy-button", event)}
+      on:mouseleave={(event) => dispatch("mouseleave:copy-button", event)}
     >
-      <code id="{id}">
-        <slot>{code}</slot>
-      </code>
-    </Copy>
+      <code bind:this={inlineCodeRef} {id}> <slot>{code}</slot> </code>
+      {#if !effectivePortalTooltip}
+        <span
+          aria-hidden="true"
+          class:bx--assistive-text={true}
+          class:bx--copy-btn__feedback={true}
+        >
+          {feedbackText}
+        </span>
+      {/if}
+    </button>
+    <!-- Always rendered (even while empty) so assistive tech registers the
+         region before its text changes. -->
+    <span role="status" aria-live="polite" class:bx--visually-hidden={true}
+      >{feedbackOpen ? feedbackText : ""}</span
+    >
+
+    {#if effectivePortalTooltip}
+      <PortalTooltip
+        anchor={copyRef}
+        open={feedbackOpen}
+        text={feedbackText}
+        {animation}
+        direction={effectiveTooltipPosition}
+        intrinsicAlign={effectiveTooltipAlignment}
+        horizontalGapLeft={portalGaps.horizontalGapLeft}
+        horizontalGapRight={portalGaps.horizontalGapRight}
+        gapTop={portalGaps.gapTop}
+        gapBottom={portalGaps.gapBottom}
+        verticalAlignOffsetLeft={portalGaps.verticalAlignOffsetLeft}
+        verticalAlignOffsetRight={portalGaps.verticalAlignOffsetRight}
+        on:cover={() => copyFeedback.dismiss()}
+        on:animationend={(event) => {
+          copyFeedback.onAnimationEnd(event);
+        }}
+      />
+    {/if}
   {/if}
 {:else}
   <div
-    class:bx--snippet="{true}"
-    class:bx--snippet--expand="{expanded}"
-    class:bx--snippet--light="{light}"
-    class:bx--snippet--no-copy="{hideCopyButton}"
-    class:bx--snippet--wraptext="{wrapText}"
-    class:bx--snippet--single="{type === 'single'}"
-    class:bx--snippet--inline="{type === 'inline'}"
-    class:bx--snippet--multi="{type === 'multi'}"
-    class:bx--snippet--disabled="{type !== 'inline' && disabled}"
-    {...$$restProps}
+    class:bx--snippet={true}
+    class:bx--snippet--expand={expanded}
+    class:bx--snippet--no-copy={hideCopyButton}
+    class:bx--snippet--wraptext={wrapText}
+    class:bx--snippet--single={type === "single"}
+    class:bx--snippet--multi={type === "multi"}
+    class:bx--snippet--disabled={disabled}
+    class:bx--snippet--full-width={fullWidth}
+    {...wrapperProps}
     on:mouseover
     on:mouseenter
     on:mouseleave
   >
     <div
-      role="{type === 'single' ? 'textbox' : undefined}"
-      tabindex="{type === 'single' && !disabled ? '0' : undefined}"
-      aria-label="{$$restProps['aria-label'] || copyLabel || 'code-snippet'}"
-      class:bx--snippet-container="{true}"
-      style="width: 100%; min-height: {minHeight}px; max-height: {maxHeight}"
+      {id}
+      role="textbox"
+      tabindex={disabled ? undefined : 0}
+      aria-readonly="true"
+      aria-multiline={type === "multi" ? "true" : undefined}
+      aria-label={ariaLabel ?? codeLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
+      class:bx--snippet-container={true}
+      class:bx--snippet-container--fade-top={showTopFade}
+      class:bx--snippet-container--fade-bottom={showBottomFade}
+      style:width="100%"
+      style:min-height={minHeight}
+      style:max-height={maxHeight}
+      style:overflow-y={overflowY}
+      bind:this={containerRef}
+      on:scroll={updateScrollState}
     >
-      <pre bind:this="{ref}">
-        <code><slot>{code}</slot></code>
-      </pre>
+      <pre bind:this={ref}><code><slot>{code}</slot></code></pre>
     </div>
     {#if !hideCopyButton}
       <CopyButton
-        disabled="{disabled}"
-        feedback="{feedback}"
-        feedbackTimeout="{feedbackTimeout}"
-        iconDescription="{copyButtonDescription}"
+        bind:ref={copyRef}
+        copy={copySnippet}
+        {disabled}
+        {feedback}
+        {errorFeedback}
+        {feedbackTimeout}
+        {feedbackIcon}
+        iconDescription={copyButtonDescription}
+        portalTooltip={effectivePortalTooltip}
+        tooltipPosition={effectiveTooltipPosition}
+        tooltipAlignment={effectiveTooltipAlignment}
         on:click
-        on:click="{copyCode}"
+        on:copy
+        on:copy:error
         on:animationend
+        on:mouseenter={(event) => dispatch("mouseenter:copy-button", event)}
+        on:mouseleave={(event) => dispatch("mouseleave:copy-button", event)}
       />
     {/if}
-    {#if showMoreLess}
+    {#if showExpandButton}
       <Button
         kind="ghost"
-        size="field"
+        size="small"
         class="bx--snippet-btn--expand"
-        disabled="{disabled}"
-        on:click="{() => {
+        aria-expanded={expanded}
+        aria-controls={id}
+        {disabled}
+        on:click={() => {
           expanded = !expanded;
-        }}"
+        }}
       >
-        <span class:bx--snippet-btn--text="{true}">{expandText}</span>
-        <ChevronDown16
+        <span class:bx--snippet-btn--text={true}>{expandText}</span>
+        <ChevronDown
           class="bx--icon-chevron--down bx--snippet__icon"
-          aria-label="{expandText}"
+          aria-hidden="true"
         />
       </Button>
     {/if}

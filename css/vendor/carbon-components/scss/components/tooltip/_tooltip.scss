@@ -1,0 +1,643 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/tooltip';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+
+/// Tooltip styles
+/// @access private
+/// @group tooltip
+@mixin tooltip {
+  // Caret's original size was 13.75px square
+  $caret-size: to-rem(6.875px);
+
+  .#{$prefix}--tooltip__label {
+    @include type-style('label-01');
+
+    display: inline-flex;
+    align-items: center;
+    color: $text-secondary;
+
+    &:focus {
+      @include focus-outline('border');
+    }
+  }
+
+  .#{$prefix}--tooltip__trigger svg {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--tooltip__trigger:not(.#{$prefix}--btn--icon-only) {
+    @include button-reset($width: false, $omit: (display));
+
+    display: inline-flex;
+    // ccs: a flex or grid parent that stretches its items (a vertical
+    // Stack does by default) would widen the trigger, which centers the
+    // tooltip on the stretched box instead of the icon.
+    width: fit-content;
+    align-items: center;
+    font-size: 1rem;
+
+    &:focus {
+      @include focus-outline('border');
+
+      fill: $button-primary-hover;
+    }
+  }
+
+  .#{$prefix}--tooltip__trigger:not(.#{$prefix}--btn--icon-only)[disabled] svg {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--tooltip__label .#{$prefix}--tooltip__trigger {
+    // Override `margin: 0` from button-reset mixin
+    margin-inline-start: $carbon--spacing-03; // ccs: the icon follows the label in RTL too
+  }
+
+  .#{$prefix}--tooltip {
+    @include box-shadow;
+    @include reset;
+
+    position: absolute;
+    z-index: z('floating');
+    display: none;
+    min-width: to-rem(208px);
+    max-width: to-rem(288px);
+    padding: $carbon--spacing-05;
+    margin-top: $carbon--spacing-02;
+    background: $background-inverse;
+    border-radius: to-rem(2px);
+    color: $text-inverse;
+    word-wrap: break-word;
+
+    // @todo this can be deprecated in v11 since focus should always be on the content container not the tooltip
+    &:focus {
+      box-shadow: inset 0 0 0 1px $background-inverse, inset 0 0 0 2px $background;
+      outline: 0;
+    }
+
+    &.#{$prefix}--tooltip--top.#{$prefix}--tooltip--align-start,
+    &.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-start {
+      transform: translate(calc(50% - 22px), 0);
+
+      .#{$prefix}--tooltip__caret {
+        margin-left: 15px;
+      }
+    }
+
+    &.#{$prefix}--tooltip--top.#{$prefix}--tooltip--align-end,
+    &.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-end {
+      transform: translate(calc(22px - 50%), 0);
+
+      .#{$prefix}--tooltip__caret {
+        margin-right: 15px;
+      }
+    }
+
+    &.#{$prefix}--tooltip--left.#{$prefix}--tooltip--align-start {
+      transform: translate(0, calc(-15px + 50%));
+
+      .#{$prefix}--tooltip__caret {
+        top: 14px;
+      }
+    }
+
+    &.#{$prefix}--tooltip--left.#{$prefix}--tooltip--align-end {
+      transform: translate(0, calc(31px - 50%));
+
+      .#{$prefix}--tooltip__caret {
+        top: initial;
+        bottom: 25px;
+      }
+    }
+
+    &.#{$prefix}--tooltip--right.#{$prefix}--tooltip--align-start {
+      transform: translate(0, calc(-26px + 50%));
+
+      .#{$prefix}--tooltip__caret {
+        top: 26px;
+      }
+    }
+
+    &.#{$prefix}--tooltip--right.#{$prefix}--tooltip--align-end {
+      transform: translate(0, calc(20px - 50%));
+
+      .#{$prefix}--tooltip__caret {
+        top: initial;
+        bottom: 12px;
+      }
+    }
+
+    p {
+      @include type-style('body-compact-01');
+
+      text-align: left;
+    }
+
+    button {
+      padding-right: $carbon--spacing-07;
+    }
+
+    .#{$prefix}--btn:focus {
+      border-color: $focus-inverse;
+      outline-color: $background-inverse;
+    }
+
+    .#{$prefix}--link {
+      color: $link-inverse;
+      font-size: to-rem(14px);
+
+      &:focus {
+        outline: 1px solid $focus-inverse;
+        outline-offset: 2px;
+      }
+
+      &:active,
+      &:active:visited,
+      &:active:visited:hover {
+        color: $text-inverse;
+      }
+
+      &:visited {
+        color: $link-inverse;
+      }
+    }
+
+    // Tooltips need to be click focusable but not sequentially focusable so the user can click within
+    // the tooltip and not have it close. Because the element is not actionable it does not need
+    // to have a visible focus indicator (OK'd by IBMa)
+    .#{$prefix}--tooltip__content[tabindex='-1']:focus {
+      outline: none;
+    }
+
+    .#{$prefix}--tooltip__caret {
+      position: absolute;
+      top: calc(#{$caret-size * (-1)} + 1px);
+      right: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      border-right: $caret-size solid transparent;
+      border-bottom: $caret-size solid $background-inverse;
+      border-left: $caret-size solid transparent;
+      margin: 0 auto;
+      content: '';
+    }
+
+    .#{$prefix}--tooltip__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+    }
+
+    &[data-floating-menu-direction='left'] {
+      margin-left: calc(#{$spacing-03} * -1);
+
+      .#{$prefix}--tooltip__caret {
+        top: 50%;
+        // left position has an additional space between caret and tooltip
+        right: calc(#{$caret-size * (-1)} + 1px);
+        left: auto;
+        transform: rotate(90deg) translate(50%, -50%);
+      }
+    }
+
+    &[data-floating-menu-direction='top'] {
+      margin-top: calc(#{$spacing-03} * -1);
+
+      .#{$prefix}--tooltip__caret {
+        top: auto;
+        bottom: calc(#{$caret-size * (-1)} + 1px);
+        transform: rotate(180deg);
+      }
+    }
+
+    &[data-floating-menu-direction='right'] {
+      margin-left: $spacing-03;
+
+      .#{$prefix}--tooltip__caret {
+        top: 50%;
+        right: auto;
+        left: calc(#{$caret-size * (-1)} + 1px);
+        transform: rotate(270deg) translate(50%, -50%);
+      }
+    }
+
+    &[data-floating-menu-direction='bottom'] {
+      margin-top: $spacing-03;
+    }
+  }
+
+  .#{$prefix}--tooltip--shown {
+    display: block;
+    margin-top: 0;
+  }
+
+  .#{$prefix}--tooltip--definition.#{$prefix}--tooltip--a11y {
+    // ccs: from the pruned `tooltip--definition--legacy` block. The
+    // tooltip is a sibling of the trigger, so this wrapper is what its
+    // absolute position resolves against.
+    position: relative;
+    // Wrapping element set to inline since the tooltip isn't contained within the trigger (affects center and end alignments)
+    // Also allows for Definition Tooltip to be used within a paragraph of text as defined in the usage guidelines
+    display: inline-flex;
+    // ccs: keeps a stretching flex or grid parent from widening the
+    // wrapper, which would center the tooltip on it instead of the term.
+    width: fit-content;
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition {
+    // ccs: v11's definition term takes the surrounding font, so a term in
+    // body text matches the words around it. v10 set `label-01` (12px).
+    font: inherit;
+    letter-spacing: inherit;
+
+    // default buttons in Safari are adding a small margin, affecting tooltip
+    // placement (formerly `.bx--tooltip--definition button.bx--tooltip--a11y`)
+    margin: 0; // ccs: moved
+    border-bottom: 1px dotted $border-strong; // ccs: v11 color
+    // ccs: from the pruned `tooltip--definition--legacy` block. The trigger
+    // is a <button>, so without this it takes the UA `buttontext` color.
+    color: $text-primary;
+    transition: border-color $duration--fast-02;
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition:hover,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition:focus {
+    border-bottom-color: $border-interactive; // ccs: v11 color
+  }
+
+  // ccs: definition tooltips hosted by a Tag. The dotted dictionary-term
+  // underline does not suit a tag-styled trigger, and the label keeps the
+  // tag's text color; a truncating tag's trigger also has to fill the tag and
+  // clip like the label it replaces. Same
+  // compound as the rules around it so these win the hover/placement ties.
+  .#{$prefix}--tag-set-overflow
+    .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition {
+    border-bottom: none;
+    color: inherit;
+  }
+
+  .#{$prefix}--tag__label-tooltip
+    .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-bottom: none;
+    color: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ccs: like the shared state rule below, for the rest of the
+  // `$tooltip-type: 'icon'` trigger body
+  // (position/display/focus/cursor/pseudo-element base/transition/content -
+  // everything `tooltip--trigger('icon', ...)` emits besides state, which
+  // is shared below). This component's icon trigger and
+  // `.#{$prefix}--btn--icon-only` (button/_button.scss) both emit it
+  // identically, so one rule covers both families instead of each repeating
+  // it. Every selector below is exactly the 2-class compound
+  // `tooltip--trigger` used per direction before (never a bare
+  // `.#{$prefix}--tooltip__trigger`): a portal-rendered tooltip's trigger
+  // never gets a direction class (see the Svelte components), so, like
+  // before, this only ever matches a CSS-only trigger.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--right,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--left,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--right,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--left {
+    @include tooltip--trigger-icon-body;
+  }
+
+  // ccs: `tooltip--trigger`'s output never varies by position (only
+  // `tooltip--placement` below does), so both positions this type supports
+  // share one rule instead of repeating the ~20-declaration body per
+  // position.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom {
+    @include tooltip--trigger('definition', (state,));
+  }
+
+  // ccs: the visible/hover/focus/hidden state rules (`tooltip--trigger-state`)
+  // never vary by type or position, so every CSS-only trigger in the bundle
+  // - this component's, `.#{$prefix}--btn--icon-only`'s (button/_button.scss)
+  // and the password toggle's (which reuses the icon-only rules, see
+  // text-input/_text-input.scss) - shares this one rule instead of each
+  // `tooltip--trigger` call site repeating it. Every trigger element always
+  // carries both classes below (see the Svelte components), so this is the
+  // same selector shape (2 classes) `tooltip--trigger` used per call site
+  // before, not a specificity change. It must come after the icon and
+  // definition trigger bodies, as upstream's per-type state block did: the
+  // definition body hides its caret with `opacity: 0` at the same
+  // specificity as the `opacity: 1` here, so emitting this first left the
+  // caret fading in and then snapping back to hidden.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--a11y {
+    @include tooltip--trigger-state;
+  }
+
+  .#{$prefix}--tooltip__trigger {
+    &:hover,
+    &:focus {
+      svg {
+        fill: $icon-secondary;
+      }
+    }
+  }
+
+  // carbon-components-svelte patch (button-icon-fill)
+  // An icon-only Button trigger keeps its `currentColor` icon (the button sets
+  // `color`), not the tooltip icon's `$icon-secondary`. Each position class is
+  // emitted only on a Button trigger, so these match one class plus `svg`,
+  // tying `.bx--tooltip__trigger svg` and winning on source order while still
+  // losing to a consumer's `.my-btn svg`.
+  .#{$prefix}--btn--icon-only--top svg,
+  .#{$prefix}--btn--icon-only--right svg,
+  .#{$prefix}--btn--icon-only--bottom svg,
+  .#{$prefix}--btn--icon-only--left svg,
+  .#{$prefix}--btn--icon-only--top:hover svg,
+  .#{$prefix}--btn--icon-only--right:hover svg,
+  .#{$prefix}--btn--icon-only--bottom:hover svg,
+  .#{$prefix}--btn--icon-only--left:hover svg,
+  .#{$prefix}--btn--icon-only--top:focus svg,
+  .#{$prefix}--btn--icon-only--right:focus svg,
+  .#{$prefix}--btn--icon-only--bottom:focus svg,
+  .#{$prefix}--btn--icon-only--left:focus svg {
+    fill: currentColor;
+  }
+
+  // ccs: `--cds-tooltip-*` custom-property redesign (see the
+  // `tooltip--geometry-*` mixins in globals/scss/_tooltip.scss for the
+  // full rationale). One shared rule per pseudo-element role reads the
+  // custom properties via `var(...)`; the selector groups below it only
+  // set the handful that differ per direction/alignment/type, instead of
+  // ~14 near-duplicate declaration blocks each repeating everything.
+  // Scoped to the same direction-qualified selector union
+  // `tooltip--trigger-icon-body` above already uses (never a bare
+  // `.#{$prefix}--tooltip__trigger`), so this matches definition triggers
+  // too (they always also carry a `.#{$prefix}--tooltip--{position}`
+  // class) but not a portal-rendered trigger that never gets one.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--right,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--left,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--right,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--left {
+    &::before {
+      top: var(--cds-tooltip-caret-top, auto);
+      right: var(--cds-tooltip-caret-right, auto);
+      bottom: var(--cds-tooltip-caret-bottom, auto);
+      left: var(--cds-tooltip-caret-left, auto);
+      border-width: var(--cds-tooltip-caret-bw, 0);
+      border-color: var(--cds-tooltip-caret-bc, transparent);
+      transform: var(--cds-tooltip-caret-tf, none);
+    }
+
+    &::after,
+    .#{$prefix}--assistive-text,
+    + .#{$prefix}--assistive-text {
+      top: var(--cds-tooltip-body-top, auto);
+      right: var(--cds-tooltip-body-right, auto);
+      bottom: var(--cds-tooltip-body-bottom, auto);
+      left: var(--cds-tooltip-body-left, auto);
+      transform: var(--cds-tooltip-body-tf, none);
+    }
+
+    .#{$prefix}--assistive-text::after {
+      position: absolute;
+      display: block;
+      content: '';
+      top: var(--cds-tooltip-hover-top, auto);
+      right: var(--cds-tooltip-hover-right, auto);
+      bottom: var(--cds-tooltip-hover-bottom, auto);
+      left: var(--cds-tooltip-hover-left, auto);
+      width: var(--cds-tooltip-hover-w, 0);
+      height: var(--cds-tooltip-hover-h, 0);
+    }
+  }
+
+  // ccs: position-only vars (hover-bridge geometry, caret cross-axis +
+  // border + transform) never vary by `$align` or `$tooltip-type`, so one
+  // rule per position covers icon, definition and button-icon-only
+  // triggers together.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--top {
+    @include tooltip--geometry-hover('top');
+    @include tooltip--geometry-caret-cross('top');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--right,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--right {
+    @include tooltip--geometry-hover('right');
+    @include tooltip--geometry-caret-cross('right');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--bottom {
+    @include tooltip--geometry-hover('bottom');
+    @include tooltip--geometry-caret-cross('bottom');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--left,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--left {
+    @include tooltip--geometry-hover('left');
+    @include tooltip--geometry-caret-cross('left');
+  }
+
+  // ccs: main-axis vars (caret + body offset) vary by `$tooltip-type`
+  // (definition uses a tighter caret spacing) but never by `$align`.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--top {
+    @include tooltip--geometry-main('icon', 'top');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--right,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--right {
+    @include tooltip--geometry-main('icon', 'right');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--bottom {
+    @include tooltip--geometry-main('icon', 'bottom');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--left,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--left {
+    @include tooltip--geometry-main('icon', 'left');
+  }
+
+  // ccs: definition's assistive text is a *sibling* of the trigger
+  // (`+ .#{$prefix}--assistive-text`), not a descendant like icon's - custom
+  // properties only inherit down the DOM tree, never sideways to a sibling,
+  // so the sibling selector needs its own copy of these declarations
+  // instead of picking them up from the trigger via inheritance.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--top
+    + .#{$prefix}--assistive-text {
+    @include tooltip--geometry-main('definition', 'top');
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom
+    + .#{$prefix}--assistive-text {
+    @include tooltip--geometry-main('definition', 'bottom');
+  }
+
+  // ccs: body cross-axis vars - `top`/`bottom` positions only (the two
+  // that support `$align`); shared by icon and definition since neither
+  // varies by `$tooltip-type`. The align-less selector only matters for
+  // CSS-only markup that omits an align modifier class; our components
+  // always add one. Icon's mixin default is 'center', definition's is
+  // 'start' (matching each type's own upstream default), so each folds the
+  // align-less selector into its own default instead of a separate rule.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--top,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--top {
+    &,
+    &.#{$prefix}--tooltip--align-center {
+      @include tooltip--geometry-align('top', 'center');
+    }
+
+    &.#{$prefix}--tooltip--align-start {
+      @include tooltip--geometry-align('top', 'start');
+    }
+
+    &.#{$prefix}--tooltip--align-end {
+      @include tooltip--geometry-align('top', 'end');
+    }
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--bottom,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--bottom {
+    &,
+    &.#{$prefix}--tooltip--align-center {
+      @include tooltip--geometry-align('bottom', 'center');
+    }
+
+    &.#{$prefix}--tooltip--align-start {
+      @include tooltip--geometry-align('bottom', 'start');
+    }
+
+    &.#{$prefix}--tooltip--align-end {
+      @include tooltip--geometry-align('bottom', 'end');
+    }
+  }
+
+  // ccs: same sibling-selector duplication as the main-axis block above -
+  // definition's assistive text can't inherit these from the trigger.
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--top {
+    &,
+    &.#{$prefix}--tooltip--align-start,
+    & + .#{$prefix}--assistive-text,
+    &.#{$prefix}--tooltip--align-start + .#{$prefix}--assistive-text {
+      @include tooltip--geometry-align('top', 'start');
+    }
+
+    &.#{$prefix}--tooltip--align-center,
+    &.#{$prefix}--tooltip--align-center + .#{$prefix}--assistive-text {
+      @include tooltip--geometry-align('top', 'center');
+    }
+
+    &.#{$prefix}--tooltip--align-end,
+    &.#{$prefix}--tooltip--align-end + .#{$prefix}--assistive-text {
+      @include tooltip--geometry-align('top', 'end');
+    }
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom {
+    &,
+    &.#{$prefix}--tooltip--align-start,
+    & + .#{$prefix}--assistive-text,
+    &.#{$prefix}--tooltip--align-start + .#{$prefix}--assistive-text {
+      @include tooltip--geometry-align('bottom', 'start');
+    }
+
+    &.#{$prefix}--tooltip--align-center,
+    &.#{$prefix}--tooltip--align-center + .#{$prefix}--assistive-text {
+      @include tooltip--geometry-align('bottom', 'center');
+    }
+
+    &.#{$prefix}--tooltip--align-end,
+    &.#{$prefix}--tooltip--align-end + .#{$prefix}--assistive-text {
+      @include tooltip--geometry-align('bottom', 'end');
+    }
+  }
+
+  // ccs: kept literal (not custom-property-driven) - a single-combo
+  // carryover, not part of the combinatorial expansion this rework
+  // targets. `$body-spacing` for definition = to-rem(4px) + to-rem(5px).
+  // carryover from https://github.com/carbon-design-system/carbon/pull/3151/files#diff-93734be0784e9530b6d14a7b03b0d352R261-R265
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-start.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-center.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-end.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text {
+    bottom: -(to-rem(4px) + to-rem(5px) - to-rem(1px));
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-start.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-end.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text {
+    transform: translate(0, 100%);
+  }
+
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--bottom.#{$prefix}--tooltip--align-center.#{$prefix}--tooltip--a11y
+    + .#{$prefix}--assistive-text {
+    transform: translate(-50%, 100%);
+  }
+
+  // Allow pointer events on tooltip when tooltip is visible
+  // ccs: a definition tooltip is its trigger's sibling, which the first
+  // selector never reaches. Without the second, the pointer falls through
+  // the open tooltip and it closes (WCAG 1.4.13 hoverable). It ties the
+  // definition placement rule's `pointer-events: none` and wins on order.
+  .#{$prefix}--tooltip__trigger:not(.#{$prefix}--tooltip--hidden)
+    .#{$prefix}--assistive-text,
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip__trigger--definition.#{$prefix}--tooltip--visible
+    + .#{$prefix}--assistive-text {
+    pointer-events: all;
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--tooltip__trigger svg,
+  .#{$prefix}--tooltip__trigger:hover svg,
+  .#{$prefix}--tooltip__trigger:focus svg {
+    @include high-contrast-mode('icon-fill');
+  }
+
+  .#{$prefix}--tooltip__trigger:focus svg {
+    @include high-contrast-mode('focus');
+  }
+
+  .#{$prefix}--tooltip {
+    @include high-contrast-mode('outline');
+  }
+
+  .#{$prefix}--assistive-text {
+    @include high-contrast-mode('outline');
+  }
+}
+
+@include exports('tooltip') {
+  @include tooltip;
+}

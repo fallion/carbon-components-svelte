@@ -1,170 +1,389 @@
 <script>
   /**
-   * @event {{ open: boolean; }} transitionend
+   * @event close
+   * @property {"escape-key" | "outside-click" | "close-button" | "programmatic"} trigger
+   * @event {null} open
+   * @event transitionend
+   * @property {boolean} open
+   * @restProps {div}
    */
 
   /**
-   * Set the size of the composed modal
-   * @type {"xs" | "sm" | "lg"}
+   * Set the size of the composed modal.
+   * Also accepts Carbon v11's `"md"`, the default width.
+   * @type {"xs" | "sm" | "md" | "lg" | undefined}
    */
   export let size = undefined;
 
-  /** Set to `true` to open the modal */
+  /**
+   * Set to `true` to open the modal.
+   * @bindable writable
+   */
   export let open = false;
 
   /** Set to `true` to use the danger variant */
   export let danger = false;
 
-  /** Set to `true` to prevent the modal from closing when clicking outside */
-  export let preventCloseOnClickOutside = false;
+  /**
+   * Set to `true` to enable alert mode.
+   * The dialog uses `role="alertdialog"` and is described by `ModalBody`.
+   */
+  export let alert = false;
+
+  /** Set to `true` to remove the modal body padding so content spans edge to edge */
+  export let fullWidth = false;
+
+  /**
+   * Control whether clicking outside the modal closes it.
+   * By default, a passive modal (one without a `ModalFooter`) closes and a
+   * modal with a `ModalFooter` stays open, as in Carbon v11.
+   * Set to `true` to always keep the modal open on an outside click, or
+   * `false` to always close it.
+   * @type {boolean | undefined}
+   */
+  export let preventCloseOnClickOutside = undefined;
 
   /** Specify a class for the inner modal */
   export let containerClass = "";
 
   /**
-   * Specify a selector to be focused when opening the modal
+   * Specify a selector to be focused when opening the modal.
    * @type {null | string}
    */
   export let selectorPrimaryFocus = "[data-modal-primary-focus]";
 
-  /** Obtain a reference to the top-level HTML element */
+  /**
+   * Set to `true` to build the modal's content the first time it opens
+   * instead of at mount, and keep it afterwards. A closed modal is still
+   * laid out (it is only made invisible), so this saves its nodes on pages
+   * that hold modals most visitors never open. Content is not in the DOM,
+   * or in server-rendered markup, until then.
+   */
+  export let lazy = false;
+
+  /**
+   * Obtain a reference to the top-level HTML element.
+   * @bindable readonly
+   * @type {null | HTMLDivElement}
+   */
   export let ref = null;
 
+  /**
+   * Set an id for the top-level element.
+   * The header label, header title, and body ids derive from it as
+   * `{id}-label`, `{id}-title`, and `{id}-body`.
+   */
+  export let id = uniqueId();
+
+  import { createEventDispatcher, onMount, setContext, tick } from "svelte";
+  import { derived, readable, writable } from "svelte/store";
+  import Decorator from "../AILabel/Decorator.svelte";
+  import { trackModal } from "../Modal/modal-store.js";
   import {
-    createEventDispatcher,
-    tick,
-    setContext,
-    onMount,
-    afterUpdate,
-  } from "svelte";
-  import { writable } from "svelte/store";
+    LAYER_CONTEXT_KEY,
+    MODAL_CONTEXT_KEY,
+  } from "../constants/context-keys.js";
+  import { splitAria, splitAriaNaming } from "../utils/aria-naming.js";
+  import { createDialogLifecycle } from "../utils/dialog-lifecycle.js";
+  import { joinDescribedBy } from "../utils/field-status.js";
+  import {
+    focusFirstQuietly,
+    initialFocus,
+    restoreFocus,
+  } from "../utils/focus.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { trapFocus } from "../utils/trap-focus.js";
+  import { uniqueId } from "../utils/unique-id.js";
 
   const dispatch = createEventDispatcher();
+  /** @type {import("svelte/store").Writable<string | undefined>} */
   const label = writable(undefined);
+  /** @type {import("svelte/store").Writable<string | undefined>} */
+  const title = writable(undefined);
+  /** @type {import("svelte/store").Writable<string | undefined>} */
+  const bodyId = writable(undefined);
+  const focusReturn = restoreFocus();
 
-  let buttonRef = null;
-  let innerModal = null;
-  let didClickInnerModal = false;
+  // Ids for ModalHeader's label/title headings, so ModalBody (when
+  // `hasScrollingContent`) can name its region via `aria-labelledby`.
+  const modalId = writable(id);
+  $: modalId.set(id);
+  /** @type {import("svelte/store").Readable<{ label: string; title: string; body: string }>} */
+  const ids = derived(modalId, (value) => ({
+    label: `${value}-label`,
+    title: `${value}-title`,
+    body: `${value}-body`,
+  }));
 
-  setContext("ComposedModal", {
-    closeModal: () => {
-      open = false;
+  /** @type {null | HTMLDivElement} */
+  let innerModalRef = null;
+  let mounted = false;
+  // Live ModalFooters. Without one the modal is passive (Carbon v11).
+  let footerCount = 0;
+
+  const lifecycle = createDialogLifecycle({
+    dispatch,
+    setOpen: (value) => {
+      open = value;
     },
-    submit: () => {
-      dispatch("submit");
-      dispatch("click:button--primary");
-    },
-    declareRef: (ref) => {
-      buttonRef = ref;
-    },
-    updateLabel: (value) => {
-      label.set(value);
-    },
+    preventCloseOnClickOutside: () => preventCloseOnClickOutside,
+    passive: () => footerCount === 0,
+    saveFocusReturn: focusReturn.save,
+    restoreFocusReturn: () => focusReturn.restore(ref),
+    getContainer: () => innerModalRef,
+    focus: () => focus(),
+    getOpen: () => open,
   });
+  const { close, outsideDismiss } = lifecycle;
 
-  function focus(element) {
-    if (selectorPrimaryFocus == null) return;
-    const node =
-      (element || innerModal).querySelector(selectorPrimaryFocus) || buttonRef;
-    if (node != null) node.focus();
+  /**
+   * @type {() => void}
+   */
+  function closeModal() {
+    close("close-button");
   }
 
-  let opened = false;
-  $: didOpen = open;
+  /**
+   * @type {() => void}
+   */
+  function submit() {
+    dispatch("submit");
+    dispatch("click:button--primary");
+  }
+
+  /**
+   * @type {(value: string | undefined) => void}
+   */
+  function updateLabel(value) {
+    label.set(value);
+  }
+
+  /**
+   * @type {(value: string | undefined) => void}
+   */
+  function updateTitle(value) {
+    title.set(value);
+  }
+
+  // Live ModalHeaders. The last one to unmount clears the label and
+  // title. Svelte 5 unmounts a swapped-out header after its replacement
+  // has set them, so a header can't simply clear them itself.
+  let headerCount = 0;
+
+  /**
+   * @type {() => () => void}
+   */
+  function registerHeader() {
+    headerCount += 1;
+    return () => {
+      headerCount -= 1;
+      if (headerCount === 0) {
+        label.set(undefined);
+        title.set(undefined);
+      }
+    };
+  }
+
+  /**
+   * @type {() => () => void}
+   */
+  function registerFooter() {
+    footerCount += 1;
+    return () => {
+      footerCount -= 1;
+    };
+  }
+
+  /**
+   * @type {(value: string | undefined) => void}
+   */
+  function setBodyId(value) {
+    bodyId.set(value);
+  }
+
+  // `lazy`: the content mounts on the first open and then stays.
+  let openedOnce = open;
+  $: if (open) openedOnce = true;
+
+  setContext(MODAL_CONTEXT_KEY, {});
+  // As in v11, the modal starts a layer at level 0 wherever it renders.
+  // ModalHeader and ModalFooter sit on it; ModalBody steps up to level 1.
+  setContext(LAYER_CONTEXT_KEY, readable(1));
+  setContext("carbon:ComposedModal", {
+    closeModal,
+    submit,
+    updateLabel,
+    updateTitle,
+    registerHeader,
+    registerFooter,
+    ids,
+    label,
+    title,
+    bodyId,
+    setBodyId,
+  });
+
+  /** @param {HTMLElement} [node] */
+  function focus(node) {
+    const container = node || innerModalRef;
+    const target = initialFocus({
+      container,
+      selectorPrimaryFocus,
+      fallbacks: [
+        danger
+          ? container?.querySelector(".bx--btn--secondary")
+          : container?.querySelector(".bx--btn--primary"),
+        container?.querySelector(".bx--modal-close"),
+        // With nothing else to focus, focus the dialog itself so Escape
+        // and Tab reach the root's keydown handler.
+        container,
+      ],
+    });
+    // The user didn't ask for a tooltip on the first focus target, so a
+    // single Escape still closes the modal.
+    if (target) {
+      focusFirstQuietly(target, {
+        container,
+        isOpen: () => open,
+      });
+    }
+  }
+
+  const sharedOpen = writable(open);
+  $: $sharedOpen = open;
+  trackModal(sharedOpen);
+
+  // Name the dialog from ModalHeader's label/title. The header registers
+  // them after this element is serialized, so on the server (and the first
+  // client render) point at its heading ids instead. An id with no element
+  // is ignored; once mounted with no heading, there is nothing to point at.
+  // The server cannot tell which headings the header renders, so it names the
+  // dialog from both ("Label Title"); after mount the name is `$label || $title`
+  // (the label alone when both are set). The name is a superset until then.
+  // The root carries `role="presentation"`, so every consumer `aria-*`
+  // attribute goes on the dialog element instead.
+  $: ({
+    ariaLabel: consumerLabel,
+    ariaLabelledBy: consumerLabelledby,
+    ariaDescribedBy,
+    rest: nonNamingProps,
+  } = splitAriaNaming($$restProps));
+  $: ({ aria: dialogAria, rest: wrapperProps } = splitAria(nonNamingProps));
+  $: ariaLabel =
+    consumerLabel ??
+    (consumerLabelledby === undefined
+      ? $label || $title || undefined
+      : undefined);
+  $: ariaLabelledby =
+    consumerLabelledby ??
+    (consumerLabel === undefined && !mounted && !$label && !$title
+      ? `${$ids.label} ${$ids.title}`
+      : undefined);
 
   onMount(() => {
-    tick().then(() => {
-      focus();
-    });
-
-    return () => {
-      document.body.classList.remove("bx--body--with-modal-open");
-    };
-  });
-
-  afterUpdate(() => {
-    if (opened) {
-      if (!open) {
-        opened = false;
-        dispatch("close");
-        document.body.classList.remove("bx--body--with-modal-open");
-      }
-    } else if (open) {
-      opened = true;
-      dispatch("open");
-      document.body.classList.add("bx--body--with-modal-open");
+    mounted = true;
+    lifecycle.setMounted();
+    if (open) {
+      tick().then(() => {
+        if (open) focus();
+      });
     }
   });
+
+  $: lifecycle.syncOpen(open);
+
+  /**
+   * Starts active for a filled slot, so the server renders the AI surface.
+   * `Decorator` clears it when no `AILabel` claims the slot.
+   * @type {import("svelte/store").Writable<undefined | "active" | "revert">}
+   */
+  const aiLabelState = writable($$slots.decorator ? "active" : undefined);
 </script>
 
 <!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <div
-  bind:this="{ref}"
+  bind:this={ref}
   role="presentation"
-  class:bx--modal="{true}"
-  class:is-visible="{open}"
-  class:bx--modal--danger="{danger}"
-  {...$$restProps}
+  class:bx--modal={true}
+  class:bx--layer-one={true}
+  class:is-visible={open}
+  class:bx--modal--danger={danger}
+  class:bx--modal--decorator={$$slots.decorator}
+  class:bx--modal--ai-label={$aiLabelState === "active"}
+  inert={open ? undefined : true}
+  {id}
+  {...wrapperProps}
   on:keydown
-  on:keydown="{(e) => {
+  on:keydown={(event) => {
     if (open) {
-      if (e.key === 'Escape') {
-        open = false;
-      } else if (e.key === 'Tab') {
-        // taken from github.com/carbon-design-system/carbon/packages/react/src/internal/keyboard/navigation.js
-        const selectorTabbable = `
-  a[href], area[href], input:not([disabled]):not([tabindex='-1']),
-  button:not([disabled]):not([tabindex='-1']),select:not([disabled]):not([tabindex='-1']),
-  textarea:not([disabled]):not([tabindex='-1']),
-  iframe, object, embed, *[tabindex]:not([tabindex='-1']):not([disabled]), *[contenteditable=true]
-`;
-
-        const tabbable = Array.from(ref.querySelectorAll(selectorTabbable));
-
-        let index = tabbable.indexOf(document.activeElement);
-        if (index === -1 && e.shiftKey) index = 0;
-
-        index += tabbable.length + (e.shiftKey ? -1 : 1);
-        index %= tabbable.length;
-
-        tabbable[index].focus();
-        e.preventDefault();
+      if (event.key === "Escape") {
+        // Escape that cancels an IME composition is not a close.
+        if (isImeComposition(event)) return;
+        // Stop stacked (DOM-nested) modals from also closing: this
+        // handler is on each modal's own root and Escape bubbles from
+        // the focused (innermost, topmost) modal up through ancestors.
+        event.stopPropagation();
+        close("escape-key");
+      } else if (event.key === "Tab" && !event.defaultPrevented) {
+        // A nested modal or a child that uses Tab itself (an editor that
+        // indents) already handled this Tab; trapping again moves focus twice.
+        trapFocus({ container: /** @type {HTMLDivElement} */ (ref), event });
       }
     }
-  }}"
+  }}
   on:click
-  on:click="{() => {
-    if (!didClickInnerModal && !preventCloseOnClickOutside) open = false;
-    didClickInnerModal = false;
-  }}"
+  on:mousedown={(event) => {
+    if (event.target === event.currentTarget) {
+      // A press on the backdrop would otherwise blur the focused control,
+      // dropping focus to <body> even when the dialog stays open.
+      event.preventDefault();
+      outsideDismiss.pressOutside();
+    }
+  }}
+  on:mouseup={outsideDismiss.release}
   on:mouseover
   on:mouseenter
   on:mouseleave
-  on:transitionend="{({ propertyName, currentTarget }) => {
-    if (propertyName === 'transform') {
-      dispatch('transitionend', { open });
+  on:transitionend={(event) => {
+    if (event.propertyName === "transform") {
+      dispatch("transitionend", { open });
+      if (!open) focusReturn.restore(ref);
     }
-
-    if (didOpen) {
-      focus(currentTarget);
-      didOpen = false;
-    }
-  }}"
+  }}
 >
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
   <div
-    bind:this="{innerModal}"
-    role="dialog"
+    bind:this={innerModalRef}
+    tabindex="-1"
+    {...dialogAria}
+    role={alert ? "alertdialog" : "dialog"}
+    aria-describedby={joinDescribedBy(
+      alert ? $bodyId : undefined,
+      ariaDescribedBy,
+    )}
     aria-modal="true"
-    aria-label="{$$props['aria-label'] || $label || undefined}"
-    class:bx--modal-container="{true}"
-    class:bx--modal-container--xs="{size === 'xs'}"
-    class:bx--modal-container--sm="{size === 'sm'}"
-    class:bx--modal-container--lg="{size === 'lg'}"
-    class="{containerClass}"
-    on:click="{() => {
-      didClickInnerModal = true;
-    }}"
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledby}
+    class:bx--modal-container={true}
+    class:bx--modal-container--xs={size === "xs"}
+    class:bx--modal-container--sm={size === "sm"}
+    class:bx--modal-container--lg={size === "lg"}
+    class:bx--modal-container--full-width={fullWidth}
+    class={containerClass}
+    on:mousedown={outsideDismiss.pressInside}
   >
-    <slot />
+    {#if !lazy || openedOnce}
+      <slot />
+    {/if}
+    {#if $$slots.decorator}
+      <Decorator
+        class="bx--modal--inner__decorator"
+        state={aiLabelState}
+        labelSize="sm"
+      >
+        <slot name="decorator" />
+      </Decorator>
+    {/if}
   </div>
 </div>

@@ -1,0 +1,638 @@
+import { fireEvent, render, screen, within } from "@testing-library/svelte";
+import { tick } from "svelte";
+import { getForm } from "../utils/get-form";
+import { resetForm } from "../utils/reset-form";
+import { user } from "../utils/user";
+import TagInput from "./TagInput.test.svelte";
+import TagInputTagSlot from "./TagInputTagSlot.test.svelte";
+
+const input = () => screen.getByRole("textbox", { name: "Topics" });
+const removeButton = (tag: string) =>
+  screen.getByRole("button", { name: `Remove ${tag}` });
+const shownValue = () =>
+  JSON.parse(screen.getByTestId("value").textContent ?? "[]");
+const status = () => screen.getByRole("status");
+const paste = (text: string) =>
+  fireEvent.paste(input(), { clipboardData: { getData: () => text } });
+
+describe("TagInput", () => {
+  describe("adding", () => {
+    it("adds the trimmed text on Enter and clears the field", async () => {
+      const onAdd = vi.fn();
+      const onChange = vi.fn();
+      render(TagInput, { onAdd, onChange });
+
+      await user.type(input(), "  Svelte  {Enter}");
+
+      expect(shownValue()).toEqual(["Svelte"]);
+      expect(input()).toHaveValue("");
+      expect(onAdd).toHaveBeenCalledExactlyOnceWith({
+        value: "Svelte",
+        source: "enter",
+      });
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(["Svelte"]);
+      expect(status()).toHaveTextContent("Svelte added. 1 tag.");
+    });
+
+    // A live region fires only on a text change, so the same message
+    // written twice in a row was silent.
+    it("announces the same message twice in a row", async () => {
+      render(TagInput, { config: { addedText: () => "Tag added" } });
+      const region = status();
+
+      const announced: string[] = [];
+      const observer = new MutationObserver(() => {
+        const text = region.textContent?.trim();
+        if (text) announced.push(text);
+      });
+      observer.observe(region, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+      });
+
+      await user.type(input(), "a{Enter}");
+      await user.type(input(), "b{Enter}");
+      await tick();
+      observer.disconnect();
+
+      expect(shownValue()).toEqual(["a", "b"]);
+      expect(announced).toEqual(["Tag added", "Tag added"]);
+    });
+
+    it("leaves Enter alone when the field is empty", async () => {
+      const onAdd = vi.fn();
+      render(TagInput, { onAdd });
+
+      // Not canceled, so the form can still submit on Enter.
+      expect(await fireEvent.keyDown(input(), { key: "Enter" })).toBe(true);
+
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it("splits typed text on the delimiter", async () => {
+      render(TagInput);
+
+      await user.type(input(), "css,html,js");
+
+      expect(shownValue()).toEqual(["css", "html"]);
+      expect(input()).toHaveValue("js");
+    });
+
+    it("keeps the caret in place after a delimiter typed mid-text", async () => {
+      render(TagInput);
+
+      const field = input();
+      assert(field instanceof HTMLInputElement);
+      // Unfocused, so user-event doesn't track the caret: it moves its own
+      // to the end when Svelte 5 rewrites the same value; browsers don't.
+      field.value = "ab,cd";
+      field.setSelectionRange(3, 3);
+      await fireEvent.input(field);
+
+      expect(shownValue()).toEqual(["ab"]);
+      expect(field).toHaveValue("cd");
+      expect(field.selectionStart).toBe(0);
+    });
+
+    it("accepts several delimiters", async () => {
+      render(TagInput, { config: { delimiter: [",", ";"] } });
+
+      await user.type(input(), "a;b,");
+
+      expect(shownValue()).toEqual(["a", "b"]);
+    });
+
+    it.each([
+      ["keeps its flags", /x/i, "aXbX"],
+      ["drops what it captures", /([,;])/, "a,b;"],
+    ])("splits on a RegExp delimiter that %s", async (_, delimiter, text) => {
+      render(TagInput, { config: { delimiter } });
+
+      await user.type(input(), text);
+
+      expect(shownValue()).toEqual(["a", "b"]);
+    });
+
+    it("splits pasted text on delimiters and line breaks, announcing once", async () => {
+      const onAdd = vi.fn();
+      render(TagInput, { onAdd });
+
+      input().focus();
+      await paste("red, green\nblue");
+
+      expect(shownValue()).toEqual(["red", "green", "blue"]);
+      expect(input()).toHaveValue("");
+      expect(onAdd).toHaveBeenCalledTimes(3);
+      expect(onAdd).toHaveBeenLastCalledWith({
+        value: "blue",
+        source: "paste",
+      });
+      expect(status()).toHaveTextContent("3 tags added. 3 tags.");
+    });
+
+    it("pastes as plain text when addOnPaste is false", async () => {
+      render(TagInput, { config: { addOnPaste: false } });
+
+      input().focus();
+      // Not canceled: the browser's own paste goes ahead.
+      expect(await paste("red, green")).toBe(true);
+      await fireEvent.input(input(), {
+        target: { value: "red, green" },
+        inputType: "insertFromPaste",
+      });
+
+      expect(shownValue()).toEqual([]);
+      expect(input()).toHaveValue("red, green");
+    });
+
+    it("pastes at the caret, replacing the selection", async () => {
+      render(TagInput);
+
+      const field = input();
+      assert(field instanceof HTMLInputElement);
+      await fireEvent.input(field, { target: { value: "abc" } });
+      field.setSelectionRange(1, 2);
+      await paste("x,y");
+
+      expect(shownValue()).toEqual(["ax", "yc"]);
+    });
+
+    it("adds the text on blur with addOnBlur", async () => {
+      render(TagInput, { config: { addOnBlur: true } });
+
+      await user.type(input(), "draft");
+      await user.tab();
+
+      expect(shownValue()).toEqual(["draft"]);
+    });
+
+    it("ignores Enter while an IME composition is active", async () => {
+      render(TagInput);
+
+      await user.type(input(), "日本");
+      await fireEvent.keyDown(input(), { key: "Enter", isComposing: true });
+
+      expect(shownValue()).toEqual([]);
+      expect(input()).toHaveValue("日本");
+    });
+
+    it("holds IME text until the composition ends", async () => {
+      render(TagInput);
+
+      await fireEvent.input(input(), {
+        target: { value: "日本,語" },
+        isComposing: true,
+      });
+      expect(shownValue()).toEqual([]);
+
+      await fireEvent.compositionEnd(input());
+      expect(shownValue()).toEqual(["日本"]);
+
+      // Safari's Enter that commits a composition: keyCode 229.
+      await fireEvent.keyDown(input(), { key: "Enter", keyCode: 229 });
+      expect(shownValue()).toEqual(["日本"]);
+      expect(input()).toHaveValue("語");
+    });
+
+    describe.each(["readonly", "disabled"] as const)("while %s", (state) => {
+      const field = () => {
+        const el = input();
+        assert(el instanceof HTMLInputElement);
+        return el;
+      };
+      const typeDraft = (text: string) =>
+        fireEvent.input(field(), { target: { value: text } });
+
+      it.each([
+        ["Enter", () => fireEvent.keyDown(field(), { key: "Enter" })],
+        ["a delimiter", () => typeDraft("a,b")],
+        ["paste", () => paste("a,b")],
+        ["blur", () => fireEvent.blur(field())],
+      ])("adds nothing on %s", async (_, act) => {
+        const onAdd = vi.fn();
+        render(TagInput, {
+          config: { [state]: true, addOnBlur: true },
+          onAdd,
+        });
+
+        await typeDraft("draft");
+        await act();
+
+        expect(shownValue()).toEqual([]);
+        expect(onAdd).not.toHaveBeenCalled();
+      });
+    });
+
+    it("applies normalize before checking and adding", async () => {
+      render(TagInput, {
+        config: { normalize: (raw: string) => raw.trim().toLowerCase() },
+      });
+
+      await user.type(input(), "TypeScript{Enter}");
+
+      expect(shownValue()).toEqual(["typescript"]);
+    });
+  });
+
+  describe("rejecting", () => {
+    it("rejects a case-insensitive duplicate and keeps the text", async () => {
+      const onInvalid = vi.fn();
+      render(TagInput, { value: ["Svelte"], onInvalid });
+
+      await user.type(input(), "svelte{Enter}");
+
+      expect(shownValue()).toEqual(["Svelte"]);
+      expect(input()).toHaveValue("svelte");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "This tag has already been added",
+      );
+      expect(onInvalid).toHaveBeenCalledExactlyOnceWith({
+        value: "svelte",
+        reason: "duplicate",
+        message: undefined,
+      });
+
+      // Editing clears the message.
+      await user.type(input(), "kit");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("rejects a typed piece once, not again on every later keystroke", async () => {
+      const onInvalid = vi.fn();
+      render(TagInput, { value: ["a"], onInvalid });
+
+      await user.type(input(), "a,bcd");
+
+      expect(onInvalid).toHaveBeenCalledOnce();
+      expect(input()).toHaveValue("abcd");
+    });
+
+    it("allows duplicates with allowDuplicates", async () => {
+      render(TagInput, { value: ["a"], config: { allowDuplicates: true } });
+
+      await user.type(input(), "a{Enter}");
+
+      expect(shownValue()).toEqual(["a", "a"]);
+    });
+
+    it("rejects tags past max", async () => {
+      const onInvalid = vi.fn();
+      render(TagInput, { value: ["a"], config: { max: 1 }, onInvalid });
+
+      await user.type(input(), "b{Enter}");
+
+      expect(shownValue()).toEqual(["a"]);
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "You've reached the maximum number of tags",
+      );
+      expect(onInvalid).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: "max" }),
+      );
+    });
+
+    it("shows the message validate returns", async () => {
+      render(TagInput, {
+        config: {
+          validate: (tag: string) => tag.includes("@") || "Enter an email",
+        },
+      });
+
+      await user.type(input(), "nope{Enter}");
+
+      expect(shownValue()).toEqual([]);
+      expect(screen.getByRole("alert")).toHaveTextContent("Enter an email");
+
+      await user.clear(input());
+      await user.type(input(), "a@b.co{Enter}");
+      expect(shownValue()).toEqual(["a@b.co"]);
+    });
+
+    it("shows invalidTagText when validate returns false", async () => {
+      render(TagInput, { config: { validate: () => false } });
+
+      await user.type(input(), "nope{Enter}");
+
+      expect(input()).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "This tag isn't valid",
+      );
+    });
+
+    it("keeps rejected pasted pieces in the field", async () => {
+      render(TagInput, { value: ["red"] });
+
+      input().focus();
+      await paste("red,green");
+
+      expect(shownValue()).toEqual(["red", "green"]);
+      expect(input()).toHaveValue("red");
+    });
+
+    it("adds the pieces that fit under max and keeps the rest from a paste", async () => {
+      const onInvalid = vi.fn();
+      render(TagInput, { config: { max: 2 }, onInvalid });
+
+      input().focus();
+      await paste("a,b,c");
+
+      expect(shownValue()).toEqual(["a", "b"]);
+      expect(input()).toHaveValue("c");
+      expect(onInvalid).toHaveBeenCalledExactlyOnceWith({
+        value: "c",
+        reason: "max",
+        message: undefined,
+      });
+    });
+
+    it("keeps a tag out when add is canceled", async () => {
+      render(TagInput, { cancelAdd: true });
+
+      await user.type(input(), "nope{Enter}");
+
+      expect(shownValue()).toEqual([]);
+      expect(input()).toHaveValue("nope");
+    });
+  });
+
+  describe("removing", () => {
+    it("removes a tag from its button and announces it", async () => {
+      const onRemove = vi.fn();
+      const onChange = vi.fn();
+      render(TagInput, { value: ["a", "b", "c"], onRemove, onChange });
+
+      await user.click(removeButton("b"));
+
+      expect(shownValue()).toEqual(["a", "c"]);
+      expect(onRemove).toHaveBeenCalledExactlyOnceWith({
+        value: "b",
+        index: 1,
+      });
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(["a", "c"]);
+      expect(status()).toHaveTextContent("b removed. 2 tags.");
+    });
+
+    it("keeps a tag when remove is canceled", async () => {
+      render(TagInput, { value: ["a"], cancelRemove: true });
+
+      await user.click(removeButton("a"));
+
+      expect(shownValue()).toEqual(["a"]);
+    });
+  });
+
+  describe("keyboard", () => {
+    afterEach(() => {
+      document.documentElement.removeAttribute("style");
+    });
+
+    it("moves from an empty field to the last tag on Backspace, then deletes it", async () => {
+      render(TagInput, { value: ["a", "b"] });
+
+      input().focus();
+      await user.keyboard("{Backspace}");
+      expect(removeButton("b")).toHaveFocus();
+      // Moving there doesn't delete anything.
+      expect(shownValue()).toEqual(["a", "b"]);
+
+      await user.keyboard("{Backspace}");
+      await tick();
+      expect(shownValue()).toEqual(["a"]);
+      expect(removeButton("a")).toHaveFocus();
+    });
+
+    it("ignores an auto-repeating Backspace at the start of the field", async () => {
+      render(TagInput, { value: ["a"] });
+
+      input().focus();
+      await fireEvent.keyDown(input(), { key: "Backspace", repeat: true });
+
+      expect(input()).toHaveFocus();
+    });
+
+    it("moves to the tags with ArrowLeft only from the start of the text", async () => {
+      render(TagInput, { value: ["a"] });
+
+      await user.type(input(), "x");
+      await user.keyboard("{ArrowLeft}");
+      expect(input()).toHaveFocus();
+
+      await user.keyboard("{ArrowLeft}");
+      expect(removeButton("a")).toHaveFocus();
+    });
+
+    it("swaps ArrowLeft and ArrowRight in RTL", async () => {
+      document.documentElement.style.direction = "rtl";
+      render(TagInput, { value: ["a", "b"] });
+
+      input().focus();
+      await user.keyboard("{ArrowLeft}");
+      expect(input()).toHaveFocus();
+      // The tags sit at the inline start, to the right.
+      await user.keyboard("{ArrowRight}");
+      expect(removeButton("b")).toHaveFocus();
+      await user.keyboard("{ArrowLeft}");
+      expect(input()).toHaveFocus();
+    });
+
+    it("returns to the field from the last tag, End, or Escape", async () => {
+      render(TagInput, { value: ["a", "b"] });
+
+      removeButton("b").focus();
+      await user.keyboard("{ArrowRight}");
+      expect(input()).toHaveFocus();
+
+      removeButton("a").focus();
+      await user.keyboard("{ArrowRight}");
+      expect(removeButton("b")).toHaveFocus();
+
+      removeButton("a").focus();
+      await user.keyboard("{Escape}");
+      expect(input()).toHaveFocus();
+
+      removeButton("a").focus();
+      await user.keyboard("{End}");
+      expect(input()).toHaveFocus();
+    });
+
+    it("moves to the first tag with Home from an empty field", async () => {
+      render(TagInput, { value: ["a", "b"] });
+
+      input().focus();
+      await user.keyboard("{Home}");
+
+      expect(removeButton("a")).toHaveFocus();
+    });
+
+    it("focuses the field after deleting the only tag", async () => {
+      render(TagInput, { value: ["a"] });
+
+      removeButton("a").focus();
+      await user.keyboard("{Delete}");
+      await tick();
+      await tick();
+
+      expect(shownValue()).toEqual([]);
+      expect(input()).toHaveFocus();
+    });
+  });
+
+  describe("forms", () => {
+    it("submits each tag as a hidden input under name", () => {
+      render(TagInput, { value: ["a", "b"], config: { name: "topics" } });
+
+      const data = new FormData(getForm());
+      expect(data.getAll("topics")).toEqual(["a", "b"]);
+      expect(input()).not.toHaveAttribute("name");
+    });
+
+    it.each([
+      ["submits the tags while readonly", { readonly: true }, ["a", "b"]],
+      ["leaves the tags out while disabled", { disabled: true }, []],
+    ])("%s", (_, state, expected) => {
+      render(TagInput, {
+        value: ["a", "b"],
+        config: { name: "topics", ...state },
+      });
+
+      expect(new FormData(getForm()).getAll("topics")).toEqual(expected);
+    });
+
+    it("restores the initial tags when the form resets", async () => {
+      render(TagInput, { value: ["a"] });
+
+      await user.type(input(), "b{Enter}c");
+      expect(shownValue()).toEqual(["a", "b"]);
+
+      await resetForm();
+
+      expect(shownValue()).toEqual(["a"]);
+      expect(input()).toHaveValue("");
+    });
+
+    it("requires the text input only while there are no tags", async () => {
+      render(TagInput, { config: { required: true } });
+      expect(input()).toBeRequired();
+
+      await user.type(input(), "a{Enter}");
+      expect(input()).not.toBeRequired();
+    });
+
+    it("isn't satisfied by text that isn't a tag yet", async () => {
+      render(TagInput, { config: { required: true } });
+
+      await user.type(input(), "draft");
+
+      expect(getForm().checkValidity()).toBe(false);
+      expect(input()).toHaveProperty(
+        "validationMessage",
+        "Add at least one tag",
+      );
+    });
+  });
+
+  describe("states", () => {
+    it("keeps the built-in descriptions before a consumer aria-describedby", () => {
+      render(TagInput, {
+        config: {
+          id: "topics",
+          helperText: "Press Enter",
+          "aria-describedby": "extra",
+        },
+      });
+
+      expect(input()).toHaveAttribute(
+        "aria-describedby",
+        "instructions-topics helper-topics extra",
+      );
+    });
+
+    it("renders read-only tags without remove buttons", () => {
+      render(TagInput, { value: ["a"], config: { readonly: true } });
+
+      expect(screen.getByText("a")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Remove a" }),
+      ).not.toBeInTheDocument();
+      expect(input()).toHaveAttribute("readonly");
+    });
+
+    it("drops the placeholder when read-only with tags", () => {
+      render(TagInput, {
+        value: ["a"],
+        config: { readonly: true, placeholder: "Add a topic" },
+      });
+
+      expect(input()).not.toHaveAttribute("placeholder");
+    });
+
+    it("keeps the placeholder when read-only and empty", () => {
+      render(TagInput, {
+        config: { readonly: true, placeholder: "No topics" },
+      });
+
+      expect(input()).toHaveAttribute("placeholder", "No topics");
+    });
+
+    it("disables the remove buttons when disabled", () => {
+      render(TagInput, { value: ["a"], config: { disabled: true } });
+
+      expect(removeButton("a")).toBeDisabled();
+      expect(input()).toBeDisabled();
+    });
+
+    // A 24px field takes the 16px tag, clear of its 2px focus outline.
+    it("gives an xs field xs tags", () => {
+      render(TagInput, { value: ["a"], config: { size: "xs" } });
+
+      expect(screen.getByText("a").closest(".bx--tag")).toHaveClass(
+        "bx--tag--xs",
+      );
+    });
+
+    it("scales tags with the field size", () => {
+      render(TagInput, { value: ["a"], config: { size: "xl" } });
+
+      expect(screen.getByText("a").closest(".bx--tag")).toHaveClass(
+        "bx--tag--lg",
+      );
+    });
+
+    it("renders the tags below the field with tagPlacement=below", () => {
+      const { container } = render(TagInput, {
+        value: ["a"],
+        config: { tagPlacement: "below" },
+      });
+
+      const field = container.querySelector(".bx--tag-input") as HTMLElement;
+      expect(within(field).queryByText("a")).not.toBeInTheDocument();
+      expect(
+        container.querySelector(".bx--tag-input__tags--below"),
+      ).toHaveTextContent("a");
+    });
+
+    it.each(["inline", "below"] as const)(
+      "renders each tag from the tag slot with tagPlacement=%s",
+      async (tagPlacement) => {
+        render(TagInputTagSlot, { tagPlacement });
+
+        const urgent = removeButton("urgent").closest(".bx--tag");
+        expect(urgent).toHaveClass("bx--tag--red");
+        expect(urgent).toHaveAttribute("data-index", "1");
+        // The slot dropped `filter` for "locked", so it can't be removed.
+        expect(
+          screen.queryByRole("button", { name: "Remove locked" }),
+        ).not.toBeInTheDocument();
+
+        await user.click(removeButton("urgent"));
+        expect(shownValue()).toEqual(["locked", "later"]);
+      },
+    );
+
+    it("describes the field with the keyboard instructions", () => {
+      render(TagInput);
+
+      expect(input()).toHaveAccessibleDescription(/Press Enter to add a tag/);
+    });
+  });
+});

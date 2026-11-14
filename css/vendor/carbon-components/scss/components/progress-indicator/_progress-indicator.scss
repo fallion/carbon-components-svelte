@@ -1,0 +1,276 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../button/button';
+
+/// Progress indicator styles
+/// @access private
+/// @group progress-indicator
+@mixin progress-indicator {
+  .#{$prefix}--progress {
+    @include reset;
+
+    display: flex;
+    list-style: none;
+  }
+
+  .#{$prefix}--progress-step {
+    position: relative;
+    display: inline-flex;
+    overflow: visible;
+    width: to-rem(128px);
+    min-width: 7rem;
+    flex-direction: row;
+  }
+
+  // ccs: no 8rem minimum. Equal steps share the container's width, so four
+  // steps fit a narrow column; long labels truncate.
+  .#{$prefix}--progress--space-equal .#{$prefix}--progress-step {
+    min-width: 0;
+    flex-grow: 1;
+  }
+
+  // ccs: let the button and its text shrink with the step, so the label's
+  // ellipsis applies instead of the text running into the next step.
+  .#{$prefix}--progress--space-equal .#{$prefix}--progress-step-button,
+  .#{$prefix}--progress--space-equal .#{$prefix}--progress-text {
+    min-width: 0;
+  }
+
+  .#{$prefix}--progress-line {
+    position: absolute;
+    left: 0;
+    width: to-rem(128px);
+    height: 1px;
+    border: $progress-indicator-bar-width;
+  }
+
+  // ccs: the line spans its step and no further (no 128px minimum).
+  .#{$prefix}--progress--space-equal .#{$prefix}--progress-line {
+    width: 100%;
+  }
+
+  .#{$prefix}--progress-step svg {
+    position: relative;
+    z-index: 1;
+    width: $carbon--spacing-05;
+    height: $carbon--spacing-05;
+    flex-shrink: 0;
+    // ccs: the gap to the label sits at the inline end, so it mirrors
+    margin: to-rem(10px) 0 0;
+    margin-inline-end: $carbon--spacing-03;
+    border-radius: 50%;
+    fill: $interactive;
+  }
+
+  .#{$prefix}--progress-label {
+    @include type-style('body-compact-01', $omit: (line-height));
+
+    overflow: hidden;
+    max-width: to-rem(88px);
+    margin: $carbon--spacing-03 0 0 0;
+    color: $text-primary;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    transition: color $duration--fast-02 motion(standard, productive);
+    white-space: nowrap;
+
+    &::before {
+      display: block;
+      content: '';
+    }
+  }
+
+  .#{$prefix}--progress-label:hover {
+    box-shadow: 0 to-rem(1px) $link-primary;
+    color: $link-primary;
+    cursor: pointer;
+  }
+
+  .#{$prefix}--progress-label:focus {
+    box-shadow: 0 to-rem(3px) 0 0 $link-primary;
+    color: $link-primary;
+    outline: none;
+  }
+
+  .#{$prefix}--progress--space-equal .#{$prefix}--progress-label {
+    max-width: 100%;
+    // ccs: margin-inline-end, not margin-right
+    margin-inline-end: 0.75rem;
+  }
+
+  .#{$prefix}--progress-step-button:not(.#{$prefix}--progress-step-button--unclickable)
+    .#{$prefix}--progress-label:active {
+    box-shadow: 0 to-rem(3px) 0 0 $interactive;
+    color: $interactive;
+  }
+
+  .#{$prefix}--progress-optional {
+    @include type-style('label-01');
+
+    position: absolute;
+    // ccs: the label sits at the inline start of its step, so it mirrors
+    @include ccs-inset-inline($start: 0);
+
+    margin-top: to-rem(28px);
+    margin-inline-start: $carbon--spacing-06;
+    color: $text-secondary;
+    text-align: start;
+  }
+
+  .#{$prefix}--progress-step--current {
+    .#{$prefix}--progress-line {
+      background-color: $interactive;
+    }
+  }
+
+  .#{$prefix}--progress-step--incomplete {
+    svg {
+      fill: $layer-selected-inverse;
+    }
+
+    .#{$prefix}--progress-line {
+      background-color: $layer-accent;
+    }
+  }
+
+  .#{$prefix}--progress-step--complete {
+    .#{$prefix}--progress-line {
+      background-color: $interactive;
+    }
+  }
+
+  .#{$prefix}--progress-step-button {
+    @include button-reset($omit: (display));
+
+    display: flex;
+    // ccs: text-align start, not left
+    text-align: start;
+
+    // Upstream relies on `.bx--progress-label:focus` for a focus indicator,
+    // but that span is never itself the focused element (the button is), so
+    // it never fires; `--unclickable` below then also zeroes the button's
+    // own outline. Style the button's own `:focus` directly so every step
+    // (clickable or not) gets the same visible ring; specificity (one class
+    // + `:focus`) beats `--unclickable`'s single class regardless of order.
+    // ccs: added
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  .#{$prefix}--progress-step-button--unclickable {
+    cursor: default;
+    outline: none;
+  }
+
+  .#{$prefix}--progress-step-button--unclickable
+    .#{$prefix}--progress-label:hover {
+    box-shadow: none;
+    color: $text-primary;
+    cursor: default;
+  }
+
+  .#{$prefix}--progress-step--disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+
+    svg {
+      cursor: not-allowed;
+      fill: $disabled;
+    }
+
+    .#{$prefix}--progress-label,
+    .#{$prefix}--progress-label:hover {
+      box-shadow: none;
+      color: $disabled;
+      cursor: not-allowed;
+    }
+
+    .#{$prefix}--progress-label:focus,
+    .#{$prefix}--progress-label:active {
+      box-shadow: none;
+      outline: none;
+    }
+
+    .#{$prefix}--progress-line {
+      cursor: not-allowed;
+    }
+  }
+
+  .#{$prefix}--progress__warning > * {
+    fill: $support-error;
+  }
+
+  // ccs: the 14px bar centered in the line a step's label takes (its
+  // 1.45 line height, 8px below the step's top), so the skeleton is as
+  // tall as the indicator.
+  .#{$prefix}--progress.#{$prefix}--skeleton .#{$prefix}--progress-label {
+    @include skeleton;
+
+    width: to-rem(40px);
+    height: to-rem(14px);
+    margin-top: calc(#{$carbon--spacing-03} + (1.45em - #{to-rem(14px)}) / 2);
+    margin-bottom: calc((1.45em - #{to-rem(14px)}) / 2);
+  }
+
+
+  // (upstream repeated `.bx--progress--vertical` alone just above) // ccs: dedupe
+  .#{$prefix}--progress--vertical,
+  .#{$prefix}--progress-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-step,
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-step-button {
+    width: initial;
+    min-width: initial;
+    min-height: 3.625rem;
+    align-content: flex-start;
+  }
+
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-step svg,
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-step-button svg {
+    display: inline-block;
+    // 1px top margin based on visual review
+    margin: to-rem(1px) $carbon--spacing-03 0;
+  }
+
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-label {
+    display: inline-block;
+    width: initial;
+    max-width: to-rem(160px);
+    margin: 0;
+    vertical-align: top;
+    white-space: initial;
+  }
+
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-optional {
+    position: static;
+    width: 100%;
+    margin: auto 0;
+  }
+
+  .#{$prefix}--progress--vertical .#{$prefix}--progress-line {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    // ccs: the line sits on the inline start, so a right-to-left rail has it at the right
+    @include ccs-inset-inline($start: 0);
+  }
+}
+
+@include exports('progress-indicator') {
+  @include progress-indicator;
+}

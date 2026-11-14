@@ -1,0 +1,22 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import './vendor/@carbon/elements/scss/layout/mini-unit';
+@import './vendor/@carbon/elements/scss/layout/spacing';
+
+/// 1rem baseline spacing
+/// @access public
+/// @type Number
+/// @group global-spacing
+$spacing-baseline: 1rem !default;
+
+/// 1px spacing in rem units
+/// @access public
+/// @type Number
+/// @group global-spacing
+$spacing-4xs: $spacing-baseline * 0.0625 !default;
+

@@ -1,10 +1,10 @@
 <script>
   import { Button, ButtonSet, InlineLoading } from "carbon-components-svelte";
-  import { onDestroy } from "svelte";
+  import { onMount } from "svelte";
 
   const descriptionMap = {
     active: "Submitting...",
-    finished: "Success",
+    finished: "Changes saved",
     inactive: "Cancelling...",
   };
 
@@ -14,7 +14,7 @@
     finished: "dormant",
   };
 
-  let timeout = undefined;
+  let timeout;
   let state = "dormant"; // "dormant" | "active" | "finished" | "inactive"
 
   function reset(incomingState) {
@@ -29,7 +29,11 @@
     }
   }
 
-  onDestroy(reset);
+  onMount(() => {
+    return () => {
+      reset();
+    };
+  });
 
   $: reset(stateMap[state]);
 </script>
@@ -37,14 +41,14 @@
 <ButtonSet>
   <Button
     kind="ghost"
-    disabled="{state === 'dormant' || state === 'finished'}"
-    on:click="{() => (state = 'inactive')}"
+    disabled={state === "dormant" || state === "finished"}
+    on:click={() => (state = "inactive")}
   >
     Cancel
   </Button>
   {#if state !== "dormant"}
-    <InlineLoading status="{state}" description="{descriptionMap[state]}" />
+    <InlineLoading status={state} description={descriptionMap[state]} />
   {:else}
-    <Button on:click="{() => (state = 'active')}">Submit</Button>
+    <Button on:click={() => (state = "active")}>Submit</Button>
   {/if}
 </ButtonSet>

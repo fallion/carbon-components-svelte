@@ -1,12 +1,35 @@
 <script>
   /**
-   * Specify the current value
-   * @type {number}
+   * @restProps {div}
+   */
+
+  /**
+   * Specify the current value.
+   * @type {number | undefined}
    */
   export let value = undefined;
 
   /** Specify the maximum value */
   export let max = 100;
+
+  /**
+   * Specify the kind of progress bar.
+   * @type {"default" | "inline" | "indented"}
+   */
+  export let kind = "default";
+
+  /**
+   * Specify the status.
+   * @type {"active" | "finished" | "error"}
+   */
+  export let status = "active";
+
+  /**
+   * Specify the size.
+   * Also accepts Carbon v11's `"small"` (`"sm"`) and `"big"` (`"md"`).
+   * @type {"sm" | "md" | "small" | "big"}
+   */
+  export let size = "md";
 
   /** Specify the label text */
   export let labelText = "";
@@ -17,45 +40,154 @@
   /** Specify the helper text */
   export let helperText = "";
 
-  /** Set an id for the progress bar element */
-  export let id = "ccs-" + Math.random().toString(36);
+  /**
+   * Specify the value text, at the end of the label row and used for `aria-valuetext`.
+   * Format it yourself, e.g. "40 MB of 100 MB".
+   */
+  export let valueText = "";
 
-  let helperId = "ccs-" + Math.random().toString(36);
+  /** Specify the text announced and described when the status is `"error"`. */
+  export let errorText = "Error";
 
-  $: indeterminate = value === undefined;
-  $: capped = value > max ? max : value < 0 ? 0 : value;
+  /** Specify the text announced and described when the status is `"finished"`. */
+  export let finishedText = "Complete";
+
+  /**
+   * Set an id for the progress bar element.
+   * The helper text and status ids derive from it as `{id}-helper` and
+   * `{id}-status`.
+   */
+  export let id = uniqueId();
+
+  import CheckmarkFilled from "../icons/CheckmarkFilled.svelte";
+  import ErrorFilled from "../icons/ErrorFilled.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import { joinDescribedBy } from "../utils/field-status.js";
+  import { normalizeProgressBarSize } from "../utils/size-aliases.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  /** @type {Record<string, import("../utils/icon-component.js").IconComponent>} */
+  const statusIcons = {
+    error: ErrorFilled,
+    finished: CheckmarkFilled,
+  };
+
+  // Consumer naming and description go on the `role="progressbar"` element.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
+
+  $: helperId = `${id}-helper`;
+  $: statusDescriptionId = `${id}-status`;
+
+  $: resolvedSize = normalizeProgressBarSize(size);
+  $: indeterminate = value === undefined && status === "active";
+  /** @type {number} */
+  let capped;
+  /** @type {number} */
+  let upper;
+  $: {
+    upper = Number.isFinite(max) && max > 0 ? max : 0;
+    const n = Number(value);
+    if (status === "finished") {
+      capped = upper;
+    } else if (!Number.isFinite(n) || n < 0 || upper === 0) {
+      capped = 0;
+    } else {
+      capped = Math.min(n, upper);
+    }
+  }
+  $: ratio =
+    max > 0 && Number.isFinite(capped)
+      ? Math.min(Math.max(capped / max, 0), 1)
+      : 0;
+
+  $: hasStatusIcon = status === "error" || status === "finished";
+  $: hasValueText = !!valueText?.trim() || !!$$slots.valueChildren;
+
+  $: statusText =
+    status === "error" ? errorText : status === "finished" ? finishedText : "";
+  $: describedBy =
+    [helperText && helperId, statusText && statusDescriptionId]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  let prevStatus = status;
+  let statusAnnouncement = "";
+  $: {
+    if (status !== prevStatus) {
+      statusAnnouncement = statusText;
+      prevStatus = status;
+    }
+  }
 </script>
 
 <div
-  class:bx--progress-bar="{true}"
-  class:bx--progress-bar--indeterminate="{indeterminate}"
-  {...$$restProps}
+  class:bx--progress-bar={true}
+  class:bx--progress-bar--indeterminate={indeterminate}
+  class:bx--progress-bar--big={resolvedSize === "md"}
+  class:bx--progress-bar--small={resolvedSize === "sm"}
+  class:bx--progress-bar--inline={kind === "inline"}
+  class:bx--progress-bar--indented={kind === "indented"}
+  class:bx--progress-bar--error={status === "error"}
+  class:bx--progress-bar--finished={status === "finished"}
+  {...wrapperProps}
 >
-  <label
-    for="{id}"
-    class:bx--progress-bar__label="{true}"
-    class:bx--visually-hidden="{hideLabel}"
+  <div
+    class:bx--progress-bar__label={true}
+    class:bx--visually-hidden={hideLabel && !hasStatusIcon && !hasValueText}
   >
-    <slot name="labelText">
-      {labelText}
-    </slot>
-  </label>
+    <span
+      id="{id}-label"
+      class:bx--progress-bar__label-text={true}
+      class:bx--progress-bar__label-text--slotted={!!$$slots.labelChildren}
+      class:bx--visually-hidden={hideLabel}
+    >
+      <slot name="labelChildren">{labelText}</slot>
+    </span>
+    {#if hasStatusIcon}
+      <svelte:component
+        this={statusIcons[status]}
+        class="bx--progress-bar__status-icon"
+      />
+    {/if}
+    {#if hasValueText}
+      <span class:bx--progress-bar__value-text={true}>
+        <slot name="valueChildren">{valueText}</slot>
+      </span>
+    {/if}
+  </div>
   <div
     role="progressbar"
-    id="{id}"
-    class:bx--progress-bar__track="{true}"
-    aria-valuemin="{indeterminate ? undefined : 0}"
-    aria-valuemax="{indeterminate ? undefined : max}"
-    aria-valuenow="{indeterminate ? undefined : capped}"
-    aria-describedby="{helperText ? helperId : null}"
+    {id}
+    class:bx--progress-bar__track={true}
+    aria-busy={status === "active"}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledBy ?? (ariaLabel ? undefined : `${id}-label`)}
+    aria-valuemin={indeterminate ? undefined : 0}
+    aria-valuemax={indeterminate ? undefined : upper}
+    aria-valuenow={indeterminate ? undefined : capped}
+    aria-valuetext={valueText?.trim() ? valueText : undefined}
+    aria-describedby={joinDescribedBy(describedBy, ariaDescribedBy)}
   >
     <div
-      class:bx--progress-bar__bar="{true}"
-      style="transform: scaleX({capped / max})"
+      class:bx--progress-bar__bar={true}
+      style:transform={status === "active" ? `scaleX(${ratio})` : undefined}
     ></div>
   </div>
+  {#if statusText}
+    <div id={statusDescriptionId} class:bx--visually-hidden={true}>
+      {statusText}
+    </div>
+  {/if}
+  <div class:bx--visually-hidden={true} aria-live="polite" aria-atomic="true">
+    {statusAnnouncement}
+  </div>
   {#if helperText}
-    <div id="{helperId}" class:bx--progress-bar__helper-text="{true}">
+    <div id={helperId} class:bx--progress-bar__helper-text={true}>
       {helperText}
     </div>
   {/if}

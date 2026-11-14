@@ -1,0 +1,625 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+@import '../form/form';
+
+/// Number input styles
+/// @access private
+/// @group number-input
+// ccs: every `input[type='number']` selector below also lists
+// `input[type='text']`. NumberInput renders `type="text"` when `allowDecimal`
+// is set and must style identically (formerly the css/_number-input.scss clone).
+@mixin number-input {
+  .#{$prefix}--number {
+    @include reset;
+
+    position: relative;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .#{$prefix}--number input[type='number'],
+  .#{$prefix}--number input[type='text'] {
+    // ccs: match v11 (`body-compact-01`, sans, 400) instead of v10's mono 300.
+    @include type-style('body-compact-01');
+    @include focus-outline('reset');
+
+    display: inline-flex;
+    // ccs: no 9.375rem min-width. The form item sizes the field, so it fits
+    // grid cells and narrow columns; border-box padding keeps the steppers'
+    // room.
+    width: 100%;
+    height: to-rem(40px);
+    box-sizing: border-box;
+    padding-inline: $carbon--spacing-05 to-rem(128px);
+    border: 0;
+    border-bottom: to-rem(1px) solid $border-strong;
+
+    // Firefox: Hide spinner (up and down buttons)
+    -moz-appearance: textfield;
+    appearance: textfield;
+    background-color: $field;
+    border-radius: 0;
+    color: $text-primary;
+    font-family: carbon--font-family('sans');
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+
+    &:disabled ~ .#{$prefix}--number__controls {
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    &:disabled ~ .#{$prefix}--number__controls svg {
+      fill: $disabled;
+    }
+
+
+    // Safari: Hide number spinner
+    &::-webkit-inner-spin-button {
+      appearance: none;
+    }
+  }
+
+  // ccs: no stepper room when `hideSteppers` removes the steppers
+  .#{$prefix}--number--xl.#{$prefix}--number:not(.#{$prefix}--number--nosteppers) input[type='number'],
+  .#{$prefix}--number--xl.#{$prefix}--number:not(.#{$prefix}--number--nosteppers) input[type='text'] {
+    padding-inline-end: to-rem(144px);
+  }
+
+  // ccs: no stepper room when `hideSteppers` removes the steppers
+  .#{$prefix}--number--sm.#{$prefix}--number:not(.#{$prefix}--number--nosteppers) input[type='number'],
+  .#{$prefix}--number--sm.#{$prefix}--number:not(.#{$prefix}--number--nosteppers) input[type='text'] {
+    padding-inline-end: to-rem(112px);
+  }
+
+  // ccs: xs size (Carbon React `size="xs"`), two 24px steppers + 48px,
+  // none when `hideSteppers` removes the steppers
+  .#{$prefix}--number--xs.#{$prefix}--number:not(.#{$prefix}--number--nosteppers) input[type='number'],
+  .#{$prefix}--number--xs.#{$prefix}--number:not(.#{$prefix}--number--nosteppers) input[type='text'] {
+    padding-inline-end: to-rem(96px);
+  }
+
+  // ccs: the padding above also holds the invalid or warning icon. Without
+  // one (`--neutral`), reserve only the steppers plus a gap, so a narrow
+  // field still shows its value. The md rule matches the base rule's weight:
+  // the later `--nosteppers` rule and the fluid variant still win over it.
+  .#{$prefix}--number--neutral input[type='number'],
+  .#{$prefix}--number--neutral input[type='text'] {
+    padding-inline-end: to-rem(96px);
+  }
+
+  .#{$prefix}--number--xl.#{$prefix}--number--neutral:not(.#{$prefix}--number--nosteppers) input[type='number'],
+  .#{$prefix}--number--xl.#{$prefix}--number--neutral:not(.#{$prefix}--number--nosteppers) input[type='text'] {
+    padding-inline-end: to-rem(112px);
+  }
+
+  .#{$prefix}--number--sm.#{$prefix}--number--neutral:not(.#{$prefix}--number--nosteppers) input[type='number'],
+  .#{$prefix}--number--sm.#{$prefix}--number--neutral:not(.#{$prefix}--number--nosteppers) input[type='text'] {
+    padding-inline-end: to-rem(80px);
+  }
+
+  .#{$prefix}--number--xs.#{$prefix}--number--neutral:not(.#{$prefix}--number--nosteppers) input[type='number'],
+  .#{$prefix}--number--xs.#{$prefix}--number--neutral:not(.#{$prefix}--number--nosteppers) input[type='text'] {
+    padding-inline-end: to-rem(64px);
+  }
+
+  .#{$prefix}--number input[type='number']:disabled,
+  .#{$prefix}--number input[type='text']:disabled {
+    border-bottom-color: transparent;
+    background-color: $field;
+    color: $disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--number__input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .#{$prefix}--number__controls {
+    @include reset;
+
+    position: absolute;
+    // vertically center controls within parent container on IE11
+    top: 50%;
+    display: flex;
+    width: to-rem(80px);
+    height: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: 0);
+  }
+
+  .#{$prefix}--number__control-btn {
+    @include button-reset($omit: (display));
+
+    position: relative;
+    display: inline-flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    border-bottom: to-rem(1px) solid $border-strong;
+    color: $icon-primary;
+
+    &::before,
+    &::after {
+      position: absolute;
+      top: to-rem(2px);
+      display: block;
+      width: to-rem(2px);
+      // height: calc(100% - 4px) is calculated differently in Safari
+      height: to-rem(36px);
+      background-color: $field;
+      content: '';
+    }
+
+    &::before {
+      @include ccs-inset-inline($start: 0);
+    }
+
+    &::after {
+      @include ccs-inset-inline($end: 0);
+    }
+
+    svg {
+      fill: currentColor;
+    }
+
+    &:focus {
+      @include focus-outline;
+
+      color: $icon-primary;
+      outline-offset: -2px;
+      outline-width: 2px;
+    }
+
+    &:hover {
+      background-color: $field-hover;
+      color: $icon-primary;
+      cursor: pointer;
+
+      &::before,
+      &::after {
+        background-color: $field-hover;
+      }
+    }
+
+    &:focus::before,
+    &:focus::after,
+    &:hover:focus::before,
+    &:hover:focus::after {
+      background-color: transparent;
+    }
+
+    &:disabled {
+      border-bottom-color: transparent;
+      color: $disabled;
+      cursor: not-allowed;
+    }
+  }
+
+  // set orders to facilitate styling for rule dividers
+  .#{$prefix}--number__control-btn.down-icon {
+    order: 1;
+  }
+
+  .#{$prefix}--number__control-btn.up-icon {
+    order: 2;
+  }
+
+  // add top and bottom outlines to number controls when input is focused
+  .#{$prefix}--number
+    input[type='number']:focus
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn,
+  .#{$prefix}--number
+    input[type='text']:focus
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn {
+    border-bottom-width: 0;
+
+    &:hover {
+      @include focus-outline('outline');
+
+      border: 0;
+    }
+  }
+
+  .#{$prefix}--number
+    input[type='number'][data-invalid]
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn,
+  .#{$prefix}--number
+    input[type='text'][data-invalid]
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn {
+    border-bottom-width: 0;
+  }
+
+  // add invalid outline to number controls only when invalid input is not focused
+  .#{$prefix}--number
+    input[type='number'][data-invalid]:not(:focus)
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn:hover,
+  .#{$prefix}--number
+    input[type='text'][data-invalid]:not(:focus)
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn:hover {
+    @include focus-outline('invalid');
+  }
+
+  .#{$prefix}--number
+    input[type='number']:focus
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon::after,
+  .#{$prefix}--number
+    input[type='text']:focus
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon::after {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--number
+    input[type='number'][data-invalid]
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon::after,
+  .#{$prefix}--number
+    input[type='text'][data-invalid]
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon::after {
+    background-color: $support-error;
+  }
+
+  .#{$prefix}--number
+    input[type='number'][data-invalid]:focus
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon::after,
+  .#{$prefix}--number
+    input[type='text'][data-invalid]:focus
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon::after,
+  .#{$prefix}--number
+    input[type='number'][data-invalid]
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon:focus::after,
+  .#{$prefix}--number
+    input[type='text'][data-invalid]
+    ~ .#{$prefix}--number__controls
+    .#{$prefix}--number__control-btn.up-icon:focus::after {
+    background-color: $focus;
+  }
+
+  .#{$prefix}--number__rule-divider {
+    position: absolute;
+    z-index: z('overlay');
+    width: to-rem(1px);
+    height: to-rem(16px);
+    background-color: $border-subtle;
+
+    &:first-of-type {
+      order: 0;
+    }
+  }
+
+  .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider:first-of-type {
+    background-color: transparent;
+    @include ccs-inset-inline($start: 0);
+  }
+
+  .#{$prefix}--number__invalid
+    + .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider:first-of-type {
+    background-color: $border-subtle;
+  }
+
+  .#{$prefix}--number
+    input[type='number']:disabled
+    + .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider:first-of-type,
+  .#{$prefix}--number
+    input[type='text']:disabled
+    + .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider:first-of-type {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--number
+    input[type='number']:disabled
+    + .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider,
+  .#{$prefix}--number
+    input[type='text']:disabled
+    + .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider {
+    background-color: $icon-disabled;
+  }
+
+  .#{$prefix}--number__control-btn:focus ~ .#{$prefix}--number__rule-divider {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--number__invalid {
+    position: absolute;
+    fill: $support-error;
+    @include ccs-inset-inline($end: to-rem(96px));
+  }
+
+  .#{$prefix}--number--xl .#{$prefix}--number__invalid {
+    @include ccs-inset-inline($end: to-rem(112px));
+  }
+
+  .#{$prefix}--number--sm .#{$prefix}--number__invalid {
+    @include ccs-inset-inline($end: to-rem(80px));
+  }
+
+  // ccs: xs size
+  .#{$prefix}--number--xs .#{$prefix}--number__invalid {
+    @include ccs-inset-inline($end: to-rem(64px));
+  }
+
+  .#{$prefix}--number__invalid + .#{$prefix}--number__rule-divider {
+    position: absolute;
+    @include ccs-inset-inline($end: to-rem(80px));
+  }
+
+  .#{$prefix}--number--xl
+    .#{$prefix}--number__invalid
+    + .#{$prefix}--number__rule-divider {
+    @include ccs-inset-inline($end: to-rem(96px));
+  }
+
+  .#{$prefix}--number--sm
+    .#{$prefix}--number__invalid
+    + .#{$prefix}--number__rule-divider {
+    @include ccs-inset-inline($end: to-rem(64px));
+  }
+
+  // ccs: xs size
+  .#{$prefix}--number--xs
+    .#{$prefix}--number__invalid
+    + .#{$prefix}--number__rule-divider {
+    @include ccs-inset-inline($end: to-rem(48px));
+  }
+
+  .#{$prefix}--number__control-btn.down-icon:hover
+    ~ .#{$prefix}--number__rule-divider,
+  .#{$prefix}--number__control-btn.up-icon:hover
+    + .#{$prefix}--number__rule-divider,
+  .#{$prefix}--number__control-btn.down-icon:focus
+    ~ .#{$prefix}--number__rule-divider,
+  .#{$prefix}--number__control-btn.up-icon:focus
+    + .#{$prefix}--number__rule-divider {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--number__invalid--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--number__invalid--warning path:first-of-type {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  // V11: Possibly deprecate
+  // V11: Possibly deprecate
+  // We include `:not(:focus)` here because the pseudo elements will overlap the
+  // focus outline on the button if we set their background-color on focus
+  .#{$prefix}--number--xl input[type='number'],
+  .#{$prefix}--number--xl input[type='text'] {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--number--xl .#{$prefix}--number__controls {
+    width: to-rem(96px);
+  }
+
+  .#{$prefix}--number--xl .#{$prefix}--number__control-btn {
+    width: to-rem(48px);
+
+    &::before,
+    &::after {
+      // height: calc(100% - 4px) is calculated differently in Safari
+      height: to-rem(44px);
+    }
+  }
+
+  .#{$prefix}--number--sm input[type='number'],
+  .#{$prefix}--number--sm input[type='text'] {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--number--sm .#{$prefix}--number__controls {
+    width: to-rem(64px);
+  }
+
+  .#{$prefix}--number--sm .#{$prefix}--number__control-btn {
+    width: to-rem(32px);
+
+    &::before,
+    &::after {
+      // height: calc(100% - 4px) is calculated differently in Safari
+      height: to-rem(28px);
+    }
+  }
+
+  // ccs: xs size
+  .#{$prefix}--number--xs input[type='number'],
+  .#{$prefix}--number--xs input[type='text'] {
+    height: to-rem(24px);
+  }
+
+  .#{$prefix}--number--xs .#{$prefix}--number__controls {
+    width: to-rem(48px);
+  }
+
+  .#{$prefix}--number--xs .#{$prefix}--number__control-btn {
+    width: to-rem(24px);
+
+    &::before,
+    &::after {
+      height: to-rem(20px);
+    }
+  }
+
+  .#{$prefix}--number--nolabel
+    .#{$prefix}--label
+    + .#{$prefix}--form__helper-text {
+    margin-top: 0;
+  }
+
+  .#{$prefix}--number--nosteppers input[type='number'],
+  .#{$prefix}--number--nosteppers input[type='text'] {
+    padding-inline-end: to-rem(48px);
+  }
+
+  // ccs: no steppers and no status icon: the regular field inset.
+  .#{$prefix}--number--nosteppers.#{$prefix}--number--neutral input[type='number'],
+  .#{$prefix}--number--nosteppers.#{$prefix}--number--neutral input[type='text'] {
+    padding-inline-end: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--number--nosteppers .#{$prefix}--number__invalid {
+    @include ccs-inset-inline($end: to-rem(16px));
+  }
+
+  .#{$prefix}--number--readonly input[type='number'],
+  .#{$prefix}--number--readonly input[type='text'] {
+    // ccs: match v11's subtle read-only bottom border
+    border-bottom-color: $border-subtle;
+    background: transparent;
+  }
+
+  // ccs: v11 keeps read-only steppers visible but inert, instead of hiding
+  // them. They replace the read-only icon, as in the fluid variant.
+  .#{$prefix}--number--readonly .#{$prefix}--number__control-btn {
+    color: $icon-disabled;
+    pointer-events: none;
+
+    &::before,
+    &::after {
+      background-color: transparent;
+    }
+  }
+
+  .#{$prefix}--number--readonly .#{$prefix}--number__rule-divider {
+    background-color: $border-subtle;
+  }
+
+  // ccs: without steppers the read-only icon stays; keep text clear of it.
+  .#{$prefix}--number--readonly.#{$prefix}--number--nosteppers input[type='number'],
+  .#{$prefix}--number--readonly.#{$prefix}--number--nosteppers input[type='text'] {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--number.#{$prefix}--skeleton {
+    @include skeleton;
+
+    width: 100%;
+    height: 2.5rem;
+
+    input[type='number'],
+    input[type='text'] {
+      display: none;
+    }
+  }
+
+  // ccs: size the skeleton like the field it stands in for
+  .#{$prefix}--number--xs.#{$prefix}--skeleton {
+    height: to-rem(24px);
+  }
+
+  .#{$prefix}--number--sm.#{$prefix}--skeleton {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--number--xl.#{$prefix}--skeleton {
+    height: to-rem(48px);
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--number__control-btn:hover,
+  .#{$prefix}--number__control-btn:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  .#{$prefix}--number__control-btn {
+    @include high-contrast-mode('outline');
+  }
+
+  .#{$prefix}--number__control-btn svg {
+    @include high-contrast-mode('icon-fill');
+  }
+
+  // ccs: disabled and read-only steppers read GrayText, not ButtonText, so
+  // they don't look live in forced colors.
+  .#{$prefix}--number__control-btn:disabled svg {
+    @include high-contrast-mode('disabled');
+  }
+  /* stylelint-enable */
+}
+
+@include exports('number-input') {
+  @include number-input;
+}
+
+// carbon-components-svelte patch: scrubbable label
+/// A `scrubbable` NumberInput's label changes the value when dragged left or
+/// right, so it reads as a horizontal drag handle instead of text.
+/// @access private
+/// @group number-input
+@mixin number-input-scrubbable {
+  .#{$prefix}--label--scrubbable {
+    cursor: ew-resize;
+    // Horizontal drags scrub; vertical swipes still scroll the page.
+    touch-action: pan-y;
+    user-select: none;
+  }
+}
+
+@include exports("number-input-scrubbable") {
+  @include number-input-scrubbable;
+}
+
+// carbon-components-svelte patch
+// The value reads in its own direction, so in RTL "-5" keeps its sign in
+// front instead of showing as "5-", as in `.bx--text-input-wrapper
+// .bx--text-input`. `unicode-bidi: plaintext` also aligns the value to its
+// own start, so keep it at the page's start.
+/// @access private
+/// @group number-input
+@mixin number-input-plaintext {
+  .#{$prefix}--number input[type="number"],
+  .#{$prefix}--number input[type="text"] {
+    unicode-bidi: plaintext;
+    text-align: left;
+  }
+
+  [dir="rtl"] .#{$prefix}--number input[type="number"],
+  [dir="rtl"] .#{$prefix}--number input[type="text"] {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("number-input-plaintext") {
+  @include number-input-plaintext;
+}

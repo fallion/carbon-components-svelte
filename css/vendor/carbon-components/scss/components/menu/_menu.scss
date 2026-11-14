@@ -1,0 +1,268 @@
+//
+// Copyright IBM Corp. 2020
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/vendor/@carbon/layout/scss/generated/size';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/helper-mixins';
+
+/// Menu styles
+/// @access private
+/// @group menu
+@mixin menu {
+  .#{$prefix}--menu {
+    @include box-shadow;
+
+    position: fixed;
+    z-index: z('modal');
+    min-width: 13rem;
+    max-width: 18rem;
+    padding: $spacing-02 0;
+    background-color: $layer;
+    visibility: hidden;
+  }
+
+  .#{$prefix}--menu--open {
+    visibility: visible;
+
+    &:focus {
+      @include focus-outline('border');
+    }
+  }
+
+  .#{$prefix}--menu--invisible {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .#{$prefix}--menu-option {
+    position: relative;
+    height: $size-sm;
+    background-color: $layer;
+    color: $text-primary;
+    cursor: pointer;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  .#{$prefix}--menu-option--active {
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--menu-option--danger:focus {
+    background-color: $button-danger-primary;
+    color: $text-on-color;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--menu-option:hover {
+      background-color: $layer-hover;
+    }
+
+    .#{$prefix}--menu-option--danger:hover {
+      background-color: $button-danger-primary;
+      color: $text-on-color;
+    }
+  }
+
+  .#{$prefix}--menu-option > .#{$prefix}--menu {
+    margin-top: calc(#{$spacing-02} * -1);
+  }
+
+  .#{$prefix}--menu-option__content {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 $spacing-05;
+  }
+
+  .#{$prefix}--menu-option__content--disabled {
+    background-color: $layer;
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--menu-option__content--disabled .#{$prefix}--menu-option__label,
+  .#{$prefix}--menu-option__content--disabled .#{$prefix}--menu-option__info,
+  .#{$prefix}--menu-option__content--disabled .#{$prefix}--menu-option__icon {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--menu-option__label {
+    @include type-style('body-compact-01');
+
+    overflow: hidden;
+    flex-grow: 1;
+    // add top/bottom padding to make sure letters are not cut off by hidden overflow
+    padding: $spacing-02 0;
+    text-align: start;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--menu-option__info {
+    display: inline-flex;
+    margin-inline-start: $spacing-05;
+  }
+
+  // ccs: the submenu caret points to the inline end.
+  .#{$prefix}--menu-option__info > svg {
+    @include ccs-mirror-rtl;
+  }
+
+  .#{$prefix}--menu-option__icon {
+    display: flex;
+    width: 1rem;
+    height: 1rem;
+    align-items: center;
+    margin-inline-end: $spacing-03;
+  }
+
+  .#{$prefix}--menu-divider {
+    width: 100%;
+    height: 1px;
+    margin: $spacing-02 0;
+    background-color: $border-subtle;
+  }
+
+  $supported-sizes: (
+    'md': $size-md,
+    'lg': $size-lg,
+  );
+
+  @each $size, $value in $supported-sizes {
+    .#{$prefix}--menu--#{$size} .#{$prefix}--menu-option {
+      height: $value;
+    }
+  }
+}
+
+@include exports('menu') {
+  @include menu;
+}
+
+// carbon-components-svelte patch (formerly css/_menu.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Scrollable menu, paired with the inline `max-height` the `maxHeight` prop
+/// sets on the menu list.
+/// @access private
+/// @group components
+@mixin menu-scrollable {
+  .#{$prefix}--menu--scrollable {
+    overflow-y: auto;
+  }
+}
+
+@include exports("menu-scrollable") {
+  @include menu-scrollable;
+}
+
+// carbon-components-svelte patch (formerly css/_menu-xs.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Extra-small menu (Carbon React size="xs", 24px). v10 only ships sm/md/lg
+/// for `.bx--menu`; mirrors the same v10-lacks-xs situation as OverflowMenu.
+/// @access private
+/// @group components
+@mixin menu-xs {
+  .#{$prefix}--menu--xs .#{$prefix}--menu-option {
+    height: to-rem(24px);
+  }
+}
+
+@include exports("menu-xs") {
+  @include menu-xs;
+}
+
+// carbon-components-svelte patch (formerly css/_menu-selection-icon.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// A selectable/radio item's checkmark, in its own column ahead of any
+/// custom icon, so a menu mixing icons with checkboxes (e.g. "Cut" next to
+/// "Bold" with its own icon and a checkmark) keeps both columns aligned
+/// instead of the checkmark displacing the icon. v10 only ever swapped the
+/// icon for a checkmark in a single `__icon` box; this mirrors the same
+/// dimensions in a class of its own.
+/// @access private
+/// @group components
+@mixin menu-selection-icon {
+  .#{$prefix}--menu-option__selection-icon {
+    display: flex;
+    width: to-rem(16px);
+    height: to-rem(16px);
+    align-items: center;
+    margin-inline-end: $carbon--spacing-03;
+  }
+}
+
+@include exports("menu-selection-icon") {
+  @include menu-selection-icon;
+}
+
+// carbon-components-svelte patch
+// A `labelChildren` slot can hold non-text content (e.g. a `TooltipIcon`).
+// The label's truncating `overflow: hidden` would clip its popup, and the
+// inline text layout leaves it sitting low against the text. Keep the base
+// label class for its layout and type style; lift the clip, center the row
+// and keep slotted elements from shrinking.
+@mixin menu-option-label-slotted {
+  .#{$prefix}--menu-option__label--slotted {
+    display: inline-flex;
+    overflow: visible;
+    align-items: center;
+    gap: $carbon--spacing-02;
+
+    > * {
+      flex-shrink: 0;
+    }
+  }
+}
+
+@include exports("menu-option-label-slotted") {
+  @include menu-option-label-slotted;
+}
+
+// carbon-components-svelte patch (menu-forced-colors)
+// The Menu surface is separated from the page only by a box-shadow, which
+// forced-colors mode drops. A transparent outline is repainted as a visible
+// system colour there.
+//
+// Forced colors repaint a disabled item's text in the same color as an
+// enabled one, so nothing marked it. Its label, shortcut and icon read
+// `GrayText`. The selectors repeat the disabled rules above, which set
+// `color`, and win on order.
+
+/// Menu surface edge and disabled items in forced-colors mode.
+/// @access private
+/// @group menu
+@mixin menu-forced-colors {
+  .#{$prefix}--menu {
+    @include high-contrast-mode("outline");
+  }
+
+  .#{$prefix}--menu-option__content--disabled,
+  .#{$prefix}--menu-option__content--disabled .#{$prefix}--menu-option__label,
+  .#{$prefix}--menu-option__content--disabled .#{$prefix}--menu-option__info,
+  .#{$prefix}--menu-option__content--disabled .#{$prefix}--menu-option__icon {
+    @include high-contrast-mode("disabled");
+  }
+}
+
+@include exports("menu-forced-colors") {
+  @include menu-forced-colors;
+}

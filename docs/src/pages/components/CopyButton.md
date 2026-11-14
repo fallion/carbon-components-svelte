@@ -1,0 +1,139 @@
+---
+description: Copy buttons copy text to the clipboard as a standalone control, for links, table cells, and other one-off copy actions.
+---
+
+<script>
+  import { Button, CopyButton, Stack, TooltipGroup } from "carbon-components-svelte";
+  import Checkmark from "carbon-icons-svelte/lib/Checkmark.svelte";
+  import Edit from "carbon-icons-svelte/lib/Edit.svelte";
+  import Share from "carbon-icons-svelte/lib/Share.svelte";
+</script>
+
+## Basic
+
+Set `text` to the string to copy. By default, the copy button uses the native [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText), with a `document.execCommand("copy")` fallback when that API is unavailable or rejects (for example in an insecure context); pass a function to `copy` to replace it (see [Override](#override)). For code examples, use [CodeSnippet](/components/CodeSnippet); for content not ready at render time, see [Async copy](#async-copy).
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" />
+
+## Async copy
+
+Pass an async `copy` function when the text is not available at render time, for example markdown fetched on click. Feedback appears after `copy()` resolves.
+
+While `copy()` is pending, the button sets `aria-busy` and ignores clicks. On success, the button dispatches `copy`. On failure, it shows `errorFeedback` (default `"Failed to copy"`) and dispatches `copy:error`.
+
+Prefetch on hover with `on:mouseenter`.
+
+<FileSource src="/framed/CopyButton/CopyButtonAsync" />
+
+## Ghost kind
+
+Set `kind` to `"ghost"` to render a transparent button that matches a [Button](/components/Button) with `kind="ghost"`. The default `kind` (`"primary"`) keeps Carbon's filled square.
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" kind="ghost" />
+
+## Sizes
+
+Set `size` to scale the square. Sizes align with the heights used by [Button](/components/Button).
+
+### Small
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" size="sm" />
+
+### Medium
+
+The default size (`md`) matches Carbon's native copy button.
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" />
+
+### Large
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" size="lg" />
+
+### Extra large
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" size="xl" />
+
+## Custom feedback
+
+Customize the message and icon shown after copying.
+
+### Text
+
+Set `feedback` to customize the message shown after copying. Set `errorFeedback` to customize the message shown when copying fails (default `"Failed to copy"`).
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" feedback="Copied to clipboard" />
+
+### Icon
+
+Set `feedbackIcon` to show a different icon while feedback is visible. The copy icon returns when feedback closes.
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" feedbackIcon={Checkmark} />
+
+### Duration
+
+Set `feedbackTimeout` to change how long the feedback stays visible, in milliseconds. Defaults to `2000`.
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" feedbackTimeout={5000} />
+
+## Copy behavior
+
+Replace or disable the default clipboard behavior.
+
+### Override
+
+Pass a function to `copy` to replace the default Clipboard API behavior.
+
+This example calls the Clipboard API directly, without the `document.execCommand("copy")` fallback.
+
+<FileSource src="/framed/CopyButton/CopyButtonOverride" />
+
+### Prevent
+
+Set `copy` to a no-op function to disable copying.
+
+<CopyButton text="This text should not be copied" copy={() => {}} />
+
+## Hover tooltip
+
+On hover or focus, the button shows a proactive tooltip with the `iconDescription`. It renders in a floating portal so it is never clipped and flips when space is tight. Press Escape to hide the tooltip, or the copy feedback, without moving the pointer or focus.
+
+### Directions
+
+Set `tooltipAlign` to place the tooltip relative to the button. It takes Popover's `align` names and replaces `tooltipPosition` and `tooltipAlignment`, which still work and are deprecated.
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Top" tooltipAlign="top" />
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Right" tooltipAlign="right" />
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Bottom" tooltipAlign="bottom" />
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Left" tooltipAlign="left" />
+
+### Alignment
+
+Add `-start` or `-end` to align the tooltip with one end of the button.
+
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Start" tooltipAlign="bottom-start" />
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Center" tooltipAlign="bottom" />
+<CopyButton text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="End" tooltipAlign="bottom-end" />
+
+### Tooltip group
+
+Place the button in a [TooltipGroup](/components/TooltipGroup) with the icon-only buttons beside it. Once one tooltip is open, moving between the buttons shows each tooltip right away, with no enter delay.
+
+<TooltipGroup>
+  <Stack orientation="horizontal" gap={1}>
+    <Button kind="ghost" iconDescription="Edit webhook" icon={Edit} />
+    <CopyButton kind="ghost" text="https://api.acme.io/webhooks/incoming/f8a2c91d" iconDescription="Copy webhook URL" />
+    <Button kind="ghost" iconDescription="Share webhook" icon={Share} />
+  </Stack>
+</TooltipGroup>
+
+## Portal tooltip
+
+The "Copied!" feedback tooltip is rendered in a floating portal by default, so it shares the same surface as the hover tooltip (the text swaps in place) and is never clipped by an `overflow: hidden` container. Set `portalTooltip` to `false` to use Carbon's inline feedback caret instead. A `tooltipAlign` other than `"bottom"` is always portalled because the inline caret only supports the default placement.
+
+<FileSource src="/framed/CopyButton/CopyButtonPortalTooltip" />
+
+## Inside a modal
+
+Because the feedback tooltip is portalled by default, it is not clipped inside a [Modal](/components/Modal). Set `portalTooltip` to `false` to use the inline caret.
+
+<FileSource src="/framed/CopyButton/CopyButtonInModal" />

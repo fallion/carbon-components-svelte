@@ -1,0 +1,218 @@
+---
+components: ["ComposedModal", "ModalHeader", "ModalBody", "ModalFooter"]
+description: Composed modals let you build custom modals from modal header, body, and footer components, for focused interactions.
+---
+
+<script>
+</script>
+
+## ComposedModal vs Modal
+
+The composed modal provides a composition-based approach with modal header, modal body, and modal footer sub-components for maximum flexibility. For simpler use cases, use [Modal](/components/Modal) instead. Both components share the same events, accessibility features, and [focus behavior](/components/Modal#focus-behavior).
+
+## Basic
+
+Create a modal with a header, body, and footer. Each section can be customized independently.
+
+<FileSource src="/framed/Modal/ComposedModal" />
+
+## Focus
+
+Control how focus moves when the composed modal opens, and override the default target when needed. Focus follows the same priority order as Modal. See [focus behavior](/components/Modal#focus-behavior).
+
+The `ModalHeader` close button shows `iconDescription` in a tooltip on hover and focus. When the modal opens with focus on the close button, the tooltip stays closed until the next hover or focus. While the tooltip shows, <DocKbd label="Escape" /> hides it first. The next <DocKbd label="Escape" /> closes the modal.
+
+### Custom focus
+
+Use `selectorPrimaryFocus` on `ComposedModal` to override the default and target a specific element when the automatic first-input focus is not desired.
+
+<FileSource src="/framed/Modal/ComposedModalCustomFocus" />
+
+## Alert mode
+
+Set `alert` to `true` on `ComposedModal` for a time-sensitive dialog. The ARIA `role` changes from `"dialog"` to `"alertdialog"` and `ModalBody` is linked with `aria-describedby`, so assistive technology announces the body when the modal opens.
+
+```svelte
+<ComposedModal bind:open alert>
+  <ModalHeader title="Session expiring" />
+  <ModalBody>Your session ends in 2 minutes. Save your work to continue.</ModalBody>
+  <ModalFooter primaryButtonText="Stay signed in" secondaryButtonText="Sign out" />
+</ComposedModal>
+```
+
+## Variants
+
+Change the composed modal's tone and purpose.
+
+### Danger
+
+Display critical or destructive actions with the danger variant. Set `danger` on both ComposedModal and ModalFooter for the red danger styling.
+
+By default, the cancel button receives focus instead of the critical button to prevent accidental destructive actions.
+
+<FileSource src="/framed/Modal/DangerComposedModal" />
+
+## Content
+
+Customize the header content and body layout. Set `hasForm` on `ModalBody` when it directly contains form elements (see the [Basic](#basic) example above). It adjusts the body padding to match Carbon's form spacing.
+
+### Build the content on first open
+
+Set `lazy` to build the header, body, and footer the first time the modal opens, then keep them. A closed modal is invisible but still laid out, so this matters on pages with several modals or heavy content.
+
+| Do | Why |
+| --- | --- |
+| Set `lazy` on modals most visitors never open. | Their content costs nothing until it's needed. |
+| Leave it off when you bind to or read the content before the first open. | That content doesn't exist yet. |
+| Leave it off when the content must be in server-rendered markup. | It isn't rendered until the modal opens. |
+
+### Custom heading
+
+Use `ModalHeader`'s default slot to add extra content, such as a status tag, below the title. This is in addition to (or instead of) the plain-text `title` and `label` props.
+
+<FileSource src="/framed/Modal/ComposedModalCustomHeading" />
+
+### Full width
+
+Remove modal body padding so content spans edge to edge with `fullWidth`. Use it for content that supplies its own layout, such as a table or fluid form.
+
+<FileSource src="/framed/Modal/FullWidthComposedModal" />
+
+### Has scrolling content
+
+Set `hasScrollingContent` on `ModalBody` to enable vertical scrolling for lengthy content, matching Modal's [Has scrolling content](/components/Modal#has-scrolling-content). Omitting `ModalFooter`, as in this example, creates a passive, information-only modal, the composed equivalent of Modal's `passiveModal`. A passive modal closes on an outside click; see [Outside click](#outside-click).
+
+<FileSource src="/framed/Modal/ComposedModalScrollingContent" />
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the modal's content as AI-generated. The label sits beside the close button, and the modal shows the AI surface.
+
+<FileSource src="/framed/Modal/ComposedModalAILabel" />
+
+## Buttons
+
+Configure the footer actions.
+
+### Multiple secondary buttons
+
+Set `secondaryButtons` in the modal footer to create a 3-button modal. This replaces secondaryButtonText and takes a tuple of two button configurations.
+
+<FileSource src="/framed/Modal/3ButtonComposedModal" />
+
+### Custom footer with ActionSet
+
+Slot [ActionSet](/components/ActionSet) into `ModalFooter` for a custom action row composed from `Button`s. Set `disableStacking` so the set stays horizontal inside the 64px footer, and `size="lg"` so child buttons stay `"default"` instead of shrinking to `"field"`.
+
+<FileSource src="/framed/Modal/ComposedModalActionSet" />
+
+### Button with icon
+
+Enhance the primary button with an icon using `primaryButtonIcon` on `ModalFooter`.
+
+<FileSource src="/framed/Modal/ComposedModalButtonWithIcon" />
+
+### Primary button loading
+
+Set `primaryButtonLoading` on `ModalFooter` while an async submit is in progress. The primary button shows an [InlineLoading](/components/InlineLoading) spinner, becomes non-interactive, and suppresses `submit` until loading finishes. The modal stays open.
+
+<FileSource src="/framed/Modal/ComposedModalPrimaryButtonLoading" />
+
+### Loading status
+
+Set `loadingStatus` on `ModalFooter` to show the progress of the primary action in its button: `"active"` while the work runs, then `"finished"` or `"error"`. Any status other than `"inactive"` disables the footer buttons and suppresses `submit`. After `"finished"`, the footer dispatches `loading:success` when the [InlineLoading](/components/InlineLoading) success delay ends. Close the modal there.
+
+`primaryButtonLoading` is the same as `"active"`, except that the secondary buttons stay enabled.
+
+<FileSource src="/framed/Modal/ComposedModalLoadingStatus" />
+
+### Secondary button loading
+
+Secondary buttons support their own, independent loading state, useful when a secondary action (such as "Save as draft") is itself async. For `secondaryButtons`, set `loading` (and optionally `loadingDescription`) on the entry; for `secondaryButtonText`, use `secondaryButtonLoading` and `secondaryButtonLoadingDescription` on `ModalFooter`. A loading secondary button shows its own `InlineLoading` spinner and becomes non-interactive, independent of `primaryButtonLoading`.
+
+<FileSource src="/framed/Modal/ComposedModalSecondaryButtonLoading" />
+
+## Progress
+
+Combine the composed modal with a progress indicator to create a multi-step flow within a modal. Use the modal footer's default slot to render Cancel (ghost), Previous (secondary), and Next (primary) buttons. Track the current step to control which content is displayed and update the button label on the final step.
+
+<FileSource src="/framed/Modal/ProgressModal" />
+
+## With portal
+
+Wrap the composed modal in a portal to ensure it renders above all z-index stacking contexts and parent overflow constraints, preventing visual clipping and layering issues.
+
+Components with menus (combo box, dropdown, date picker, and so on) placed inside a composed modal also auto-portal their menus the same way as in Modal. See [Modal with dropdowns](/components/Modal#modal-with-dropdowns).
+
+<FileSource src="/framed/Portal/ComposedModalPortal" />
+
+## Sizes
+
+Set `size` on `ComposedModal` to control modal width: `"xs"`, `"sm"`, or `"lg"`. The default (no `size`) matches Modal's `"md"`.
+
+<FileSource src="/framed/Modal/ComposedModalSmall" />
+
+## Closing
+
+Control how the composed modal can be dismissed.
+
+### Prevent default
+
+The modal dispatches a cancelable `close` event. Call `e.preventDefault()` to keep the modal open. The event includes a `trigger` property indicating what triggered the close attempt: `"escape-key"` (<DocKbd label="Escape" />), `"outside-click"`, `"close-button"`, or `"programmatic"` (the `open` prop was set to `false` from outside the component, for example through `bind:open`, rather than through one of the modal's own dismiss controls).
+
+<FileSource src="/framed/Modal/ComposedModalPreventClose" />
+
+### Outside click
+
+A modal with a `ModalFooter` stays open when the user clicks outside it, so the user has to choose an action. A modal without one is passive and closes. This matches Carbon v11.
+
+Set `preventCloseOnClickOutside` to `true` to keep a passive modal open, for example while it shows a value the user must copy. Set it to `false` to close a modal with a footer on an outside click. Carbon advises against this, since the user can lose their input.
+
+<FileSource src="/framed/Modal/ComposedModalPreventOutsideClick" />
+
+### Hide close button
+
+Set `hideCloseButton` on `ModalHeader` to remove the header close button. Use this for forced-choice dialogs such as auth walls or terms acceptance. Always provide an alternative dismiss path, typically footer actions. A modal with a `ModalFooter` already stays open on an outside click. <DocKbd label="Escape" /> still closes the modal unless you cancel the `close` event.
+
+<FileSource src="/framed/Modal/ComposedModalHideCloseButton" />
+
+### Secondary button
+
+`secondaryButtonText` closes the modal by default. The footer dispatches a cancelable `click:button--secondary` event first. Call `e.preventDefault()` to keep the modal open, for example when Cancel should stay put for a dirty form.
+
+<FileSource src="/framed/Modal/ComposedModalPreventSecondaryClose" />
+
+## Events
+
+ComposedModal and ModalFooter dispatch events for the modal's lifecycle and button interactions. The close button, <DocKbd label="Escape" />, an outside click on a passive modal, and `ModalFooter`'s `secondaryButtonText` button close the modal automatically. See [Closing](#closing) above. Every other action, including the primary button and `secondaryButtons` entries, leaves `open` untouched; handle the event and set `open` to `false` yourself when the action should dismiss the dialog.
+
+### Open
+
+Listen for `on:open` to know when `open` becomes `true`. It fires before the modal is visible and before focus moves into it. To run code after focus has moved, listen for `on:transitionend` and check `event.detail.open`.
+
+```svelte
+<ComposedModal bind:open on:open={() => console.log("opened")}>
+```
+
+### Submit and button clicks
+
+Clicking the primary button in `ModalFooter` dispatches `submit` and `click:button--primary` on `ComposedModal`. `ModalFooter` dispatches `click:button--secondary` with the button's `text`.
+
+```svelte
+<ComposedModal bind:open on:submit={() => (open = false)}>
+  <ModalHeader title="Confirm changes" />
+  <ModalBody>...</ModalBody>
+  <ModalFooter primaryButtonText="Confirm" secondaryButtonText="Cancel" />
+</ComposedModal>
+```
+
+### Transition end
+
+Listen for `on:transitionend` to know when the modal's open or close animation finishes. `event.detail.open` reflects the modal's state at the end of the transition.
+
+```svelte
+<ComposedModal
+  bind:open
+  on:transitionend={(e) => console.log("open:", e.detail.open)}
+>
+```

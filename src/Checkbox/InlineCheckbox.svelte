@@ -1,4 +1,7 @@
 <script>
+  import { forwardShiftClick } from "../utils/forward-shift-click.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
   /** Specify whether the checkbox is checked */
   export let checked = false;
 
@@ -6,32 +9,47 @@
   export let indeterminate = false;
 
   /**
-   * Specify the title attribute for the label element
-   * @type {string}
+   * Specify the title attribute for the label element.
+   * @type {string | undefined}
    */
   export let title = undefined;
 
   /** Set an id for the input label */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
-  /** Obtain a reference to the input HTML element */
+  /**
+   * Obtain a reference to the input HTML element
+   * @type {null | HTMLInputElement}
+   */
   export let ref = null;
 </script>
 
-<input
-  bind:this="{ref}"
-  type="checkbox"
-  class:bx--checkbox="{true}"
-  checked="{indeterminate ? false : checked}"
-  indeterminate="{indeterminate}"
-  id="{id}"
-  {...$$restProps}
-  aria-label="{undefined}"
-  aria-checked="{indeterminate ? 'mixed' : checked}"
-  on:change
-/>
-<label
-  for="{id}"
-  title="{title}"
-  aria-label="{$$props['aria-label']}"
-  class:bx--checkbox-label="{true}"></label>
+<div class:bx--checkbox--inline={true}>
+  <input
+    bind:this={ref}
+    type="checkbox"
+    class:bx--checkbox={true}
+    checked={indeterminate ? false : checked}
+    bind:indeterminate
+    {id}
+    {...$$restProps}
+    on:click
+    on:change
+    on:focus
+    on:blur
+  />
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+  <!-- Server markup can't set `indeterminate`, so the label carries the
+       mixed state until hydration does. -->
+  <label
+    for={id}
+    {title}
+    data-contained-checkbox-state={indeterminate ? "mixed" : undefined}
+    data-contained-checkbox-disabled={indeterminate && $$restProps.disabled
+      ? "true"
+      : undefined}
+    class:bx--checkbox-label={true}
+    on:click={(event) => forwardShiftClick(event, ref)}
+  ></label>
+</div>

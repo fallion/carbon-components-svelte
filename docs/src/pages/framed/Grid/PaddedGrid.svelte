@@ -1,29 +1,48 @@
 <script>
-  import { Grid, Row, Column } from "carbon-components-svelte";
+  import { Box, Column, Grid, Row, Stack } from "carbon-components-svelte";
 </script>
 
-<Grid narrow padding>
-  <Row>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-  </Row>
-</Grid>
+<Stack gap={5}>
+  <Box padding={5}>
+    Adding padding to Grid applies it to columns in all rows:
+  </Box>
 
-<Grid narrow>
-  <Row padding>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-  </Row>
-  <Row>
-    <Column padding style="outline: 1px solid var(--cds-interactive-04)">
-      Column
-    </Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-    <Column style="outline: 1px solid var(--cds-interactive-04)">Column</Column>
-  </Row>
-</Grid>
+  <Grid padding>
+    <Row>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+    </Row>
+  </Grid>
+
+  <Box padding={5}>Adding padding to a Row only applies to its columns:</Box>
+
+  <Grid>
+    <Row padding>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+    </Row>
+    <Row>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+    </Row>
+  </Grid>
+
+  <Box padding={5}>
+    Adding padding to a specific column only applies it to the column:
+  </Box>
+
+  <Grid>
+    <Row>
+      <Column padding>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+      <Column>Column</Column>
+    </Row>
+  </Grid>
+</Stack>

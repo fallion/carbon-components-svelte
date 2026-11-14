@@ -1,0 +1,90 @@
+---
+components: ["SessionStorage"]
+description: Session storage provides a reactive wrapper around the sessionStorage API; data is isolated per tab and cleared when the tab closes.
+---
+
+## Basic
+
+See how the component maintains state within a session. Toggle the switch and refresh the page to see the persisted state. State is cleared when the tab is closed. Unlike [LocalStorage](/components/LocalStorage), data is isolated per tab.
+
+The component listens for the [storage event](https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event) so updates from another same-origin document in the same tab (for example, an iframe) stay in sync. Session storage is isolated per tab, so this event does not propagate across tabs or windows. When the key is removed from a shared session context, the bound value resets to undefined so the next local write does not re-persist stale data.
+
+This example logs the `save` and `update` events as they fire — see [Events](#events) for what each one means and its payload shape.
+
+<FileSource src="/framed/SessionStorage/SessionStorage" />
+
+## Persisting objects and arrays
+
+The bound value can be any JSON-serializable data; objects and arrays are serialized with JSON.stringify. Strings are stored as is, except strings that look like JSON (such as `"123"` or `"true"`), which are JSON-encoded so they read back as strings rather than numbers or booleans. The component compares the serialized form to decide when to write, which has two consequences:
+
+- Reassigning to a new object or array with **identical contents** does not trigger a redundant write.
+- **In-place mutations** (for example, changing a nested theme property) persist only when you signal the change to Svelte. Reassign the value (`value = { ...value, theme: "light" }`) or use the self-assignment idiom (`value = value`); a bare mutation alone will not re-render and therefore will not persist.
+
+In this example, the text inputs bind directly to nested properties and the button mutates the object in place. Edit a field and refresh the page to confirm the change is persisted within the session.
+
+<FileSource src="/framed/SessionStorage/SessionStorageObject" />
+
+## Reactive key
+
+The storage key is also reactive — set `key` to switch between contexts, useful for per-user settings.
+
+In this example, each user has their own theme preference stored under a separate key. When you switch users, the component automatically loads that user's saved preference.
+
+Switching keys only hydrates the bound value from storage; it does not dispatch [`update`](#update). The event log below should stay empty when you change users and only record entries when you change the theme.
+
+<FileSource src="/framed/SessionStorage/SessionStorageReactiveKey" />
+
+## Disabling sync
+
+With sync enabled by default, the component listens for storage events and updates the bound value when another same-origin document in this tab writes the same key, such as an iframe. Set `sync="off"` to ignore those writes. The component still loads storage on mount and saves your own changes.
+
+Session storage is already per tab, so this matters mainly when an iframe shares the session. Turn sync off when the host page should not follow iframe writes, or when the app handles conflicts itself. Sync is reactive, so you can change it at runtime.
+
+```svelte
+<SessionStorage key="draft-form-data" bind:value sync="off" />
+```
+
+## Clear item, clear all
+
+The component provides methods to manage stored data:
+
+| Method      | Description                       |
+| ----------- | ---------------------------------- |
+| `clearItem` | Remove a specific key-value pair. |
+| `clearAll`  | Remove all stored data.           |
+
+Use `bind:this` to access these methods. Both also reset the bound value to `undefined` and dispatch [`update`](#update), so there is no need to reset it yourself. The key stays cleared until the value changes again.
+
+In this example, toggle the switch and refresh the page to confirm the value persists, then try either button to clear storage.
+
+<FileSource src="/framed/SessionStorage/SessionStorageClear" />
+
+## Events
+
+Respond to storage writes, cross-document updates, and write failures.
+
+### Save
+
+Dispatched once on mount, when `key` is not already present in storage — right after the component seeds storage with the current `value`. The payload is always `null`.
+
+This fires the first time a key is used in the current session, and again after storage is cleared and the page is refreshed (see [Clear item, clear all](#clear-item-clear-all)). The [Basic](#basic) example above logs this event.
+
+### Update
+
+Dispatched whenever the stored value changes: after a local bound-value write, after `clearItem` or `clearAll`, or after `sync` picks up a matching write from another same-origin document in this tab (see [Disabling sync](#disabling-sync)). The payload is `{ prevValue, value }`; `prevValue` is a snapshot taken before the change, not a live reference to the current value.
+
+Switching `key` hydrates the bound value from storage but does not dispatch this event (see [Reactive key](#reactive-key)).
+
+The [Basic](#basic), [Persisting objects and arrays](#persisting-objects-and-arrays), and [Reactive key](#reactive-key) examples above all log this event.
+
+### Error
+
+Dispatched when a write to session storage fails — for example, when storage quota is exceeded, or access is denied such as in a private browsing mode that blocks Web Storage. The payload is `{ error }`, where `error` is the value thrown by the underlying `sessionStorage.setItem` call.
+
+```svelte
+<SessionStorage
+  key="draft-form-data"
+  bind:value
+  on:error={({ detail }) => console.error("Failed to persist:", detail.error)}
+/>
+```

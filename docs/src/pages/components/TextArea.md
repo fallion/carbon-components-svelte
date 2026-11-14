@@ -1,0 +1,209 @@
+---
+components: ["TextArea", "TextAreaSkeleton", "FluidTextAreaSkeleton"]
+description: Text areas provide a multi-line field for longer text like descriptions, comments, or messages, with support for character counting and various states.
+---
+
+<script>
+  import { AILabel, Box, FluidTextAreaSkeleton, Layer, TextArea, TextAreaSkeleton, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a basic textarea with a label and placeholder text.
+
+<TextArea labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+## Rows and columns
+
+Control the visible size of the textarea.
+
+### Rows
+
+Adjust visible rows with `rows`. The default is `4`.
+
+<TextArea rows={10} labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+### Columns
+
+Adjust visible columns with `cols`. Setting `cols` disables the default resize handle; override this with the `resize` style property.
+
+<TextArea cols={40} labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+### Grow with content
+
+Set `grow` to expand the textarea as its content grows, using `rows` as the
+minimum height. Cap the height with `maxRows`; once the content exceeds it,
+the field scrolls instead of growing further.
+
+<TextArea grow maxRows={8} labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+## Maximum character count
+
+Specify the max count with `maxCount`. It counts characters by default. A counter appears to the right of the label. Use the native maxlength attribute instead if you prefer not to show a counter.
+
+Screen readers hear the count read as words (for example, "2 of 100 characters"), and hear "Character limit reached" once typing pauses at the limit. Override either message with the `counterText` and `limitReachedText` props.
+
+<TextArea labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." maxCount={100} />
+
+### Hidden label
+
+The counter still shows when the label is hidden, and stays aligned to the trailing edge of the field. Prefer `hideLabel` over an empty `labelText` so the field keeps an accessible name for screen readers.
+
+<TextArea hideLabel labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." maxCount={100} />
+
+### Value already over the limit
+
+`maxCount` only stops typing past the limit; it does not truncate a value that is set from script and already exceeds it. In that case the field is marked `aria-invalid` and the counter turns red, without rewriting the bound value.
+
+<TextArea labelText="Incident summary" maxCount={100} value="A previously saved draft that happens to be well over the current one hundred character limit for this field." />
+
+### Word counter
+
+Set `counterMode` to `"word"` to limit words instead of characters. The counter, the screen-reader text, and the limit announcement switch to words.
+
+<TextArea labelText="Executive summary" placeholder="Summarise the incident for leadership" maxCount={50} counterMode="word" />
+
+Words are counted with `Intl.Segmenter` where the browser supports it; older browsers split on whitespace, so a hyphenated term may count differently.
+
+## Helper text
+
+Add helper text below the textarea to provide additional context or instructions.
+
+<TextArea labelText="Deployment notes" helperText="Include the rollback plan and any risks the on-call engineer should know about" placeholder="Summarize what changed and why..." />
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<TextArea selectTextOnFocus labelText="Deployment notes" value="Rolled out v2.4.1 to production; no issues observed." />
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<TextArea hideLabel labelText="Internal note" placeholder="Add a note visible only to the support team..." />
+
+## Custom label
+
+Use the `labelChildren` slot to provide custom label content.
+
+<TextArea labelText="" placeholder="Describe what happened, the impact, and any mitigation steps taken so far...">
+  <strong slot="labelChildren">Incident summary</strong>
+</TextArea>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<TextArea labelText="Release notes" value="Adds regional failover and faster cold starts.">
+  <AILabel slot="decorator">
+    <p>Drafted from the merged pull requests in this release.</p>
+  </AILabel>
+</TextArea>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <TextArea labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+  </Box>
+</Layer>
+
+## Fluid
+
+Set `fluid` to embed the label inside the field. Fluid text areas work
+standalone or inside [FluidForm](/components/FluidForm), which applies the
+variant automatically.
+
+<TextArea fluid labelText="Change request justification" placeholder="Explain why this change is needed and the impact of delaying it..." />
+
+### Maximum character count
+
+The character counter sits at the trailing edge of the field, opposite the
+embedded label.
+
+<TextArea fluid labelText="Change request justification" placeholder="Explain why this change is needed and the impact of delaying it..." maxCount={100} />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<TextArea fluid labelText="Change request justification" placeholder="Explain why this change is needed and the impact of delaying it...">
+  <svelte:fragment slot="labelChildren">
+    Change request justification
+    <TooltipIcon tooltipText="Include the business impact and urgency to help the approver prioritize this request." icon={Information} />
+  </svelte:fragment>
+</TextArea>
+
+### Invalid
+
+Fluid text areas display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<TextArea fluid invalid invalidText="Justification must be at least 20 characters. HTML tags, markdown formatting, and special characters will be stripped from your submission." labelText="Change request justification" placeholder="Explain why this change is needed and the impact of delaying it..." />
+
+### Warning
+
+<TextArea fluid warn warnText="This justification is shorter than typically approved for high-risk changes" labelText="Change request justification" placeholder="Explain why this change is needed and the impact of delaying it..." />
+
+### Disabled
+
+Invalid and warning states are not displayed while the text area is disabled.
+
+<TextArea fluid disabled invalid invalidText="Justification must be at least 20 characters" labelText="Change request justification" placeholder="Explain why this change is needed and the impact of delaying it..." />
+
+### Read-only
+
+Invalid and warning states are not displayed while the text area is read-only.
+
+<TextArea fluid readonly warn warnText="This justification is shorter than typically approved" labelText="Change request justification" value="Rolling back the payments-service deployment due to elevated error rates." />
+
+### Skeleton
+
+Display a loading skeleton for the fluid text area variant.
+
+<FluidTextAreaSkeleton />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Show validation errors with `invalid` and a message in `invalidText`.
+
+<TextArea invalid invalidText="Summary must be at least 20 characters" labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+### Warning
+
+Show a warning with `warn` and a message in `warnText`.
+
+<TextArea warn warnText="This summary is shorter than recommended for a post-incident review" labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+### Disabled
+
+Disable the textarea with `disabled`.
+
+<TextArea disabled labelText="Incident summary" placeholder="Describe what happened, the impact, and any mitigation steps taken so far..." />
+
+### Read-only
+
+Display a non-editable value with `readonly`.
+
+<TextArea readonly labelText="Incident summary" value="Database connection pool exhausted during peak traffic; scaled up replicas to mitigate." />
+
+## Skeleton
+
+Show a loading state with the default skeleton variant.
+
+<TextAreaSkeleton />
+
+### Without label
+
+Show a loading state without a label by setting `hideLabel` to `true`.
+
+<TextAreaSkeleton hideLabel />

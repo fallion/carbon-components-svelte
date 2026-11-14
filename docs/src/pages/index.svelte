@@ -1,307 +1,289 @@
-<script>
+<script lang="ts">
   import {
+    Column,
     Content,
     Grid,
     Row,
-    Column,
-    CodeSnippet,
-    Link,
-    Tabs,
-    Tab,
-    TabContent,
-    OutboundLink,
-    RadioButtonGroup,
-    RadioButton,
+    Stack,
+    Text,
   } from "carbon-components-svelte";
+  import Apps from "carbon-icons-svelte/lib/Apps.svelte";
+  import Carbon from "carbon-icons-svelte/lib/Carbon.svelte";
+  import Connect from "carbon-icons-svelte/lib/Connect.svelte";
+  import ConnectionSignal from "carbon-icons-svelte/lib/ConnectionSignal.svelte";
+  import DataStructured from "carbon-icons-svelte/lib/DataStructured.svelte";
+  import Edit from "carbon-icons-svelte/lib/Edit.svelte";
+  import List from "carbon-icons-svelte/lib/List.svelte";
+  import Popup from "carbon-icons-svelte/lib/Popup.svelte";
+  import Replicate from "carbon-icons-svelte/lib/Replicate.svelte";
+  import Settings from "carbon-icons-svelte/lib/Settings.svelte";
+  import Template from "carbon-icons-svelte/lib/Template.svelte";
+  import Types from "carbon-icons-svelte/lib/Types.svelte";
+  import DocBenefitGrid from "../components/DocBenefitGrid.svelte";
+  import DocFooterCta from "../components/DocFooterCta.svelte";
+  import DocHero from "../components/DocHero.svelte";
+  import HomePageActions from "../components/HomePageActions.svelte";
+  import DocMetric from "../components/DocMetric.svelte";
+  import DocSection from "../components/DocSection.svelte";
+  import DocSectionHeader from "../components/DocSectionHeader.svelte";
+  import DocSplitRow from "../components/DocSplitRow.svelte";
   import TileCard from "../components/TileCard.svelte";
-  import { theme } from "../store";
-  import { metatags } from "@sveltech/routify";
 
-  metatags.title = "Carbon Components Svelte";
-  metatags.description =
-    "The Svelte implementation of the Carbon Design System featuring UI components, icons, pictograms, and charts.";
+  const principles = [
+    {
+      icon: Replicate,
+      title: "Reuse",
+      body: "Compose interfaces from primitives that already handle state, keyboard interaction, and focus management.",
+    },
+    {
+      icon: Template,
+      title: "Consistency",
+      body: "Every component speaks the same type scale, spacing, and color tokens, so screens feel like one product.",
+    },
+    {
+      icon: Settings,
+      title: "Extensibility",
+      body: "Restyle with design tokens, swap themes at runtime, and extend components with slots and forwarded props.",
+    },
+  ];
 
-  const installYarn = "yarn add -D carbon-components-svelte";
-  const installNpm = "npm i -D carbon-components-svelte";
-  const installPnpm = "pnpm i -D carbon-components-svelte";
-  const themes = {
-    white: "White",
-    g10: "Gray 10",
-    g80: "Gray 80",
-    g90: "Gray 90",
-    g100: "Gray 100",
-    all: "All",
-  };
+  const apiBenefits = [
+    {
+      icon: Apps,
+      title: "Component composition",
+      body: "Build complex UI from small, composable parts. Slots and nested components keep markup declarative.",
+    },
+    {
+      icon: Types,
+      title: "TypeScript generics",
+      body: "Data-driven components like DataTable are generic over your row types, so data and cells stay type-safe end to end.",
+    },
+    {
+      icon: Edit,
+      title: "Slots for customization",
+      body: "Named slots let you override any part of a component, from a table cell to an empty state, without forking it.",
+    },
+    {
+      icon: Connect,
+      title: "Events and bindings",
+      body: "Dispatched events and two-way bindings keep wiring minimal. No extra stores or boilerplate required.",
+    },
+  ];
 
-  const cssImportAll = `import "carbon-components-svelte/css/all.css";`;
-  const cssThemeToggle = `<script>
-  let theme = "${$theme}"; // "white" | "g10" | "g80" | "g90" | "g100"
+  const perfBenefits = [
+    {
+      icon: List,
+      title: "Built-in virtualization",
+      body: "Render only the rows in view, so long lists and tables stay responsive on large datasets.",
+    },
+    {
+      icon: DataStructured,
+      title: "Optimized data structures",
+      body: "Large in-memory datasets use structures tuned for fast lookups, sorting, and updates.",
+    },
+    {
+      icon: ConnectionSignal,
+      title: "Pooled event listeners",
+      body: "Shared, pooled listeners replace per-item handlers to cut memory use and setup cost.",
+    },
+    {
+      icon: Popup,
+      title: "Floating portal",
+      body: "Tooltips, menus, and dialogs render through a floating portal to escape overflow and stacking contexts.",
+    },
+  ];
 
-  $: document.documentElement.setAttribute("theme", theme);
-<\/script>
-`;
-
-  $: cssImport = `import "carbon-components-svelte/css/${$theme}.css";`;
-  $: cssCdn = `<!DOCTYPE html>
-<html>
-  <head>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/carbon-components-svelte/css/${$theme}.css"
-    />
-  </head>
-</html>`;
-  $: cssCdnSvelteHead = `<svelte:head>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/carbon-components-svelte/css/${$theme}.css"
-  />
-</svelte:head>`;
+  const benefitSections = [
+    { heading: "The Svelte way", items: apiBenefits },
+    { heading: "Fast at scale", items: perfBenefits },
+  ];
 </script>
 
-<Content>
-  <Grid>
-    <Row>
-      <Column>
-        <h1>Carbon Components Svelte</h1>
-        <p class="big-paragraph">
-          Carbon Components Svelte is a
-          <Link
-            inline
-            class="big-link"
-            href="https://github.com/sveltejs/svelte"
-          >
-            Svelte
-          </Link>
-          component library that implements the
-          <Link
-            inline
-            class="big-link"
-            href="https://www.carbondesignsystem.com/"
-          >
-            Carbon Design System
-          </Link>, an open source design system by IBM.
-        </p>
-        <p>
-          Design systems facilitate design and development through reuse,
-          consistency, and extensibility.
-        </p>
-      </Column>
-    </Row>
-    <Row style="margin-bottom: var(--cds-layout-02)">
-      <Column>
-        <h3>Installation</h3>
-        <h4>Using Yarn:</h4>
-        <Row noGutter>
-          <CodeSnippet code="{installYarn}" />
-        </Row>
-        <h4>Using NPM:</h4>
-        <Row noGutter>
-          <CodeSnippet code="{installNpm}" />
-        </Row>
-        <h4>Using pnpm:</h4>
-        <Row noGutter>
-          <CodeSnippet code="{installPnpm}" />
-        </Row>
-      </Column>
-    </Row>
-    <Row style="margin-bottom: var(--cds-layout-04)">
-      <Column>
-        <h3>Styling</h3>
-        <p>
-          Before importing components, you will need to first apply Carbon
-          component styles. The Carbon Design System supports five themes (2
-          light, 3 dark).
-        </p>
-        <RadioButtonGroup
-          style="margin-top: var(--cds-spacing-08)"
-          legendText="Carbon themes"
-          bind:selected="{$theme}"
-        >
-          {#each ["white", "g10", "g80", "g90", "g100"] as value}
-            <RadioButton labelText="{themes[value]}" value="{value}" />
-          {/each}
-        </RadioButtonGroup>
-      </Column>
-    </Row>
+<svelte:head>
+  <title>Carbon Components Svelte</title>
+  <meta
+    name="description"
+    content="The Svelte implementation of the Carbon Design System featuring accessible UI components, icons, pictograms, and charts."
+  />
+  <link rel="canonical" href="https://svelte.carbondesignsystem.com/" />
+</svelte:head>
 
-    <Row>
-      <Column max="{10}" xlg="{10}" noGutter>
-        <Tabs>
-          <Tab label="CSS StyleSheet" />
-          <Tab label="CDN" />
-          <Tab label="SCSS" />
-          <svelte:fragment slot="content">
-            <TabContent>
-              <p>
-                This library ships with six pre-compiled CSS StyleSheets built
-                from
-                <OutboundLink
-                  inline
-                  size="lg"
-                  href="https://github.com/carbon-design-system/carbon/tree/main/packages/components"
-                >
-                  carbon-components
-                </OutboundLink>.
-              </p>
-              <Row padding noGutter>
-                <Column>
-                  <p>
-                    <CodeSnippet type="single" code="{cssImport}" />
-                  </p>
-                </Column>
-              </Row>
-            </TabContent>
-            <TabContent>
-              <p>
-                An alternative to loading styles is to link an external
-                StyleSheet from a Content Delivery Network (CDN) like
-                <OutboundLink inline size="lg" href="https://unpkg.com/">
-                  unpkg.com
-                </OutboundLink>.
-              </p>
-              <p>This is best suited for rapid prototyping.</p>
-              <h5>HTML</h5>
-              <Row padding noGutter>
-                <Column>
-                  <p>
-                    <CodeSnippet type="multi" code="{cssCdn}" />
-                  </p>
-                </Column>
-              </Row>
-              <h5>svelte:head</h5>
-              <Row padding noGutter>
-                <Column>
-                  <p>
-                    <CodeSnippet type="multi" code="{cssCdnSvelteHead}" />
-                  </p>
-                </Column>
-              </Row>
-            </TabContent>
-            <TabContent>
-              <p>
-                The most performant method to load styles is to import SCSS
-                directly from
-                <code>carbon-components</code>. Although it requires more set
-                up, you can reduce the size of the bundle CSS by importing
-                individual component styles instead of a pre-compiled CSS
-                StyleSheet.
-              </p>
-              <p>
-                Refer to the
-                <OutboundLink
-                  inline
-                  size="lg"
-                  href="https://github.com/carbon-design-system/carbon/blob/main/docs/guides/sass.md"
-                >
-                  official Carbon guide on SASS
-                </OutboundLink>
-                for documentation.
-              </p>
-            </TabContent>
-          </svelte:fragment>
-        </Tabs>
-      </Column>
-    </Row>
+<Content class="overview-page">
+  <DocHero
+    eyebrow="Carbon Components Svelte"
+    icon={Carbon}
+    description="A complete component library that implements the IBM Carbon Design System. Ship accessible, consistent, production-ready interfaces."
+  >
+    <svelte:fragment slot="title">
+      <Text
+        tag="h1"
+        type="fluid-heading-06"
+        color="primary"
+        balance
+        maxWidth="55rem"
+      >
+        The Carbon Design System,<br />built for Svelte
+      </Text>
+    </svelte:fragment>
+    <svelte:fragment slot="actions">
+      <HomePageActions />
+    </svelte:fragment>
+  </DocHero>
 
-    <Row style="margin-bottom: var(--cds-layout-02)">
-      <Column>
-        <h3>Dynamic theming</h3>
-        <p>Use the "all.css" StyleSheet for dynamic, client-side theming.</p>
-        <Row padding noGutter>
+  <DocSection variant="metrics">
+    <Grid>
+      <Row>
+        <Column>
+          <div class="metrics-grid">
+            <DocMetric
+              value="100+"
+              label="Components"
+              caption="From inputs to data tables"
+            />
+            <DocMetric
+            value="5"
+            label="Built-in themes"
+            caption="Two light, three dark"
+          />
+            <DocMetric
+              value="TypeScript"
+              label="Fully typed API"
+              caption="Props, events, and slots"
+            />
+            <DocMetric
+              value="WCAG 2.1 AA"
+              label="Accessibility"
+              caption="Keyboard and screen-reader ready"
+            />
+          </div>
+        </Column>
+      </Row>
+    </Grid>
+  </DocSection>
+
+  <DocSection variant="foundation">
+    <Grid>
+      <DocSectionHeader
+        title="The full design system"
+        titleType="heading-06"
+        gap={6}
+        maxWidth="62ch"
+        wide
+        balance
+        description="A design system is a shared language — the guidelines, patterns, and reusable parts that keep teams aligned as products grow. Carbon is IBM's, proven across thousands of enterprise screens. Carbon Components Svelte ships it as real Svelte components, so accessibility, theming, and visual consistency come standard."
+      />
+      {#each principles as principle (principle.title)}
+        <DocSplitRow
+          variant="principle"
+          icon={principle.icon}
+          title={principle.title}
+          description={principle.body}
+        />
+      {/each}
+    </Grid>
+  </DocSection>
+
+  <DocSection variant="foundation">
+    <Grid>
+      <DocSectionHeader
+        title="Engineered for Svelte"
+        titleType="heading-06"
+        gap={6}
+        maxWidth="62ch"
+        wide
+        balance
+        description="Two-way bindings, slot composition, and compile-time reactivity keep the runtime small. Minimal boilerplate and performance tuned for data-heavy applications."
+      />
+
+      {#each benefitSections as section (section.heading)}
+        <Row class="principle-row">
           <Column>
-            <p>
-              <CodeSnippet type="single" code="{cssImportAll}" />
-            </p>
+            <Stack gap={6}>
+              <Text tag="h3" type="heading-03" color="primary">
+                {section.heading}
+              </Text>
+              <DocBenefitGrid items={section.items} />
+            </Stack>
           </Column>
         </Row>
-        <p>
-          Programmatically switch between each of the five Carbon themes by
-          setting the "theme" attribute on the HTML element.
-        </p>
-        <Row padding noGutter>
-          <Column>
-            <p>
-              <CodeSnippet type="multi" code="{cssThemeToggle}" />
-            </p>
-          </Column>
-        </Row>
-        <p>
-          You can use the
-          <Link inline size="lg" href="/components/Theme">
-            Theme utility component
-          </Link>
-          to update the theme at runtime.
-        </p>
-      </Column>
-    </Row>
+      {/each}
+    </Grid>
+  </DocSection>
 
-    <Row style="margin-bottom: var(--cds-layout-02)">
-      <Column>
-        <h3>Portfolio</h3>
-        <p>
-          The Carbon Svelte portfolio includes packages for icons, pictograms,
-          and data visualization.
-        </p>
-      </Column>
-    </Row>
-    <Row noGutter>
-      <Column xlg="{5}" lg="{8}" md="{4}">
-        <TileCard
-          borderRight
-          borderBottom
-          title="Carbon Components Svelte"
-          subtitle="50+ components"
-          target="_blank"
-          href="https://github.com/carbon-design-system/carbon-components-svelte"
-        />
-      </Column>
-      <Column xlg="{5}" lg="{8}" md="{4}">
-        <TileCard
-          borderBottom
-          title="Carbon Icons Svelte"
-          subtitle="7000+ icons"
-          target="_blank"
-          href="https://github.com/carbon-design-system/carbon-icons-svelte"
-        />
-      </Column>
-    </Row>
-    <Row noGutter>
-      <Column xlg="{5}" lg="{8}" md="{4}">
-        <TileCard
-          borderBottom
-          borderRight
-          title="Carbon Pictograms Svelte"
-          subtitle="700+ pictograms"
-          target="_blank"
-          href="https://github.com/carbon-design-system/carbon-pictograms-svelte"
-        />
-      </Column>
-      <Column xlg="{5}" lg="{8}" md="{4}">
-        <TileCard
-          borderBottom
-          title="Carbon Charts Svelte"
-          subtitle="20+ charts, powered by d3"
-          target="_blank"
-          href="https://github.com/carbon-design-system/carbon-charts/tree/master/packages/svelte"
-        />
-      </Column>
-    </Row>
-    <Row noGutter>
-      <Column xlg="{5}" lg="{8}" md="{4}">
-        <TileCard
-          title="Carbon Preprocess Svelte"
-          subtitle="Collection of Carbon Svelte preprocessors"
-          target="_blank"
-          href="https://github.com/carbon-design-system/carbon-preprocess-svelte"
-        />
-      </Column>
-    </Row>
-  </Grid>
+  <DocSection variant="ecosystem">
+    <Grid>
+      <Row>
+        <Column>
+          <Text tag="div" type="label-02" color="secondary">GitHub repositories</Text>
+        </Column>
+      </Row>
+      <Row class="ecosystem-row">
+        <Column>
+          <div>
+            <Row noGutter>
+              <Column xlg={5} lg={8} md={4}>
+                <TileCard
+                  borderRight
+                  borderBottom
+                  title="Carbon Components Svelte"
+                  subtitle="100+ components"
+                  target="_blank"
+                  href="https://github.com/carbon-design-system/carbon-components-svelte"
+                />
+              </Column>
+              <Column xlg={5} lg={8} md={4}>
+                <TileCard
+                  borderBottom
+                  title="Carbon Icons Svelte"
+                  subtitle="2,700+ icons"
+                  target="_blank"
+                  href="https://github.com/carbon-design-system/carbon-icons-svelte"
+                />
+              </Column>
+            </Row>
+            <Row noGutter>
+              <Column xlg={5} lg={8} md={4}>
+                <TileCard
+                  borderBottom
+                  borderRight
+                  title="Carbon Pictograms Svelte"
+                  subtitle="1,500+ pictograms"
+                  target="_blank"
+                  href="https://github.com/carbon-design-system/carbon-pictograms-svelte"
+                />
+              </Column>
+              <Column xlg={5} lg={8} md={4}>
+                <TileCard
+                  borderBottom
+                  title="Carbon Charts Svelte"
+                  subtitle="25+ charts, powered by d3"
+                  target="_blank"
+                  href="https://github.com/carbon-design-system/carbon-charts/tree/master/packages/svelte"
+                />
+              </Column>
+            </Row>
+            <Row noGutter>
+              <Column xlg={5} lg={8} md={4}>
+                <TileCard
+                  title="Carbon Preprocess Svelte"
+                  subtitle="Svelte preprocessors and build plugins"
+                  target="_blank"
+                  href="https://github.com/carbon-design-system/carbon-preprocess-svelte"
+                />
+              </Column>
+            </Row>
+          </div>
+        </Column>
+      </Row>
+    </Grid>
+  </DocSection>
+
+  <DocFooterCta
+    title="Start building with Carbon"
+    description="Install the library, apply a theme, and compose your first screen in minutes."
+  >
+    <svelte:fragment slot="actions">
+      <HomePageActions />
+    </svelte:fragment>
+  </DocFooterCta>
 </Content>
-
-<style>
-  p {
-    margin-bottom: var(--cds-spacing-05);
-  }
-</style>

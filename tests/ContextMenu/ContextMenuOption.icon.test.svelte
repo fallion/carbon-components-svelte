@@ -1,0 +1,18 @@
+<script lang="ts">
+  import ContextMenu from "carbon-components-svelte/ContextMenu/ContextMenu.svelte";
+  import ContextMenuDivider from "carbon-components-svelte/ContextMenu/ContextMenuDivider.svelte";
+  import ContextMenuOption from "carbon-components-svelte/ContextMenu/ContextMenuOption.svelte";
+  import CopyFile from "carbon-icons-svelte/lib/CopyFile.svelte";
+  import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
+
+  export let open = false;
+  export let x = 0;
+  export let y = 0;
+</script>
+
+<ContextMenu bind:open {x} {y}>
+  <ContextMenuOption labelText="Copy" icon={CopyFile} />
+  <ContextMenuOption labelText="Plain" />
+  <ContextMenuDivider />
+  <ContextMenuOption kind="danger" labelText="Delete" icon={TrashCan} />
+</ContextMenu>

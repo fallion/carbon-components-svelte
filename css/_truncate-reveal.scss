@@ -1,0 +1,69 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Ways to reach text that `Truncate` clips: a focus ring on the text when
+/// it shows its tooltip on focus, and the expand toggle. Ported from Carbon
+/// v11's `truncated-text`, which Carbon v10 lacks.
+/// @access private
+/// @group components
+@mixin text-truncate-reveal {
+  // A pointer press focuses the text too, so only keyboard focus draws the
+  // ring. It sits outside the box, since an inset ring would cover the
+  // first and last letters.
+  .#{$prefix}--text-truncate--focusable:focus-visible {
+    @include focus-outline("outline", (outline-offset));
+
+    outline-offset: 2px;
+  }
+
+  .#{$prefix}--text-truncate__toggle {
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $link-primary;
+    cursor: pointer;
+    font: inherit;
+    text-align: start;
+  }
+
+  // The label is about 14 px tall. An invisible box on its center takes a
+  // press of at least 24 x 24 px (WCAG 2.5.8) without moving the layout or
+  // the focus ring. It is centered, so it needs no RTL twin.
+  .#{$prefix}--text-truncate__toggle::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, #{to-rem(24px)});
+    height: max(100%, #{to-rem(24px)});
+    content: "";
+    transform: translate(-50%, -50%);
+  }
+
+  .#{$prefix}--text-truncate__toggle:focus {
+    @include focus-outline("outline", (outline-offset));
+
+    outline-offset: 2px;
+  }
+
+  @media (forced-colors: active) {
+    // Forced colors paint the toggle in `ButtonText`, the same as the
+    // clipped text above it. `LinkText` keeps it looking like something to
+    // press, as `link-primary` does.
+    .#{$prefix}--text-truncate__toggle {
+      color: LinkText;
+    }
+
+    // Chromium draws the `focus` ring dim and translucent here, so name a
+    // system color, as ToggleButtonGroup does.
+    .#{$prefix}--text-truncate--focusable:focus-visible,
+    .#{$prefix}--text-truncate__toggle:focus {
+      outline-color: CanvasText;
+    }
+  }
+}
+
+@include exports("text-truncate-reveal") {
+  @include text-truncate-reveal;
+}

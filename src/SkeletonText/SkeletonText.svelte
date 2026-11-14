@@ -11,38 +11,59 @@
   /** Specify the width of the text (% or px) */
   export let width = "100%";
 
+  /**
+   * Set to `true` to remove the bottom margin, such as for a placeholder
+   * in a flex or grid row that sets its own spacing. In a paragraph, only
+   * the last line loses its margin, so the lines keep their gaps.
+   */
+  export let noMargin = false;
+
+  /**
+   * Set to `true` to use the AI variant, a blue shimmer for content that
+   * AI is generating
+   */
+  export let ai = false;
+
   const RANDOM = [0.973, 0.153, 0.567];
 
-  $: rows = [];
-  $: widthNum = parseInt(width, 10);
+  $: widthNum = Number.parseInt(width, 10);
   $: widthPx = width.includes("px");
-  $: if (paragraph) {
-    for (let i = 0; i < lines; i++) {
-      const min = widthPx ? widthNum - 75 : 0;
-      const max = widthPx ? widthNum : 75;
-      const rand = Math.floor(RANDOM[i % 3] * (max - min + 1)) + min + "px";
-      rows = [...rows, { width: widthPx ? rand : `calc(${width} - ${rand})` }];
-    }
-  }
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 {#if paragraph}
-  <div {...$$restProps} on:click on:mouseover on:mouseenter on:mouseleave>
-    {#each rows as { width }}
+  <div
+    aria-hidden="true"
+    {...$$restProps}
+    on:click
+    on:mouseover
+    on:mouseenter
+    on:mouseleave
+  >
+    {#each Array.from({ length: lines }).map((_, i) => {
+      const min = widthPx ? Math.max(widthNum - 75, 0) : 0;
+      const max = widthPx ? widthNum : 75;
+      const rand = `${Math.floor(RANDOM[i % 3] * (max - min + 1)) + min}px`;
+
+      return widthPx ? rand : `calc(${width} - ${rand})`;
+    }) as lineWidth, i (i)}
       <p
-        class:bx--skeleton__text="{true}"
-        class:bx--skeleton__heading="{heading}"
-        style="width: {width}"
+        class:bx--skeleton__text={true}
+        class:bx--skeleton__heading={heading}
+        class:bx--skeleton__text--no-margin={noMargin && i === lines - 1}
+        class:bx--skeleton__text--ai={ai}
+        style:width={lineWidth}
       ></p>
     {/each}
   </div>
 {:else}
   <p
-    class:bx--skeleton__text="{true}"
-    class:bx--skeleton__heading="{heading}"
+    aria-hidden="true"
+    class:bx--skeleton__text={true}
+    class:bx--skeleton__heading={heading}
+    class:bx--skeleton__text--no-margin={noMargin}
+    class:bx--skeleton__text--ai={ai}
+    style:width
     {...$$restProps}
-    style="width: {width};{$$restProps.style}"
     on:click
     on:mouseover
     on:mouseenter

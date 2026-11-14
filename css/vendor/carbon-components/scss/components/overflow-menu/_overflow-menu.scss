@@ -1,0 +1,569 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--helpers';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+
+/// Overflow menu styles
+/// @access private
+/// @group overflow-menu
+@mixin overflow-menu {
+  .#{$prefix}--overflow-menu {
+    @include button-reset($omit: (display, width));
+    @include reset;
+    @include focus-outline('reset');
+
+    position: relative;
+    display: flex;
+    width: to-rem(40px);
+    height: to-rem(40px);
+    align-items: center;
+    justify-content: center;
+    transition: background-color $duration--fast-02 motion(entrance, productive);
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  // ccs: grouped any-hover rules for the trigger's plain/open/light-open
+  // states into one block (order-safe: each added class raises specificity
+  // strictly, so precedence here is spec-, not order-, determined)
+  @media (any-hover: hover) {
+    .#{$prefix}--overflow-menu:hover {
+      background-color: $layer-hover;
+    }
+
+    .#{$prefix}--overflow-menu.#{$prefix}--overflow-menu--open:hover {
+      background-color: $field;
+    }
+
+  }
+
+  .#{$prefix}--overflow-menu--sm {
+    width: to-rem(32px);
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--overflow-menu--xl {
+    width: to-rem(48px);
+    height: to-rem(48px);
+  }
+
+  // A custom `menu` slot trigger grows to fit its content, but never
+  // shrinks below the square the default icon trigger occupies.
+  .#{$prefix}--overflow-menu.#{$prefix}--overflow-menu--custom-trigger {
+    width: auto;
+    min-width: to-rem(40px);
+    height: auto;
+    min-height: to-rem(40px);
+
+    &.#{$prefix}--overflow-menu--xs {
+      min-width: to-rem(24px);
+      min-height: to-rem(24px);
+    }
+
+    &.#{$prefix}--overflow-menu--sm {
+      min-width: to-rem(32px);
+      min-height: to-rem(32px);
+    }
+
+    &.#{$prefix}--overflow-menu--xl {
+      min-width: to-rem(48px);
+      min-height: to-rem(48px);
+    }
+  }
+
+  .#{$prefix}--overflow-menu.#{$prefix}--overflow-menu--open {
+    @include box-shadow;
+
+    background-color: $field;
+    transition: none;
+  }
+
+  .#{$prefix}--overflow-menu__icon {
+    width: to-rem(16px);
+    height: to-rem(16px);
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--overflow-menu-options {
+    @include reset;
+    @include box-shadow;
+
+    position: absolute;
+    z-index: z('floating');
+    top: 32px;
+    left: 0;
+    display: none;
+    width: to-rem(160px);
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: $field;
+    list-style: none;
+
+    &::after {
+      position: absolute;
+      display: block;
+      background-color: $field;
+      content: '';
+      transition: background-color $duration--fast-02
+        motion(entrance, productive);
+
+      @media screen and (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options[data-floating-menu-direction='bottom']::after {
+    top: to-rem(-3px);
+    left: 0;
+    width: to-rem(40px);
+    height: to-rem(3px);
+  }
+
+  .#{$prefix}--overflow-menu-options[data-floating-menu-direction='top']::after {
+    bottom: to-rem(-8px);
+    left: 0;
+    width: to-rem(40px);
+    height: to-rem(8px);
+  }
+
+  .#{$prefix}--overflow-menu-options[data-floating-menu-direction='left']::after {
+    top: 0;
+    right: to-rem(-6px);
+    width: to-rem(6px);
+    height: to-rem(40px);
+  }
+
+  .#{$prefix}--overflow-menu-options[data-floating-menu-direction='right']::after {
+    top: 0;
+    left: to-rem(-6px);
+    width: to-rem(6px);
+    height: to-rem(40px);
+  }
+
+  .#{$prefix}--overflow-menu-options--sm.#{$prefix}--overflow-menu-options {
+    &[data-floating-menu-direction='bottom']::after,
+    &[data-floating-menu-direction='top']::after {
+      width: to-rem(32px);
+    }
+
+    &[data-floating-menu-direction='left']::after,
+    &[data-floating-menu-direction='right']::after {
+      height: to-rem(32px);
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options--xl.#{$prefix}--overflow-menu-options {
+    &[data-floating-menu-direction='bottom']::after,
+    &[data-floating-menu-direction='top']::after {
+      width: to-rem(48px);
+    }
+
+    &[data-floating-menu-direction='left']::after,
+    &[data-floating-menu-direction='right']::after {
+      height: to-rem(48px);
+    }
+  }
+
+  .#{$prefix}--overflow-menu--flip.#{$prefix}--overflow-menu-options[data-floating-menu-direction='top']::after,
+  .#{$prefix}--overflow-menu--flip.#{$prefix}--overflow-menu-options[data-floating-menu-direction='bottom']::after {
+    right: 0;
+    left: auto;
+  }
+
+  .#{$prefix}--overflow-menu--flip.#{$prefix}--overflow-menu-options[data-floating-menu-direction='left']::after,
+  .#{$prefix}--overflow-menu--flip.#{$prefix}--overflow-menu-options[data-floating-menu-direction='right']::after {
+    top: auto;
+    bottom: 0;
+  }
+
+  // ccs: an open menu beside its button is placed under the button once it
+  // mounts. Until then (a menu open in the server's markup), one that opens
+  // down from the button's left edge (`--below-left`) takes its place in
+  // the flow, under the button's line, rather than `top`/`left` above,
+  // which put it over the button.
+  .#{$prefix}--overflow-menu-options--below-left {
+    top: auto;
+    left: auto;
+  }
+
+  .#{$prefix}--overflow-menu-options--open {
+    display: flex;
+  }
+
+  .#{$prefix}--overflow-menu-options__option {
+    @include reset;
+
+    display: flex;
+    width: 100%;
+    height: to-rem(40px);
+    align-items: center;
+    padding: 0;
+    background-color: transparent;
+    transition: background-color $duration--fast-02 motion(entrance, productive);
+  }
+
+  .#{$prefix}--overflow-menu-options--sm
+    .#{$prefix}--overflow-menu-options__option {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--overflow-menu-options--xl
+    .#{$prefix}--overflow-menu-options__option {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--overflow-menu--divider {
+    border-top: 1px solid $border-subtle;
+  }
+
+  // `a.`: OverflowMenuItem renders a `<button>` or, with `href`, an `<a>`.
+  a.#{$prefix}--overflow-menu-options__btn::before { // ccs: element
+    display: inline-block;
+    height: 100%;
+    content: '';
+    vertical-align: middle;
+  }
+
+  .#{$prefix}--overflow-menu-options__btn {
+    @include reset;
+    @include type-style('body-compact-01', $omit: (font-weight));
+    @include focus-outline('reset');
+
+    display: inline-flex;
+    width: 100%;
+    max-width: 11.25rem;
+    height: 100%;
+    align-items: center;
+    padding: 0 $carbon--spacing-05;
+    border: none;
+    background-color: transparent;
+    color: $text-secondary;
+    cursor: pointer;
+    font-weight: 400;
+    text-align: start;
+    transition: background-color $duration--fast-02 motion(entrance, productive),
+      color $duration--fast-02 motion(entrance, productive);
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+
+    &::-moz-focus-inner {
+      border: none;
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options__btn svg {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--overflow-menu-options__option-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ccs: grouped any-hover rules for the option row, its button, and the
+  // button's icon into one block (order-safe: no equal-specificity rule
+  // between the originals touched the same property on the same element;
+  // kept ahead of the disabled-option rules below, which must keep
+  // winning the tie against .option:hover)
+  @media (any-hover: hover) {
+    .#{$prefix}--overflow-menu-options__btn:hover {
+      color: $text-primary;
+    }
+
+    .#{$prefix}--overflow-menu-options__btn:hover svg {
+      fill: $icon-primary;
+    }
+
+    .#{$prefix}--overflow-menu-options__option:hover {
+      background-color: $layer-hover;
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options__option--danger
+    .#{$prefix}--overflow-menu-options__btn:focus {
+    background-color: $button-danger-primary;
+    color: $text-on-color;
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  // ccs: grouped any-hover rules for the danger and disabled option
+  // variants into one block (order-safe: distinct modifier classes; the
+  // disabled .btn:hover rule repeats the disabled :active/:focus rule's
+  // background-color and outline values below, so its position relative
+  // to that rule cannot change the computed style)
+  @media (any-hover: hover) {
+    .#{$prefix}--overflow-menu-options__option--danger
+      .#{$prefix}--overflow-menu-options__btn:hover {
+      background-color: $button-danger-primary;
+      color: $text-on-color;
+
+      svg {
+        fill: currentColor;
+      }
+    }
+
+    .#{$prefix}--overflow-menu-options__option--disabled:hover {
+      background-color: $layer;
+      cursor: not-allowed;
+    }
+
+    .#{$prefix}--overflow-menu-options__option--disabled
+      .#{$prefix}--overflow-menu-options__btn:hover {
+      @include focus-outline('reset');
+
+      background-color: $layer;
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options__option--disabled
+    .#{$prefix}--overflow-menu-options__btn {
+    color: $text-disabled;
+    pointer-events: none;
+
+    &:active,
+    &:focus {
+      @include focus-outline('reset');
+
+      background-color: $layer;
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options__option--disabled
+    .#{$prefix}--overflow-menu-options__btn
+    svg {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--overflow-menu--flip {
+    left: -140px;
+
+    &::before {
+      left: 145px;
+    }
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  // ccs: a focused option fills with `Highlight` instead; see
+  // `overflow-menu-forced-colors`.
+  .#{$prefix}--overflow-menu:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  .#{$prefix}--overflow-menu svg {
+    @include high-contrast-mode('icon-fill');
+  }
+  /*stylelint-enable */
+}
+
+@include exports('overflow-menu') {
+  @include overflow-menu;
+}
+
+// carbon-components-svelte patch (formerly css/_overflow-menu.scss)
+@mixin overflow-menu-disabled {
+  .#{$prefix}--overflow-menu:disabled,
+  .#{$prefix}--overflow-menu:disabled:hover {
+    background-color: transparent;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--overflow-menu:disabled .#{$prefix}--overflow-menu__icon,
+  .#{$prefix}--overflow-menu:disabled:hover .#{$prefix}--overflow-menu__icon {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--overflow-menu:disabled::after,
+  .#{$prefix}--overflow-menu:disabled:hover::after {
+    opacity: 0;
+  }
+}
+
+@include exports('overflow-menu-disabled') {
+  @include overflow-menu-disabled;
+}
+
+/// Left/right icon support for overflow menu items (non-standard Carbon layout).
+/// @access private
+/// @group components
+@mixin overflow-menu-option-icons {
+  .#{$prefix}--overflow-menu-options__option-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+
+    // Follow the button text color across hover, danger, and disabled states.
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options__option-icon--left {
+    margin-inline-end: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--overflow-menu-options__option-icon--right {
+    margin-inline-start: auto;
+    padding-inline-start: $carbon--spacing-05;
+  }
+
+  // Let the text region grow so the right icon pins to the edge while the text truncates.
+  .#{$prefix}--overflow-menu-options__btn
+    .#{$prefix}--overflow-menu-options__option-content:not(:only-child) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@include exports('overflow-menu-option-icons') {
+  @include overflow-menu-option-icons;
+}
+
+/// Extra-small overflow menu (Carbon React size="xs", 24px).
+/// v10 only ships sm/md/lg. Mirrors the v10 `--sm` rules.
+/// @access private
+/// @group components
+@mixin overflow-menu-xs {
+  .#{$prefix}--overflow-menu--xs {
+    width: to-rem(24px);
+    height: to-rem(24px);
+  }
+
+  .#{$prefix}--overflow-menu-options--xs.#{$prefix}--overflow-menu-options {
+    &[data-floating-menu-direction='bottom']::after,
+    &[data-floating-menu-direction='top']::after {
+      width: to-rem(24px);
+    }
+
+    &[data-floating-menu-direction='left']::after,
+    &[data-floating-menu-direction='right']::after {
+      height: to-rem(24px);
+    }
+  }
+
+  .#{$prefix}--overflow-menu-options--xs
+    .#{$prefix}--overflow-menu-options__option {
+    height: to-rem(24px);
+  }
+}
+
+@include exports('overflow-menu-xs') {
+  @include overflow-menu-xs;
+}
+
+/// Scrollable overflow menu, paired with the inline `max-height` the
+/// `maxHeight` prop sets on the options list.
+/// @access private
+/// @group components
+@mixin overflow-menu-scrollable {
+  .#{$prefix}--overflow-menu-options--scrollable {
+    overflow-y: auto;
+
+    // Open menus are `display: flex; flex-direction: column`. Without this,
+    // items shrink to fit `max-height` instead of overflowing into a scroll.
+    .#{$prefix}--overflow-menu-options__option {
+      flex-shrink: 0;
+    }
+
+    // The ::after caret sits outside the list box and bridges the hover gap
+    // between trigger and menu. `overflow-y` clips it, and this menu opens on
+    // click, so the bridge is not needed here.
+    &::after {
+      display: none;
+    }
+  }
+}
+
+@include exports('overflow-menu-scrollable') {
+  @include overflow-menu-scrollable;
+}
+
+// carbon-components-svelte patch (breadcrumb menu caret)
+// Breadcrumb menus draw a triangle caret on this pseudo-element (see
+// breadcrumb/_breadcrumb.scss, which loads before this file). Every size
+// variant above, including the `--xs` patch, sets a caret width that would
+// flatten it back into a bar, so this emits last.
+@mixin overflow-menu-breadcrumb-caret {
+  .#{$prefix}--breadcrumb-menu-options.#{$prefix}--overflow-menu-options[data-floating-menu-direction='bottom']::after {
+    width: 0;
+  }
+}
+
+@include exports('overflow-menu-breadcrumb-caret') {
+  @include overflow-menu-breadcrumb-caret;
+}
+
+// carbon-components-svelte patch (overflow-menu-forced-colors)
+// The OverflowMenu surface is separated from the page only by a box-shadow, which
+// forced-colors mode drops. A transparent outline is repainted as a visible
+// system colour there.
+//
+// Every option's resting outline is repainted too, so the focused option's
+// thinner `Highlight` ring stood out less than its neighbors. It fills with
+// `Highlight` and opts out of forcing, as a highlighted SearchMenu row does;
+// a danger option's red fill would come back without the doubled class.
+//
+// The trigger's resting outline is repainted the same way, so a list with a
+// menu per row drew a box on every row. Only the focused or open trigger
+// keeps its ring, and the focus ring matches the open one's 2px width.
+
+/// OverflowMenu surface edge, trigger ring and focused option in forced-colors
+/// mode.
+/// @access private
+/// @group overflow-menu
+@mixin overflow-menu-forced-colors {
+  .#{$prefix}--overflow-menu-options {
+    @include high-contrast-mode("outline");
+  }
+
+  @media (forced-colors: active) {
+    .#{$prefix}--overflow-menu {
+      outline-style: none;
+    }
+
+    .#{$prefix}--overflow-menu:focus {
+      outline-width: 2px;
+    }
+
+    .#{$prefix}--overflow-menu.#{$prefix}--overflow-menu--open {
+      outline-style: solid;
+    }
+
+    .#{$prefix}--overflow-menu-options__btn:focus,
+    .#{$prefix}--overflow-menu-options__option--danger
+      .#{$prefix}--overflow-menu-options__btn:focus {
+      forced-color-adjust: none;
+      outline: none;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--overflow-menu-options__btn:focus svg {
+      fill: HighlightText;
+    }
+  }
+}
+
+@include exports("overflow-menu-forced-colors") {
+  @include overflow-menu-forced-colors;
+}

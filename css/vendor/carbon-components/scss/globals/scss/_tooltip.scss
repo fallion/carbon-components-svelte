@@ -1,0 +1,605 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import 'helper-mixins';
+@import 'css--helpers';
+@import 'layout';
+@import 'typography';
+
+/// @access public
+/// @group tooltip
+@mixin tooltip--caret {
+  position: absolute;
+  z-index: z('floating');
+  width: 0;
+  height: 0;
+  border-style: solid;
+  content: '';
+}
+
+/// @param {String} $tooltip-type ['icon'] - The type, from: `icon`, `definition`
+/// @param {List} $omit [()] - Properties this mixin should not emit, for includers that always re-set them afterward
+/// @access public
+/// @group tooltip
+@mixin tooltip--content($tooltip-type: 'icon', $omit: ()) {
+  @if not index($omit, box-shadow) {
+    @include box-shadow;
+  }
+
+  @if not index($omit, z-index) {
+    z-index: z('floating');
+  }
+  width: max-content;
+  min-width: to-rem(24px);
+  // ccs: v11's definition tooltip is 176px wide at most
+  max-width: if($tooltip-type == 'definition', to-rem(176px), to-rem(208px));
+  height: auto;
+  padding: if(
+    $tooltip-type == 'definition',
+    to-rem(8px) to-rem(16px),
+    to-rem(3px) to-rem(16px)
+  );
+  background-color: $background-inverse;
+  border-radius: to-rem(2px);
+  color: $text-inverse;
+  text-align: left;
+  @if not index($omit, transform) {
+    transform: translateX(-50%);
+  }
+  // The font-weight this sets is always redundant: type-style below emits
+  // its own `font-weight` right after, in the same rule.
+  // ccs: v11's definition tooltip sets `body-01`
+  @include type-style(
+    if($tooltip-type == 'definition', 'body-01', 'body-compact-01')
+  );
+
+  // Windows, Firefox HCM Fix
+  @media screen and (prefers-contrast) {
+    border: 1px solid transparent;
+  }
+}
+
+/// @param {String} $tooltip-type ['icon'] - The type, from: `icon`, `definition`
+/// @param {List} $omit [()] - Properties this mixin should not emit, for includers that always re-set them afterward. `state` (not a CSS property) skips the `tooltip--trigger-state` include instead.
+/// @access public
+/// @group tooltip
+// ccs: dropped the unused `$position` param (this mixin's output never
+// varied by position; only `tooltip--placement` below does). Includers now
+// share one rule per `$tooltip-type` across every position it supports
+// instead of emitting this body once per position, since `&` in a combined
+// selector list still fans out per nested pseudo-selector but the
+// declarations themselves are written once.
+@mixin tooltip--trigger($tooltip-type: 'icon', $omit: ()) {
+  @if not index($omit, position) {
+    position: relative;
+  }
+  @if not index($omit, display) {
+    display: inline-flex;
+  }
+  overflow: visible;
+  @if not index($omit, align-items) {
+    align-items: center;
+  }
+
+  &:focus {
+    // Icon type always overrides the outline color to transparent below, in
+    // favor of the outline on the child svg; the high-contrast fallback
+    // still applies to this element either way.
+    @include focus-outline(
+      'border',
+      $omit: if($tooltip-type == 'icon', (outline,), ())
+    );
+  }
+
+  @if $tooltip-type == 'definition' {
+    cursor: default;
+  }
+
+  @if $tooltip-type == 'icon' {
+    @if not index($omit, cursor) {
+      cursor: pointer;
+    }
+
+    &:focus {
+      outline: 1px solid transparent;
+
+      svg {
+        @include focus-outline('border');
+      }
+    }
+  }
+
+  // ::before - Tooltip caret
+  // ::after - legacy Tooltip content (deprecated)
+  // .#{$prefix}--assistive-text - WCAG 2.1 compliant tooltip content
+  //    that can either be a child (icon tooltip) or sibling (definition tooltip)
+  &::before,
+  &::after,
+  .#{$prefix}--assistive-text,
+  + .#{$prefix}--assistive-text {
+    // ccs: was `absolute`. A hidden tooltip keeps its full size, so it
+    // stretched the scroll area of a box around the trigger, such as a
+    // DataTable's. A fixed box is placed against the window and adds
+    // nothing there. `tooltip--trigger-state` sets `absolute` while it
+    // shows, before the component measures it.
+    position: fixed;
+    z-index: z('floating');
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &::before,
+  &::after {
+    transition: opacity $duration--fast-01 motion(standard, productive);
+
+    @media screen and (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  &.#{$prefix}--tooltip--a11y::before,
+  &.#{$prefix}--tooltip--a11y::after {
+    transition: none;
+  }
+
+  &::before {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    content: '';
+  }
+
+  .#{$prefix}--assistive-text,
+  + .#{$prefix}--assistive-text {
+    box-sizing: content-box;
+    // color is always re-set by tooltip--content below
+    // In order to pass AAT, opacity must be set to 1 in the default state
+    // On focus/hover use a keyframe animation to mimic transition
+    opacity: 1;
+    // overwrite default nowrap behavior
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  // @todo Simplify CSS selectors on next major release
+  // transform is omitted: tooltip--placement always re-sets it below for
+  // this selector group.
+  &::after,
+  .#{$prefix}--assistive-text,
+  + .#{$prefix}--assistive-text {
+    @include tooltip--content($tooltip-type, (transform,));
+  }
+
+  &::after {
+    content: attr(aria-label);
+  }
+
+  &.#{$prefix}--tooltip--a11y::after {
+    content: none;
+  }
+
+  // ccs: the visible/hover/focus/hidden state block below never varies by
+  // `$tooltip-type` or position, so an includer whose trigger elements
+  // always carry both `.#{$prefix}--tooltip__trigger` and
+  // `.#{$prefix}--tooltip--a11y` (every includer in this tree does) can
+  // `$omit: (state,)` here and pick it up once from the shared
+  // `.#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--a11y` rule in
+  // components/tooltip/_tooltip.scss instead of repeating it per call site.
+  @if not index($omit, state) {
+    @include tooltip--trigger-state;
+  }
+}
+
+/// `tooltip--trigger('icon', ...)`, minus the state block (see `$omit`
+/// above). Every `$tooltip-type: 'icon'` includer in this tree - this
+/// component's icon trigger and `.#{$prefix}--btn--icon-only` (see
+/// button/_button.scss) - emits identical output here, so
+/// components/tooltip/_tooltip.scss includes this once from a rule whose
+/// selector list combines both families' direction-qualified classes
+/// (`.#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--top`,
+/// `.#{$prefix}--tooltip__trigger.#{$prefix}--btn--icon-only--top`, etc.)
+/// instead of every icon-type call site repeating it. A bare
+/// `.#{$prefix}--tooltip__trigger` (no direction class) is deliberately
+/// never used for this: it would also match a portal-rendered tooltip's
+/// trigger, which keeps the `.#{$prefix}--tooltip__trigger` class but never
+/// gets a direction class (see the Svelte components) and must not receive
+/// this CSS-only styling.
+/// @param {List} $omit [()] - Forwarded to `tooltip--trigger`.
+/// @access public
+/// @group tooltip
+@mixin tooltip--trigger-icon-body($omit: ()) {
+  @include tooltip--trigger('icon', join($omit, (state,)));
+}
+
+/// The visible/hover/focus/hidden state rules shared by every tooltip
+/// trigger, regardless of type or position. Split out of `tooltip--trigger`
+/// so includers whose elements are guaranteed to also match
+/// `.#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--a11y` can emit this
+/// body once (see components/tooltip/_tooltip.scss) instead of once per
+/// `tooltip--trigger` call site.
+/// @access public
+/// @group tooltip
+@mixin tooltip--trigger-state {
+  &.#{$prefix}--tooltip--visible,
+  &:hover,
+  &:focus {
+    &::before,
+    &::after {
+      opacity: 1;
+    }
+
+    @keyframes tooltip-fade {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .#{$prefix}--assistive-text,
+    + .#{$prefix}--assistive-text {
+      overflow: visible;
+      margin: auto;
+      clip: auto;
+    }
+
+    .#{$prefix}--assistive-text,
+    + .#{$prefix}--assistive-text,
+    &.#{$prefix}--tooltip--a11y::before {
+      position: absolute; // ccs: fixed while hidden, see `tooltip--trigger`
+      animation: tooltip-fade $duration--fast-01 motion(standard, productive);
+    }
+  }
+
+  &.#{$prefix}--tooltip--hidden .#{$prefix}--assistive-text,
+  &.#{$prefix}--tooltip--hidden + .#{$prefix}--assistive-text {
+    position: fixed; // ccs
+    overflow: hidden;
+    margin: -1px 0; // ccs: no inline margin, see `.bx--visually-hidden`
+    clip: rect(0, 0, 0, 0);
+  }
+
+  &.#{$prefix}--tooltip--hidden.#{$prefix}--tooltip--a11y::before {
+    position: fixed; // ccs
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/// @param {String} $tooltip-type ['icon'] - The type, from: `icon`, `definition`
+/// @param {String} $position ['bottom'] - The position, from: `top`, `right`, `bottom`, `left`
+/// @param {String} $align ['center'] - The alignment, from: `start`, `center`, `end`
+/// @access public
+/// @group tooltip
+@mixin tooltip--placement(
+  $tooltip-type: 'icon',
+  $position: 'bottom',
+  $align: 'center'
+) {
+  $caret-spacing: if($tooltip-type == 'definition', to-rem(4px), to-rem(8px));
+
+  // space between caret and trigger button
+  $caret-height: to-rem(5px);
+  $body-spacing: $caret-spacing + $caret-height;
+
+  // Use pseudo element to create invisible hover area to keep tooltip open on hover
+  .#{$prefix}--assistive-text::after {
+    position: absolute;
+    display: block;
+    content: '';
+    // clip-path: polygon(50% 100%, 0 0, 100% 0);
+
+    @if ($position == 'top' or $position == 'bottom') {
+      left: 0;
+      width: 100%;
+      height: to-rem(12px);
+    }
+
+    @if ($position == 'left' or $position == 'right') {
+      top: 0;
+      width: to-rem(12px);
+      height: 100%;
+    }
+
+    @if ($position == 'top') {
+      bottom: to-rem(-12px);
+    }
+    @if ($position == 'right') {
+      left: to-rem(-12px);
+    }
+    @if ($position == 'bottom') {
+      top: to-rem(-12px);
+    }
+    @if ($position == 'left') {
+      right: to-rem(-12px);
+    }
+  }
+
+  // @todo Simplify CSS selectors on next major release
+  // Only the cross-axis centering offset is set here: the position-matching
+  // offset (top/right/bottom/left) is always re-set below by the
+  // `::before`- and `::after`-specific blocks.
+  &::before,
+  &::after,
+  .#{$prefix}--assistive-text,
+  + .#{$prefix}--assistive-text {
+    @if ($position == 'top') {
+      left: 50%;
+    }
+    @if ($position == 'right') {
+      top: 50%;
+    }
+    @if ($position == 'bottom') {
+      left: 50%;
+    }
+    @if ($position == 'left') {
+      top: 50%;
+    }
+  }
+
+  &::before {
+    @if ($position == 'top') {
+      top: -$caret-spacing;
+      border-width: to-rem(5px) to-rem(4px) 0 to-rem(4px);
+      border-color: $background-inverse transparent transparent transparent;
+      transform: translate(-50%, -100%);
+    }
+    @if ($position == 'right') {
+      right: -$caret-spacing;
+      border-width: to-rem(4px) to-rem(5px) to-rem(4px) 0;
+      border-color: transparent $background-inverse transparent transparent;
+      transform: translate(100%, -50%);
+    }
+    @if ($position == 'bottom') {
+      bottom: -$caret-spacing;
+      border-width: 0 to-rem(4px) to-rem(5px) to-rem(4px);
+      border-color: transparent transparent $background-inverse transparent;
+      transform: translate(-50%, 100%);
+    }
+    @if ($position == 'left') {
+      left: -$caret-spacing;
+      border-width: to-rem(4px) 0 to-rem(4px) to-rem(5px);
+      border-color: transparent transparent transparent $background-inverse;
+      transform: translate(-100%, -50%);
+    }
+  }
+
+  // alignment options available only for top and bottom tooltip position
+  // @todo Simplify CSS selectors on next major release
+  &::after,
+  .#{$prefix}--assistive-text,
+  + .#{$prefix}--assistive-text {
+    @if ($position == 'top') {
+      top: -$body-spacing;
+      @if ($align == 'start') {
+        left: 0;
+        transform: translate(0, -100%);
+      } @else if ($align == 'end') {
+        right: 0;
+        left: auto;
+        transform: translate(0, -100%);
+      } @else {
+        left: 50%;
+        transform: translate(-50%, -100%);
+      }
+    }
+    @if ($position == 'right') {
+      right: -$body-spacing;
+      transform: translate(100%, -50%);
+    }
+    @if ($position == 'bottom') {
+      bottom: -$body-spacing;
+      @if ($align == 'start') {
+        left: 0;
+        transform: translate(0, 100%);
+      } @else if ($align == 'end') {
+        right: 0;
+        left: auto;
+        transform: translate(0, 100%);
+      } @else {
+        transform: translate(-50%, 100%);
+      }
+    }
+    @if ($position == 'left') {
+      left: -$body-spacing;
+      transform: translate(-100%, -50%);
+    }
+  }
+
+  // @todo simplify on next major release to move the ::before pseudo element within the tooltip instead of the trigger
+  @if $tooltip-type == 'definition' {
+    &.#{$prefix}--tooltip--a11y + .#{$prefix}--assistive-text {
+      @if ($position == 'bottom') {
+        // carryover from https://github.com/carbon-design-system/carbon/pull/3151/files#diff-93734be0784e9530b6d14a7b03b0d352R261-R265
+        bottom: -($body-spacing - to-rem(1px));
+        @if ($align == 'start' or $align == 'end') {
+          transform: translate(0, 100%);
+        } @else {
+          transform: translate(-50%, 100%);
+        }
+      }
+    }
+  }
+}
+
+// ccs: `--cds-tooltip-*` custom-property redesign of the direction x
+// alignment geometry above. `tooltip--placement` (kept as-is for the 3
+// single-combo legacy callers: text-input's password toggle, CopyButton,
+// CodeSnippet - none of them vary by direction/alignment, so they aren't
+// the combinatorial byte problem) emits one full declaration block per
+// call. Every `.#{$prefix}--tooltip__trigger` direction x alignment call
+// site in components/tooltip/_tooltip.scss used to do the same, expanding
+// to ~14 near-duplicate blocks whose only real difference is a handful of
+// offsets/transforms. The mixins below instead write only the custom
+// properties that differ, split into 3 tiers by what they vary on, and
+// components/tooltip/_tooltip.scss defines a single shared rule per
+// pseudo-element role that reads them via `var(...)`.
+//
+// Every mixin writes the *complete* pair of custom properties for the axis
+// it owns (e.g. both `--cds-tooltip-caret-top` and `--cds-tooltip-caret-
+// bottom`, not just whichever one differs from a previously-included
+// direction), even though only one of the pair ever holds a real value.
+// The two tiers that apply to the same element always run together (see
+// the call sites), so this is redundant there - but it also means a
+// tooltip trigger nested inside a *different* direction's trigger can't
+// inherit a stray custom property left set by the ancestor for an axis
+// this trigger's own rules don't otherwise touch; see
+// `tests/css/tooltip-expansion.test.ts` for the nested-trigger case this
+// guards, and `TooltipMatrixFixture`'s nested case for the DOM one.
+//
+// The shared consumer rules in components/tooltip/_tooltip.scss are scoped
+// to the same direction-qualified selector union `tooltip--trigger-icon-
+// body` already uses (never a bare `.#{$prefix}--tooltip__trigger`), so a
+// portal-rendered trigger that keeps the base class but never gets a
+// direction class (see the Svelte components) matches none of this, same
+// as before this rework - but each `var(...)` still carries an explicit
+// fallback (`auto`/`0`/`transparent`/`none`) as a second line of defense,
+// in case that scoping assumption is ever wrong.
+//
+// @access public
+// @group tooltip
+@mixin tooltip--geometry-hover($position) {
+  @if ($position == 'top' or $position == 'bottom') {
+    --cds-tooltip-hover-left: 0;
+    --cds-tooltip-hover-right: auto;
+    --cds-tooltip-hover-w: 100%;
+    --cds-tooltip-hover-h: #{to-rem(12px)};
+    @if ($position == 'top') {
+      --cds-tooltip-hover-top: auto;
+      --cds-tooltip-hover-bottom: #{to-rem(-12px)};
+    } @else {
+      --cds-tooltip-hover-top: #{to-rem(-12px)};
+      --cds-tooltip-hover-bottom: auto;
+    }
+  } @else {
+    --cds-tooltip-hover-top: 0;
+    --cds-tooltip-hover-bottom: auto;
+    --cds-tooltip-hover-w: #{to-rem(12px)};
+    --cds-tooltip-hover-h: 100%;
+    @if ($position == 'right') {
+      --cds-tooltip-hover-left: #{to-rem(-12px)};
+      --cds-tooltip-hover-right: auto;
+    } @else {
+      --cds-tooltip-hover-left: auto;
+      --cds-tooltip-hover-right: #{to-rem(-12px)};
+    }
+  }
+}
+
+/// Caret (::before) cross-axis position + border + transform - constant
+/// per position, shared by every trigger type/alignment.
+/// @access public
+/// @group tooltip
+@mixin tooltip--geometry-caret-cross($position) {
+  @if ($position == 'top' or $position == 'bottom') {
+    --cds-tooltip-caret-left: 50%;
+    --cds-tooltip-caret-right: auto;
+  } @else {
+    --cds-tooltip-caret-top: 50%;
+    --cds-tooltip-caret-bottom: auto;
+  }
+
+  @if ($position == 'top') {
+    --cds-tooltip-caret-bw: #{to-rem(5px)} #{to-rem(4px)} 0 #{to-rem(4px)};
+    --cds-tooltip-caret-bc: #{$background-inverse} transparent transparent transparent;
+    --cds-tooltip-caret-tf: translate(-50%, -100%);
+  } @else if ($position == 'right') {
+    --cds-tooltip-caret-bw: #{to-rem(4px)} #{to-rem(5px)} #{to-rem(4px)} 0;
+    --cds-tooltip-caret-bc: transparent #{$background-inverse} transparent transparent;
+    --cds-tooltip-caret-tf: translate(100%, -50%);
+  } @else if ($position == 'bottom') {
+    --cds-tooltip-caret-bw: 0 #{to-rem(4px)} #{to-rem(5px)} #{to-rem(4px)};
+    --cds-tooltip-caret-bc: transparent transparent #{$background-inverse} transparent;
+    --cds-tooltip-caret-tf: translate(-50%, 100%);
+  } @else {
+    --cds-tooltip-caret-bw: #{to-rem(4px)} 0 #{to-rem(4px)} #{to-rem(5px)};
+    --cds-tooltip-caret-bc: transparent transparent transparent #{$background-inverse};
+    --cds-tooltip-caret-tf: translate(-100%, -50%);
+  }
+}
+
+/// Caret (::before) main-axis offset + the CSS-only tooltip body's
+/// (::after / assistive text) main-axis offset - both depend on
+/// `$tooltip-type` (definition uses a tighter caret spacing) but never on
+/// `$align`. `right`/`left` positions don't support alignment at all, so
+/// this also sets the body's cross-axis offset + transform for them (the
+/// `top`/`bottom` positions get those from `tooltip--geometry-align`
+/// instead).
+/// @access public
+/// @group tooltip
+@mixin tooltip--geometry-main($tooltip-type, $position) {
+  $caret-spacing: if($tooltip-type == 'definition', to-rem(4px), to-rem(8px));
+  $body-spacing: $caret-spacing + to-rem(5px);
+
+  @if ($position == 'top') {
+    --cds-tooltip-caret-top: -#{$caret-spacing};
+    --cds-tooltip-caret-bottom: auto;
+    --cds-tooltip-body-top: -#{$body-spacing};
+    --cds-tooltip-body-bottom: auto;
+  } @else if ($position == 'bottom') {
+    --cds-tooltip-caret-bottom: -#{$caret-spacing};
+    --cds-tooltip-caret-top: auto;
+    --cds-tooltip-body-bottom: -#{$body-spacing};
+    --cds-tooltip-body-top: auto;
+  } @else if ($position == 'right') {
+    --cds-tooltip-caret-right: -#{$caret-spacing};
+    --cds-tooltip-caret-left: auto;
+    --cds-tooltip-body-right: -#{$body-spacing};
+    --cds-tooltip-body-left: auto;
+    --cds-tooltip-body-top: 50%;
+    --cds-tooltip-body-bottom: auto;
+    --cds-tooltip-body-tf: translate(100%, -50%);
+  } @else {
+    --cds-tooltip-caret-left: -#{$caret-spacing};
+    --cds-tooltip-caret-right: auto;
+    --cds-tooltip-body-left: -#{$body-spacing};
+    --cds-tooltip-body-right: auto;
+    --cds-tooltip-body-top: 50%;
+    --cds-tooltip-body-bottom: auto;
+    --cds-tooltip-body-tf: translate(-100%, -50%);
+  }
+}
+
+/// The CSS-only tooltip body's (::after / assistive text) cross-axis
+/// offset + transform for the `top`/`bottom` positions - the only two that
+/// support `$align`. Shared by icon and definition triggers: neither
+/// varies by `$tooltip-type`.
+/// @access public
+/// @group tooltip
+@mixin tooltip--geometry-align($position, $align) {
+  $body-tf-y: if($position == 'top', -100%, 100%);
+
+  @if ($align == 'start') {
+    --cds-tooltip-body-left: 0;
+    --cds-tooltip-body-right: auto;
+    --cds-tooltip-body-tf: translate(0, #{$body-tf-y});
+
+    // ccs: `start` and `end` are inline sides, as in floating-ui, so they
+    // swap under `dir="rtl"`
+    [dir="rtl"] & {
+      --cds-tooltip-body-left: #{ccs-dir(0, auto)};
+      --cds-tooltip-body-right: #{ccs-dir(auto, 0)};
+    }
+  } @else if ($align == 'end') {
+    --cds-tooltip-body-right: 0;
+    --cds-tooltip-body-left: auto;
+    --cds-tooltip-body-tf: translate(0, #{$body-tf-y});
+
+    [dir="rtl"] & {
+      --cds-tooltip-body-right: #{ccs-dir(0, auto)};
+      --cds-tooltip-body-left: #{ccs-dir(auto, 0)};
+    }
+  } @else {
+    --cds-tooltip-body-left: 50%;
+    --cds-tooltip-body-right: auto;
+    --cds-tooltip-body-tf: translate(-50%, #{$body-tf-y});
+  }
+}

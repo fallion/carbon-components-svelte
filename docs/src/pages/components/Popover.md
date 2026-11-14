@@ -1,0 +1,260 @@
+---
+description: Popovers display floating content relative to a trigger element, with support for alignments, a caret, and visual variants.
+---
+
+<script>
+  import { Box, Layer, Popover, Stack } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic popover with absolute positioning.
+
+<div>
+    Parent
+    <Popover open>
+        Content
+    </Popover>
+</div>
+
+## Placement
+
+Position the popover relative to its trigger.
+
+### Relative position
+
+Position the popover relative to its parent with `relative`.
+
+<div>
+    Parent
+    <Popover relative open>
+        Content
+    </Popover>
+</div>
+
+### Alignment
+
+Customize popover alignment with `align`. Valid values include `"top"`, `"top-start"`, `"top-end"`, `"bottom"`, `"bottom-start"`, `"bottom-end"`, `"left"`, `"left-start"`, `"left-end"`, `"right"`, `"right-start"`, and `"right-end"`.
+
+The default is top. These are the Carbon v11 names. The older names (`"top-left"`, `"left-bottom"`, and so on) still work and give the same placement. In RTL, `start` and `end` on the top and bottom swap sides, as in floating-ui, while the older names keep their physical side. See [LayoutDirection](/components/LayoutDirection#tooltips-and-popovers).
+
+<Stack gap={10}>
+<div>
+    Parent
+    <Popover open align="top-start">
+        top-start
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="top-end">
+        top-end
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="bottom">
+        bottom
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="bottom-start">
+        bottom-start
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="bottom-end">
+        <div>bottom-end</div>
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="left">
+        left
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="left-end">
+        left-end
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="left-start">
+        left-start
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="right">
+        right
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="right-end">
+        right-end
+    </Popover>
+</div>
+<div>
+    Parent
+    <Popover open align="right-start">
+        right-start
+    </Popover>
+</div>
+</Stack>
+
+## Caret
+
+Add a caret indicator with `caret`.
+
+<div>
+    Parent
+    <Popover caret open>
+        Content
+    </Popover>
+</div>
+
+### Custom alignment
+
+By default, the caret aligns to top. See [Alignment](#alignment) for all valid values.
+
+<div>
+    Parent
+    <Popover caret align="top-start" open>
+        Content
+    </Popover>
+</div>
+
+### Stay in view
+
+An open popover that would run past the window takes the other side, or the other start or end alignment, when it fits better there. One that a container would cut off, such as a box with `overflow: hidden` or a scroll area, opens in a portal for that open.
+
+Set `portalPopover` to `true` to always render the popover in a portal, or to `false` to keep it in place. A portalled popover leaves its container in the DOM, so CSS that targets it as a descendant of the container does not match it.
+
+<Box padding={5} border="subtle" maxWidth="12rem" overflow="hidden">
+  <Box position="relative">
+    Parent
+    <Popover open caret align="bottom-start">
+      Content that the box would cut off
+    </Popover>
+  </Box>
+</Box>
+
+## Variants
+
+Appearance variants for different backgrounds.
+
+### On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <div>
+        Parent
+        <Popover open>
+            Content
+        </Popover>
+    </div>
+  </Box>
+</Layer>
+
+### Without a drop shadow
+
+The popover casts a drop shadow by default. Set `dropShadow` to `false` to remove it, for example on a surface that already separates it from the page.
+
+<div>
+    Parent
+    <Popover caret dropShadow={false} open>
+        Content
+    </Popover>
+</div>
+
+### Border
+
+Set `border` to `true` to draw a 1px border around the popover and its caret.
+
+<div>
+    Parent
+    <Popover caret border open>
+        Content
+    </Popover>
+</div>
+
+### High contrast
+
+Enable the high contrast variant for improved visibility.
+
+<div>
+    Parent
+    <Popover highContrast open>
+        Content
+    </Popover>
+</div>
+
+## Dismissal
+
+Close the popover automatically, and listen for outside-click interactions.
+
+### Close on outside click
+
+Close the popover when clicking outside with `closeOnOutsideClick`.
+
+<div>
+    Parent
+    <Popover open closeOnOutsideClick on:click:outside={() => {console.log('on:click:outside')}}>
+        Content
+    </Popover>
+</div>
+
+### Close on Escape
+
+Close the popover when pressing <DocKbd label="Escape" /> with `closeOnEscape`. The listener is attached to the window, so <DocKbd label="Escape" /> closes the popover even when focus is on the trigger rather than inside the popover content.
+
+<div>
+    Parent
+    <Popover open closeOnEscape on:close={() => {console.log('on:close')}}>
+        Content
+    </Popover>
+</div>
+
+### Events
+
+`on:click:outside` fires whenever a click lands outside the popover, with `event.detail.target` set to the clicked element, regardless of whether `closeOnOutsideClick` is set. `on:close` fires when the popover closes itself in response to `closeOnOutsideClick` or `closeOnEscape`, with `event.detail.trigger` set to `"outside-click"` or `"escape-key"`.
+
+<div>
+    Parent
+    <Popover
+      open
+      closeOnOutsideClick
+      closeOnEscape
+      on:click:outside={(e) => console.log('on:click:outside', e.detail)}
+      on:close={(e) => console.log('on:close', e.detail)}
+    >
+        Content
+    </Popover>
+</div>
+
+### Custom panels
+
+Use the `dismiss` action on a panel you build yourself to close it when the user clicks outside. Set `enabled` to the open state so the action adds the `window` listener only while the panel is open, and a closed panel costs nothing. Pass `type: "click"` with a `handler` that closes the panel when the click lands outside it.
+
+The panel's own trigger is also outside the panel, so the handler ignores clicks on the trigger and lets the trigger toggle the state.
+
+<FileSource src="/framed/Popover/DismissBasic" />
+
+Pass `listeners` to attach more than one listener, each with its own `type` and `handler`. Combine a `keydown` listener with a `click` listener to close the panel on <DocKbd label="Escape" /> and on an outside click. Listeners with the same `type` and options share one `window` listener across every control on the page.
+
+The action registers its listeners after a macrotask, not synchronously. Enabling it inside a click, such as a button that sets `open` to `true`, therefore never dismisses the panel with the same click that opened it.
+
+<FileSource src="/framed/Popover/DismissMultiple" />
+
+## External element
+
+Manage open state with an external element, like a button, using `open`.
+
+<FileSource src="/framed/Popover/WithButton" />

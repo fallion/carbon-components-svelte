@@ -1,0 +1,20 @@
+<script lang="ts">
+  import Select from "carbon-components-svelte/Select/Select.svelte";
+  import SelectItem from "carbon-components-svelte/Select/SelectItem.svelte";
+  import SelectItemGroup from "carbon-components-svelte/Select/SelectItemGroup.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let selected: ComponentProps<Select>["selected"] = undefined;
+</script>
+
+<Select bind:selected>
+  <SelectItem value="default" text="Choose an option" disabled hidden />
+  <SelectItemGroup label="Category 1">
+    <SelectItem value="option-1" text="Option 1" />
+    <SelectItem value="option-2" text="Option 2" />
+  </SelectItemGroup>
+  <SelectItemGroup label="Category 2">
+    <SelectItem value="option-3" text="Option 3" />
+    <SelectItem value="option-4" text="Option 4" />
+  </SelectItemGroup>
+</Select>

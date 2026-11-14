@@ -1,0 +1,173 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+
+/// Time picker styles
+/// @access private
+/// @group time-picker
+@mixin time-picker {
+  .#{$prefix}--time-picker {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .#{$prefix}--time-picker__select {
+    justify-content: center;
+
+    &:not(:last-of-type) {
+      margin: 0 $carbon--spacing-01;
+    }
+  }
+
+  .#{$prefix}--time-picker__input {
+    display: flex;
+    flex-direction: column;
+  }
+
+  // ccs: the input and selects wrap onto a second row in a container too
+  // narrow for one, rather than overflowing it. Each select keeps its own
+  // width (`.bx--select` is otherwise 100%, a line to itself once wrapping).
+  .#{$prefix}--time-picker__input .#{$prefix}--stack-horizontal {
+    row-gap: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--time-picker .#{$prefix}--time-picker__select {
+    width: auto;
+  }
+
+  .#{$prefix}--time-picker .#{$prefix}--select-input {
+    width: auto;
+    min-width: auto;
+    padding-inline-end: to-rem(48px);
+    margin: 0;
+  }
+
+  .#{$prefix}--time-picker__input-field {
+    @include focus-outline('reset');
+    @include type-style('code-02');
+
+    display: flex;
+    width: 4.875rem;
+    height: to-rem(40px);
+    align-items: center;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    &::placeholder {
+      @include placeholder-colors;
+    }
+  }
+
+  // ccs: TimePickerSkeleton's parts take the picker's widths: the
+  // 4.875rem input, and selects as wide as an AM/PM one (a select sizes
+  // to its options, which a skeleton can't know). Empty, they collapsed.
+  .#{$prefix}--time-picker__input .#{$prefix}--text-input.#{$prefix}--skeleton {
+    width: 4.875rem;
+  }
+
+  .#{$prefix}--time-picker__select .#{$prefix}--select.#{$prefix}--skeleton {
+    width: to-rem(85px);
+  }
+
+  .#{$prefix}--time-picker--sm .#{$prefix}--select-input,
+  .#{$prefix}--time-picker--sm .#{$prefix}--time-picker__input-field {
+    height: to-rem(32px);
+    max-height: to-rem(32px);
+  }
+
+  .#{$prefix}--time-picker--xl .#{$prefix}--select-input,
+  .#{$prefix}--time-picker--xl .#{$prefix}--time-picker__input-field {
+    height: to-rem(48px);
+    max-height: to-rem(48px);
+  }
+}
+
+@include exports('time-picker') {
+  @include time-picker;
+}
+
+// carbon-components-svelte patch (formerly css/_time-picker.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+// Widen the time picker input when invalid or warn icon is rendered,
+// matching upstream Carbon React's `.cds--time-picker__input-field-error`.
+// Also reveal the sibling form-requirement for the warn state, since
+// carbon-components v10 only ships display rules for `--invalid`.
+@mixin time-picker-error-width {
+  .#{$prefix}--time-picker__input-field.#{$prefix}--text-input--invalid,
+  .#{$prefix}--time-picker__input-field.#{$prefix}--text-input--warning {
+    inline-size: to-rem(98.8px);
+  }
+
+  .#{$prefix}--time-picker--warn ~ .#{$prefix}--form-requirement {
+    display: block;
+    overflow: visible;
+    max-height: to-rem(200px);
+    font-weight: 400;
+  }
+}
+
+@include exports('time-picker-error-width') {
+  @include time-picker-error-width;
+}
+
+/// Readonly time picker styles (backported from carbon-components v11+ for v10)
+/// @access private
+/// @group time-picker
+@mixin time-picker-readonly {
+  .#{$prefix}--time-picker--readonly .#{$prefix}--time-picker__input-field[readonly] {
+    background: transparent;
+    border-bottom-color: $icon-disabled;
+    cursor: text;
+  }
+
+  // The chevron in `TimePickerSelect` is purely decorative when the time
+  // picker is read-only. The native `<select>` remains focusable so the value
+  // is announced, but the menu is suppressed via mousedown/keydown handlers.
+  // Apply the same styling whether readonly is set on the parent `TimePicker`
+  // or directly on a `TimePickerSelect` (for standalone use).
+  .#{$prefix}--time-picker--readonly .#{$prefix}--select-input,
+  .#{$prefix}--time-picker__select.#{$prefix}--select--readonly .#{$prefix}--select-input {
+    border-bottom-color: $icon-disabled;
+    cursor: default;
+
+    &:hover {
+      background-color: transparent;
+    }
+  }
+
+  .#{$prefix}--time-picker--readonly .#{$prefix}--select__arrow,
+  .#{$prefix}--time-picker__select.#{$prefix}--select--readonly .#{$prefix}--select__arrow {
+    fill: $icon-secondary;
+  }
+}
+
+@include exports('time-picker-readonly') {
+  @include time-picker-readonly;
+}
+
+// carbon-components-svelte patch
+// Extra-small (`xs`, 24px) input and selects, matching the other field
+// components' `size="xs"`. v10 only ships sm/md/xl.
+@mixin time-picker-xs {
+  .#{$prefix}--time-picker--xs .#{$prefix}--select-input,
+  .#{$prefix}--time-picker--xs .#{$prefix}--time-picker__input-field {
+    height: to-rem(24px);
+    max-height: to-rem(24px);
+  }
+}
+
+@include exports('time-picker-xs') {
+  @include time-picker-xs;
+}

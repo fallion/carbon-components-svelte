@@ -1,153 +1,678 @@
 <script>
   /**
-   * @typedef {{ href: string; text: string; description?: string; }} HeaderSearchResult
-   * @event {any} active
-   * @event {any} inactive
-   * @event {any} clear
-   * @event {{ value: string; selectedResultIndex: number; selectedResult: HeaderSearchResult }} select
-   * @slot {{ result: HeaderSearchResult; index: number }}
+   * @template {HeaderSearchResult} [Result=HeaderSearchResult]
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
    */
 
-  /** Specify the search input value */
+  /**
+   * @event close
+   * @type {object}
+   * @property {"escape-key" | "outside-click" | "select" | "blur"} trigger
+   */
+
+  /**
+   * @typedef {object} HeaderSearchResult
+   * @property {string | number} [id] - Unique result identifier; used as the each-block key when provided
+   * @property {string} href
+   * @property {string} text
+   * @property {string} [description]
+   * @event {null} active
+   * @event {null} inactive
+   * @event {null} clear
+   * @event {{ value: string; selectedResultIndex: number; selectedResult: Result } | { value: string; item: { text?: string; value?: string; href?: string }; event: Event }} select - A result from `results` was chosen (`selectedResult`), or an item in the `menu` slot (`item`).
+   * @event {{ value: string }} submit
+   * @event {string} search
+   * @event {KeyboardEvent} shortcut - Dispatched when `shortcut` is pressed, before the search opens. Call `preventDefault()` to keep it closed.
+   * @slot {{ result: Result; index: number; selected: boolean; }}
+   * @slot {{}} menu
+   * @slot {{}} noResults
+   * @slot {{}} loading
+   */
+
+  /**
+   * Specify the search input value.
+   * @bindable writable
+   */
   export let value = "";
 
-  /** Set to `true` to activate and focus the search bar */
+  /**
+   * Set to `true` to activate and focus the search bar.
+   * @bindable writable
+   */
   export let active = false;
 
-  /** Obtain a reference to the input HTML element */
+  /**
+   * Obtain a reference to the input HTML element.
+   * @type {null | HTMLInputElement}
+   * @bindable readonly
+   */
   export let ref = null;
 
   /**
-   * Render a list of search results
-   * @type {HeaderSearchResult[]}
+   * Render a list of search results.
+   * @type {ReadonlyArray<Result>}
    */
   export let results = [];
 
-  /** Specify the selected result index */
+  /**
+   * Specify the selected result index.
+   * @bindable readonly
+   */
   export let selectedResultIndex = 0;
 
-  import { createEventDispatcher, tick } from "svelte";
-  import Close20 from "../icons/Close20.svelte";
-  import Search20 from "../icons/Search20.svelte";
+  /**
+   * Specify the icon to render for the search trigger.
+   * @type {Icon}
+   */
+  export let icon = /** @type {Icon} */ (IconSearch);
+
+  /** Specify the `placeholder` attribute of the search input. */
+  export let placeholder = "Search...";
+
+  /** Specify the text for the assistive label associated with the search input. */
+  export let labelText = "Search";
+
+  /** Specify the label for the clear button. */
+  export let closeButtonLabelText = "Clear search input";
+
+  /**
+   * Specify a keyboard shortcut that opens the search and focuses it, such
+   * as `"mod+k"` or `"/"`. `mod` is Command on Apple platforms and Ctrl
+   * elsewhere. The closed search button shows the keys in its tooltip and
+   * gets `aria-keyshortcuts`.
+   */
+  export let shortcut = "";
+
+  /**
+   * Set to `true` to filter `menu`-slot items by the search value using fuzzy
+   * matching. Requires the `menu` slot; ignored when using the `results` prop.
+   */
+  export let shouldFilter = true;
+
+  /**
+   * Override how the search value is matched against each `menu`-slot item's
+   * `text`. Receives the item `text` and the current search value, and returns
+   * whether the item `matched` along with the `indices` of characters to
+   * highlight. Defaults to fuzzy matching. Requires the `menu` slot.
+   * @type {(text: string, query: string) => { matched: boolean; indices?: number[] }}
+   */
+  export let match = fuzzyMatch;
+
+  /**
+   * Set to `true` to render a skeleton menu while results are loading.
+   * Override the placeholder rows with the `loading` slot. Requires the
+   * `menu` slot.
+   */
+  export let loading = false;
+
+  /** Number of skeleton rows while `loading`. Requires the `menu` slot. */
+  export let skeletonCount = 4;
+
+  /**
+   * Row density for the `menu` slot. Result text stays flush with the header
+   * input; smaller sizes shorten rows to fit more results.
+   * @type {"sm" | "lg" | "xl"}
+   */
+  export let size = "sm";
+
+  /** Set to `true` to select the input's text when it receives focus */
+  export let selectTextOnFocus = false;
+
+  /**
+   * Milliseconds to wait after the last input before dispatching `search`.
+   * 0 (default) does not dispatch `search`. `value` stays immediate; only
+   * `search` waits. Selecting a result or submitting cancels a pending
+   * `search` instead of also firing it. Clearing is always instant.
+   */
+  export let debounce = 0;
+
+  /**
+   * Set an id for the top-level element.
+   * The input, label, menu, and result ids derive from it as `{id}-input`,
+   * `{id}-label`, `{id}-menu`, and `{id}-menuitem-{result id or index}`.
+   * Previously a passed `id` was discarded; it now sets the top-level element
+   * id and the input id becomes `{id}-input`.
+   */
+  export let id = uniqueId();
+
+  import { createEventDispatcher, onMount, setContext, tick } from "svelte";
+  import { writable } from "svelte/store";
+  import Kbd from "../Kbd/Kbd.svelte";
+  import SkeletonText from "../SkeletonText/SkeletonText.svelte";
+  import Close from "../icons/Close.svelte";
+  import IconSearch from "../icons/IconSearch.svelte";
+  import { debounce as debounceFn } from "../utils/debounce.js";
+  import { dismiss } from "../utils/dismiss.js";
+  import { returnFocus } from "../utils/focus.js";
+  import { fuzzyMatch } from "../utils/fuzzy-match.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { isOutsideClick } from "../utils/is-outside-click.js";
+  import {
+    applePlatform,
+    ariaKeyShortcuts,
+    keyboardShortcut,
+  } from "../utils/keyboard-shortcut.js";
+  import { moveIndex } from "../utils/move-index.js";
+  import { createOptionListNavigator } from "../utils/option-list-navigator.js";
+  import { preserveFocusSelection } from "../utils/preserve-focus-selection.js";
+  import { uniqueId } from "../utils/unique-id.js";
 
   const dispatch = createEventDispatcher();
 
+  $: inputId = `${id}-input`;
+  $: labelId = `${id}-label`;
+  $: menuId = `${id}-menu`;
+  // Whether the menu is in the page, for the attributes that name it: the
+  // rich menu while active, the results menu while active with results.
+  $: menuRendered = active && (richMenu || results.length > 0);
+
+  /** @type {null | HTMLDivElement} */
   let refSearch = null;
+  /** @type {null | HTMLElement} */
+  let menuRef = null;
+  /** @type {null | HTMLButtonElement} */
+  let searchButtonRef = null;
+
+  // Pressing the shortcut opens the search and focuses it, as a click on
+  // the search button does.
+  /** @param {KeyboardEvent} event */
+  function runShortcut(event) {
+    if (!dispatch("shortcut", event, { cancelable: true })) return;
+    active = true;
+    ref?.focus();
+  }
+
+  $: shortcutParams = { shortcut, run: runShortcut };
+
+  // The closed search shows its shortcut beside the icon.
+  $: hasShortcutHint = Boolean(shortcut) && !active;
+
+  /** @type {boolean | undefined} */
+  let prevActive;
+  // Escape closes the menu but leaves the search bar open.
+  let menuDismissed = false;
+
+  // `menu` slot shares SearchMenu context with SearchMenuItem/SearchMenuGroup.
+  $: richMenu = Boolean($$slots.menu);
+
+  /** @type {import("../utils/debounce.js").Debounced<(...args: unknown[]) => void> | null} */
+  let dispatchSearch = null;
+
+  $: {
+    dispatchSearch?.cancel();
+    dispatchSearch =
+      debounce > 0
+        ? debounceFn(
+            /** @param {unknown} searchValue */
+            (searchValue) => dispatch("search", searchValue),
+            debounce,
+          )
+        : null;
+  }
+
+  onMount(() => {
+    return () => dispatchSearch?.cancel();
+  });
+
+  const query = writable("");
+  const sharedShouldFilter = writable(shouldFilter);
+  const sharedMatch = writable(match);
+  const highlightedId = writable(/** @type {string | null} */ (null));
+  const hasPrimaryItems = writable(false);
+
+  let itemIds = new Set();
+  let filterableIds = new Set();
+  let primaryItemIds = new Set();
+
+  $: query.set(String(value ?? ""));
+  $: sharedShouldFilter.set(shouldFilter);
+  $: sharedMatch.set(match);
+  $: hasPrimaryItems.set(primaryItemIds.size > 0);
+
+  const SKELETON_WIDTHS = ["75%", "90%", "65%", "80%"];
+  $: skeletonWidths = Array.from(
+    { length: Math.max(0, skeletonCount) },
+    (_, i) => SKELETON_WIDTHS[i % SKELETON_WIDTHS.length],
+  );
+
+  $: itemCount = itemIds.size;
+  $: hasQuery = String(value ?? "").length > 0;
+  $: showNoResults =
+    richMenu &&
+    !loading &&
+    hasQuery &&
+    filterableIds.size === 0 &&
+    itemCount === 0 &&
+    $$slots.noResults;
+  $: richMenuVisible =
+    richMenu &&
+    active &&
+    !menuDismissed &&
+    (loading || itemCount > 0 || showNoResults);
+
+  setContext("carbon:SearchMenu", {
+    query,
+    shouldFilter: sharedShouldFilter,
+    match: sharedMatch,
+    highlightedId,
+    /** @param {string | null} next */
+    setActiveId(next) {
+      setPointerActive(next);
+    },
+    /** @param {{ value: string; item: { text?: string; value?: string; href?: string }; event: Event }} detail */
+    selectItem(detail) {
+      value = detail.value ?? value;
+      dispatch("select", detail);
+      reset();
+      dispatch("close", { trigger: "select" });
+      focusSearchButton();
+    },
+    hasPrimaryItems,
+    /**
+     * @param {string} itemId
+     * @param {boolean} filterable
+     * @param {boolean} [inDividerGroup]
+     */
+    registerItem(itemId, filterable, inDividerGroup = false) {
+      itemIds.add(itemId);
+      if (filterable) filterableIds.add(itemId);
+      else filterableIds.delete(itemId);
+      if (inDividerGroup) primaryItemIds.delete(itemId);
+      else primaryItemIds.add(itemId);
+      itemIds = itemIds;
+      filterableIds = filterableIds;
+      primaryItemIds = primaryItemIds;
+    },
+    /** @param {string} itemId */
+    unregisterItem(itemId) {
+      itemIds.delete(itemId);
+      filterableIds.delete(itemId);
+      primaryItemIds.delete(itemId);
+      itemIds = itemIds;
+      filterableIds = filterableIds;
+      primaryItemIds = primaryItemIds;
+    },
+  });
+
+  const {
+    moveActive,
+    setActiveEdge,
+    setPointerActive,
+    getKeyboardActiveOption,
+  } = createOptionListNavigator({
+    getMenuRef: () => menuRef,
+    highlightedId,
+    includeHidden: true,
+  });
+
+  /** Keyboard navigation for the `menu` slot (`role="option"`). */
+  /** @param {KeyboardEvent} event */
+  function handleRichKeydown(event) {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        menuDismissed = false;
+        if (richMenuVisible) moveActive(1);
+        break;
+      case "ArrowUp":
+        if (!richMenuVisible) return;
+        event.preventDefault();
+        moveActive(-1);
+        break;
+      case "Home":
+        if (!richMenuVisible) return;
+        event.preventDefault();
+        setActiveEdge("first");
+        break;
+      case "End":
+        if (!richMenuVisible) return;
+        event.preventDefault();
+        setActiveEdge("last");
+        break;
+      case "Enter": {
+        const option = getKeyboardActiveOption();
+        if (richMenuVisible && option) {
+          event.preventDefault();
+          option.click();
+        } else {
+          dispatchSearch?.cancel();
+          dispatch("submit", { value });
+        }
+        break;
+      }
+      case "Escape":
+        if (richMenuVisible) {
+          // Close the menu but keep the bar active and the value intact.
+          menuDismissed = true;
+          highlightedId.set(null);
+        } else if (value === "") {
+          active = false;
+          dispatch("close", { trigger: "escape-key" });
+          focusSearchButton();
+        } else {
+          dispatchSearch?.cancel();
+          value = "";
+        }
+        break;
+    }
+  }
+
+  // Closing from the keyboard (Escape, clear, select) unmounts or disables the
+  // focused control, so return focus to the search button instead of <body>.
+  // Outside clicks and external `active` changes leave focus alone, and so does
+  // a consumer that moved focus elsewhere (e.g. an `on:select` handler opening
+  // a modal): only take focus if it was dropped or is still inside the search.
+  function focusSearchButton() {
+    tick().then(() => returnFocus(searchButtonRef, refSearch));
+  }
 
   function reset() {
+    dispatchSearch?.cancel();
     active = false;
     value = "";
     selectedResultIndex = 0;
+    menuDismissed = false;
+    highlightedId.set(null);
   }
 
   function selectResult() {
     dispatch("select", { value, selectedResultIndex, selectedResult });
     reset();
+    dispatch("close", { trigger: "select" });
+    focusSearchButton();
   }
 
   $: if (active && ref) ref.focus();
-  $: dispatch(active ? "active" : "inactive");
+  $: if (!active && ref) ref.blur();
+  $: {
+    if (prevActive !== undefined) {
+      dispatch(active ? "active" : "inactive");
+    }
+    prevActive = active;
+  }
+  // A shorter `results` array can leave the index past its end.
+  $: if (selectedResultIndex >= results.length && selectedResultIndex !== 0) {
+    selectedResultIndex = 0;
+  }
   $: selectedResult = results[selectedResultIndex];
   $: selectedId = selectedResult
-    ? `search-menuitem-${selectedResultIndex}`
+    ? `${id}-menuitem-${selectedResult.id ?? selectedResultIndex}`
     : undefined;
+
+  /** @param {Event} event */
+  function handleOutsideMouseup(event) {
+    if (active && isOutsideClick(event, refSearch)) {
+      active = false;
+      highlightedId.set(null);
+      menuDismissed = false;
+      dispatch("close", { trigger: "outside-click" });
+    }
+  }
+
+  // Set by a Tab keydown inside the search, so the `focusout` it causes can
+  // tell tabbing out apart from a click elsewhere (left to the mouseup check).
+  let tabbing = false;
+
+  /** @param {KeyboardEvent} event */
+  function trackTab(event) {
+    tabbing = event.key === "Tab";
+  }
+
+  /** @param {FocusEvent} event */
+  function handleFocusout(event) {
+    const next = event.relatedTarget;
+    const leaving = !(next instanceof Node && refSearch?.contains(next));
+    if (active && tabbing && leaving) {
+      active = false;
+      highlightedId.set(null);
+      menuDismissed = false;
+      dispatch("close", { trigger: "blur" });
+    }
+    tabbing = false;
+  }
+
+  let skipSelectOnFocus = false;
+
+  // A press on a group header or padding would focus the listbox (it has
+  // tabindex="-1"), so keys stop reaching the input. Cancel that focus move
+  // so only item selection closes the menu.
+  /** @param {MouseEvent} event */
+  function handleMenuPointerDown(event) {
+    event.preventDefault();
+    if (document.activeElement === ref) return;
+    skipSelectOnFocus = true;
+    ref?.focus();
+  }
 </script>
 
-<svelte:window
-  on:mouseup="{({ target }) => {
-    if (active && !refSearch.contains(target)) active = false;
-  }}"
-/>
-
-<div bind:this="{refSearch}" role="search" class:active>
-  <label for="search-input" id="search-label">Search</label>
-  <div role="combobox" aria-expanded="{active}">
+<div
+  bind:this={refSearch}
+  {id}
+  use:dismiss={{
+    enabled: active,
+    type: "mouseup",
+    handler: handleOutsideMouseup,
+  }}
+  class:bx--header__search={true}
+  class:bx--header__search--shortcut={hasShortcutHint}
+  role="search"
+  class:bx--header__search--active={active}
+  on:focusout={handleFocusout}
+>
+  <label class:bx--header__search-label={true} for={inputId} id={labelId}
+    >{labelText}</label
+  >
+  <div
+    class:bx--header__search-menu={true}
+    aria-owns={menuRendered ? menuId : undefined}
+    aria-haspopup="menu"
+  >
     <button
+      bind:this={searchButtonRef}
+      use:keyboardShortcut={shortcutParams}
       type="button"
-      aria-label="Search"
-      tabindex="{active ? '-1' : '0'}"
-      class:bx--header__action="{true}"
-      class:disabled="{active}"
-      on:click="{() => {
+      aria-label={labelText}
+      aria-expanded={active}
+      aria-keyshortcuts={shortcut
+        ? ariaKeyShortcuts(shortcut, { apple: $applePlatform }) || undefined
+        : undefined}
+      tabindex={active ? -1 : 0}
+      class:bx--header-search-button={true}
+      class:bx--header__action={true}
+      class:bx--header-search-button--disabled={active}
+      on:click={() => {
         active = true;
-      }}"
+      }}
     >
-      <Search20 title="Search" />
+      <svelte:component this={icon} size={20} />
+      {#if hasShortcutHint}
+        <span class:bx--header__search-shortcut={true}>
+          <Kbd {shortcut} variant="muted" aria-hidden="true" />
+        </span>
+      {/if}
     </button>
     <input
-      bind:this="{ref}"
+      bind:this={ref}
+      use:preserveFocusSelection={selectTextOnFocus}
       type="text"
       autocomplete="off"
-      placeholder="Search..."
-      tabindex="{active ? '0' : '-1'}"
-      class:active
+      {placeholder}
+      tabindex={active ? "0" : "-1"}
+      class:bx--header__search-input={true}
+      class:bx--header__search--active={active}
+      aria-keyshortcuts={shortcut
+        ? ariaKeyShortcuts(shortcut, { apple: $applePlatform }) || undefined
+        : undefined}
       {...$$restProps}
-      id="search-input"
-      aria-activedescendant="{selectedId}"
+      id={inputId}
+      role={richMenu ? "combobox" : undefined}
+      aria-autocomplete="list"
+      aria-controls={menuRendered ? menuId : undefined}
+      aria-expanded={richMenu
+        ? richMenuVisible
+          ? "true"
+          : "false"
+        : undefined}
+      aria-activedescendant={active
+        ? richMenu
+          ? ($highlightedId ?? undefined)
+          : selectedId
+        : undefined}
       bind:value
       on:change
       on:input
+      on:input={() => {
+        if (richMenu) menuDismissed = false;
+        dispatchSearch?.(value);
+      }}
       on:focus
+      on:focus={() => {
+        if (skipSelectOnFocus) {
+          skipSelectOnFocus = false;
+          return;
+        }
+        if (selectTextOnFocus) {
+          tick().then(() => ref?.select());
+        }
+      }}
       on:blur
       on:keydown
-      on:keydown="{(e) => {
-        switch (e.key) {
-          case 'Enter':
-            selectResult();
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            if (selectedResultIndex === results.length - 1) {
-              selectedResultIndex = 0;
+      on:keydown={(event) => {
+        trackTab(event);
+        // Keys that belong to an IME composition (Enter commits, Escape
+        // cancels, arrows pick a candidate) are not search keys.
+        if (isImeComposition(event)) return;
+        if (richMenu) {
+          handleRichKeydown(event);
+          return;
+        }
+        switch (event.key) {
+          case "Enter":
+            if (selectedResult) {
+              selectResult();
             } else {
-              selectedResultIndex += 1;
+              dispatchSearch?.cancel();
+              dispatch("submit", { value });
             }
             break;
-          case 'ArrowUp':
-            e.preventDefault();
-            if (selectedResultIndex === 0) {
-              selectedResultIndex = results.length - 1;
-            } else {
-              selectedResultIndex -= 1;
+          case "ArrowDown":
+            event.preventDefault();
+            selectedResultIndex = moveIndex(
+              selectedResultIndex,
+              1,
+              results.length,
+            );
+            break;
+          case "ArrowUp":
+            event.preventDefault();
+            selectedResultIndex = moveIndex(
+              selectedResultIndex,
+              -1,
+              results.length,
+            );
+            break;
+          case "Escape":
+            if (value === "") {
+              // If the search bar is empty, deactivate the input.
+              active = false;
+              dispatch("close", { trigger: "escape-key" });
+              focusSearchButton();
             }
+
+            // Reset the search query but keep the search bar active.
+            // Do not dispatch "clear" event as that should fire only on the "x" button.
+            dispatchSearch?.cancel();
+            value = "";
+            selectedResultIndex = 0;
             break;
         }
-      }}"
+      }}
+      on:paste
     />
-    <button
-      type="button"
-      aria-label="Clear search"
-      tabindex="{active ? '0' : '-1'}"
-      class:bx--header__action="{true}"
-      class:hidden="{!active}"
-      on:click="{() => {
-        reset();
-        dispatch('clear');
-      }}"
-    >
-      <Close20 title="Close" />
-    </button>
+    {#if active}
+      <button
+        type="button"
+        aria-label={closeButtonLabelText}
+        tabindex="0"
+        class:bx--header__action={true}
+        class:bx--header-search-button={true}
+        on:keydown={trackTab}
+        on:click={() => {
+          reset();
+          dispatch("clear");
+          focusSearchButton();
+        }}
+      >
+        <Close size={20} title={closeButtonLabelText} />
+      </button>
+    {/if}
   </div>
 
-  {#if active && results.length > 0}
-    <ul aria-labelledby="search-label" role="menu" id="search-menu">
-      {#each results as result, i}
-        <li>
+  {#if richMenu && active}
+    <div
+      bind:this={menuRef}
+      id={menuId}
+      role="listbox"
+      tabindex="-1"
+      aria-labelledby={labelId}
+      aria-busy={loading || undefined}
+      hidden={!richMenuVisible}
+      class:bx--header__search-menu-rich={true}
+      class:bx--header__search-menu-rich--sm={size === "sm"}
+      class:bx--header__search-menu-rich--lg={size === "lg"}
+      class:bx--header__search-menu-rich--xl={size === "xl"}
+      on:mousedown={handleMenuPointerDown}
+    >
+      {#if loading}
+        <slot name="loading">
+          {#each skeletonWidths as width, i (i)}
+            <div
+              class:bx--search-menu-item={true}
+              class:bx--search-menu-item--skeleton={true}
+            >
+              <SkeletonText {width} />
+            </div>
+          {/each}
+        </slot>
+      {:else}
+        <slot name="menu" />
+        {#if showNoResults}
+          <div class:bx--search-menu__no-results={true}>
+            <slot name="noResults" />
+          </div>
+        {/if}
+      {/if}
+    </div>
+  {:else if active && results.length > 0}
+    <ul
+      aria-labelledby={labelId}
+      role="menu"
+      id={menuId}
+      class:bx--header-search-menu={true}
+    >
+      {#each results as result, index (result.id ?? index)}
+        <li role="none">
           <a
             tabindex="-1"
-            id="search-menuitem-{i}"
+            id="{id}-menuitem-{result.id ?? index}"
             role="menuitem"
-            href="{result.href}"
-            class:selected="{selectedId === `search-menuitem-${i}`}"
-            on:click|preventDefault="{async () => {
-              selectedResultIndex = i;
+            href={result.href}
+            class:bx--header-search-menu-item={true}
+            class:bx--header-search-menu-item--selected={selectedId ===
+              `${id}-menuitem-${result.id ?? index}`}
+            on:click|preventDefault={async () => {
+              selectedResultIndex = index;
               await tick();
               selectResult();
-            }}"
+            }}
           >
-            <slot result="{result}" index="{i}">
+            <slot {result} {index} selected={selectedResultIndex === index}>
               {result.text}
-              {#if result.description}<span>– {result.description}</span>{/if}
+              {#if result.description}
+                <span class:bx--header-search-menu-description={true}
+                  >– {result.description}</span
+                >
+              {/if}
             </slot>
           </a>
         </li>
@@ -155,136 +680,3 @@
     </ul>
   {/if}
 </div>
-
-<style>
-  label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    border: 0;
-    visibility: inherit;
-    clip: rect(0, 0, 0, 0);
-  }
-
-  [role="search"] {
-    position: relative;
-    display: flex;
-    max-width: 28rem;
-    width: 100%;
-    margin-left: 0.5rem;
-    height: 3rem;
-    background-color: #393939;
-    color: #fff;
-    transition: max-width 0.11s cubic-bezier(0.2, 0, 0.38, 0.9),
-      background 0.11s cubic-bezier(0.2, 0, 0.38, 0.9);
-  }
-
-  [role="search"]:not(.active) {
-    max-width: 3rem;
-    background-color: #161616;
-  }
-
-  [role="search"].active {
-    outline: 2px solid #fff;
-    outline-offset: -2px;
-  }
-
-  [role="combobox"] {
-    display: flex;
-    flex-grow: 1;
-    border-bottom: 1px solid #393939;
-  }
-
-  input {
-    width: 100%;
-    height: 3rem;
-    padding: 0;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.375rem;
-    letter-spacing: 0;
-    color: #fff;
-    caret-color: #fff;
-    background-color: initial;
-    border: none;
-    outline: none;
-    transition: opacity 0.11s cubic-bezier(0.2, 0, 0.38, 0.9);
-  }
-
-  input:not(.active) {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  button {
-    width: 3rem;
-    height: 100%;
-    padding: 0;
-    flex-shrink: 0;
-    opacity: 1;
-    transition: background-color 0.11s cubic-bezier(0.2, 0, 0.38, 0.9),
-      opacity 0.11s cubic-bezier(0.2, 0, 0.38, 0.9);
-  }
-
-  .disabled {
-    border: none;
-    pointer-events: none;
-  }
-
-  [aria-label="Clear search"]:hover {
-    background-color: #4c4c4c;
-  }
-
-  .hidden {
-    opacity: 0;
-    display: none;
-  }
-
-  ul {
-    position: absolute;
-    z-index: 10000;
-    padding: 1rem 0;
-    left: 0;
-    right: 0;
-    top: 3rem;
-    background-color: #161616;
-    border: 1px solid #393939;
-    border-top: none;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.5);
-  }
-
-  [role="menuitem"] {
-    padding: 6px 1rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1.29;
-    letter-spacing: 0.16px;
-    transition: all 70ms cubic-bezier(0.2, 0, 0.38, 0.9);
-    display: block;
-    text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #c6c6c6;
-  }
-
-  .selected,
-  [role="menuitem"]:hover {
-    background-color: #353535;
-    color: #f4f4f4;
-  }
-
-  [role="menuitem"] span {
-    font-size: 0.75rem;
-    font-weight: 400;
-    line-height: 1.34;
-    letter-spacing: 0.32px;
-    text-transform: lowercase;
-    color: #c6c6c6;
-  }
-</style>

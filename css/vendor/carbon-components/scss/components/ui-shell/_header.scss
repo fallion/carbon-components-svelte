@@ -1,0 +1,447 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/functions';
+@import '../../globals/scss/helper-classes';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import 'theme';
+@import 'functions';
+
+/// UI shell header
+/// @access private
+/// @group ui-shell
+@mixin carbon-header {
+  .#{$prefix}--header {
+    position: fixed;
+    z-index: z('header');
+    top: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    height: mini-units(6);
+    align-items: center;
+    border-bottom: 1px solid $shell-header-border-01;
+    background-color: $shell-header-bg-01;
+    // ccs: set the header's own text color, so what inherits it follows the
+    // header's theme, not the page's. An icon-only header action's icon is
+    // `currentColor` on hover; under a classic (Gray 100) header on a light
+    // page it inherited the page's dark text and went dark on dark.
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__action {
+    @include button-reset($omit: (display, border, width));
+
+    display: flex; // ccs: centre the icon
+    width: mini-units(6);
+    height: mini-units(6);
+    align-items: center; // ccs
+    justify-content: center; // ccs
+    padding-bottom: $spacing-01; // ccs: optical centring
+    border: to-rem(1px) solid transparent;
+    transition: none; // ccs: global actions set their own, see the patch below
+  }
+
+  .#{$prefix}--header__action:hover {
+    background-color: $shell-header-bg-04;
+  }
+
+  .#{$prefix}--header__action--active {
+    border-right: 1px solid $shell-header-border-01;
+    border-bottom: 1px solid transparent; // ccs: sits on the panel layer
+    border-left: 1px solid $shell-header-border-01;
+    background: $layer; // ccs
+  }
+
+  .#{$prefix}--header__action:focus {
+    border-width: $button-border-width; // ccs
+    border-color: $shell-header-focus;
+    outline: none;
+  }
+
+  .#{$prefix}--header__action.#{$prefix}--btn--icon-only.#{$prefix}--tooltip__trigger {
+    justify-content: center;
+  }
+
+  .#{$prefix}--header__action > svg,
+  .#{$prefix}--header__menu-trigger > svg { // ccs: same as every other header action
+    fill: $shell-header-icon-02;
+  }
+
+  .#{$prefix}--header__menu-trigger:hover {
+    fill: $shell-header-bg-02;
+  }
+
+  .#{$prefix}--header__menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .#{$prefix}--header__name { // ccs: flatten
+    @include type-style(
+      'body-compact-01',
+      $omit: (font-weight, letter-spacing, line-height)
+    );
+
+    display: flex;
+    height: 100%;
+    align-items: center;
+    padding-block: 0;
+    padding-inline: mini-units(2) mini-units(4);
+    border: to-rem(2px) solid transparent;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    line-height: 1.25rem;
+    outline: none;
+    text-decoration: none;
+    user-select: none;
+  }
+
+  .#{$prefix}--header__name:focus { // ccs: flatten
+    border-color: $shell-header-focus;
+  }
+
+  .#{$prefix}--header__name--prefix {
+    font-weight: 400;
+  }
+
+  .#{$prefix}--header__name,
+  .#{$prefix}--header__name:hover { // ccs: flatten
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__menu-toggle ~ .#{$prefix}--header__name { // ccs: dropped guard on unrendered __hidden
+    padding-inline-start: to-rem(8px);
+  }
+
+  .#{$prefix}--header__nav {
+    position: relative;
+    display: none;
+    height: 100%;
+    padding-inline-start: mini-units(2);
+
+    @include carbon--breakpoint('lg') {
+      display: block;
+    }
+
+    &::before {
+      position: absolute;
+      top: 50%;
+      display: block;
+      width: to-rem(1px);
+      height: to-rem(24px);
+      background-color: $shell-header-border-01;
+      content: '';
+      transform: translateY(-50%);
+      @include ccs-inset-inline($start: 0);
+    }
+  }
+
+  .#{$prefix}--header__menu-bar {
+    display: flex;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .#{$prefix}--header__menu-item { // ccs: flatten
+    position: relative;
+    display: flex;
+    height: 100%;
+    align-items: center;
+    padding: 0 mini-units(2);
+    border: 2px solid transparent;
+    background-color: $shell-header-bg-01; // ccs
+    color: $shell-header-text-02;
+    font-size: to-rem(14px);
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.125rem;
+    text-decoration: none;
+    transition: background-color $duration--fast-02,
+      border-color $duration--fast-02, color $duration--fast-02;
+    user-select: none;
+  }
+
+  // Emits before the `:hover` / `:active` / `:focus` rules below, which it
+  // ties at (0,2,0) now that they no longer carry `a.`, so those states
+  // still win on an expanded title. // ccs: moved
+  .#{$prefix}--header__menu-title[aria-expanded='true'] {
+    // Note: needs to be higher than menu. Adding 1 here instead of moving to
+    // the next level.
+    z-index: #{z('header') + 1};
+    background-color: $shell-header-bg-06;
+    color: $shell-header-text-02; // ccs: was the focus colour (white)
+  }
+
+  .#{$prefix}--header__menu-item:hover { // ccs: flatten
+    background-color: $shell-header-bg-02;
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__action:active,
+  .#{$prefix}--header__menu-item:active { // ccs: flatten
+    background-color: $shell-header-bg-03;
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__menu-item:focus { // ccs: flatten
+    border-color: $shell-header-focus;
+    color: $shell-header-text-01;
+    outline: none;
+  }
+
+  .#{$prefix}--header__menu-item:hover > svg,
+  .#{$prefix}--header__menu-item:active > svg,
+  .#{$prefix}--header__menu-item:focus > svg { // ccs: flatten
+    fill: $shell-header-icon-01;
+  }
+
+
+  // ccs
+  .#{$prefix}--header__menu-item[aria-current='page'],
+  .#{$prefix}--header__menu-item--current { // ccs: flatten
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__menu-item[aria-current='page']::after,
+  .#{$prefix}--header__menu-item--current::after { // ccs: flatten
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    border-bottom: 3px solid $support-info-inverse;
+    content: '';
+  }
+
+  .#{$prefix}--header__menu-item[aria-current='page']:focus::after,
+  .#{$prefix}--header__menu-item--current:focus::after { // ccs: flatten
+    border: 0;
+  }
+
+  .#{$prefix}--header__menu-item[aria-current='page']:focus,
+  .#{$prefix}--header__menu-item.#{$prefix}--header__menu-item--current:focus { // ccs: flatten
+    border: 2px solid $shell-header-focus;
+  }
+
+  .#{$prefix}--header__submenu {
+    position: relative;
+  }
+
+  .#{$prefix}--header__submenu--current::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-bottom: 3px solid $border-interactive;
+    content: '';
+  }
+
+  .#{$prefix}--header__submenu--current:focus {
+    border: 2px solid $focus;
+  }
+
+  .#{$prefix}--header__submenu--current:focus::after {
+    border: 0;
+  }
+
+  .#{$prefix}--header__menu-title[aria-haspopup='true'] {
+    position: relative;
+  }
+
+  // ccs: the title's text truncates like a top-level item's, but keeps its
+  // own width beside the arrow, so it shrinks only in a box narrower than
+  // it, such as a collapsed SideNav rail. There the arrow gives way first,
+  // and the text keeps room for its first letter, as the rail's links do.
+  .#{$prefix}--header__menu-title > .#{$prefix}--text-truncate--end {
+    width: auto;
+    min-width: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--header__menu-title > .#{$prefix}--header__menu-arrow {
+    min-width: 0;
+  }
+
+  .#{$prefix}--header__menu-title[aria-expanded='true']
+    > .#{$prefix}--header__menu-arrow {
+    transform: rotate(180deg);
+  }
+
+  .#{$prefix}--header__menu {
+    display: none;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu {
+    position: absolute;
+    z-index: z('header');
+    bottom: 0;
+    display: flex;
+    width: mini-units(25);
+    flex-direction: column;
+    background-color: $shell-header-bg-06;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.5);
+    transform: translateY(100%);
+    @include ccs-inset-inline($start: 0);
+  }
+
+  // ccs: a menu that would run past the viewport's inline end aligns to its
+  // trigger's inline end instead (`HeaderNavMenu` sets the class on open).
+  .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu--align-end {
+    @include ccs-inset-inline($start: auto, $end: 0);
+  }
+
+  // ccs: submenu items sit on the `$layer` surface, so they and their
+  // states use the layer tokens rather than the header's background tokens.
+  .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu
+    .#{$prefix}--header__menu-item {
+    background-color: $shell-header-bg-06;
+  }
+
+  .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu
+    .#{$prefix}--header__menu-item:hover {
+    background-color: $layer-hover;
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__menu-title[aria-expanded='true']
+    + .#{$prefix}--header__menu
+    .#{$prefix}--header__menu-item:active {
+    background-color: $layer-active;
+    color: $shell-header-text-01;
+  }
+
+  // ccs: `min-height` lets long labels wrap onto more lines instead of
+  // overflowing a fixed-height row; the block padding keeps wrapped text
+  // off the row edges.
+  .#{$prefix}--header__menu .#{$prefix}--header__menu-item {
+    height: auto;
+    min-height: mini-units(6);
+    padding-top: $spacing-03;
+    padding-bottom: $spacing-03;
+  }
+
+  .#{$prefix}--header__menu .#{$prefix}--header__menu-item:hover {
+    background-color: $layer-hover; // ccs
+    color: $shell-header-text-01;
+  }
+
+  .#{$prefix}--header__menu-arrow {
+    margin-inline-start: mini-units(1);
+    fill: $shell-header-icon-03;
+    transition: transform $duration--fast-02, fill $duration--fast-02;
+  }
+
+  .#{$prefix}--header__global {
+    display: flex;
+    height: 100%;
+    flex: 1 1 0%;
+    justify-content: flex-end;
+  }
+
+  .#{$prefix}--skip-to-content {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    margin: -1px 0; // ccs: no inline margin, see `.bx--visually-hidden`
+    clip: rect(0, 0, 0, 0);
+    visibility: inherit;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--skip-to-content:focus {
+    z-index: 9999;
+    top: 0;
+    display: flex;
+    width: auto;
+    height: 3rem;
+    align-items: center;
+    padding: 0 1rem;
+    border: 4px solid $shell-header-focus; // ccs
+    background-color: $shell-header-bg-01;
+    clip: auto;
+    color: $shell-header-text-01;
+    outline: none;
+    @include ccs-inset-inline($start: 0);
+  }
+}
+
+@include exports('carbon-header') {
+  @if feature-flag-enabled('ui-shell') {
+    @include carbon-header;
+  }
+}
+
+// carbon-components-svelte patch (header-forced-colors)
+// The header focus ring on HeaderNavItem, HeaderNavMenu, the header name and
+// header actions is a border-colour change on a transparent border (the name and
+// actions also set `outline: none`). Forced-colors mode paints that border the
+// same whether the item is focused or not, so keyboard focus was invisible.
+
+/// Header focus ring in forced-colors mode.
+/// @access private
+/// @group ui-shell
+@mixin header-forced-colors {
+  @media (forced-colors: active) {
+    // The global-action rule in `_ui-shell.scss` (`outline: none`) is
+    // `.global .action:not(.search):focus`, so the action selector repeats it
+    // under the header ancestor to win regardless of emit order.
+    .#{$prefix}--header__menu-item:focus,
+    .#{$prefix}--header__name:focus,
+    .#{$prefix}--header__action:focus,
+    .#{$prefix}--header
+      .#{$prefix}--header__global
+      .#{$prefix}--header__action:not(.#{$prefix}--header-search-button):focus {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+  }
+}
+
+@include exports("header-forced-colors") {
+  @include header-forced-colors;
+}
+
+// carbon-components-svelte patch (header nav expansion breakpoint)
+/// `HeaderNav` switches at Carbon's `lg` media query by default. When
+/// `expansionBreakpoint` is custom, the component adds a marker class
+/// from its measured window width so the nav follows the same breakpoint
+/// as the hamburger and side nav. Single-class rules emitted after the
+/// vendored rule win on source order.
+/// @access private
+/// @group components
+@mixin header-nav-breakpoint {
+  .#{$prefix}--header__nav--expanded {
+    display: block;
+  }
+
+  .#{$prefix}--header__nav--collapsed {
+    display: none;
+  }
+}
+
+@include exports('header-nav-breakpoint') {
+  @include header-nav-breakpoint;
+}

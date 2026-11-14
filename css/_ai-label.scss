@@ -1,0 +1,1052 @@
+// AILabel from @carbon/styles (`slug`/`ai-label`), rebuilt on this library's
+// Toggletip and Popover. Upstream selects the field states with `:has()`;
+// here fields emit marker classes instead (see `FieldDecorator.svelte`).
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./ai-tokens";
+
+$ai-label-sizes: (
+  mini: (16px, 9px, 12px),
+  2xs: (20px, 12px, 16px),
+  xs: (24px, 12px, 16px),
+  sm: (32px, 16px, 21px),
+  md: (40px, 16px, 21px),
+  lg: (48px, 16px, 21px),
+  xl: (64px, 20px, 26px),
+);
+
+/// AILabel button, explanation callout, and revert button
+/// @access private
+/// @group components
+@mixin ai-label {
+  .#{$prefix}--ai-label {
+    display: inline-flex;
+    vertical-align: middle;
+  }
+
+  .#{$prefix}--ai-label .#{$prefix}--toggletip-button {
+    position: relative;
+    justify-content: center;
+    border: 1px solid $border-inverse;
+    background-color: transparent;
+    color: $text-primary;
+    font-family: carbon--font-family("sans");
+    font-weight: 600;
+    transition:
+      color $duration--fast-01 motion(entrance, productive),
+      background-color $duration--fast-01 motion(entrance, productive);
+  }
+
+  .#{$prefix}--ai-label .#{$prefix}--toggletip-button:focus {
+    @include focus-outline("outline");
+  }
+
+  @each $size, $values in $ai-label-sizes {
+    .#{$prefix}--ai-label--#{$size} .#{$prefix}--toggletip-button {
+      width: to-rem(nth($values, 1));
+      height: to-rem(nth($values, 1));
+      font-size: to-rem(nth($values, 2));
+      line-height: to-rem(nth($values, 3));
+    }
+  }
+
+  // 24px click target for the two sizes below it
+  .#{$prefix}--ai-label--mini .#{$prefix}--toggletip-button::after,
+  .#{$prefix}--ai-label--2xs .#{$prefix}--toggletip-button::after {
+    position: absolute;
+    width: to-rem(24px);
+    height: to-rem(24px);
+    content: "";
+  }
+
+  .#{$prefix}--ai-label__text {
+    position: relative;
+  }
+
+  // Inline kind: text with a leading dot instead of a boxed button
+  .#{$prefix}--ai-label--inline .#{$prefix}--toggletip-button {
+    width: auto;
+    height: auto;
+    padding: 0 $carbon--spacing-02;
+    border-color: transparent;
+    border-radius: 1px;
+    font-size: to-rem(12px);
+    line-height: normal;
+  }
+
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--md
+    .#{$prefix}--toggletip-button {
+    font-size: to-rem(14px);
+  }
+
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--lg
+    .#{$prefix}--toggletip-button,
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--xl
+    .#{$prefix}--toggletip-button {
+    font-size: to-rem(16px);
+  }
+
+  .#{$prefix}--ai-label--inline .#{$prefix}--ai-label__text {
+    padding-left: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--ai-label--inline .#{$prefix}--ai-label__text::before {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: to-rem(4px);
+    height: to-rem(4px);
+    background-color: $icon-primary;
+    content: "";
+    transform: translateY(-50%);
+  }
+
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--lg
+    .#{$prefix}--ai-label__text,
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--xl
+    .#{$prefix}--ai-label__text {
+    padding-left: $carbon--spacing-04;
+  }
+
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--lg
+    .#{$prefix}--ai-label__text::before,
+  .#{$prefix}--ai-label--inline.#{$prefix}--ai-label--xl
+    .#{$prefix}--ai-label__text::before {
+    width: to-rem(8px);
+    height: to-rem(8px);
+  }
+
+  .#{$prefix}--ai-label--inline-with-content .#{$prefix}--toggletip-button {
+    padding: to-rem(2px) $carbon--spacing-03;
+    border-color: $border-inverse;
+  }
+
+  .#{$prefix}--ai-label__additional-text {
+    @include type-style("body-compact-02");
+
+    padding-left: $carbon--spacing-02;
+  }
+
+  // Explanation callout: a light surface with the AI aura and a gradient
+  // border, replacing the toggletip's high-contrast surface.
+  .#{$prefix}--ai-label-popover .#{$prefix}--popover-contents {
+    // The 1px gradient edge is padding, not a border, so the caret's edge is
+    // the callout's outer edge.
+    padding: 1px;
+    background:
+      linear-gradient(
+          to top,
+          ai-token("ai-aura-start") 0%,
+          15%,
+          ai-token("ai-aura-end") 50%
+        )
+        content-box,
+      linear-gradient(
+          ai-token("ai-popover-background"),
+          ai-token("ai-popover-background")
+        )
+        content-box,
+      linear-gradient(
+          to bottom,
+          ai-token("ai-border-start"),
+          ai-token("ai-border-end")
+        )
+        padding-box;
+    // The caret boxes inherit this color.
+    background-color: ai-token("ai-popover-background");
+    border-radius: to-rem(8px);
+    box-shadow:
+      inset 0 to-rem(-80px) to-rem(70px) to-rem(-65px) ai-token("ai-inner-shadow"),
+      to-rem(-40px) to-rem(44px) to-rem(60px) to-rem(-24px) ai-token("ai-popover-shadow-outer-01"),
+      to-rem(-56px) to-rem(64px) to-rem(64px) to-rem(-24px) ai-token("ai-popover-shadow-outer-02");
+    color: $text-primary;
+  }
+
+  .#{$prefix}--ai-label-popover .#{$prefix}--toggletip-content {
+    min-width: to-rem(280px);
+    max-width: to-rem(320px);
+    padding: $carbon--spacing-06;
+  }
+
+  // v11's callout caret: a 12px square centered on the callout's outer edge,
+  // about 17px wide and 8.5px tall. The toggletip's 8px caret read short. The
+  // offset grows with it so the tip clears the label by the same 4px.
+  // v11 puts the caret 20px in from the callout's corner, centered on the
+  // label; the toggletip turns these into that placement.
+  .#{$prefix}--popover.#{$prefix}--toggletip-popover.#{$prefix}--ai-label-popover {
+    --cds-popover-offset: #{to-rem(12px)};
+    --cds-popover-caret-offset: #{to-rem(14px)};
+    // The 14px offset plus half the 12px caret
+    --ccs-toggletip-caret: #{to-rem(20px)};
+  }
+
+  .#{$prefix}--ai-label-popover .#{$prefix}--popover-contents::after {
+    box-sizing: border-box;
+    width: to-rem(12px);
+    height: to-rem(12px);
+  }
+
+  // The toggletip's caret shadow is dark; the callout casts its own.
+  .#{$prefix}--ai-label-popover .#{$prefix}--popover-contents::before {
+    display: none;
+  }
+
+  // Give each caret the border color of the callout edge it sits on: light
+  // at the top, strongest at the bottom.
+
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--bottom
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--bottom-left
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--bottom-right
+    .#{$prefix}--popover-contents::after {
+    border-top: 1px solid ai-token("ai-border-start");
+    border-left: 1px solid ai-token("ai-border-start");
+  }
+
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--top
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--top-left
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--top-right
+    .#{$prefix}--popover-contents::after {
+    border-right: 1px solid ai-token("ai-popover-caret-bottom");
+    border-bottom: 1px solid ai-token("ai-popover-caret-bottom");
+    background-color: ai-token("ai-popover-caret-bottom-background");
+  }
+
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--right
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--right-top
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--right-bottom
+    .#{$prefix}--popover-contents::after {
+    border-bottom: 1px solid ai-token("ai-popover-caret-center");
+    border-left: 1px solid ai-token("ai-popover-caret-center");
+  }
+
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--left
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--left-top
+    .#{$prefix}--popover-contents::after,
+  .#{$prefix}--ai-label-popover.#{$prefix}--popover--left-bottom
+    .#{$prefix}--popover-contents::after {
+    border-top: 1px solid ai-token("ai-popover-caret-center");
+    border-right: 1px solid ai-token("ai-popover-caret-center");
+  }
+
+  // The callout is light, so it resets the toggletip's inverse link hooks
+  // and its links read the theme's link colors, as in v11.
+  .#{$prefix}--ai-label-popover .#{$prefix}--toggletip-content {
+    --cds-link-text-color: initial;
+    --cds-link-hover-text-color: initial;
+    --cds-link-visited-text-color: initial;
+    --cds-link-focus-text-color: initial;
+  }
+
+  // Links in the callout keep an inset 2px focus ring. Its color comes from
+  // the hook.
+  .#{$prefix}--ai-label-popover
+    .#{$prefix}--toggletip-content
+    .#{$prefix}--link:focus,
+  .#{$prefix}--ai-label-popover
+    .#{$prefix}--toggletip-content
+    .#{$prefix}--link:active {
+    outline-offset: -2px;
+    outline-width: 2px;
+  }
+
+  // Action bar flush with the callout's bottom edge. As in v11, it blurs the
+  // aura behind it into a tinted bar.
+  .#{$prefix}--ai-label-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 to-rem(-24px) to-rem(-24px);
+    backdrop-filter: blur(85px);
+    background: rgba(0, 0, 0, 0.01);
+    border-radius: 0 0 to-rem(7px) to-rem(7px);
+  }
+
+  .#{$prefix}--ai-label-actions .#{$prefix}--btn--primary {
+    order: 1;
+    border-bottom-right-radius: to-rem(7px);
+  }
+
+  // In a field, the revert button is wider than the label it replaces, so it
+  // moves toward the field's edge by the difference on that side, as in v11:
+  // its icon sits where the label did.
+  .#{$prefix}--field-decorator .#{$prefix}--ai-label--revert {
+    transform: translateX(to-rem(8px));
+  }
+
+  .#{$prefix}--field-decorator
+    .#{$prefix}--ai-label--revert.#{$prefix}--ai-label--field-xs {
+    transform: translateX(to-rem(4px));
+  }
+
+  // Revert button: a 24px square in extra-small fields
+  .#{$prefix}--ai-label--field-xs .#{$prefix}--ai-label__revert {
+    width: to-rem(24px);
+    height: to-rem(24px);
+    min-height: to-rem(24px);
+    padding: to-rem(3px);
+  }
+
+  // The undo arrow points back, to the inline start.
+  .#{$prefix}--ai-label__revert .#{$prefix}--btn__icon {
+    @include ccs-mirror-rtl;
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    .#{$prefix}--ai-label .#{$prefix}--toggletip-button:hover {
+      background-color: $border-inverse;
+      color: $text-inverse;
+    }
+
+    .#{$prefix}--ai-label--inline .#{$prefix}--toggletip-button:hover {
+      border-color: $icon-secondary;
+      background-color: transparent;
+      color: $text-secondary;
+    }
+
+    .#{$prefix}--ai-label--inline
+      .#{$prefix}--toggletip-button:hover
+      .#{$prefix}--ai-label__text::before {
+      background-color: $icon-secondary;
+    }
+
+    // Interactive tiles and cards with an active AI label: a stronger aura
+    // on hover
+    .#{$prefix}--tile--ai-label.#{$prefix}--tile--clickable:hover,
+    .#{$prefix}--tile--ai-label.#{$prefix}--tile--selectable:hover,
+    .#{$prefix}--tile--ai-label.#{$prefix}--tile--expandable:hover,
+    .#{$prefix}--card--ai-label.#{$prefix}--card--clickable:hover {
+      background:
+        linear-gradient(
+            to top,
+            ai-token("ai-aura-hover-start") 0%,
+            15%,
+            ai-token("ai-aura-hover-end") 50%
+          )
+          padding-box,
+        linear-gradient(
+            ai-token("ai-aura-hover-background"),
+            ai-token("ai-aura-hover-background")
+          )
+          padding-box,
+        linear-gradient(
+            to bottom,
+            ai-token("ai-border-start"),
+            ai-token("ai-border-end")
+          )
+          border-box,
+        linear-gradient(
+            ai-token("ai-aura-hover-background"),
+            ai-token("ai-aura-hover-background")
+          )
+          border-box;
+      box-shadow:
+        inset 0 to-rem(-80px) to-rem(70px) to-rem(-65px) ai-token("ai-inner-shadow"),
+        0 to-rem(4px) to-rem(10px) to-rem(2px) ai-token("ai-drop-shadow");
+    }
+  }
+
+  // The callout's surface and edge are gradients, which forced colors drop.
+  @include high-contrast-mode {
+    .#{$prefix}--ai-label-popover .#{$prefix}--popover-contents {
+      background-color: Canvas;
+      outline: 1px solid;
+      outline-offset: -1px;
+    }
+  }
+}
+
+@include exports("ai-label") {
+  @include ai-label;
+}
+
+/// Field `decorator` slots and the AI gradient on fields with an active
+/// `AILabel`
+/// @access private
+/// @group components
+@mixin ai-label-fields {
+  // Centered with flex, not a transform: a transform would make a stacking
+  // context and trap the open callout under the fields that follow.
+  .#{$prefix}--field-decorator {
+    position: absolute;
+    top: 0;
+    right: $carbon--spacing-05;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  // Fluid fields keep their icons on the value row, so the decorator moves
+  // to the label row, at the field's right edge.
+  .#{$prefix}--text-input--fluid .#{$prefix}--field-decorator,
+  .#{$prefix}--text-area--fluid .#{$prefix}--field-decorator,
+  .#{$prefix}--number-input--fluid .#{$prefix}--field-decorator,
+  .#{$prefix}--select--fluid .#{$prefix}--field-decorator,
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--field-decorator,
+  .#{$prefix}--date-picker--fluid .#{$prefix}--field-decorator {
+    top: to-rem(13px);
+    bottom: auto;
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--select--fluid .#{$prefix}--field-decorator::after,
+  .#{$prefix}--list-box__wrapper--fluid .#{$prefix}--field-decorator::after {
+    display: none;
+  }
+
+  // TextInput
+  .#{$prefix}--text-input__field-inner-wrapper--decorator {
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--text-input__field-wrapper--decorator .#{$prefix}--text-input {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-input__field-wrapper--decorator
+    .#{$prefix}--text-input--invalid,
+  .#{$prefix}--text-input__field-wrapper--decorator
+    .#{$prefix}--text-input--warning {
+    padding-inline-end: $carbon--spacing-10;
+  }
+
+  .#{$prefix}--text-input__field-wrapper--decorator
+    .#{$prefix}--text-input__invalid-icon,
+  .#{$prefix}--text-input__field-wrapper--decorator
+    .#{$prefix}--text-input__readonly-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+
+  .#{$prefix}--text-input__field-wrapper--ai-label .#{$prefix}--text-input {
+    @include ai-field-gradient;
+  }
+
+  // TextArea: pinned to the first line instead of centered
+  .#{$prefix}--text-area__inner-wrapper--decorator {
+    top: $carbon--spacing-04;
+    bottom: auto;
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--text-area__wrapper--decorator .#{$prefix}--text-area {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-area__wrapper--decorator .#{$prefix}--text-area--invalid,
+  .#{$prefix}--text-area__wrapper--decorator .#{$prefix}--text-area--warning {
+    padding-inline-end: $carbon--spacing-10;
+  }
+
+  .#{$prefix}--text-area__wrapper--decorator .#{$prefix}--text-area__invalid-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+
+  .#{$prefix}--text-area__wrapper--ai-label .#{$prefix}--text-area {
+    @include ai-field-gradient;
+  }
+
+  // Select and the list boxes: left of the chevron, behind a divider. Above
+  // the field, which spans the list box and comes later in the markup.
+  .#{$prefix}--select__inner-wrapper--decorator,
+  .#{$prefix}--list-box__inner-wrapper--decorator {
+    z-index: 1;
+    @include ccs-inset-inline($end: $carbon--spacing-09);
+  }
+
+  .#{$prefix}--select__inner-wrapper--decorator::after,
+  .#{$prefix}--list-box__inner-wrapper--decorator::after {
+    position: absolute;
+    top: 50%;
+    width: 1px;
+    height: $carbon--spacing-05;
+    margin-top: to-rem(-8px);
+    background-color: $border-subtle;
+    content: "";
+    @include ccs-inset-inline($end: to-rem(-8px));
+  }
+
+  .#{$prefix}--select-input__wrapper--decorator .#{$prefix}--select-input {
+    padding-inline-end: to-rem(72px);
+  }
+
+  .#{$prefix}--select-input__wrapper--decorator[data-invalid]
+    .#{$prefix}--select-input,
+  .#{$prefix}--select--warning
+    .#{$prefix}--select-input__wrapper--decorator
+    .#{$prefix}--select-input {
+    padding-inline-end: $carbon--spacing-12;
+  }
+
+  .#{$prefix}--select-input__wrapper--decorator .#{$prefix}--select__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(72px));
+  }
+
+  .#{$prefix}--select-input__wrapper--ai-label .#{$prefix}--select-input {
+    @include ai-field-gradient;
+  }
+
+  // Dropdown, ComboBox, and MultiSelect
+  .#{$prefix}--list-box--decorator .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box--decorator .#{$prefix}--text-input {
+    padding-inline-end: to-rem(72px);
+  }
+
+  .#{$prefix}--list-box--decorator[data-invalid] .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box--decorator.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field {
+    padding-inline-end: $carbon--spacing-12;
+  }
+
+  // A ComboBox, like a filterable MultiSelect, pads its input instead of the
+  // field around it, so the input, its border, and its focus ring span the
+  // whole field.
+  .#{$prefix}--list-box--decorator.#{$prefix}--combo-box
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box--decorator.#{$prefix}--combo-box[data-invalid]
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box--decorator.#{$prefix}--combo-box.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field {
+    padding-inline-end: 0;
+  }
+
+  // A clear button stays by the chevron behind its own divider, and the
+  // label moves left of it: label | clear | chevron, as in v11. The label's
+  // divider already parts it from the clear button, so an invalid or warn
+  // field drops the clear button's own.
+  .#{$prefix}--list-box--decorator[data-invalid]
+    .#{$prefix}--list-box__selection::before,
+  .#{$prefix}--list-box--decorator.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__selection::before {
+    content: none;
+  }
+
+  .#{$prefix}--list-box--clearable .#{$prefix}--list-box__inner-wrapper--decorator {
+    @include ccs-inset-inline($end: to-rem(82px));
+  }
+
+  .#{$prefix}--list-box--decorator.#{$prefix}--list-box--clearable
+    .#{$prefix}--text-input {
+    padding-inline-end: to-rem(112px);
+  }
+
+  .#{$prefix}--list-box--decorator .#{$prefix}--list-box__selection--multi {
+    @include ccs-inset-inline($end: auto);
+  }
+
+  .#{$prefix}--list-box--decorator .#{$prefix}--list-box__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(72px));
+  }
+
+  .#{$prefix}--list-box--decorator[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input
+    + .#{$prefix}--list-box__invalid-icon,
+  .#{$prefix}--list-box--decorator.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input
+    + .#{$prefix}--list-box__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(106px));
+  }
+
+  .#{$prefix}--list-box--decorator[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input--empty
+    + .#{$prefix}--list-box__invalid-icon,
+  .#{$prefix}--list-box--decorator.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input--empty
+    + .#{$prefix}--list-box__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(72px));
+  }
+
+  // ComboBox and filterable MultiSelect inputs paint over the list box.
+  // A clearable Dropdown keeps its label clear of the clear button, and its
+  // invalid or warn icon moves left of it.
+  .#{$prefix}--list-box--decorator .#{$prefix}--list-box__field--clearable {
+    padding-inline-end: to-rem(112px);
+  }
+
+  .#{$prefix}--list-box--decorator.#{$prefix}--dropdown--clearable
+    .#{$prefix}--list-box__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(106px));
+  }
+
+  .#{$prefix}--list-box--decorator.#{$prefix}--dropdown--clearable[data-invalid]
+    .#{$prefix}--list-box__field--clearable,
+  .#{$prefix}--list-box--decorator.#{$prefix}--dropdown--clearable.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field--clearable {
+    padding-inline-end: to-rem(130px);
+  }
+
+  // ComboBox text stops short of the invalid or warn icon.
+  .#{$prefix}--list-box--decorator[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input,
+  .#{$prefix}--list-box--decorator.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input {
+    padding-inline-end: to-rem(130px);
+  }
+
+  // The list box carries the gradient. The ComboBox input is transparent
+  // over it; a second gradient on the input doubled it to the input's edge.
+  // The input draws the field's bottom border, so it keeps the AI color.
+  .#{$prefix}--list-box--ai-label {
+    @include ai-field-gradient;
+  }
+
+  .#{$prefix}--list-box--ai-label .#{$prefix}--text-input {
+    border-bottom-color: ai-token("ai-border-strong");
+  }
+
+  // DatePicker: left of the calendar (or invalid) icon
+  .#{$prefix}--date-picker-input-inner-wrapper--decorator {
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+
+  .#{$prefix}--date-picker-input__wrapper--decorator
+    .#{$prefix}--date-picker__input {
+    padding-inline-end: $carbon--spacing-10;
+  }
+
+  // A clear button beside an invalid or warn icon pushes the decorator out
+  // one more slot. Key off the button: the calendar wraps the input in
+  // `__anchor`, so the input is no sibling of the decorator.
+  .#{$prefix}--date-picker-input__wrapper--decorator
+    .#{$prefix}--date-picker__clear--with-icon
+    ~ .#{$prefix}--date-picker-input-inner-wrapper--decorator {
+    @include ccs-inset-inline($end: $carbon--spacing-10);
+  }
+
+  .#{$prefix}--date-picker-input__wrapper--decorator
+    .#{$prefix}--date-picker__input--with-clear.#{$prefix}--date-picker__input--with-icon {
+    padding-inline-end: to-rem(88px);
+  }
+
+  .#{$prefix}--date-picker-input__wrapper--ai-label
+    .#{$prefix}--date-picker__input {
+    @include ai-field-gradient;
+  }
+
+  // NumberInput: left of the steppers, whose width follows the size
+  $number-steppers: (
+    "": 80px,
+    "xs": 48px,
+    "sm": 64px,
+    "xl": 96px,
+    "nosteppers": 0,
+  );
+
+  @each $modifier, $steppers in $number-steppers {
+    $scope: if(
+      $modifier == "",
+      "",
+      ".#{$prefix}--number--#{$modifier} "
+    );
+
+    #{$scope}.#{$prefix}--number__inner-wrapper--decorator {
+      @include ccs-inset-inline($end: to-rem($steppers + 16px));
+    }
+
+    #{$scope}.#{$prefix}--number__input-wrapper--decorator
+      .#{$prefix}--number__invalid {
+      @include ccs-inset-inline($end: to-rem($steppers + 40px));
+    }
+
+    // The base padding already leaves room for the decorator (steppers
+    // plus 48px). Only the invalid and warn icons need more.
+    #{$scope}.#{$prefix}--number__input-wrapper--decorator
+      input[type="number"][data-invalid],
+    #{$scope}.#{$prefix}--number__input-wrapper--decorator
+      input[type="text"][data-invalid],
+    #{$scope}.#{$prefix}--number__input-wrapper--decorator.#{$prefix}--number__input-wrapper--warning
+      input[type="number"],
+    #{$scope}.#{$prefix}--number__input-wrapper--decorator.#{$prefix}--number__input-wrapper--warning
+      input[type="text"] {
+      padding-inline-end: to-rem($steppers + 72px);
+    }
+  }
+
+  // Without steppers, the read-only icon shows in their place. It takes the
+  // invalid icon's spot left of the decorator, and the text stops short.
+  .#{$prefix}--number--nosteppers
+    .#{$prefix}--number__input-wrapper--decorator
+    .#{$prefix}--text-input__readonly-icon {
+    @include ccs-inset-inline($end: to-rem(40px));
+  }
+
+  .#{$prefix}--number--readonly.#{$prefix}--number--nosteppers
+    .#{$prefix}--number__input-wrapper--decorator
+    input[type="text"] {
+    padding-inline-end: to-rem(72px);
+  }
+
+  // A divider between the label and the steppers, as in v11. The first
+  // rule divider is otherwise drawn only beside an invalid icon.
+  .#{$prefix}--number__input-wrapper--decorator
+    .#{$prefix}--number__controls
+    .#{$prefix}--number__rule-divider:first-of-type {
+    background-color: $border-subtle;
+  }
+
+  .#{$prefix}--number__input-wrapper--ai-label input[type="number"],
+  .#{$prefix}--number__input-wrapper--ai-label input[type="text"] {
+    @include ai-field-gradient;
+  }
+
+  .#{$prefix}--number__input-wrapper--ai-label .#{$prefix}--number__control-btn {
+    border-bottom-color: ai-token("ai-border-strong");
+  }
+
+  // The stepper edges are painted in the field color, which would show as
+  // bars over the gradient.
+  .#{$prefix}--number__input-wrapper--ai-label
+    .#{$prefix}--number__control-btn::before,
+  .#{$prefix}--number__input-wrapper--ai-label
+    .#{$prefix}--number__control-btn::after {
+    background-color: transparent;
+  }
+}
+
+@include exports("ai-label-fields") {
+  @include ai-label-fields;
+}
+
+/// `decorator` slots of checkboxes, radio buttons, their groups, and tags
+/// @access private
+/// @group components
+@mixin ai-label-selection {
+  // Checkbox and RadioButton: the decorator follows the label text, and the
+  // validation and helper text wrap below.
+  .#{$prefix}--checkbox-wrapper--decorator,
+  .#{$prefix}--radio-button-wrapper--decorator {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .#{$prefix}--checkbox-wrapper--decorator > .#{$prefix}--checkbox__validation-msg,
+  .#{$prefix}--checkbox-wrapper--decorator > .#{$prefix}--form__helper-text {
+    width: 100%;
+  }
+
+  .#{$prefix}--radio-button-wrapper--decorator .#{$prefix}--radio-button__label {
+    margin-right: 0;
+  }
+
+  .#{$prefix}--checkbox-wrapper-inner--decorator,
+  .#{$prefix}--radio-button-wrapper-inner--decorator {
+    display: inline-flex;
+    margin-left: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--radio-button-wrapper-inner--decorator {
+    margin-right: $carbon--spacing-05;
+  }
+
+  // CheckboxGroup and RadioButtonGroup: the decorator follows the legend.
+  .#{$prefix}--radio-button-group--decorator {
+    display: block;
+  }
+
+  .#{$prefix}--radio-button-group--decorator::after {
+    display: block;
+    clear: both;
+    content: "";
+  }
+
+  .#{$prefix}--checkbox-group--decorator > .#{$prefix}--label,
+  .#{$prefix}--radio-button-group--decorator > .#{$prefix}--label,
+  .#{$prefix}--checkbox-group-inner--decorator,
+  .#{$prefix}--radio-button-group-inner--decorator {
+    float: left;
+  }
+
+  .#{$prefix}--checkbox-group-inner--decorator,
+  .#{$prefix}--radio-button-group-inner--decorator {
+    display: inline-flex;
+    margin-left: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--checkbox-group--decorator > .#{$prefix}--checkbox-wrapper,
+  .#{$prefix}--checkbox-group--decorator
+    > .#{$prefix}--checkbox-group__validation-msg,
+  .#{$prefix}--radio-button-group--decorator
+    > .#{$prefix}--radio-button-group-inner--decorator
+    + .#{$prefix}--radio-button-wrapper,
+  .#{$prefix}--radio-button-group--vertical.#{$prefix}--radio-button-group--decorator
+    > .#{$prefix}--radio-button-wrapper,
+  .#{$prefix}--radio-button-group--decorator
+    > .#{$prefix}--radio-button-group__validation-msg {
+    clear: both;
+  }
+
+  .#{$prefix}--radio-button-group--decorator > .#{$prefix}--radio-button-wrapper {
+    float: left;
+  }
+
+  .#{$prefix}--radio-button-group--vertical.#{$prefix}--radio-button-group--decorator
+    > .#{$prefix}--radio-button-wrapper {
+    float: none;
+  }
+
+  // Tag: an inline AI label in the tag's own color
+  .#{$prefix}--tag__decorator {
+    display: inline-flex;
+    margin-left: $carbon--spacing-02;
+  }
+
+  .#{$prefix}--tag__decorator .#{$prefix}--toggletip-button {
+    margin-left: 1px;
+    color: currentColor;
+  }
+
+  .#{$prefix}--tag__decorator .#{$prefix}--ai-label__text::before {
+    background-color: currentColor;
+  }
+
+  .#{$prefix}--tag--filter .#{$prefix}--tag__decorator {
+    margin-right: $carbon--spacing-02;
+  }
+}
+
+@include exports("ai-label-selection") {
+  @include ai-label-selection;
+}
+
+/// Tile `decorator` slots and the AI surface on tiles and cards with an
+/// active `AILabel`
+/// @access private
+/// @group components
+@mixin ai-label-tiles {
+  // The decorator is an `xs` AILabel in the top inline-end corner, as in
+  // v11. A selectable tile's checkbox sits there too, so the decorator
+  // steps in from it. The tile's text reserves the room the decorator
+  // takes, plus a gap, as v11 leaves that to the tile's own padding and
+  // lets the text run under the label. The gap is a token (8px) and is
+  // not from v11.
+  $tile-decorator-size: to-rem(nth(map-get($ai-label-sizes, xs), 1));
+  $tile-decorator-gap: $carbon--spacing-03;
+
+  .#{$prefix}--tile--decorator,
+  .#{$prefix}--tile__wrapper--decorator {
+    position: relative;
+  }
+
+  .#{$prefix}--tile--inner-decorator {
+    position: absolute;
+    z-index: 1;
+    top: $carbon--spacing-05;
+    display: flex;
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  // Clear of the checkmark in the top inline-end corner
+  .#{$prefix}--tile__wrapper--selectable .#{$prefix}--tile--inner-decorator,
+  .#{$prefix}--tile__wrapper--radio
+    .#{$prefix}--tile--is-selected
+    + .#{$prefix}--tile--inner-decorator {
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+
+  // Keep the text out from under the decorator. Padding on the tile
+  // reaches every kind, including those without a content wrapper. A
+  // `noPadding` tile lays out its own content.
+  .#{$prefix}--tile.#{$prefix}--tile--decorator:not(.#{$prefix}--tile--no-padding) {
+    padding-inline-end: $carbon--spacing-05 + $tile-decorator-size +
+      $tile-decorator-gap;
+  }
+
+  // A selectable tile also holds the checkbox. A radio tile reserves the
+  // room before it is selected, since the decorator moves over for the
+  // checkmark, and the text should not reflow when it does.
+  .#{$prefix}--tile.#{$prefix}--tile--selectable.#{$prefix}--tile--decorator {
+    padding-inline-end: $carbon--spacing-08 + $tile-decorator-size +
+      $tile-decorator-gap;
+  }
+
+  .#{$prefix}--tile--ai-label,
+  .#{$prefix}--card--ai-label {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(
+          to top,
+          ai-token("ai-aura-start") 0%,
+          15%,
+          ai-token("ai-aura-end") 50%
+        )
+        padding-box,
+      linear-gradient($layer, $layer) padding-box,
+      linear-gradient(
+          to bottom,
+          ai-token("ai-border-start"),
+          ai-token("ai-border-end")
+        )
+        border-box,
+      linear-gradient($layer, $layer) border-box;
+    box-shadow:
+      inset 0 to-rem(-80px) to-rem(70px) to-rem(-65px) ai-token("ai-inner-shadow"),
+      0 to-rem(4px) to-rem(8px) 0 ai-token("ai-drop-shadow");
+  }
+
+  // A selected tile keeps a solid border so the selection still reads.
+  .#{$prefix}--tile--ai-label.#{$prefix}--tile--is-selected {
+    background:
+      linear-gradient(
+          to top,
+          ai-token("ai-aura-start") 0%,
+          15%,
+          ai-token("ai-aura-end") 50%
+        )
+        padding-box,
+      linear-gradient($layer, $layer) padding-box,
+      linear-gradient($border-inverse, $border-inverse) border-box;
+  }
+}
+
+@include exports("ai-label-tiles") {
+  @include ai-label-tiles;
+}
+
+/// `decorator` slots of modals and data tables, and their AI surfaces
+/// @access private
+/// @group components
+@mixin ai-label-overlays {
+  // Modal and ComposedModal: the label sits left of the close button.
+  .#{$prefix}--modal--inner__decorator {
+    position: absolute;
+    z-index: 1;
+    top: $carbon--spacing-03;
+    display: flex;
+    @include ccs-inset-inline($end: $carbon--spacing-09);
+  }
+
+  .#{$prefix}--modal--decorator .#{$prefix}--modal-header {
+    padding-inline-end: to-rem(88px);
+  }
+
+  .#{$prefix}--modal--ai-label {
+    background-color: ai-token("ai-overlay");
+  }
+
+  .#{$prefix}--modal--ai-label .#{$prefix}--modal-container {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(
+          to top,
+          ai-token("ai-aura-start") 0%,
+          15%,
+          ai-token("ai-aura-end") 50%
+        )
+        padding-box,
+      linear-gradient($layer, $layer) padding-box,
+      linear-gradient(
+          to bottom,
+          ai-token("ai-border-start"),
+          ai-token("ai-border-end")
+        )
+        border-box,
+      linear-gradient($layer, $layer) border-box;
+    box-shadow:
+      inset 0 to-rem(-80px) to-rem(70px) to-rem(-65px) ai-token("ai-inner-shadow"),
+      0 to-rem(24px) to-rem(40px) to-rem(-24px) ai-token("ai-drop-shadow");
+  }
+
+  // DataTable title
+  .#{$prefix}--data-table-header--decorator {
+    position: relative;
+    padding-right: to-rem(56px);
+  }
+
+  .#{$prefix}--data-table-header__decorator {
+    position: absolute;
+    top: $carbon--spacing-05;
+    right: $carbon--spacing-05;
+    display: flex;
+  }
+
+  // DataTable column headers
+  .#{$prefix}--table-header-label--decorator {
+    display: flex;
+    align-items: center;
+  }
+
+  .#{$prefix}--table-header-label--decorator-inner {
+    display: flex;
+    padding-left: $carbon--spacing-03;
+    margin-left: auto;
+  }
+
+  // Table cells do not reliably position their children, so the sort button
+  // and decorator share a positioned wrapper.
+  .#{$prefix}--table-sort__decorator-wrapper {
+    position: relative;
+    height: 100%;
+  }
+
+  .#{$prefix}--table-sort__header--decorator .#{$prefix}--table-header-label {
+    padding-right: $carbon--spacing-07;
+  }
+
+  // Left of the sort icon
+  .#{$prefix}--table-sort__decorator {
+    position: absolute;
+    top: 0;
+    right: to-rem(44px);
+    bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .#{$prefix}--table-header--ai-label,
+  .#{$prefix}--table-header--ai-label .#{$prefix}--table-sort {
+    @include ai-table-gradient;
+
+    box-shadow: inset 0 1px 0 0 ai-token("ai-border-strong");
+  }
+
+  // DataTable rows: a narrow leading column holds the label. The aura is
+  // fixed to the viewport so it runs across the row's cells unbroken.
+  .#{$prefix}--data-table .#{$prefix}--table-column-decorator {
+    width: $carbon--spacing-05;
+    padding-right: 0;
+  }
+
+  .#{$prefix}--table-column-decorator__inner {
+    display: flex;
+    align-items: center;
+  }
+
+
+  .#{$prefix}--data-table--ai-label-row td {
+    @include ai-table-gradient;
+
+    background-attachment: fixed;
+  }
+
+  // The cells of a column whose header has an AI label, as in v11. In an AI
+  // row they keep their own gradient, not the row's viewport-fixed aura.
+  .#{$prefix}--data-table .#{$prefix}--table-cell--column-ai-label {
+    @include ai-table-gradient;
+
+    background-attachment: scroll;
+  }
+
+  .#{$prefix}--data-table--ai-label-row .#{$prefix}--table-column-decorator {
+    box-shadow: inset 1px 0 0 0 ai-token("ai-border-strong");
+  }
+}
+
+@include exports("ai-label-overlays") {
+  @include ai-label-overlays;
+}

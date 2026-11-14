@@ -1,15 +1,17 @@
 <script>
-  /** @type {"sm" | "default"} */
+  /** @type {"xs" | "sm" | "default" | "lg" | "md"} */
   export let size = "default";
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <span
-  class:bx--tag="{true}"
-  class:bx--tag--sm="{size === 'sm'}"
-  class:bx--skeleton="{true}"
+  class:bx--tag={true}
+  class:bx--tag--xs={size === "xs"}
+  class:bx--tag--sm={size === "sm"}
+  class:bx--tag--lg={size === "lg"}
+  class:bx--skeleton={true}
   {...$$restProps}
   on:click
   on:mouseover
   on:mouseenter
-  on:mouseleave></span>
+  on:mouseleave
+></span>

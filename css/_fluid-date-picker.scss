@@ -1,0 +1,416 @@
+// Fluid DatePicker (v11 port). v10 has no fluid variant.
+// https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/fluid-date-picker/_fluid-date-picker.scss
+//
+// DOM differences: no inner span (width on input wrapper); validation message
+// after wrapper; AI label/slug/decorator/toggletip/skeleton rules omitted.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./fluid-shared";
+
+/// Fluid date picker (Carbon React FluidDatePicker)
+/// @access private
+/// @group components
+@mixin fluid-date-picker {
+  // `--fluid` on the outer form-item wrapper. Default width matches the 288px
+  // calendar, narrowing to fit a smaller container; stretches to
+  // 100% inside `.bx--form--fluid`. The skeleton takes the same width.
+  .#{$prefix}--date-picker--fluid {
+    display: inline-flex;
+    background: $field;
+    inline-size: to-rem(288px);
+    max-inline-size: 100%;
+    min-inline-size: to-rem(144px);
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--date-picker--fluid,
+  .#{$prefix}--form--fluid .#{$prefix}--date-picker--fluid__skeleton {
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--date-picker--fluid .#{$prefix}--date-picker {
+    position: relative;
+    block-size: 100%;
+    inline-size: 100%;
+    transition:
+      background-color $duration--fast-01 motion(standard, productive),
+      outline $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--date-picker--fluid .#{$prefix}--label {
+    @include fluid-label;
+  }
+
+  .#{$prefix}--date-picker--fluid .#{$prefix}--label--slotted {
+    @include fluid-label-slotted;
+
+    white-space: normal;
+  }
+
+  // Stretch every layer so underline and warn divider span the full field.
+  .#{$prefix}--date-picker--fluid .#{$prefix}--date-picker-container,
+  .#{$prefix}--date-picker--fluid .#{$prefix}--date-picker-input__wrapper {
+    width: 100%;
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker-input__wrapper
+    > .#{$prefix}--date-picker__anchor {
+    display: block;
+    width: 100%;
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker-input__wrapper
+    .#{$prefix}--date-picker__input {
+    padding: to-rem(32px) $carbon--spacing-05 to-rem(13px);
+    background: transparent;
+    border-block-end: none;
+    width: 100%;
+    min-block-size: to-rem(64px);
+    min-inline-size: to-rem(144px);
+  }
+
+  // Match base simple warn/invalid width rules at (0,4,1) specificity.
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker-input__wrapper--invalid,
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker-input__wrapper--warn {
+    .#{$prefix}--date-picker__input,
+    ~ .#{$prefix}--form-requirement {
+      width: 100%;
+    }
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker__icon {
+    display: none;
+  }
+
+  // Match base simple width rules at (0,3,0) specificity.
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker__input,
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--label {
+    width: 100%;
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker__input:not(
+      .#{$prefix}--date-picker__input--invalid
+    ) {
+    border-block-end: 1px solid $border-strong;
+  }
+
+  .#{$prefix}--date-picker--fluid .#{$prefix}--date-picker__icon {
+    inset-block-start: to-rem(43px);
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--single
+    .#{$prefix}--date-picker__input:not(
+      .#{$prefix}--date-picker__input--invalid
+    ) {
+    border-block-end: 1px solid $border-strong;
+  }
+
+  // Width/style stay unconditional across every state this rule already
+  // covers (including readonly, which paints over only the color below);
+  // invalid/warn opt out here and get their own treatment further down.
+  // The picker and each cell are `--neutral` only when neither invalid nor
+  // warn applies to them, so neither needs a `:not()` per state.
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--neutral {
+    border-block-end-width: 1px;
+    border-block-end-style: solid;
+  }
+
+  // Color is split from width/style above so a read-only cell can paint
+  // its own color below without competing for it: the two are mutually
+  // exclusive by class, not by specificity.
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--neutral:not(
+      .#{$prefix}--date-picker--fluid--readonly
+    ) {
+    border-block-end-color: $border-strong;
+  }
+
+  // Server markup only: the picker's `--neutral` is written before its cells
+  // register, so it can sit beside a cell that is already invalid or warn
+  // (once they register the picker drops `--neutral`, so the two never meet
+  // in the browser). That cell's own status is all the server markup has;
+  // it takes the divider off the next cell, as the picker's `--invalid` and
+  // `--warn` do after hydration. A cell before it keeps the divider until
+  // then: nothing selects backwards without `:has()`. Only the range's
+  // containers match, so the cells are not named again: the selector then
+  // weighs the same as the divider color above, which this follows.
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker--fluid--invalid
+    + .#{$prefix}--date-picker--fluid--neutral:not(
+      .#{$prefix}--date-picker--fluid--readonly
+    ),
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker--fluid--warn
+    + .#{$prefix}--date-picker--fluid--neutral:not(
+      .#{$prefix}--date-picker--fluid--readonly
+    ) {
+    border-block-end-color: transparent;
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker__input,
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker-container {
+    width: 100%;
+    min-block-size: to-rem(63px);
+    min-inline-size: to-rem(144px);
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--range
+    > .#{$prefix}--date-picker-container:first-child {
+    margin-inline-end: 0;
+  }
+
+  // The container's own `border-block-end` (above) sits 1px below the input:
+  // the container is a content-box flex column around the (border-box, no
+  // border of its own) input, so its rendered height is the input's height
+  // plus that 1px border. The calendar is positioned flush against the
+  // input (its offsetParent), which is 1px short of the container's true
+  // bottom, so a flush seam lets the calendar overlap and paint over the
+  // border on the non-focused field. This is scoped to fluid range only —
+  // every other date picker's border lives on the input itself, flush with
+  // its own box, so the base flush seam already covers it correctly.
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker__calendar.#{$prefix}--date-picker__calendar--open {
+    margin-top: to-rem(-1px);
+  }
+
+  // Same 1px gap, but for the focused (open or closed) input: the focus
+  // outline is drawn on the input's own box, which likewise stops 1px short
+  // of the container's border. A less-negative offset lets the ring extend
+  // that extra pixel so it fully covers the border instead of leaving a
+  // sliver of it visible below the outline.
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker__input:focus {
+    outline-offset: to-rem(-1px);
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--range
+    > .#{$prefix}--date-picker-container:last-child
+    .#{$prefix}--date-picker__input {
+    border-inline-start: 1px solid $border-strong;
+  }
+
+  // Single/simple: the container is the only child of the outer wrapper, so
+  // its box coincides with the wrapper's own — outlining both draws two
+  // near-identical red lines (a visible double border, worst on the bottom
+  // edge, where the invalid `.date-picker` bottom border below adds a 1px
+  // offset between the two boxes). Range needs the container-level outline
+  // to call out which one of its two inputs is invalid, since the wrapper's
+  // outline alone spans both; scope it there so single/simple draws once.
+  // Only the range's containers match: the wrapper sits outside the range.
+  //
+  // Server markup only: the picker's `--invalid` is set once its cells
+  // register, after the wrapper's markup is written, so the server's wrapper
+  // is `--neutral` beside a cell that is already `--fluid--invalid` (the two
+  // never meet in the browser). With no wrapper outline to draw, the
+  // single/simple container is outlined instead, so the picker is not left
+  // bare until hydration; hydrated, the wrapper takes over and the container
+  // does not match. Its transparent bottom border stands in for the one
+  // `.date-picker` gets below, so the field is the same height.
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--invalid,
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid,
+  .#{$prefix}--date-picker--range .#{$prefix}--date-picker--fluid--invalid {
+    @include focus-outline("invalid");
+  }
+
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker--single
+    > .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid,
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--neutral
+    .#{$prefix}--date-picker--simple
+    > .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid {
+    border-block-end: 1px solid transparent;
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--date-picker__input--invalid {
+    outline: none;
+  }
+
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker-container:last-child.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--date-picker__input--invalid,
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid
+    + .#{$prefix}--date-picker-container
+    .#{$prefix}--date-picker__input {
+    border-inline-start: none;
+  }
+
+  // Validation message sits after the input wrapper, inside the container.
+  .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--warn
+    .#{$prefix}--form-requirement {
+    @include fluid-requirement;
+    @include fluid-requirement-padding;
+  }
+
+  // Invalid/warn: drop inner bottom border; outline supplies the boundary.
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--date-picker,
+  .#{$prefix}--date-picker--fluid.#{$prefix}--date-picker--fluid--warn
+    .#{$prefix}--date-picker--range
+    .#{$prefix}--date-picker-container {
+    border-block-end: 1px solid transparent;
+  }
+
+  // Give invalid single/simple the same divider warn gets above its
+  // validation message.
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker__input--invalid,
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--single
+    .#{$prefix}--date-picker__input--invalid {
+    border-block-end: 1px solid $border-strong;
+  }
+
+  // Status icon aligned with first line of validation message; the base
+  // rule already sets pointer-events, so this can't take
+  // fluid-status-icon(). The message row flips in RTL like the other fluid
+  // fields; the base offset is physical.
+  .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--date-picker__icon--invalid,
+  .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--warn
+    .#{$prefix}--date-picker__icon--warn {
+    inset-block-start: to-rem(80px);
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  // Simple variant hides the base icon; show it again for invalid/warn.
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--date-picker__icon--invalid,
+  .#{$prefix}--date-picker--fluid
+    .#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--warn
+    .#{$prefix}--date-picker__icon--warn {
+    display: block;
+  }
+
+  // Focus ring on invalid single/range cell (after invalid rules in source order).
+  .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--invalid
+    .#{$prefix}--date-picker__input:focus {
+    @include focus-outline("outline");
+  }
+
+  // A read-only cell marks its own container (`--fluid--readonly`, set
+  // only when the cell isn't invalid or warn), so server markup draws it
+  // before the cells register with the picker. The picker's `--invalid` and
+  // `--warn`, set once they do, still override it when another cell has a
+  // status. The range-neutral rule above excludes read-only cells, so this
+  // only has to out-weigh the simple/single default border rules, which it
+  // does on specificity.
+  .#{$prefix}--date-picker--fluid:not(
+      .#{$prefix}--date-picker--fluid--invalid
+    ):not(.#{$prefix}--date-picker--fluid--warn)
+    .#{$prefix}--date-picker
+    > .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--readonly,
+  .#{$prefix}--date-picker--fluid:not(
+      .#{$prefix}--date-picker--fluid--invalid
+    ):not(.#{$prefix}--date-picker--fluid--warn)
+    .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--readonly
+    .#{$prefix}--date-picker__input {
+    border-block-end-color: $border-subtle;
+  }
+
+  .#{$prefix}--date-picker--fluid:not(
+      .#{$prefix}--date-picker--fluid--invalid
+    ):not(.#{$prefix}--date-picker--fluid--warn)
+    .#{$prefix}--date-picker--range
+    > .#{$prefix}--date-picker-container.#{$prefix}--date-picker--fluid--readonly:last-child
+    .#{$prefix}--date-picker__input {
+    border-inline-start-color: $border-subtle;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton {
+    background: $skeleton-background;
+    block-size: to-rem(64px);
+    border-block-end: 1px solid $skeleton-element;
+    inline-size: to-rem(288px);
+    max-inline-size: 100%;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton--container {
+    position: relative;
+    block-size: 100%;
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton .#{$prefix}--skeleton {
+    @include fluid-skeleton-label;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton .#{$prefix}--label {
+    margin-block: 0 to-rem(4px);
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton .#{$prefix}--text-input {
+    @include fluid-skeleton-field;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton--container
+    .#{$prefix}--date-picker__icon {
+    inset-block: auto $carbon--spacing-03;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton--range {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton--range
+    .#{$prefix}--date-picker--fluid__skeleton--container {
+    display: flex;
+    flex-direction: column;
+    inline-size: 50%;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton--range
+    .#{$prefix}--date-picker--fluid__skeleton--container:first-of-type {
+    border-inline-end: 1px solid $skeleton-element;
+  }
+
+  .#{$prefix}--date-picker--fluid__skeleton--range
+    .#{$prefix}--date-picker--fluid__skeleton--container
+    .#{$prefix}--date-picker__icon {
+    inset-block-end: $carbon--spacing-03;
+  }
+}
+
+@include exports("fluid-date-picker") {
+  @include fluid-date-picker;
+}

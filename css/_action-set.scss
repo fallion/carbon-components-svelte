@@ -1,0 +1,281 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "carbon-components/scss/globals/scss/typography";
+
+/// ActionSet renders real `Button` children over `ButtonSet`'s flex/divider
+/// base (`.bx--btn-set`), then overrides its fixed 196px button cap with
+/// per-count flex-basis percentages so 1-4 actions fill the row evenly.
+/// Ordering and ghost/expressive treatment key off `Button`'s own native
+/// `bx--btn--{kind}` classes directly, no extra marker class needed. Ported
+/// from Carbon React's `ActionSet`
+/// (`packages/styles/scss/components/action-set`), mapped from v11
+/// spacing/type tokens to this repo's v10 equivalents.
+/// @access private
+/// @group components
+@mixin action-set {
+  // As upstream: actions that don't fill the row sit at the inline end,
+  // so the primary action stays in the trailing corner.
+  .#{$prefix}--action-set {
+    justify-content: flex-end;
+  }
+
+  // Carbon v11 fills the set, so ghost actions sit on the same surface as
+  // the rest. Contextual, so a set on a layer steps up with it.
+  .#{$prefix}--action-set {
+    background-color: $layer;
+  }
+
+  // ccs: a container, so the set can stack by its own width (see the end).
+  // Wrapping lets a stacked button take a line of its own.
+  .#{$prefix}--action-set {
+    container: #{$prefix}--action-set / inline-size;
+    flex-wrap: wrap;
+  }
+
+  .#{$prefix}--action-set .#{$prefix}--btn {
+    @include type-style('body-compact-01');
+
+    align-items: center;
+    margin: 0;
+    order: 3;
+  }
+
+  .#{$prefix}--action-set .#{$prefix}--btn.#{$prefix}--btn--expressive {
+    height: $carbon--spacing-10;
+    padding-top: $carbon--spacing-05;
+    padding-bottom: $carbon--spacing-07;
+  }
+
+  .#{$prefix}--action-set.#{$prefix}--btn-set .#{$prefix}--btn {
+    max-width: none;
+  }
+
+  .#{$prefix}--action-set:not(.#{$prefix}--action-set--stacking)
+    .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set:not(.#{$prefix}--action-set--stacking)
+    .#{$prefix}--btn--danger-ghost {
+    padding-inline-start: $carbon--spacing-05;
+  }
+
+  // Order: ghost/danger-ghost first, tertiary next, danger then primary
+  // last. Reversed when stacking, so the primary action stays closest to
+  // the top (reading order) in both layouts.
+  .#{$prefix}--action-set .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set .#{$prefix}--btn--danger-ghost {
+    order: 1;
+  }
+
+  .#{$prefix}--action-set .#{$prefix}--btn--tertiary,
+  .#{$prefix}--action-set .#{$prefix}--btn--danger-tertiary {
+    order: 2;
+  }
+
+  .#{$prefix}--action-set .#{$prefix}--btn--danger {
+    order: 4;
+  }
+
+  .#{$prefix}--action-set .#{$prefix}--btn--primary,
+  .#{$prefix}--action-set--stacking .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set--stacking .#{$prefix}--btn--danger-ghost {
+    order: 5;
+  }
+
+  .#{$prefix}--action-set--stacking .#{$prefix}--btn--tertiary,
+  .#{$prefix}--action-set--stacking .#{$prefix}--btn--danger-tertiary {
+    order: 4;
+  }
+
+  .#{$prefix}--action-set--stacking .#{$prefix}--btn--danger {
+    order: 2;
+  }
+
+  .#{$prefix}--action-set--stacking .#{$prefix}--btn--primary {
+    order: 1;
+  }
+
+  // For row-single in medium,
+  // or for ghosts in row-single,
+  // buttons are 100% width
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-single.#{$prefix}--action-set--md
+    .#{$prefix}--btn,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-single
+    .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-single
+    .#{$prefix}--btn--danger-ghost {
+    flex: 0 0 100%;
+  }
+
+  // For ghosts in row-double,
+  // buttons are 75% width and expand to use any remaining space
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-double
+    .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-double
+    .#{$prefix}--btn--danger-ghost {
+    flex: 1 1 75%;
+  }
+
+  // For row-single in large (non-ghost),
+  // or row-double in medium or large,
+  // buttons are 50% width
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-single.#{$prefix}--action-set--lg
+    .#{$prefix}--btn:not(.#{$prefix}--btn--ghost):not(.#{$prefix}--btn--danger-ghost),
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-double.#{$prefix}--action-set--md
+    .#{$prefix}--btn,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-double.#{$prefix}--action-set--lg
+    .#{$prefix}--btn,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-triple
+    .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-triple
+    .#{$prefix}--btn--danger-ghost {
+    flex: 0 1 50%;
+  }
+
+  // For ghosts in row-triple,
+  // buttons are 50% width and expand to use any remaining space
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-triple
+    .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-triple
+    .#{$prefix}--btn--danger-ghost {
+    flex: 1 1 50%;
+  }
+
+  // For any non-ghosts in extra large or 2xl,
+  // or row-quadruple (non-ghost),
+  // buttons are 25% width with a max of 232px
+  .#{$prefix}--action-set.#{$prefix}--btn-set.#{$prefix}--action-set--xl
+    .#{$prefix}--btn:not(.#{$prefix}--btn--ghost):not(.#{$prefix}--btn--danger-ghost),
+  .#{$prefix}--action-set.#{$prefix}--btn-set.#{$prefix}--action-set--2xl
+    .#{$prefix}--btn:not(.#{$prefix}--btn--ghost):not(.#{$prefix}--btn--danger-ghost),
+  .#{$prefix}--action-set.#{$prefix}--btn-set.#{$prefix}--action-set--row-quadruple
+    .#{$prefix}--btn:not(.#{$prefix}--btn--ghost):not(.#{$prefix}--btn--danger-ghost) {
+    flex: 0 1 25%;
+
+    max-width: to-rem(232px);
+  }
+
+  // Same for row-triple in large (non-ghost). Its own rule, after the one
+  // above, so it wins by order rather than by an extra class, and the
+  // stacked rules at the end tie with it.
+  .#{$prefix}--action-set.#{$prefix}--action-set--row-triple.#{$prefix}--action-set--lg
+    .#{$prefix}--btn:not(.#{$prefix}--btn--ghost):not(.#{$prefix}--btn--danger-ghost) {
+    flex: 0 1 25%;
+    max-width: to-rem(232px);
+  }
+
+  .#{$prefix}--action-set.#{$prefix}--btn-set.#{$prefix}--action-set--row-quadruple
+    .#{$prefix}--btn--ghost,
+  .#{$prefix}--action-set.#{$prefix}--btn-set.#{$prefix}--action-set--row-quadruple
+    .#{$prefix}--btn--danger-ghost {
+    flex: 1 1 25%;
+  }
+
+  // Nested in ModalFooter, ActionSet is the sole flex owner. Fill the
+  // 64px footer so the set isn't shrink-wrapped to the trailing edge.
+  .#{$prefix}--modal-footer > .#{$prefix}--action-set {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-width: 0;
+  }
+
+  // Same label line as a plain ModalFooter's buttons.
+  .#{$prefix}--modal-footer > .#{$prefix}--action-set .#{$prefix}--btn {
+    height: 100%;
+    align-items: baseline;
+    padding-top: calc(#{$carbon--spacing-05} - 2px);
+    padding-bottom: $carbon--spacing-07;
+  }
+
+  // Center the loading spinner vertically within the button; it is
+  // absolutely positioned so it doesn't shift button layout/width.
+  .#{$prefix}--action-set .#{$prefix}--btn .#{$prefix}--inline-loading {
+    position: absolute;
+    top: 50%;
+    width: $carbon--spacing-07;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: 0);
+  }
+
+  // Sticks to the nearest scroll container, not the viewport, so a save
+  // bar under a long form stays visible while the form scrolls.
+  .#{$prefix}--action-set--sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background-color: $background;
+    border-top: 1px solid $border-subtle;
+  }
+}
+
+/// Stacked layout for buttons the server can't see stacked: the set stacks
+/// in JavaScript once it has counted its buttons, so until then (and
+/// without JavaScript) these rules count them with `:nth-last-child`. A
+/// `md` set of three or more buttons stacks, as does any set narrower than
+/// 10rem a button, where its labels would break a letter a line.
+/// @access private
+/// @group components
+@mixin action-set-stacked-buttons {
+  flex: 0 0 100%;
+  max-width: none;
+
+  &:not(:focus) {
+    box-shadow: 0 to-rem(-1px) 0 0 $button-separator;
+  }
+
+  &:first-child:not(:focus) {
+    box-shadow: inherit;
+  }
+
+  &.#{$prefix}--btn--primary {
+    order: 1;
+  }
+
+  &.#{$prefix}--btn--danger {
+    order: 2;
+  }
+
+  &.#{$prefix}--btn--tertiary,
+  &.#{$prefix}--btn--danger-tertiary {
+    order: 4;
+  }
+
+  &.#{$prefix}--btn--ghost,
+  &.#{$prefix}--btn--danger-ghost {
+    order: 5;
+  }
+}
+
+/// Stacks the buttons of a set too narrow for them, by count and width.
+/// @access private
+/// @group components
+@mixin action-set-fit {
+  // As specific as the per-count and per-size widths above, which apply
+  // once the set has counted its buttons, and later, so it wins.
+  $set: ".#{$prefix}--action-set.#{$prefix}--btn-set:not(.#{$prefix}--action-set--disable-stacking)";
+
+  #{$set}.#{$prefix}--action-set--md
+    > .#{$prefix}--btn:first-child:nth-last-child(n + 3),
+  #{$set}.#{$prefix}--action-set--md
+    > .#{$prefix}--btn:first-child:nth-last-child(n + 3)
+    ~ .#{$prefix}--btn {
+    @include action-set-stacked-buttons;
+  }
+
+  @each $count, $width in (2: to-rem(320px), 3: to-rem(480px), 4: to-rem(640px)) {
+    @container #{$prefix}--action-set (width < #{$width}) {
+      #{$set} > .#{$prefix}--btn:first-child:nth-last-child(n + #{$count}),
+      #{$set}
+        > .#{$prefix}--btn:first-child:nth-last-child(n + #{$count})
+        ~ .#{$prefix}--btn {
+        @include action-set-stacked-buttons;
+      }
+    }
+  }
+}
+
+@include exports("action-set") {
+  @include action-set;
+  @include action-set-fit;
+}

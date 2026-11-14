@@ -1,0 +1,94 @@
+import { render, screen, waitFor } from "@testing-library/svelte";
+import Prose from "./Prose.test.svelte";
+import ProseDeferHeights from "./ProseDeferHeights.test.svelte";
+
+describe("Prose", () => {
+  it("renders a div with the base class and the slotted markup", () => {
+    render(Prose);
+
+    const prose = screen.getByTestId("prose");
+    expect(prose.tagName).toBe("DIV");
+    expect(prose).toHaveClass("bx--prose", "custom");
+    expect(prose).not.toHaveClass("bx--prose--compact");
+    expect(prose).not.toHaveClass("bx--prose--expressive");
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Overview" }),
+    ).toBeInTheDocument();
+    expect(prose.style.maxWidth).toBe("");
+  });
+
+  it.each([
+    ["condensed", "bx--prose--condensed"],
+    ["compact", "bx--prose--compact"],
+    ["spacious", "bx--prose--spacious"],
+    ["expressive", "bx--prose--expressive"],
+  ] as const)("adds the %s modifier", (variant, modifier) => {
+    render(Prose, { props: { variant } });
+
+    expect(screen.getByTestId("prose")).toHaveClass("bx--prose", modifier);
+  });
+
+  it("adds the muted kbd modifier", () => {
+    render(Prose, { props: { kbd: "muted" } });
+
+    expect(screen.getByTestId("prose")).toHaveClass("bx--prose--kbd-muted");
+  });
+
+  it("adds the full table width modifier", () => {
+    render(Prose, { props: { tableWidth: "full" } });
+
+    expect(screen.getByTestId("prose")).toHaveClass("bx--prose--table-full");
+  });
+
+  it("adds the dividers modifier", () => {
+    render(Prose, { props: { dividers: true } });
+
+    expect(screen.getByTestId("prose")).toHaveClass("bx--prose--dividers");
+  });
+
+  it("adds the muted link tone modifier", () => {
+    render(Prose, { props: { linkTone: "muted" } });
+
+    expect(screen.getByTestId("prose")).toHaveClass("bx--prose--link-muted");
+  });
+
+  it("adds the defer-offscreen modifier with deferOffscreen", () => {
+    render(Prose, { props: { deferOffscreen: true } });
+
+    expect(screen.getByTestId("prose")).toHaveClass(
+      "bx--prose--defer-offscreen",
+    );
+  });
+
+  it.each([
+    [480, "480px"],
+    ["40rem", "40rem"],
+    ["none", "none"],
+  ])("sets maxWidth %s as %s", (maxWidth, expected) => {
+    render(Prose, { props: { maxWidth } });
+
+    expect(screen.getByTestId("prose").style.maxWidth).toBe(expected);
+  });
+
+  it("renders a custom tag", () => {
+    render(Prose, { props: { tag: "article" } });
+
+    expect(screen.getByTestId("prose").tagName).toBe("ARTICLE");
+  });
+
+  it("reserves each deferred code block the height of its lines", async () => {
+    const { rerender } = render(ProseDeferHeights, { props: { lines: 3 } });
+    const pre = screen.getByTestId("pre");
+    // 3 lines of 20 px at a 16 px font size.
+    expect(pre.style.getPropertyValue("--ccs-prose-defer-height")).toBe(
+      "3.75em",
+    );
+
+    await rerender({ lines: 8 });
+    await waitFor(() =>
+      expect(pre.style.getPropertyValue("--ccs-prose-defer-height")).toBe(
+        "10em",
+      ),
+    );
+  });
+});

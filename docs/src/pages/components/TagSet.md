@@ -1,0 +1,265 @@
+---
+components: ["TagSet"]
+description: Displays a row of tags that collapses to fit the available width, moving hidden tags into an overflow indicator with a tooltip.
+---
+
+<script>
+  import { Box, SelectableTag, Stack, Tag, TagSet } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Compose `TagSet` from ordinary `Tag` children. `TagSet` measures the available width and shows as many as fit.
+
+<TagSet>
+  <Tag type="red">Production</Tag>
+  <Tag type="blue">Staging</Tag>
+  <Tag type="purple">Development</Tag>
+</TagSet>
+
+## Alignment
+
+Set `align` to change how the visible tags are positioned within the row when they don't fill the available width.
+
+### Center
+
+<TagSet align="center">
+  <Tag type="red">Production</Tag>
+  <Tag type="blue">Staging</Tag>
+  <Tag type="purple">Development</Tag>
+</TagSet>
+
+### End
+
+<TagSet align="end">
+  <Tag type="red">Production</Tag>
+  <Tag type="blue">Staging</Tag>
+  <Tag type="purple">Development</Tag>
+</TagSet>
+
+## Overflow
+
+Once the row runs out of space, the remaining tags collapse into a "+N" indicator. Hovering it shows the hidden labels in a tooltip.
+
+There is no fixed number of tags that triggers this. `TagSet` measures the actual pixel width available and fits as many tags as space allows, so the count that overflows depends on the container's width and each tag's label length, not a set threshold.
+
+<FileSource src="/framed/TagSet/TagSetOverflow" />
+
+### Max visible
+
+Set `maxVisible` to cap the number of visible tags regardless of how much space is available.
+
+<FileSource src="/framed/TagSet/TagSetMaxVisible" />
+
+### Multiline
+
+Set `multiline` to wrap every tag onto multiple lines instead of collapsing into an overflow indicator.
+
+<FileSource src="/framed/TagSet/TagSetMultiline" />
+
+### Measurement offset
+
+Set `measurementOffset` to subtract a fixed amount from the measured available width before fitting tags — useful when other content shares the same row and should be reserved space.
+
+<Stack gap={5}>
+  <div>
+    <div>measurementOffset={0} (default)</div>
+    <Box maxWidth="14rem">
+      <TagSet>
+        <Tag type="red">Production</Tag>
+        <Tag type="blue">Staging</Tag>
+        <Tag type="purple">Development</Tag>
+        <Tag type="green">QA</Tag>
+        <Tag type="magenta">Sandbox</Tag>
+      </TagSet>
+    </Box>
+  </div>
+  <div>
+    <div>measurementOffset={80}</div>
+    <Box maxWidth="14rem">
+      <TagSet measurementOffset={80}>
+        <Tag type="red">Production</Tag>
+        <Tag type="blue">Staging</Tag>
+        <Tag type="purple">Development</Tag>
+        <Tag type="green">QA</Tag>
+        <Tag type="magenta">Sandbox</Tag>
+      </TagSet>
+    </Box>
+  </div>
+</Stack>
+
+### Custom measurement target
+
+Set `containingElement` to measure a different element instead of `TagSet`'s own wrapper — useful when the width `TagSet` should fit within isn't its own box, for example when matching the width of another element on the page.
+
+<FileSource src="/framed/TagSet/TagSetContainingElement" />
+
+### Indicator label
+
+Screen readers announce the "+N" indicator as "+3 more tags" by default. Set `overflowLabel` to a function of the hidden count to localize it or name what the tags are. Start the label with the visible "+N" so speech-input users can say what they see.
+
+<Box maxWidth="12rem">
+  <TagSet overflowLabel={(count) => `+${count} more environments`}>
+    <Tag type="red">Production</Tag>
+    <Tag type="blue">Staging</Tag>
+    <Tag type="purple">Development</Tag>
+    <Tag type="green">QA</Tag>
+    <Tag type="magenta">Sandbox</Tag>
+  </TagSet>
+</Box>
+
+## Overflow tooltip
+
+Control the content and positioning of the tooltip shown by the "+N" indicator.
+
+### Alignment
+
+Set `overflowAlign` to align the tooltip relative to the "+N" indicator.
+
+<Stack gap={5}>
+  <div>
+    <div>overflowAlign="start"</div>
+    <Box maxWidth="12rem">
+      <TagSet overflowAlign="start">
+        <Tag type="red">Production</Tag>
+        <Tag type="blue">Staging</Tag>
+        <Tag type="purple">Development</Tag>
+        <Tag type="green">QA</Tag>
+        <Tag type="magenta">Sandbox</Tag>
+      </TagSet>
+    </Box>
+  </div>
+  <div>
+    <div>overflowAlign="end"</div>
+    <Box maxWidth="12rem">
+      <TagSet overflowAlign="end">
+        <Tag type="red">Production</Tag>
+        <Tag type="blue">Staging</Tag>
+        <Tag type="purple">Development</Tag>
+        <Tag type="green">QA</Tag>
+        <Tag type="magenta">Sandbox</Tag>
+      </TagSet>
+    </Box>
+  </div>
+</Stack>
+
+### Direction
+
+Set `overflowDirection` to `"top"` to show the tooltip above the indicator instead of below.
+
+<Box maxWidth="12rem">
+  <TagSet overflowDirection="top">
+    <Tag type="red">Production</Tag>
+    <Tag type="blue">Staging</Tag>
+    <Tag type="purple">Development</Tag>
+    <Tag type="green">QA</Tag>
+    <Tag type="magenta">Sandbox</Tag>
+  </TagSet>
+</Box>
+
+### Custom content
+
+Override the `overflowTooltip` slot to replace the default plain-text tooltip with custom content.
+
+<FileSource src="/framed/TagSet/TagSetCustomOverflowTooltip" />
+
+## Overflow popover
+
+Set `overflowMode="popover"` to turn the "+N" indicator into a button that opens the hidden tags themselves, in their own colors. Unlike the hover tooltip, it works on touch screens, and dismissible tags can still be closed from inside it. Closing one moves focus to the next tag in the popover. The `overflowTooltip` slot replaces the popover content.
+
+<FileSource src="/framed/TagSet/TagSetOverflowPopover" />
+
+### Overflow type
+
+Set `overflowType` to choose how the hidden tags are listed: `"default"` lists their labels as text, and `"tag"` lists them as tags in their own colors. The popover defaults to `"tag"`, which keeps dismissible tags closable; the tooltip defaults to `"default"`.
+
+<FileSource src="/framed/TagSet/TagSetOverflowType" />
+
+## View all
+
+With more hidden tags than `viewAllThreshold` (10 by default), the popover lists the first ten and a "View all" button. It opens a modal of every tag with a search field, so long sets stay reachable from the keyboard and on touch screens. In tooltip mode, selecting "+N" opens the modal; call `preventDefault()` on `click:overflow` to handle the click yourself. Set `viewAllText`, `allTagsTitle`, `allTagsSearchLabel` and `allTagsResultsLabel` to translate it.
+
+<FileSource src="/framed/TagSet/TagSetViewAll" />
+
+## Dismissible
+
+Set `filter` on a `Tag` to render it as closable. `TagSet` dispatches `close:tag` with `{ tag, index }` instead of taking a per-tag handler: remove the tag from your own state in response. Set `value` on each `Tag` to read it back as `tag.value`, so you can remove by id rather than by position or label.
+
+<FileSource src="/framed/TagSet/TagSetDismissible" />
+
+### Single tab stop
+
+By default, every dismissible or interactive tag is its own tab stop. Set `navigation="roving"` to make the whole set one tab stop instead: Tab enters the set, the arrow keys, Home, and End move between tags and the "+N" indicator, and Delete or Backspace closes the focused tag. Read-only tags are skipped. Use it when a set holds more than a handful of dismissible tags.
+
+<FileSource src="/framed/TagSet/TagSetRoving" />
+
+## Selectable
+
+`SelectableTag` children take the set's `size` and collapse into the "+N" indicator like `Tag` children do.
+
+<Box maxWidth="16rem">
+  <TagSet size="sm">
+    <SelectableTag selected>Machine learning</SelectableTag>
+    <SelectableTag>Analytics</SelectableTag>
+    <SelectableTag>Security</SelectableTag>
+    <SelectableTag>Automation</SelectableTag>
+  </TagSet>
+</Box>
+
+## Events
+
+Respond to interactions with the "+N" overflow indicator.
+
+### Overflow click
+
+Use `on:click:overflow` to listen for clicks on the "+N" indicator. The event detail includes the current overflow count.
+
+<Box maxWidth="12rem">
+  <TagSet on:click:overflow={(e) => console.log(e.detail.count)}>
+    <Tag type="red">Production</Tag>
+    <Tag type="blue">Staging</Tag>
+    <Tag type="purple">Development</Tag>
+    <Tag type="green">QA</Tag>
+    <Tag type="magenta">Sandbox</Tag>
+  </TagSet>
+</Box>
+
+### Overflow count change
+
+Use `on:overflow:change` to listen for changes to the overflow count, whether from a resize, a slotted-children change, or a `maxVisible` change. The event detail includes the new count.
+
+<Box maxWidth="12rem">
+  <TagSet on:overflow:change={(e) => console.log(e.detail.count)}>
+    <Tag type="red">Production</Tag>
+    <Tag type="blue">Staging</Tag>
+    <Tag type="purple">Development</Tag>
+    <Tag type="green">QA</Tag>
+    <Tag type="magenta">Sandbox</Tag>
+  </TagSet>
+</Box>
+
+## Sizes
+
+Set `size` on `TagSet` to apply it to every slotted tag (including the "+N" overflow indicator) that doesn't set its own `size`.
+
+### Small
+
+<TagSet size="sm">
+  <Tag type="red">Production</Tag>
+  <Tag type="blue">Staging</Tag>
+  <Tag type="purple">Development</Tag>
+</TagSet>
+
+### Large
+
+<TagSet size="lg">
+  <Tag type="red">Production</Tag>
+  <Tag type="blue">Staging</Tag>
+  <Tag type="purple">Development</Tag>
+</TagSet>
+
+## Gap
+
+Set `gap` to control the spacing between tags. Accepts a Carbon layout scale (`0`–`13`) or a CSS length string.
+
+<FileSource src="/framed/TagSet/TagSetGap" />

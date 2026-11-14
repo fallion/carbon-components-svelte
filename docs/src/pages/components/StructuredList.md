@@ -1,0 +1,284 @@
+---
+components: ["StructuredList", "StructuredListSkeleton", "StructuredListBody", "StructuredListHead", "StructuredListCell", "StructuredListRow", "StructuredListInput"]
+description: Structured lists display tabular data with support for row selection and various layout options.
+---
+
+<script>
+  import { StructuredList, StructuredListSkeleton, StructuredListBody, StructuredListHead, StructuredListCell, StructuredListRow, StructuredListInput } from "carbon-components-svelte";
+  import CheckmarkOutline from "carbon-icons-svelte/lib/CheckmarkOutline.svelte";
+</script>
+
+## Basic
+
+Display a basic structured list with headers and rows by default.
+
+<StructuredList>
+  <StructuredListHead>
+    <StructuredListRow head>
+      <StructuredListCell head>Name</StructuredListCell>
+      <StructuredListCell head>Type</StructuredListCell>
+      <StructuredListCell head>Latest version</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListHead>
+  <StructuredListBody>
+    <StructuredListRow>
+      <StructuredListCell>PostgreSQL</StructuredListCell>
+      <StructuredListCell>Relational</StructuredListCell>
+      <StructuredListCell>16.2</StructuredListCell>
+    </StructuredListRow>
+    <StructuredListRow>
+      <StructuredListCell>MongoDB</StructuredListCell>
+      <StructuredListCell>Document</StructuredListCell>
+      <StructuredListCell>7.0</StructuredListCell>
+    </StructuredListRow>
+    <StructuredListRow>
+      <StructuredListCell>Redis</StructuredListCell>
+      <StructuredListCell>Key-value</StructuredListCell>
+      <StructuredListCell>7.2</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListBody>
+</StructuredList>
+
+## Layout
+
+Adjust row spacing with layout variants.
+
+### Condensed
+
+Use the condensed variant for more compact rows.
+
+<StructuredList condensed>
+  <StructuredListHead>
+    <StructuredListRow head>
+      <StructuredListCell head>Name</StructuredListCell>
+      <StructuredListCell head>Type</StructuredListCell>
+      <StructuredListCell head>Latest version</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListHead>
+  <StructuredListBody>
+    <StructuredListRow>
+      <StructuredListCell>PostgreSQL</StructuredListCell>
+      <StructuredListCell>Relational</StructuredListCell>
+      <StructuredListCell>16.2</StructuredListCell>
+    </StructuredListRow>
+    <StructuredListRow>
+      <StructuredListCell>MongoDB</StructuredListCell>
+      <StructuredListCell>Document</StructuredListCell>
+      <StructuredListCell>7.0</StructuredListCell>
+    </StructuredListRow>
+    <StructuredListRow>
+      <StructuredListCell>Redis</StructuredListCell>
+      <StructuredListCell>Key-value</StructuredListCell>
+      <StructuredListCell>7.2</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListBody>
+</StructuredList>
+
+### Flush
+
+Use the flush variant to remove padding from the list.
+
+<StructuredList flush>
+  <StructuredListHead>
+    <StructuredListRow head>
+      <StructuredListCell head>Name</StructuredListCell>
+      <StructuredListCell head>Type</StructuredListCell>
+      <StructuredListCell head>Description</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListHead>
+  <StructuredListBody>
+    <StructuredListRow>
+      <StructuredListCell noWrap>PostgreSQL</StructuredListCell>
+      <StructuredListCell>Relational</StructuredListCell>
+      <StructuredListCell>
+        Open-source object-relational database known for reliability,
+        extensibility, and strong SQL standards compliance.
+      </StructuredListCell>
+    </StructuredListRow>
+    <StructuredListRow>
+      <StructuredListCell noWrap>MongoDB</StructuredListCell>
+      <StructuredListCell>Document</StructuredListCell>
+      <StructuredListCell>
+        Document-oriented NoSQL database designed for flexible schemas and
+        horizontal scaling across distributed clusters.
+      </StructuredListCell>
+    </StructuredListRow>
+    <StructuredListRow>
+      <StructuredListCell noWrap>Redis</StructuredListCell>
+      <StructuredListCell>Key-value</StructuredListCell>
+      <StructuredListCell>
+        In-memory key-value store used as a cache, message broker, and
+        real-time data platform with sub-millisecond latency.
+      </StructuredListCell>
+    </StructuredListRow>
+  </StructuredListBody>
+</StructuredList>
+
+## Selection
+
+Let users select one or more rows.
+
+### Single
+
+Enable row selection with `selection` and structured list input components. The selection icon column is rendered automatically for each selectable row.
+
+Pass the same `value` to `StructuredListRow` as its nested `StructuredListInput` so the row can tell it's the current selection. The selected row gets a selected fill and no hover highlight.
+
+<StructuredList selection selected="postgresql-value">
+  <StructuredListHead>
+    <StructuredListRow head>
+      <StructuredListCell head>Name</StructuredListCell>
+      <StructuredListCell head>Type</StructuredListCell>
+      <StructuredListCell head>Description</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListHead>
+  <StructuredListBody>
+    {#each [
+      { id: "postgresql", name: "PostgreSQL", type: "Relational", description: "Open-source object-relational database known for reliability, extensibility, and strong SQL standards compliance." },
+      { id: "mongodb", name: "MongoDB", type: "Document", description: "Document-oriented NoSQL database designed for flexible schemas and horizontal scaling across distributed clusters." },
+      { id: "redis", name: "Redis", type: "Key-value", description: "In-memory key-value store used as a cache, message broker, and real-time data platform with sub-millisecond latency." },
+    ] as db}
+      <StructuredListRow label for={db.id} value="{db.id}-value">
+        <StructuredListCell>{db.name}</StructuredListCell>
+        <StructuredListCell>{db.type}</StructuredListCell>
+        <StructuredListCell>{db.description}</StructuredListCell>
+        <StructuredListInput
+          id={db.id}
+          value="{db.id}-value"
+          title="{db.name} option"
+          name="database"
+        />
+      </StructuredListRow>
+    {/each}
+  </StructuredListBody>
+</StructuredList>
+
+### Custom selection icon
+
+Customize the selection icon with the `icon` prop on `StructuredList`.
+
+<StructuredList selection selected="postgresql-value" icon={CheckmarkOutline}>
+  <StructuredListHead>
+    <StructuredListRow head>
+      <StructuredListCell head>Name</StructuredListCell>
+      <StructuredListCell head>Type</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListHead>
+  <StructuredListBody>
+    {#each [
+      { id: "postgresql", name: "PostgreSQL", type: "Relational" },
+      { id: "mongodb", name: "MongoDB", type: "Document" },
+      { id: "redis", name: "Redis", type: "Key-value" },
+    ] as db}
+      <StructuredListRow label for="icon-{db.id}" value="{db.id}-value">
+        <StructuredListCell>{db.name}</StructuredListCell>
+        <StructuredListCell>{db.type}</StructuredListCell>
+        <StructuredListInput
+          id="icon-{db.id}"
+          value="{db.id}-value"
+          title="{db.name} option"
+          name="database-icon"
+        />
+      </StructuredListRow>
+    {/each}
+  </StructuredListBody>
+</StructuredList>
+
+### Multiple
+
+Allow selecting more than one row with `multiple`. Selected becomes an array of values.
+
+<FileSource src="/framed/StructuredList/StructuredListMultiSelect" />
+
+## Sorting
+
+Let users sort rows by a column.
+
+### Basic
+
+Set `sortable` on a header `StructuredListCell` and listen for `sort` to update the active column and direction. Set `active` and `sortDirection` to reflect the current state; the header renders `aria-sort` from these props.
+
+<FileSource src="/framed/StructuredList/StructuredListSortable" />
+
+### Initial sort
+
+Set `active` and `sortDirection` to their sorted values up front to start the table pre-sorted, without waiting for a click.
+
+<FileSource src="/framed/StructuredList/StructuredListSortableInitial" />
+
+### Always sorted
+
+Set `sortAlways` to skip the unsorted state and toggle only between ascending and descending.
+
+<FileSource src="/framed/StructuredList/StructuredListSortableAlways" />
+
+### One sortable column
+
+Omit `sortable` on any header cell to exclude that column from sorting.
+
+<FileSource src="/framed/StructuredList/StructuredListSortableSingleColumn" />
+
+### Condensed
+
+Combine `sortable` with `condensed` for compact sortable headers.
+
+<FileSource src="/framed/StructuredList/StructuredListSortableCondensed" />
+
+### With selection
+
+Combine `sortable` header cells with `selection` to let users sort and select rows in the same list.
+
+<FileSource src="/framed/StructuredList/StructuredListSortableSelection" />
+
+## Events
+
+Respond to row selection changes.
+
+### Selection change
+
+`StructuredList` dispatches a `change` event whenever the selected row changes. The event detail is the selected value—or an array of values when `multiple` is `true`.
+
+<StructuredList
+  selection
+  selected="postgresql-value"
+  on:change={(e) => console.log(e.detail)}
+>
+  <StructuredListHead>
+    <StructuredListRow head>
+      <StructuredListCell head>Name</StructuredListCell>
+      <StructuredListCell head>Type</StructuredListCell>
+    </StructuredListRow>
+  </StructuredListHead>
+  <StructuredListBody>
+    {#each [
+      { id: "postgresql", name: "PostgreSQL", type: "Relational" },
+      { id: "mongodb", name: "MongoDB", type: "Document" },
+      { id: "redis", name: "Redis", type: "Key-value" },
+    ] as db}
+      <StructuredListRow label for="event-{db.id}" value="{db.id}-value">
+        <StructuredListCell>{db.name}</StructuredListCell>
+        <StructuredListCell>{db.type}</StructuredListCell>
+        <StructuredListInput
+          id="event-{db.id}"
+          value="{db.id}-value"
+          title="{db.name} option"
+          name="database-event"
+        />
+      </StructuredListRow>
+    {/each}
+  </StructuredListBody>
+</StructuredList>
+
+## Skeleton
+
+Show a loading state with the skeleton variant.
+
+By default, the skeleton renders 3 columns and 5 rows.
+
+<StructuredListSkeleton />
+
+### Custom columns and rows
+
+Customize skeleton dimensions with `columns` and `rows`.
+
+<StructuredListSkeleton columns={5} rows={3} />

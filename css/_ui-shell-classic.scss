@@ -1,0 +1,30 @@
+// Classic UI Shell: g100 header + white side nav. Requires all.css (CSS custom properties).
+
+@import "carbon-components/scss/globals/scss/vars";
+
+// Requires all.css (CSS custom properties), so this only emits when the
+// entry file sets `$ccs-theme-switching`.
+@if $ccs-theme-switching {
+
+// The header and side nav take the Gray 100 and White token sets from the
+// theme blocks in all.scss, which list them beside the theme zones. The
+// Gray 100 block also sets `color-scheme: dark`, so the header panel and
+// ProfileMenu inside the header get dark scrollbars and controls.
+
+// Header tooltips open below the header, over the page, so they take the
+// page's inverse colors rather than the Gray 100 header's: on a light page,
+// a light tooltip (and its caret) would vanish into the content. Capture the
+// page's values on the root element, before the header re-declares the
+// tokens. (`html` rather than `:root`, which names the theme blocks.)
+html {
+  --ccs-page-text-inverse: var(--cds-text-inverse);
+  --ccs-page-background-inverse: var(--cds-background-inverse);
+}
+
+.#{$prefix}--header.#{$prefix}--header--ui-shell-classic
+  .#{$prefix}--tooltip__trigger.#{$prefix}--tooltip--a11y {
+  --cds-text-inverse: var(--ccs-page-text-inverse);
+  --cds-background-inverse: var(--ccs-page-background-inverse);
+}
+
+}

@@ -1,0 +1,235 @@
+export interface ComponentCategory {
+  label: string;
+  components: string[];
+}
+
+export const COMPONENT_CATEGORIES: ComponentCategory[] = [
+  {
+    label: "Navigation",
+    components: [
+      "UIShell",
+      "Breadcrumb",
+      "Link",
+      "PageHeader",
+      "TableOfContents",
+    ],
+  },
+  {
+    label: "Data & lists",
+    components: [
+      "DataTable",
+      "TreeView",
+      "StructuredList",
+      "ContainedList",
+      "OrderedList",
+      "RecursiveList",
+      "UnorderedList",
+      "DescriptionList",
+      "VirtualList",
+    ],
+  },
+  {
+    label: "Layout",
+    components: [
+      "Grid",
+      "CssGrid",
+      "Stack",
+      "Box",
+      "Layer",
+      "ThemeZone",
+      "AspectRatio",
+      "ScrollGradient",
+      "Accordion",
+      "Disclosure",
+      "Bleed",
+      "Divider",
+      "Carousel",
+      "Splitter",
+      "LayoutDirection",
+    ],
+  },
+  {
+    label: "Actions",
+    components: [
+      "ActionSet",
+      "Button",
+      "ButtonSet",
+      "ToggleButtonGroup",
+      "Toolbar",
+      "CopyButton",
+      "CopyText",
+      "OverflowMenu",
+      "ContextMenu",
+      "MenuButton",
+      "ComboButton",
+    ],
+  },
+  {
+    label: "View controls",
+    components: ["Tabs", "ContentSwitcher", "Pagination", "PaginationNav"],
+  },
+  {
+    label: "Dropdowns",
+    components: ["Dropdown", "ComboBox", "MultiSelect", "Select"],
+  },
+  {
+    label: "Search",
+    components: ["Search", "SearchMenu"],
+  },
+  {
+    label: "Content",
+    components: [
+      "Heading",
+      "Text",
+      "Prose",
+      "Kbd",
+      "Tag",
+      "TagSet",
+      "AILabel",
+      "CodeSnippet",
+      "RelativeTime",
+      "ChatLog",
+      "ChatButton",
+      "Countdown",
+    ],
+  },
+  {
+    label: "Forms",
+    components: [
+      "CopyInput",
+      "DatePicker",
+      "FileUploader",
+      "InlineEdit",
+      "NumberInput",
+      "PasswordInput",
+      "PinCodeInput",
+      "Slider",
+      "TagInput",
+      "TextArea",
+      "TextInput",
+      "InputGroup",
+      "TimePicker",
+      "Checkbox",
+      "RadioButton",
+      "StarRating",
+      "Toggle",
+      "Form",
+      "FluidForm",
+      "Stepper",
+    ],
+  },
+  {
+    label: "Overlays",
+    components: [
+      "Dialog",
+      "Modal",
+      "ConfirmModal",
+      "ComposedModal",
+      "InterstitialScreen",
+      "SidePanel",
+      "Popover",
+      "Toggletip",
+      "Tooltip",
+      "TooltipDefinition",
+      "TooltipGroup",
+      "TooltipIcon",
+    ],
+  },
+  {
+    label: "Notifications",
+    components: [
+      "Callout",
+      "InlineNotification",
+      "ToastNotification",
+      "NotificationQueue",
+      "BadgeIndicator",
+    ],
+  },
+  {
+    label: "Status",
+    components: [
+      "IconIndicator",
+      "ShapeIndicator",
+      "EmptyState",
+      "FullPageError",
+    ],
+  },
+  {
+    label: "Data visualization",
+    components: ["BigNumber", "Meter"],
+  },
+  {
+    label: "Loading",
+    components: [
+      "Loading",
+      "InlineLoading",
+      "ProgressBar",
+      "ProgressIndicator",
+      "SkeletonText",
+      "SkeletonIcon",
+      "SkeletonPlaceholder",
+    ],
+  },
+  {
+    label: "Tiles",
+    components: [
+      "Card",
+      "Tile",
+      "ClickableTile",
+      "ExpandableTile",
+      "SelectableTile",
+      "RadioTile",
+    ],
+  },
+  {
+    label: "Utilities",
+    components: [
+      "Theme",
+      "Breakpoint",
+      "Portal",
+      "FloatingPortal",
+      "LocalStorage",
+      "SessionStorage",
+      "ImageLoader",
+      "LazyMount",
+      "Truncate",
+    ],
+  },
+  {
+    label: "Misc",
+    components: ["UserAvatar", "UserAvatarGroup", "Menu"],
+  },
+];
+
+export const CATEGORY_BY_COMPONENT: Record<string, string> =
+  COMPONENT_CATEGORIES.reduce<Record<string, string>>((acc, category) => {
+    for (const name of category.components) acc[name] = category.label;
+    return acc;
+  }, {});
+
+export function assertCategoriesCover(componentNames: string[]): void {
+  const known = new Set(componentNames);
+  const categorized = new Set<string>();
+  const duplicates: string[] = [];
+
+  for (const category of COMPONENT_CATEGORIES) {
+    for (const name of category.components) {
+      if (categorized.has(name)) duplicates.push(name);
+      categorized.add(name);
+    }
+  }
+
+  const uncategorized = componentNames.filter((name) => !categorized.has(name));
+  const unknown = [...categorized].filter((name) => !known.has(name));
+
+  if (uncategorized.length || unknown.length || duplicates.length) {
+    const lines = ["[component-categories] sidebar grouping is out of sync:"];
+    if (uncategorized.length)
+      lines.push(`  • uncategorized pages: ${uncategorized.join(", ")}`);
+    if (unknown.length)
+      lines.push(`  • categorized but no page exists: ${unknown.join(", ")}`);
+    if (duplicates.length)
+      lines.push(`  • in multiple categories: ${duplicates.join(", ")}`);
+    console.warn(lines.join("\n"));
+  }
+}

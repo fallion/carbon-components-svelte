@@ -1,0 +1,443 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../button/button';
+@import '../form/form';
+@import '../loading/loading';
+@import '../../globals/scss/vendor/@carbon/elements/scss/type/styles';
+
+/// File uploader styles
+/// @access private
+/// @group file-uploader
+@mixin file-uploader {
+  .#{$prefix}--file {
+    width: 100%;
+  }
+
+  .#{$prefix}--file--label {
+    @include reset;
+    @include type-style('heading-compact-01');
+
+    margin-bottom: $carbon--spacing-03;
+    color: $text-primary;
+  }
+
+  // ccs: `display: block` puts the hidden input's static position at the
+  // start of the next line. As an inline box it sat after the inline-block
+  // browse button, so at 320px it hung 1px past the page edge.
+  .#{$prefix}--file-input {
+    @include hidden;
+
+    display: block;
+  }
+
+  .#{$prefix}--file-browse-btn {
+    display: inline-block;
+    width: 100%;
+    max-width: to-rem(320px);
+    @if not feature-flag-enabled('enable-v11-release') {
+      margin-bottom: $carbon--spacing-03;
+    }
+
+    color: $link-primary;
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+    // ccs: only the color fades; `all` also faded the focus outline in
+    transition: color $duration--fast-02 motion(standard, productive);
+
+    &:focus {
+      outline: 2px solid $button-tertiary;
+    }
+
+    &:focus,
+    &:active,
+    &:active:visited {
+      text-decoration: underline;
+    }
+
+    &:active {
+      color: $text-primary;
+    }
+
+  }
+
+  .#{$prefix}--file-browse-btn--disabled {
+    color: $text-disabled;
+    cursor: no-drop;
+    text-decoration: none;
+
+    &:focus {
+      color: $text-disabled;
+      outline: none;
+      text-decoration: none;
+    }
+  }
+
+  // ccs: grouped any-hover rules for the browse button and its disabled
+  // variant into one block (order-safe: the plain rule stays ahead of the
+  // disabled rule below, preserving the tie an element with both classes
+  // already resolved in the disabled variant's favor)
+  @media (any-hover: hover) {
+    .#{$prefix}--file-browse-btn:hover {
+      outline: 2px solid $button-tertiary;
+      text-decoration: underline;
+    }
+
+    .#{$prefix}--file-browse-btn--disabled:hover {
+      color: $text-disabled;
+      outline: none;
+      text-decoration: none;
+    }
+  }
+
+  .#{$prefix}--file-browse-btn--disabled .#{$prefix}--file__drop-container {
+    border: 1px dashed $icon-disabled;
+  }
+
+  .#{$prefix}--label-description {
+    @include reset;
+    @include type-style('body-compact-01');
+
+    margin-bottom: $carbon--spacing-05;
+    color: $text-secondary;
+  }
+
+  // ccs: FileUploaderSkeleton's title and description bars, each 14px
+  // and centered in its line (18px), with the same gaps below as the
+  // uploader's title and description.
+  .#{$prefix}--file--label.#{$prefix}--skeleton,
+  .#{$prefix}--label-description.#{$prefix}--skeleton {
+    @include skeleton;
+
+    height: to-rem(14px);
+    margin-top: to-rem(2px);
+  }
+
+  .#{$prefix}--file--label.#{$prefix}--skeleton {
+    width: to-rem(100px);
+    margin-bottom: calc(#{$carbon--spacing-03} + #{to-rem(2px)});
+  }
+
+  .#{$prefix}--label-description.#{$prefix}--skeleton {
+    width: to-rem(225px);
+    margin-bottom: calc(#{$carbon--spacing-05} + #{to-rem(2px)});
+  }
+
+  .#{$prefix}--label-description--disabled {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--btn ~ .#{$prefix}--file-container {
+    margin-top: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--file .#{$prefix}--file-container,
+  .#{$prefix}--file ~ .#{$prefix}--file-container {
+    margin-top: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--file__selected-file {
+    display: grid;
+    max-width: to-rem(320px);
+    min-height: $carbon--spacing-09;
+    align-items: center;
+    margin-bottom: $carbon--spacing-03;
+    background-color: $field;
+    gap: to-rem(12px) $carbon--spacing-05;
+    grid-auto-rows: auto;
+    grid-template-columns: 1fr auto;
+    word-break: break-word;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .#{$prefix}--form-requirement {
+      display: block;
+      max-height: none;
+      margin: 0;
+      grid-column: 1 / -1;
+    }
+
+    .#{$prefix}--inline-loading__animation .#{$prefix}--loading {
+      // Vanilla markup has `.bx--inline-loading__animation` which is used for `margin-right` adjustment
+      margin-right: 0;
+    }
+
+    .#{$prefix}--file-filename {
+      @include type-style('body-compact-01');
+
+      overflow: hidden;
+      // ccs: `margin-left` moved to `.bx--file-filename-group` (file size patch)
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  // ccs: `noMargin` drops the bottom margin for items in a flex or grid
+  // layout that sets its own gap.
+  .#{$prefix}--file__selected-file.#{$prefix}--file__selected-file--no-margin {
+    margin-bottom: 0;
+  }
+
+  // V11: Remove --field
+  .#{$prefix}--file__selected-file--md {
+    min-height: to-rem(40px);
+    gap: $carbon--spacing-03 $carbon--spacing-05;
+  }
+
+  .#{$prefix}--file__selected-file--sm {
+    min-height: to-rem(32px);
+    gap: $carbon--spacing-02 $carbon--spacing-05;
+  }
+
+  .#{$prefix}--file__selected-file--invalid {
+    @include focus-outline('invalid');
+
+    padding: to-rem(12px) 0;
+  }
+
+  .#{$prefix}--file__selected-file--invalid.#{$prefix}--file__selected-file--sm {
+    padding: $carbon--spacing-02 0;
+  }
+
+  // V11: Remove --field
+  .#{$prefix}--file__selected-file--invalid.#{$prefix}--file__selected-file--md {
+    padding: $carbon--spacing-03 0;
+  }
+
+  .#{$prefix}--file__selected-file--invalid .#{$prefix}--form-requirement {
+    padding-top: $carbon--spacing-05;
+    border-top: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--file__selected-file--invalid.#{$prefix}--file__selected-file--sm
+    .#{$prefix}--form-requirement {
+    padding-top: to-rem(7px);
+  }
+
+  // V11: Remove --field
+  .#{$prefix}--file__selected-file--invalid.#{$prefix}--file__selected-file--md
+    .#{$prefix}--form-requirement {
+    padding-top: to-rem(11px);
+  }
+
+  .#{$prefix}--file__selected-file--invalid
+    .#{$prefix}--form-requirement__title,
+  .#{$prefix}--file__selected-file--invalid
+    .#{$prefix}--form-requirement__supplement {
+    @include type-style('label-01');
+
+    padding: 0 $carbon--spacing-05;
+  }
+
+  .#{$prefix}--file__selected-file--invalid
+    .#{$prefix}--form-requirement__title {
+    color: $text-error;
+  }
+
+  .#{$prefix}--file__selected-file--invalid
+    .#{$prefix}--form-requirement__supplement {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--file__selected-file--invalid + .#{$prefix}--form-requirement {
+    @include type-style('label-01', $omit: (font-weight));
+
+    display: block;
+    overflow: visible;
+    max-height: to-rem(200px);
+    padding: $carbon--spacing-03 $carbon--spacing-05;
+    color: $text-error;
+    font-weight: 400;
+  }
+
+  .#{$prefix}--file__selected-file--invalid
+    + .#{$prefix}--form-requirement
+    .#{$prefix}--form-requirement__supplement {
+    padding-bottom: $carbon--spacing-03;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--file__state-container {
+    display: flex;
+    min-width: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    padding-right: $carbon--spacing-05;
+
+    .#{$prefix}--loading__svg {
+      stroke: $layer-selected-inverse;
+    }
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-complete {
+    fill: $interactive;
+
+    &:focus {
+      @include focus-outline('border');
+    }
+
+    // for checkmark contrast
+    [data-icon-path='inner-path'] {
+      fill: $icon-on-color;
+      opacity: 1;
+    }
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-invalid {
+    width: $carbon--spacing-05;
+    height: $carbon--spacing-05;
+    margin-right: $carbon--spacing-03;
+    fill: $support-error;
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-close {
+    display: flex;
+    width: $carbon--spacing-06;
+    height: $carbon--spacing-06;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    fill: $icon-primary;
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-close svg path {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--inline-loading__animation {
+    margin-right: -$carbon--spacing-03;
+  }
+
+  .#{$prefix}--file__drop-container {
+    @include button-reset($omit: (display, padding, border));
+    @include type-style('body-compact-01');
+
+    display: flex;
+    overflow: hidden;
+    height: to-rem(96px);
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: $carbon--spacing-05;
+    border: 1px dashed $border-strong;
+  }
+
+  .#{$prefix}--file__drop-container--drag-over {
+    background: none;
+    outline: 2px solid $button-tertiary;
+    outline-offset: -2px;
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--file__selected-file {
+    @include high-contrast-mode('outline');
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-close svg path {
+    @include high-contrast-mode('icon-fill');
+  }
+  /* stylelint-enable */
+}
+
+@include exports('file-uploader') {
+  @include file-uploader;
+}
+
+// carbon-components-svelte patch (file size)
+// Name and optional size stack in one grid cell; the group owns the inset
+// the name used to carry. `min-width: 0` lets the name's ellipsis apply.
+.#{$prefix}--file-filename-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin-left: $carbon--spacing-05;
+}
+
+.#{$prefix}--file-size {
+  @include type-style('label-01');
+
+  flex-shrink: 0;
+  color: $text-secondary;
+  white-space: nowrap;
+}
+
+// Two lines overflow the 32px small row; put the size beside the name.
+.#{$prefix}--file__selected-file--sm .#{$prefix}--file-filename-group {
+  flex-direction: row;
+  align-items: baseline;
+  gap: $carbon--spacing-03;
+}
+
+.#{$prefix}--file__selected-file--sm .#{$prefix}--file-filename {
+  min-width: 0;
+}
+
+// carbon-components-svelte patch
+// Extra-small (`xs`, 24px) file rows for `FileUploader size="xs"` and
+// `FileUploaderItem size="xs"`, per the condensed Carbon spec.
+@mixin file-uploader-xs {
+  .#{$prefix}--file__selected-file--xs {
+    min-height: to-rem(24px);
+    gap: 0 $carbon--spacing-05;
+  }
+
+  .#{$prefix}--file__selected-file--xs .#{$prefix}--file-filename-group {
+    flex-direction: row;
+    align-items: baseline;
+    gap: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--file__selected-file--invalid.#{$prefix}--file__selected-file--xs {
+    padding: 0;
+  }
+
+  .#{$prefix}--file__selected-file--invalid.#{$prefix}--file__selected-file--xs
+    .#{$prefix}--form-requirement {
+    padding-top: to-rem(3px);
+    padding-bottom: to-rem(3px);
+  }
+}
+
+@include exports('file-uploader-xs') {
+  @include file-uploader-xs;
+}
+
+// carbon-components-svelte patch
+// A disabled uploader also disables each row's remove button and greys
+// out the row's name and size.
+@mixin file-uploader-disabled {
+  .#{$prefix}--file__selected-file--disabled .#{$prefix}--file-filename,
+  .#{$prefix}--file__selected-file--disabled .#{$prefix}--file-size {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-close:disabled {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--file__state-container .#{$prefix}--file-close:disabled svg path {
+    fill: $icon-disabled;
+  }
+}
+
+@include exports('file-uploader-disabled') {
+  @include file-uploader-disabled;
+}

@@ -1,0 +1,268 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vars';
+@import '../checkbox/checkbox';
+@import '../list-box/list-box';
+
+/// Multi select styles
+/// @access private
+/// @group multi-select
+@mixin multiselect {
+  .#{$prefix}--multi-select .#{$prefix}--list-box__field--wrapper {
+    // carbon-components-svelte patch: the focus outline is drawn on this
+    // wrapper (`--input-focused`). Positioned, it paints over the
+    // positioned field inside it and over the list box's invalid outline,
+    // as Dropdown's focused field does.
+    position: relative;
+    display: inline-flex;
+    width: 100%;
+    height: calc(100% + 1px);
+    align-items: center;
+  }
+
+  .#{$prefix}--multi-select .#{$prefix}--list-box__field:focus {
+    @include focus-outline('reset');
+  }
+
+  .#{$prefix}--multi-select .#{$prefix}--tag {
+    min-width: auto;
+    margin-block: 0;
+    margin-inline: $spacing-05 $spacing-03;
+  }
+
+  .#{$prefix}--multi-select--filterable .#{$prefix}--tag {
+    margin-block: 0;
+    margin-inline: $carbon--spacing-05 $carbon--spacing-03;
+  }
+
+  .#{$prefix}--multi-select .#{$prefix}--list-box__menu {
+    min-width: auto;
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    .#{$prefix}--checkbox-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    .#{$prefix}--checkbox-label {
+    display: inline-block;
+    overflow: hidden;
+    width: 100%;
+    padding-inline-start: to-rem(28px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ccs: v11's option box and check, which keep the box centered on its
+  // text now that the base checkbox label is 20px tall.
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    .#{$prefix}--checkbox-label::before {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    .#{$prefix}--checkbox-label::after {
+    top: to-rem(5px);
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    .#{$prefix}--checkbox:indeterminate
+    + .#{$prefix}--checkbox-label::after,
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    .#{$prefix}--checkbox-label[data-contained-checkbox-state='mixed']::after {
+    top: to-rem(9px);
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item__option
+    > .#{$prefix}--form-item {
+    flex-direction: row;
+    margin: 0;
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__menu-item
+    .#{$prefix}--checkbox:checked
+    ~ .#{$prefix}--checkbox-label-text {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--multi-select--filterable {
+    transition: outline-color $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--multi-select--filterable.#{$prefix}--combo-box
+    .#{$prefix}--text-input {
+    border: to-rem(2px) solid transparent;
+    background-clip: padding-box;
+    outline: none;
+  }
+
+  .#{$prefix}--multi-select
+    .#{$prefix}--list-box__field--wrapper--input-focused {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--multi-select--filterable.#{$prefix}--multi-select--selected
+    .#{$prefix}--text-input,
+  .#{$prefix}--multi-select.#{$prefix}--multi-select--selected
+    .#{$prefix}--list-box__field {
+    padding-inline-start: 0;
+  }
+
+  .#{$prefix}--multi-select--filterable.#{$prefix}--list-box--disabled:hover
+    .#{$prefix}--text-input {
+    background-color: $field;
+  }
+
+  .#{$prefix}--multi-select--filterable
+    .#{$prefix}--list-box__selection--multi {
+    margin-block: 0;
+    margin-inline: $spacing-05 0;
+  }
+
+  .#{$prefix}--multi-select--filterable.#{$prefix}--multi-select--inline,
+  .#{$prefix}--multi-select--filterable.#{$prefix}--multi-select--inline
+    .#{$prefix}--text-input {
+    border-bottom: 0;
+    background-color: transparent;
+  }
+
+  .#{$prefix}--multi-select:not(.#{$prefix}--list-box--expanded)
+    .#{$prefix}--list-box__menu {
+    visibility: hidden;
+  }
+}
+
+@include exports('multi-select') {
+  @include multiselect;
+}
+
+// carbon-components-svelte patch (formerly css/_multiselect.scss)
+// Multi-select "select all" separator border.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+@mixin multiselect-selectall {
+  // First listbox item is "Select all"; give it a bottom separator.
+  .#{$prefix}--multi-select.#{$prefix}--multi-select--selectall
+    .#{$prefix}--list-box__menu-item:first-child
+    .#{$prefix}--list-box__menu-item__option {
+    border-block-end: 1px solid $border-subtle;
+    margin-inline-start: 0;
+    padding-inline-start: $carbon--spacing-05;
+    margin-inline-end: 0;
+    padding-inline-end: $carbon--spacing-05;
+  }
+
+  // Second item: no top border (adjacent to select-all separator).
+  .#{$prefix}--multi-select.#{$prefix}--multi-select--selectall
+    .#{$prefix}--list-box__menu-item:nth-child(2)
+    .#{$prefix}--list-box__menu-item__option {
+    border-block-start: none;
+  }
+}
+
+@include exports('multiselect-selectall') {
+  @include multiselect-selectall;
+}
+
+// carbon-components-svelte patch (formerly css/_multiselect-readonly.scss)
+/// Readonly multiselect styles
+/// @access private
+/// @group multiselect
+@mixin multiselect-readonly {
+  .#{$prefix}--multi-select--readonly,
+  .#{$prefix}--multi-select--readonly:hover {
+    background-color: transparent;
+    border-block-end-color: $border-subtle;
+  }
+
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--list-box__menu-icon
+    svg {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--tag--filter,
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--tag__close-icon:hover {
+    background-color: transparent;
+    color: $text-primary;
+    cursor: default;
+  }
+
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--tag--filter {
+    box-shadow: 0 0 0 1px $border-subtle;
+  }
+
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--tag--filter
+    svg {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--multi-select--readonly
+    .#{$prefix}--list-box__menu-icon {
+    cursor: default;
+  }
+}
+
+@include exports("multiselect-readonly") {
+  @include multiselect-readonly;
+}
+
+// carbon-components-svelte patch (multi-select-skeleton)
+/// Skeleton state for the plain (non-fluid) MultiSelectSkeleton. The
+/// upstream Carbon multi-select partial never shipped a
+/// `.bx--skeleton` rule (only Dropdown and Select did), so
+/// MultiSelectSkeleton renders with no shimmer without this.
+/// @access private
+/// @group multi-select
+@mixin multiselect-skeleton {
+  .#{$prefix}--multi-select.#{$prefix}--skeleton {
+    @include skeleton;
+  }
+}
+
+@include exports("multiselect-skeleton") {
+  @include multiselect-skeleton;
+}
+
+// carbon-components-svelte patch (multi-select-tags)
+/// Selected-item tags below the field (`selectionDisplay="tags"`).
+/// @access private
+/// @group multi-select
+@mixin multiselect-tags {
+  .#{$prefix}--multi-select__tags {
+    margin-top: $carbon--spacing-03;
+  }
+}
+
+@include exports("multiselect-tags") {
+  @include multiselect-tags;
+}

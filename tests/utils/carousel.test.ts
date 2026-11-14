@@ -1,0 +1,155 @@
+import { initCarousel } from "../../src/utils/carousel.js";
+
+function buildContainer(count: number) {
+  const container = document.createElement("div");
+  for (let i = 0; i < count; i++) {
+    const view = document.createElement("div");
+    view.textContent = `view-${i}`;
+    container.appendChild(view);
+  }
+  document.body.appendChild(container);
+  return container;
+}
+
+function getViews(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement,
+  );
+}
+
+describe("initCarousel", () => {
+  it("shows only the first view on init", () => {
+    const container = buildContainer(3);
+    initCarousel(container);
+
+    const views = getViews(container);
+    expect(views[0].hidden).toBe(false);
+    expect(views[1].hidden).toBe(true);
+    expect(views[2].hidden).toBe(true);
+  });
+
+  it("next/prev move the active index and toggle visibility", () => {
+    const container = buildContainer(3);
+    const carousel = initCarousel(container);
+    const views = getViews(container);
+
+    carousel.next();
+    expect(carousel.getActiveItem()).toEqual({ index: 1, item: views[1] });
+    expect(views[0].hidden).toBe(true);
+    expect(views[1].hidden).toBe(false);
+
+    carousel.prev();
+    expect(carousel.getActiveItem()).toEqual({ index: 0, item: views[0] });
+    expect(views[0].hidden).toBe(false);
+  });
+
+  it("clamps at the ends instead of wrapping", () => {
+    const container = buildContainer(2);
+    const carousel = initCarousel(container);
+
+    carousel.prev();
+    expect(carousel.getActiveItem().index).toBe(0);
+
+    carousel.next();
+    carousel.next();
+    expect(carousel.getActiveItem().index).toBe(1);
+  });
+
+  it("goToIndex clamps out-of-range targets", () => {
+    const container = buildContainer(3);
+    const carousel = initCarousel(container);
+
+    carousel.goToIndex(10);
+    expect(carousel.getActiveItem().index).toBe(2);
+
+    carousel.goToIndex(-5);
+    expect(carousel.getActiveItem().index).toBe(0);
+  });
+
+  it("reset returns to the first view", () => {
+    const container = buildContainer(3);
+    const carousel = initCarousel(container);
+
+    carousel.goToIndex(2);
+    carousel.reset();
+    expect(carousel.getActiveItem().index).toBe(0);
+  });
+
+  it("fires onViewChangeStart/onViewChangeEnd only when the index actually changes", () => {
+    const container = buildContainer(3);
+    const onViewChangeStart = vi.fn();
+    const onViewChangeEnd = vi.fn();
+    const carousel = initCarousel(container, {
+      onViewChangeStart,
+      onViewChangeEnd,
+    });
+
+    carousel.goToIndex(0); // already active: no-op
+    expect(onViewChangeStart).not.toHaveBeenCalled();
+
+    carousel.next();
+    expect(onViewChangeStart).toHaveBeenCalledTimes(1);
+    expect(onViewChangeStart).toHaveBeenCalledWith({
+      currentIndex: 1,
+      previousIndex: 0,
+      totalViews: 3,
+    });
+    expect(onViewChangeEnd).toHaveBeenCalledWith({
+      currentIndex: 1,
+      previousIndex: 0,
+      totalViews: 3,
+    });
+  });
+
+  it("zero views: navigation and getActiveItem stay safe", () => {
+    const container = buildContainer(0);
+    const carousel = initCarousel(container);
+
+    expect(carousel.getActiveItem()).toEqual({ index: -1, item: null });
+    carousel.next();
+    carousel.goToIndex(3);
+    expect(carousel.getActiveItem()).toEqual({ index: -1, item: null });
+  });
+
+  it("destroyEvents unhides every view", () => {
+    const container = buildContainer(3);
+    const carousel = initCarousel(container);
+    const views = getViews(container);
+
+    carousel.next();
+    carousel.destroyEvents();
+
+    expect(views.every((view) => !view.hidden)).toBe(true);
+  });
+
+  it("useMaxHeight reads every height after all views are made measurable", () => {
+    const container = buildContainer(3);
+    const views = getViews(container);
+    const heights = [30, 80, 50];
+    // Whether every sibling was already in its measuring state at read time.
+    const allMeasurableAtRead: boolean[] = [];
+    views.forEach((view, index) => {
+      Object.defineProperty(view, "scrollHeight", {
+        configurable: true,
+        get() {
+          allMeasurableAtRead.push(
+            views.every(
+              (sibling) =>
+                !sibling.hidden && sibling.style.position === "absolute",
+            ),
+          );
+          return heights[index];
+        },
+      });
+    });
+
+    initCarousel(container, { useMaxHeight: true });
+
+    expect(container.style.minBlockSize).toBe("80px");
+    expect(allMeasurableAtRead).toEqual([true, true, true]);
+    // Restored: only the active view visible, measuring styles cleared.
+    expect(views.map((view) => view.hidden)).toEqual([false, true, true]);
+    expect(views.every((view) => view.style.position === "")).toBe(true);
+    expect(views.every((view) => view.style.visibility === "")).toBe(true);
+  });
+});

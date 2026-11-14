@@ -1,0 +1,91 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// While an option holds the highlight, v11 thins the field's focus ring to
+/// 1px and draws the first option's top edge at 1px, so the two rings meet
+/// as one 2px line. ComboBox and MultiSelect put
+/// `bx--list-box--option-highlighted` on the list box for it; v11 reads
+/// `aria-activedescendant` through `:has()`, which the CSS baseline lacks.
+///
+/// A partial, not a vendored patch: the rings it thins come from
+/// `text-input`, `multi-select`, and `fluid-list-box`, which emit later at
+/// equal or lower specificity.
+/// @access private
+/// @group components
+@mixin list-box-highlight-ring {
+  .#{$prefix}--list-box--option-highlighted .#{$prefix}--text-input:focus,
+  .#{$prefix}--list-box--option-highlighted
+    .#{$prefix}--list-box__field--wrapper--input-focused {
+    outline-width: 1px;
+    outline-offset: -1px;
+  }
+
+  .#{$prefix}--list-box--option-highlighted
+    .#{$prefix}--list-box__menu-item--highlighted:first-child {
+    @include focus-outline("reset");
+  }
+
+  .#{$prefix}--list-box--option-highlighted
+    .#{$prefix}--list-box__menu-item--highlighted:first-child::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    border: 2px solid $focus;
+    border-top-width: 1px;
+    content: "";
+  }
+
+  // Forced colors repaint the highlight ring as the rows' own edge color,
+  // so the keyboard highlight read like any other row. The row fills with
+  // `Highlight`, as a highlighted SearchMenu row does, and opts out of
+  // forcing: forced text sits on a `Canvas` backplate. Everything the row
+  // holds then needs a system color: the option text (also on hover), a
+  // checked MultiSelect label, the checkbox and the selected icon.
+  @media (forced-colors: active) {
+    .#{$prefix}--list-box__menu-item.#{$prefix}--list-box__menu-item--highlighted {
+      forced-color-adjust: none;
+      outline: none;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--list-box--option-highlighted
+      .#{$prefix}--list-box__menu-item--highlighted:first-child::before {
+      content: none;
+    }
+
+    .#{$prefix}--list-box__menu-item--highlighted
+      .#{$prefix}--list-box__menu-item__option,
+    .#{$prefix}--list-box__menu-item--highlighted:hover
+      .#{$prefix}--list-box__menu-item__option,
+    .#{$prefix}--list-box__menu-item--highlighted .#{$prefix}--checkbox-label,
+    .#{$prefix}--multi-select
+      .#{$prefix}--list-box__menu-item--highlighted
+      .#{$prefix}--checkbox:checked
+      ~ .#{$prefix}--checkbox-label-text {
+      color: HighlightText;
+    }
+
+    .#{$prefix}--list-box__menu-item--highlighted
+      .#{$prefix}--checkbox
+      + .#{$prefix}--checkbox-label::before,
+    .#{$prefix}--list-box__menu-item--highlighted
+      .#{$prefix}--checkbox
+      + .#{$prefix}--checkbox-label::after {
+      border-color: HighlightText;
+      background-color: transparent;
+    }
+
+    .#{$prefix}--list-box__menu-item--highlighted svg {
+      fill: HighlightText;
+    }
+  }
+}
+
+@include exports("list-box-highlight-ring") {
+  @include list-box-highlight-ring;
+}

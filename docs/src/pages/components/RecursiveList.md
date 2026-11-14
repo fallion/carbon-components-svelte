@@ -1,0 +1,65 @@
+---
+description: Recursive lists render hierarchical data as nested ordered or unordered lists, with support for links and HTML content.
+---
+
+<script>
+  import { RecursiveList, Link } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a hierarchical list using the `nodes` prop. Each node can contain text, links, nested children, and HTML content via `html`.
+
+<FileSource src="/framed/RecursiveList/RecursiveList" />
+
+## Trusted content
+
+A node's `html` renders with `{@html}`, unsanitized, and its `href` goes straight to the link. Both run as written, so keep them to content you control.
+
+| Do | Why |
+| --- | --- |
+| Use `text` for anything a user or a third party wrote | Text is escaped, so markup in it shows as written |
+| Sanitize `html` that isn't yours, such as with DOMPurify, before passing it | `{@html}` runs event handlers and scripts in the markup |
+| Check that an `href` from outside starts with `https:`, `http:` or `mailto:` | A `javascript:` URL runs when the link is followed |
+
+## Link attributes
+
+Set `target` on a node to control where a link opens. When `target` is `"_blank"`, `rel` defaults to `"noopener noreferrer"`; supply `rel` explicitly to override it.
+
+<FileSource src="/framed/RecursiveList/RecursiveListLinkAttributes" />
+
+## Ordered
+
+Set `type` to `"ordered"` for numbered lists with proper indentation.
+
+<FileSource src="/framed/RecursiveList/RecursiveListOrdered" />
+
+### Native styles
+
+Set `type` to `"ordered-native"` for browser-native numbering styles.
+
+<FileSource src="/framed/RecursiveList/RecursiveListOrderedNative" />
+
+## Expressive styles
+
+Use Carbon's expressive typesetting with `expressive`.
+
+<FileSource src="/framed/RecursiveList/RecursiveListExpressive" />
+
+## Flat data
+
+Convert flat data to hierarchical arrays with the `toHierarchy` utility.
+
+<FileSource src="/framed/RecursiveList/RecursiveListFlatArray" />
+
+## Stable keys
+
+Each node accepts an optional id (string or number) used as the each-block key. Supply an id when text or href values can repeat, so reordering or filtering preserves DOM identity.
+
+<FileSource src="/framed/RecursiveList/RecursiveListStableKeys" />
+
+## Virtualization
+
+A recursive list renders every node. For thousands of top-level nodes, window the top level with [VirtualList](/components/VirtualList): render each node as a `ListItem` with a `nested` `RecursiveList` of its children. Set `spacerTag` to `"li"` and `measured`, since each item is as tall as its subtree. Wrap the list in a [ScrollGradient](/components/ScrollGradient) and pass its `scrollElementRef` as `scrollElement`.
+
+<FileSource src="/framed/VirtualList/VirtualListRecursiveList" />

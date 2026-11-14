@@ -1,15 +1,15 @@
 <script>
   import {
+    Button,
     DataTable,
     Toolbar,
+    ToolbarBatchActions,
     ToolbarContent,
-    ToolbarSearch,
     ToolbarMenu,
     ToolbarMenuItem,
-    ToolbarBatchActions,
-    Button,
+    ToolbarSearch,
   } from "carbon-components-svelte";
-  import Save16 from "carbon-icons-svelte/lib/Save16";
+  import Save from "carbon-icons-svelte/lib/Save.svelte";
 
   const headers = [
     { key: "name", value: "Name" },
@@ -31,10 +31,10 @@
   $: console.log("selectedRowIds", selectedRowIds);
 </script>
 
-<DataTable batchSelection bind:selectedRowIds headers="{headers}" rows="{rows}">
+<DataTable batchSelection bind:selectedRowIds {headers} {rows}>
   <Toolbar>
     <ToolbarBatchActions>
-      <Button icon="{Save16}">Save</Button>
+      <Button icon={Save}>Save</Button>
     </ToolbarBatchActions>
     <ToolbarContent>
       <ToolbarSearch />
@@ -43,7 +43,7 @@
         <ToolbarMenuItem href="https://cloud.ibm.com/docs/loadbalancer-service">
           API documentation
         </ToolbarMenuItem>
-        <ToolbarMenuItem danger>Stop all</ToolbarMenuItem>
+        <ToolbarMenuItem hasDivider danger>Stop all</ToolbarMenuItem>
       </ToolbarMenu>
       <Button>Create balancer</Button>
     </ToolbarContent>

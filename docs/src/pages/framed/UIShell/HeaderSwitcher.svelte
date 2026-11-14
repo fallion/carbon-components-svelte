@@ -1,74 +1,78 @@
 <script>
   import {
-    Header,
-    HeaderUtilities,
-    HeaderAction,
-    HeaderPanelLinks,
-    HeaderPanelDivider,
-    HeaderPanelLink,
-    SideNav,
-    SideNavItems,
-    SideNavMenu,
-    SideNavMenuItem,
-    SideNavLink,
-    SkipToContent,
+    Column,
     Content,
     Grid,
-    Row,
-    Column,
-    TileGroup,
+    Header,
+    HeaderAction,
+    HeaderPanelGroup,
+    HeaderPanelLink,
+    HeaderPanelLinks,
+    HeaderUtilities,
     RadioTile,
+    Row,
+    SideNav,
+    SideNavItems,
+    SideNavLink,
+    SideNavMenu,
+    SideNavMenuItem,
+    SkipToContent,
+    TileGroup,
   } from "carbon-components-svelte";
   import { expoIn } from "svelte/easing";
 
   let isSideNavOpen = false;
   let isOpen = false;
   let selected = "0";
-  let transitions = {
-    "0": {
-      text: "Default (duration: 200ms)",
+  const transitions = {
+    0: {
+      text: "None (default)",
+      value: false,
+    },
+    1: {
+      text: "Slide (duration: 200ms)",
       value: { duration: 200 },
     },
-    "1": {
+    2: {
       text: "Custom (duration: 600ms, delay: 50ms, easing: expoIn)",
       value: { duration: 600, delay: 50, easing: expoIn },
-    },
-    "2": {
-      text: "Disabled",
-      value: false,
     },
   };
 </script>
 
-<Header company="IBM" platformName="Carbon Svelte" bind:isSideNavOpen>
-  <svelte:fragment slot="skip-to-content">
-    <SkipToContent />
-  </svelte:fragment>
+<Header companyName="IBM" platformName="Cloud" bind:isSideNavOpen>
+  <svelte:fragment slot="skipToContent"><SkipToContent /></svelte:fragment>
   <HeaderUtilities>
-    <HeaderAction bind:isOpen transition="{transitions[selected].value}">
+    <HeaderAction bind:isOpen transition={transitions[selected].value}>
       <HeaderPanelLinks>
-        <HeaderPanelDivider>Switcher subject 1</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-        <HeaderPanelDivider>Switcher subject 2</HeaderPanelDivider>
-        <HeaderPanelLink>Switcher item 1</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 2</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 3</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 4</HeaderPanelLink>
-        <HeaderPanelLink>Switcher item 5</HeaderPanelLink>
+        <HeaderPanelGroup label="Switch product">
+          <HeaderPanelLink href="/cloud" isSelected
+            >Cloud console</HeaderPanelLink
+          >
+          <HeaderPanelLink href="/watson-studio">Watson Studio</HeaderPanelLink>
+          <HeaderPanelLink href="/maximo"
+            >Maximo Application Suite</HeaderPanelLink
+          >
+        </HeaderPanelGroup>
+        <HeaderPanelGroup label="Resources">
+          <HeaderPanelLink href="/docs">Documentation</HeaderPanelLink>
+          <HeaderPanelLink href="/status">Status page</HeaderPanelLink>
+          <HeaderPanelLink href="/community">Community</HeaderPanelLink>
+        </HeaderPanelGroup>
       </HeaderPanelLinks>
     </HeaderAction>
   </HeaderUtilities>
 </Header>
 
-<SideNav bind:isOpen="{isSideNavOpen}">
+<SideNav bind:isOpen={isSideNavOpen}>
   <SideNavItems>
-    <SideNavLink text="Link 1" />
-    <SideNavLink text="Link 2" />
-    <SideNavLink text="Link 3" />
-    <SideNavMenu text="Menu">
-      <SideNavMenuItem href="/" text="Link 1" />
-      <SideNavMenuItem href="/" text="Link 2" />
-      <SideNavMenuItem href="/" text="Link 3" />
+    <SideNavLink href="/dashboard" text="Dashboard" />
+    <SideNavLink href="/resources" text="Resource list" />
+    <SideNavLink href="/activity" text="Activity tracker" />
+    <SideNavMenu text="Kubernetes">
+      <SideNavMenuItem href="/kubernetes/clusters" text="Clusters" />
+      <SideNavMenuItem href="/kubernetes/worker-pools" text="Worker pools" />
+      <SideNavMenuItem href="/kubernetes/registry" text="Container registry" />
     </SideNavMenu>
   </SideNavItems>
 </SideNav>
@@ -77,14 +81,14 @@
   <Grid>
     <Row>
       <Column>
-        <h1>HeaderSwitcher</h1>
+        <h1>App switcher</h1>
         <p>
           Select a transition option below and click on the App Switcher icon in
           the top right.
         </p>
-        <TileGroup legend="App switcher transitions" bind:selected>
+        <TileGroup legendText="App switcher transitions" bind:selected>
           {#each Object.keys(transitions) as key}
-            <RadioTile value="{key}">{transitions[key].text}</RadioTile>
+            <RadioTile value={key}>{transitions[key].text}</RadioTile>
           {/each}
         </TileGroup>
       </Column>

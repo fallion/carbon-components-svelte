@@ -1,0 +1,66 @@
+<script lang="ts">
+  import SearchMenu from "carbon-components-svelte/SearchMenu/SearchMenu.svelte";
+  import SearchMenuItem from "carbon-components-svelte/SearchMenu/SearchMenuItem.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let value = "";
+  export let open = false;
+  export let shouldFilter = true;
+  export let disabled = false;
+  export let readonly = false;
+  export let hideLabel = false;
+  export let loading = false;
+  export let loadingDelay = 0;
+  export let searchLoading = false;
+  export let size: ComponentProps<SearchMenu>["size"] = undefined;
+  export let menuSize: ComponentProps<SearchMenu>["menuSize"] = undefined;
+  export let portal: ComponentProps<SearchMenu>["portal"] = true;
+  export let selectTextOnFocus: ComponentProps<SearchMenu>["selectTextOnFocus"] = false;
+  export let selected: { value: string; submitted: boolean } = {
+    value: "",
+    submitted: false,
+  };
+  export let closeTrigger = "";
+  export let events: string[] = [];
+  /** Gives each item an id `value` apart from its `text`. */
+  export let itemValues = false;
+
+  const items = [
+    "Databases for TestSQL",
+    "AT&T IoT Data Plans",
+    "Data Store for Memcache",
+    "HazardHub Property Risk Data API",
+  ];
+</script>
+
+<SearchMenu
+  bind:value
+  bind:open
+  {shouldFilter}
+  {disabled}
+  {readonly}
+  {hideLabel}
+  {loading}
+  {loadingDelay}
+  {searchLoading}
+  {size}
+  {menuSize}
+  {portal}
+  {selectTextOnFocus}
+  placeholder="Search..."
+  labelText="Search"
+  on:select={(e) => (selected = { value: e.detail.value, submitted: false })}
+  on:submit={(e) => (selected = { value: e.detail.value, submitted: true })}
+  on:close={(e) => (closeTrigger = e.detail.trigger)}
+  on:keyup={() => (events = [...events, "keyup"])}
+>
+  {#each items as text, i (text)}
+    <SearchMenuItem {text} value={itemValues ? `item-${i}` : undefined} />
+  {/each}
+</SearchMenu>
+
+<div data-testid="result">
+  {selected.submitted ? "submit:" : ""}{selected.value}
+</div>
+<div data-testid="close">{closeTrigger}</div>
+<div data-testid="events">{events.join(",")}</div>

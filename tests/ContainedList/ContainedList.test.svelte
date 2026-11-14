@@ -1,0 +1,41 @@
+<script lang="ts">
+  import Button from "carbon-components-svelte/Button/Button.svelte";
+  import ContainedList from "carbon-components-svelte/ContainedList/ContainedList.svelte";
+  import ContainedListItem from "carbon-components-svelte/ContainedList/ContainedListItem.svelte";
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+  import Close from "carbon-icons-svelte/lib/Close.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let kind: ComponentProps<ContainedList>["kind"] = "on-page";
+  export let labelText: ComponentProps<ContainedList>["labelText"] =
+    "List title";
+  export let size: ComponentProps<ContainedList>["size"] = "md";
+  export let inset: ComponentProps<ContainedList>["inset"] = false;
+  export let hideLabel: ComponentProps<ContainedList>["hideLabel"] = false;
+  export let id: ComponentProps<ContainedList>["id"] = undefined;
+  export let interactive: ComponentProps<ContainedListItem>["interactive"] = false;
+  export let disabled: ComponentProps<ContainedListItem>["disabled"] = false;
+  export let showIcon = false;
+  export let showAction = false;
+  export let onClick: (() => void) | undefined = undefined;
+</script>
+
+<ContainedList {kind} {labelText} {size} {inset} {hideLabel} {id}>
+  {#if showAction}
+    <Button slot="action" kind="ghost" icon={Close} iconDescription="Action" />
+  {/if}
+  <ContainedListItem
+    {interactive}
+    {disabled}
+    icon={showIcon ? Add : undefined}
+    on:click={() => onClick?.()}
+  >
+    Item 1
+  </ContainedListItem>
+  <ContainedListItem {interactive} {disabled} icon={showIcon ? Add : undefined}>
+    Item 2
+  </ContainedListItem>
+  <ContainedListItem {interactive} {disabled} icon={showIcon ? Add : undefined}>
+    Item 3
+  </ContainedListItem>
+</ContainedList>

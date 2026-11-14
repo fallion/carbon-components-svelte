@@ -1,0 +1,37 @@
+<script lang="ts">
+  import ListItem from "carbon-components-svelte/ListItem/ListItem.svelte";
+  import UnorderedList from "carbon-components-svelte/UnorderedList/UnorderedList.svelte";
+
+  export let nested = false;
+  export let expressive = false;
+  export let items: string[] = ["Item 1", "Item 2", "Item 3"];
+  export let nestedItems: string[] = [];
+  export let onclick: ((event: MouseEvent) => void) | undefined = undefined;
+  export let onmouseover: ((event: MouseEvent) => void) | undefined = undefined;
+  export let onmouseenter: ((event: MouseEvent) => void) | undefined =
+    undefined;
+  export let onmouseleave: ((event: MouseEvent) => void) | undefined =
+    undefined;
+</script>
+
+<UnorderedList
+  {nested}
+  {expressive}
+  on:click={(e) => onclick?.(e)}
+  on:mouseover={(e) => onmouseover?.(e)}
+  on:mouseenter={(e) => onmouseenter?.(e)}
+  on:mouseleave={(e) => onmouseleave?.(e)}
+>
+  {#each items as item}
+    <ListItem>
+      {item}
+      {#if nested && nestedItems.length > 0}
+        <UnorderedList nested>
+          {#each nestedItems as nestedItem}
+            <ListItem>{nestedItem}</ListItem>
+          {/each}
+        </UnorderedList>
+      {/if}
+    </ListItem>
+  {/each}
+</UnorderedList>

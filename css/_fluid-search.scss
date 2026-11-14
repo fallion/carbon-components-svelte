@@ -1,0 +1,201 @@
+// Fluid Search (v11 port). v10 has no fluid variant.
+// https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/fluid-search/_fluid-search.scss
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./fluid-shared";
+
+/// Fluid search (Carbon React FluidSearch)
+/// @access private
+/// @group components
+@mixin fluid-search {
+  .#{$prefix}--search--fluid {
+    block-size: to-rem(64px);
+  }
+
+  // The base v10 styles visually hide the search label (the `hidden`
+  // mixin); the fluid variant embeds it at the top of the field unless
+  // `hideLabel` keeps it hidden.
+  .#{$prefix}--search--fluid .#{$prefix}--label {
+    @include fluid-label;
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--label:not(.#{$prefix}--visually-hidden) {
+    clip: initial;
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--label.#{$prefix}--label--slotted {
+    @include fluid-label-slotted;
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--search-input {
+    padding-block: to-rem(32px) to-rem(13px);
+    padding-inline: $carbon--spacing-05 to-rem(88px);
+    block-size: 100%;
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--search-magnifier-icon {
+    fill: $icon-primary;
+    inset-block: auto to-rem(13px);
+    transform: none;
+    @include ccs-inset-inline(auto, to-rem(16px));
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--search-close {
+    border: none;
+    block-size: to-rem(40px);
+    inline-size: to-rem(40px);
+    inset-block: auto 0;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+    @include ccs-inset-inline(auto, to-rem(48px));
+  }
+
+  // The close button overlaps the field's bottom edge; its `::after`
+  // re-draws the input's border (and focus underline) beneath it.
+  .#{$prefix}--search--fluid .#{$prefix}--search-close::after {
+    position: absolute;
+    display: block;
+    block-size: to-rem(2px);
+    content: "";
+    inline-size: 100%;
+    inset-block-end: 0;
+    @include ccs-inset-inline($start: 0);
+  }
+
+  .#{$prefix}--search--fluid
+    .#{$prefix}--search-input:focus
+    ~ .#{$prefix}--search-close::after {
+    background: $focus;
+  }
+
+  .#{$prefix}--search--fluid
+    .#{$prefix}--search-input:not(:focus)
+    ~ .#{$prefix}--search-close:not([disabled])::after {
+    background: $border-strong;
+    block-size: to-rem(1px);
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--search-close svg {
+    margin-block-end: to-rem(2px);
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    .#{$prefix}--search--fluid
+      .#{$prefix}--search-input:focus
+      ~ .#{$prefix}--search-close:hover::before {
+      // The button sits inside the field's ring, so its hover fill covers
+      // all of it. Forced colors hide `::before`.
+      top: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .#{$prefix}--search--fluid
+      .#{$prefix}--search-input:disabled
+      ~ .#{$prefix}--search-close:hover::before {
+      background: $layer-accent;
+    }
+  }
+
+  .#{$prefix}--search--fluid.#{$prefix}--search--disabled .#{$prefix}--label {
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--search--fluid.#{$prefix}--search--disabled
+    .#{$prefix}--search-input[disabled] {
+    border-block-end: 1px solid $border-subtle;
+  }
+
+  // Invalid and warning: the field grows to hold its message, inside and
+  // under a divider as on the other fluid fields, with the status icon on
+  // the message's first line (not on the clear button). The input keeps
+  // its 64px; the magnifier and clear button stay on its value line.
+  .#{$prefix}--search--fluid[data-invalid],
+  .#{$prefix}--search--fluid[data-warn] {
+    flex-wrap: wrap;
+    block-size: auto;
+    background: $field;
+  }
+
+  .#{$prefix}--search--fluid[data-warn] {
+    border-block-end: 1px solid $border-strong;
+  }
+
+  .#{$prefix}--search--fluid[data-invalid]:not(:focus-within) {
+    @include focus-outline("invalid");
+  }
+
+  .#{$prefix}--search--fluid[data-invalid]:focus-within,
+  .#{$prefix}--search--fluid[data-warn]:focus-within {
+    @include focus-outline("outline");
+  }
+
+  .#{$prefix}--search--fluid[data-invalid] .#{$prefix}--search-input,
+  .#{$prefix}--search--fluid[data-warn] .#{$prefix}--search-input {
+    flex-basis: 100%;
+    block-size: to-rem(64px);
+    border-block-end: none;
+    outline: none;
+  }
+
+  .#{$prefix}--search--fluid[data-invalid] .#{$prefix}--search-magnifier-icon,
+  .#{$prefix}--search--fluid[data-warn] .#{$prefix}--search-magnifier-icon {
+    inset-block: to-rem(35px) auto;
+  }
+
+  .#{$prefix}--search--fluid[data-invalid] .#{$prefix}--search-close,
+  .#{$prefix}--search--fluid[data-warn] .#{$prefix}--search-close {
+    inset-block: to-rem(24px) auto;
+  }
+
+  // The divider draws the line under the value; the clear button's own
+  // underline would cut the outline.
+  .#{$prefix}--search--fluid[data-invalid] .#{$prefix}--search-close::after,
+  .#{$prefix}--search--fluid[data-warn] .#{$prefix}--search-close::after {
+    display: none;
+  }
+
+  // After the input, which the base styles give `order: 1`.
+  .#{$prefix}--search--fluid .#{$prefix}--search__divider {
+    @include fluid-divider-rule;
+
+    flex-basis: calc(100% - #{to-rem(32px)});
+    order: 2;
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--form-requirement {
+    @include fluid-requirement;
+    @include fluid-requirement-padding;
+
+    flex-basis: 100%;
+    order: 2;
+  }
+
+  .#{$prefix}--search--fluid[data-invalid] .#{$prefix}--form-requirement {
+    color: $text-error;
+  }
+
+  .#{$prefix}--search--fluid .#{$prefix}--search__invalid-icon {
+    // On the message's first line: 64px field, the divider, 8px padding.
+    transform: none;
+
+    @include fluid-status-icon(to-rem(72px));
+  }
+
+  // Forced colors paint the clear button's underline an opaque `Canvas`
+  // across the bottom of the field's focus ring. The button has no fill
+  // there to draw the line over.
+  @media (forced-colors: active) {
+    .#{$prefix}--search--fluid .#{$prefix}--search-close::after {
+      display: none;
+    }
+  }
+}
+
+@include exports("fluid-search") {
+  @include fluid-search;
+}

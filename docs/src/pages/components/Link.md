@@ -1,0 +1,218 @@
+---
+components: ["Link", "OutboundLink", "LinkDownload"]
+description: Links provide styled hyperlinks with multiple sizes, states, and icons, including outbound and download variants.
+---
+
+<script>
+  import { Link, LinkDownload, OutboundLink, Text } from "carbon-components-svelte";
+  import Carbon from "carbon-icons-svelte/lib/Carbon.svelte";
+</script>
+
+## Basic
+
+Create a basic link with the default styling.
+
+<Link href="https://cloud.ibm.com/docs/api-gateway/">
+  API documentation
+</Link>
+
+## Inline
+
+Create links that flow naturally with surrounding text.
+
+<div>
+  Review the
+  <Link inline href="/docs/rate-limits">
+    rate limit policy
+  </Link>
+  before configuring retries.
+</div>
+
+## Muted
+
+Set `muted` to `true` so the link inherits the surrounding text color instead of the link color. Pair it with `inline` for links that sit within body text.
+
+<Text>
+  Read the
+  <Link inline muted href="/incidents/2451/postmortem">
+    incident postmortem
+  </Link>
+  for root cause analysis and remediation steps.
+</Text>
+
+## Custom colors
+
+Set `--cds-link-text-color` on a link, or on an element that holds links, to recolor it. `--cds-link-hover-text-color`, `--cds-link-visited-text-color` and `--cds-link-focus-text-color` set the hover color, the `visited` color and the focus ring. Each falls back to its theme token. `Toggletip` sets them to the inverse link colors on its content, so set them on an element inside the content to recolor its links.
+
+<Link
+  href="/billing/invoices"
+  style="--cds-link-text-color: var(--cds-text-secondary); --cds-link-hover-text-color: var(--cds-text-primary)"
+>
+  Billing invoices
+</Link>
+
+## External links
+
+Use these patterns when linking to resources outside your app.
+
+### Opens in new tab
+
+For external links that open in a new tab, the component automatically adds security attributes (rel="noopener noreferrer"). Override rel if needed.
+
+<Link href="https://cloud.ibm.com/status" target="_blank">
+  Service status
+</Link>
+
+### Outbound link
+
+Use `OutboundLink` as a convenient alternative for external links. Because it opens in a new tab (`target="_blank"`), it adds visually hidden text ("(opens in a new tab)") so screen readers announce the behavior.
+
+<OutboundLink href="https://cloud.ibm.com/apidocs">
+  API reference
+</OutboundLink>
+
+### Custom assistive text
+
+External links open in a new tab and append assistive text automatically for screen readers. Override `assistiveText` if needed, or set it to an empty string to opt out.
+
+<OutboundLink
+  href="https://www.ibm.com/support/pages/terms-use"
+  assistiveText="(opens in a new window)"
+>
+  Terms of service
+</OutboundLink>
+
+## Download link
+
+Use `LinkDownload` to trigger a client-side file download instead of navigating to a URL. Set `data` to the content to download, a string or `Blob`, and `filename` for the downloaded file name.
+
+<LinkDownload
+  data="id,name,region{'\n'}1,lb-east,us-east-1{'\n'}2,lb-west,us-west-2"
+  filename="load-balancers.csv"
+  type="text/csv;charset=utf-8"
+>
+  Download CSV
+</LinkDownload>
+
+### Dynamic content
+
+`data` is read at the moment the link is clicked, so downloaded content reflects filtering, sorting, or other state changes made before the click.
+
+<FileSource src="/framed/Link/LinkDownloadCsv" />
+
+### Events
+
+Listen for `download`, dispatched after the file downloads successfully, and `download:error`, dispatched if the download throws, with the error at `event.detail.error`.
+
+<LinkDownload
+  data="id,name,region{'\n'}1,lb-east,us-east-1{'\n'}2,lb-west,us-west-2"
+  filename="load-balancers.csv"
+  type="text/csv;charset=utf-8"
+  on:download={() => console.log("downloaded")}
+  on:download:error={(e) => console.log(e.detail.error)}
+>
+  Download CSV
+</LinkDownload>
+
+### Custom download behavior
+
+Override the default download behavior by passing a function to `download`. It receives `(data, filename, type)` and can return a promise; use it to upload the payload, show a confirmation step, or otherwise replace the built-in Blob download.
+
+<LinkDownload
+  data="id,name,region{'\n'}1,lb-east,us-east-1{'\n'}2,lb-west,us-west-2"
+  filename="load-balancers.csv"
+  download={(data, filename, type) => console.log(data, filename, type)}
+>
+  Download CSV
+</LinkDownload>
+
+## Icons
+
+Add an icon with the `icon` prop. Inline must be false when using icons.
+
+### With icon
+
+<div>
+  Review the
+  <Link href="https://cloud.ibm.com/docs/release-notes" icon={Carbon}>
+    release notes
+  </Link>
+  before upgrading.
+</div>
+
+### Custom icon
+
+Use the `icon` named slot to render custom icon markup instead of, or with different props than, the `icon` prop.
+
+<div>
+  Review the
+  <Link href="https://cloud.ibm.com/docs/release-notes">
+    release notes
+    <Carbon slot="icon" size={24} />
+  </Link>
+  before upgrading.
+</div>
+
+## Sizes
+
+Set `size` to control link size. The default is medium (`"md"`).
+
+### Medium
+
+<Link size="md" href="https://cloud.ibm.com/docs/api-gateway/">
+  API documentation
+</Link>
+
+### Large
+
+<Link size="lg" href="https://cloud.ibm.com/docs/api-gateway/">
+  API documentation
+</Link>
+
+### Small
+
+<Link size="sm" href="https://cloud.ibm.com/docs/api-gateway/">
+  API documentation
+</Link>
+
+### Large with icon
+
+Combine `size` and `icon`. The icon scales to match the link size. Inline must be false.
+
+<Link size="lg" href="https://cloud.ibm.com/docs/release-notes" icon={Carbon}>
+  Release notes
+</Link>
+
+### Small with icon
+
+<Link size="sm" href="https://cloud.ibm.com/docs/release-notes" icon={Carbon}>
+  Release notes
+</Link>
+
+## States
+
+Reflect interaction and navigation history.
+
+### Disabled
+
+Set `disabled` to `true` to disable the link. Native `<a>` elements have no `disabled` attribute, so the link instead renders with `role="link"` and `aria-disabled="true"`, and drops its `href`, remaining focusable and readable by assistive technology while looking and behaving like plain text. Clicks are also blocked outright—`event.preventDefault()` and `event.stopPropagation()` run before any forwarded `on:click` listener, so neither the link nor an ancestor element receives the click.
+
+<Link disabled href="/audit-logs">
+  Audit logs
+</Link>
+
+### Disabled with icon
+
+The icon still renders when the link is disabled.
+
+<Link disabled href="/audit-logs" icon={Carbon}>
+  Audit logs
+</Link>
+
+### Visited
+
+Show visited state styling with `visited`.
+
+<Link visited href="/deployments/history">
+  Deployment history
+</Link>

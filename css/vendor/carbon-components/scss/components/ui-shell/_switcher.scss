@@ -1,0 +1,176 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/css--helpers';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/vars';
+@import 'functions';
+@import 'theme';
+
+/// UI shell side nav
+/// @access private
+/// @group ui-shell
+@mixin carbon-switcher {
+  // ccs: `min-height` (here and on the link) lets long labels wrap onto
+  // more lines instead of overflowing a fixed-height row.
+  .#{$prefix}--switcher__item {
+    width: 100%;
+    min-height: $spacing-07;
+  }
+
+  .#{$prefix}--switcher__item:nth-child(1) {
+    margin-top: $spacing-05;
+  }
+
+  .#{$prefix}--switcher__item--divider {
+    display: block;
+    width: to-rem(224px);
+    height: 1px;
+    border: none;
+    margin: $spacing-03 $spacing-05;
+    background: $shell-panel-border;
+  }
+
+  .#{$prefix}--switcher__item-link {
+    @include carbon--type-style('heading-compact-01');
+
+    // ccs: flex centres the label exactly; the fixed padding drifted a few
+    // px against the type style's line-height. The 7px block padding leaves
+    // exactly one line in the content box, so a single line sits where a
+    // wrapped label's first line does.
+    display: flex;
+    min-height: $spacing-07;
+    align-items: center;
+    padding: to-rem(7px) $spacing-05;
+    color: $shell-panel-text-01;
+    text-decoration: none;
+
+    // ccs: a `HeaderPanelLink` without an `href` renders a `<button>`; reset
+    // its chrome so it matches the anchor. Anchors are unaffected.
+    width: 100%;
+    box-sizing: border-box;
+    border: 0;
+    margin: 0;
+    background: transparent;
+    font-family: inherit;
+    text-align: start;
+
+    @media (any-hover: hover) {
+      &:hover:not(.#{$prefix}--switcher__item-link--selected) {
+        background: $shell-panel-bg-02;
+        color: $shell-panel-text-02;
+        cursor: pointer;
+      }
+    }
+
+    &:focus {
+      outline: 2px solid $shell-panel-focus;
+      outline-offset: -2px;
+    }
+
+    &:active {
+      background: $shell-panel-bg-03;
+      color: $shell-panel-text-02;
+    }
+  }
+
+  // ccs: label and trailing icon of `HeaderPanelLink`. The label may wrap
+  // (`min-width: 0` lets it shrink below its content size) while the icon
+  // keeps its size, and tracks the link colour across hover/selected states.
+  .#{$prefix}--switcher__item-text {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  // ccs: one line tall and pinned to the top, so the icon lines up with the
+  // label's first line when it wraps.
+  .#{$prefix}--switcher__item-icon {
+    display: flex;
+    height: map-get($productive-heading-01, line-height) * 1em;
+    flex: 0 0 auto;
+    align-items: center;
+    align-self: flex-start;
+    margin-inline-start: $spacing-03;
+  }
+
+  .#{$prefix}--switcher__item-icon svg {
+    fill: currentColor;
+  }
+
+  // ccs: the selected item uses the same token as SideNavLink's
+  // `[aria-current='page']` state.
+  .#{$prefix}--switcher__item-link--selected {
+    background: $shell-panel-bg-04;
+    color: $shell-panel-text-02;
+  }
+
+}
+
+@include exports('carbon-header-switcher') {
+  @if feature-flag-enabled('ui-shell') {
+    @include carbon-switcher;
+  }
+}
+
+// carbon-components-svelte patch (switcher-forced-colors)
+// The selected HeaderPanelLink is a background fill, which forced-colors
+// mode repaints as Canvas, so it looked like every other link.
+//
+// The link's own `:active` rule (0,2,0) outranks a lone selected class, so the
+// selected rule doubles the class and repeats for `:active`, otherwise a pressed
+// selected link shows its real colours. `forced-color-adjust: none` also keeps
+// the real `$shell-panel-focus` outline, which would not contrast with the
+// Highlight fill, so the focus ring is forced to a system colour.
+
+/// Selected header panel link in forced-colors mode.
+/// @access private
+/// @group ui-shell
+@mixin switcher-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--switcher__item-link.#{$prefix}--switcher__item-link--selected,
+    .#{$prefix}--switcher__item-link.#{$prefix}--switcher__item-link--selected:active {
+      forced-color-adjust: none;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--switcher__item-link.#{$prefix}--switcher__item-link--selected:focus {
+      outline: 2px solid HighlightText;
+      outline-offset: -2px;
+    }
+  }
+}
+
+@include exports("switcher-forced-colors") {
+  @include switcher-forced-colors;
+}
+
+// carbon-components-svelte patch (header-panel-group)
+// `HeaderPanelGroup` nests its links in a list of their own, with the
+// group's label and rule above it, as `HeaderPanelDivider` draws them.
+
+/// Reset the nested list's chrome, and drop the first-item top margin,
+/// which belongs only to the first link of the whole panel.
+/// @access private
+/// @group ui-shell
+@mixin header-panel-group {
+  .#{$prefix}--header-panel-group__list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .#{$prefix}--header-panel-group__list > .#{$prefix}--switcher__item:nth-child(1) {
+    margin-top: 0;
+  }
+}
+
+@include exports("header-panel-group") {
+  @include header-panel-group;
+}

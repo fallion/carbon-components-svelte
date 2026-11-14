@@ -1,0 +1,72 @@
+<script lang="ts">
+  import TextInput from "carbon-components-svelte/TextInput/TextInput.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let value: ComponentProps<TextInput>["value"] = "";
+  export let placeholder = "";
+  export let size: ComponentProps<TextInput>["size"] = undefined;
+  export let disabled = false;
+  export let helperText = "";
+  export let labelText = "User name";
+  export let hideLabel = false;
+  export let maxCount: ComponentProps<TextInput>["maxCount"] = undefined;
+  export let counterText: ComponentProps<TextInput>["counterText"] = undefined;
+  export let limitReachedText: ComponentProps<TextInput>["limitReachedText"] =
+    undefined;
+  export let invalid = false;
+  export let invalidText = "";
+  export let warn = false;
+  export let warnText = "";
+  export let id = "ccs-test";
+  export let name: ComponentProps<TextInput>["name"] = undefined;
+  export let ref: ComponentProps<TextInput>["ref"] = null;
+  export let required = false;
+  export let inline = false;
+  export let readonly = false;
+  export let fluid = false;
+  export let selectTextOnFocus = false;
+  export let type: ComponentProps<TextInput>["type"] = "text";
+  export let onchange: ((event: CustomEvent) => void) | undefined = undefined;
+  export let oninput: ((event: CustomEvent) => void) | undefined = undefined;
+  export let onkeydown: ((event: KeyboardEvent) => void) | undefined =
+    undefined;
+  export let onkeyup: ((event: KeyboardEvent) => void) | undefined = undefined;
+  export let onfocus: ((event: FocusEvent) => void) | undefined = undefined;
+  export let onblur: ((event: FocusEvent) => void) | undefined = undefined;
+  export let onpaste: ((event: ClipboardEvent) => void) | undefined = undefined;
+</script>
+
+<TextInput
+  bind:value
+  {placeholder}
+  {size}
+  {disabled}
+  {helperText}
+  {labelText}
+  {hideLabel}
+  {maxCount}
+  {counterText}
+  {limitReachedText}
+  {invalid}
+  {invalidText}
+  {warn}
+  {warnText}
+  {id}
+  {name}
+  {ref}
+  {required}
+  {inline}
+  {readonly}
+  {fluid}
+  {selectTextOnFocus}
+  {type}
+  on:change={(e) => onchange?.(e)}
+  on:input={(e) => oninput?.(e)}
+  on:keydown={(e) => onkeydown?.(e)}
+  on:keyup={(e) => onkeyup?.(e)}
+  on:focus={(e) => onfocus?.(e)}
+  on:blur={(e) => onblur?.(e)}
+  on:paste={(e) => onpaste?.(e)}
+/>
+
+<div data-testid="bound">{String(value)}</div>

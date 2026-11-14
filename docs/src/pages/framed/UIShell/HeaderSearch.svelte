@@ -1,40 +1,42 @@
 <script>
   import {
-    Header,
-    HeaderUtilities,
-    HeaderAction,
-    HeaderSearch,
-    HeaderPanelLinks,
-    HeaderPanelDivider,
-    HeaderPanelLink,
-    SkipToContent,
+    Box,
+    Button,
+    Column,
     Content,
     Grid,
+    Header,
+    HeaderSearch,
+    HeaderUtilities,
     Row,
-    Column,
-    Button,
+    SkipToContent,
+    Stack,
   } from "carbon-components-svelte";
 
   const data = [
     {
+      id: "kubernetes-service",
       href: "/",
       text: "Kubernetes Service",
       description:
         "Deploy secure, highly available apps in a native Kubernetes experience. IBM Cloud Kubernetes Service creates a cluster of compute hosts and deploys highly available containers.",
     },
     {
+      id: "red-hat-openshift",
       href: "/",
       text: "Red Hat OpenShift on IBM Cloud",
       description:
         "Deploy and secure enterprise workloads on native OpenShift with developer focused tools to run highly available apps. OpenShift clusters build on Kubernetes container orchestration that offers consistency and flexibility in operations.",
     },
     {
+      id: "container-registry",
       href: "/",
       text: "Container Registry",
       description:
         "Securely store container images and monitor their vulnerabilities in a private registry.",
     },
     {
+      id: "code-engine",
       href: "/",
       text: "Code Engine",
       description:
@@ -65,30 +67,29 @@
   $: console.log("selectedResultIndex", selectedResultIndex);
 </script>
 
-<Header company="IBM" platformName="Carbon Svelte">
-  <svelte:fragment slot="skip-to-content">
-    <SkipToContent />
-  </svelte:fragment>
+<Header companyName="IBM" platformName="Cloud">
+  <svelte:fragment slot="skipToContent"><SkipToContent /></svelte:fragment>
   <HeaderUtilities>
     <HeaderSearch
+      shortcut="mod+k"
       bind:ref
       bind:active
       bind:value
       bind:selectedResultIndex
       placeholder="Search services"
-      results="{results}"
-      on:active="{() => {
-        events = [...events, { type: 'active' }];
-      }}"
-      on:inactive="{() => {
-        events = [...events, { type: 'inactive' }];
-      }}"
-      on:clear="{() => {
-        events = [...events, { type: 'clear' }];
-      }}"
-      on:select="{(e) => {
-        events = [...events, { type: 'select', ...e.detail }];
-      }}"
+      {results}
+      on:active={() => {
+        events = [...events, { type: "active" }];
+      }}
+      on:inactive={() => {
+        events = [...events, { type: "inactive" }];
+      }}
+      on:clear={() => {
+        events = [...events, { type: "clear" }];
+      }}
+      on:select={(e) => {
+        events = [...events, { type: "select", ...e.detail }];
+      }}
     />
   </HeaderUtilities>
 </Header>
@@ -99,9 +100,9 @@
       <Column>
         <h1>HeaderSearch</h1>
         <Button
-          on:click="{() => {
+          on:click={() => {
             active = true;
-          }}"
+          }}
         >
           Activate the search bar
         </Button>
@@ -114,16 +115,18 @@
           Click the button and search for something. Dispatched events are
           logged below:
         </p>
-        <div style="overflow-x: scroll;">
-          {#each events as { type, ...rest }}
-            <div style="display: block; margin-bottom: var(--cds-layout-01)">
-              <div><strong>on:{type}</strong></div>
-              {#if Object.keys(rest).length > 0}
-                <pre>{JSON.stringify(rest, null, 2)}</pre>
-              {/if}
-            </div>
-          {/each}
-        </div>
+        <Box overflowX="auto">
+          <Stack gap={2}>
+            {#each events as { type, ...rest }}
+              <div>
+                <div><strong>on:{type}</strong></div>
+                {#if Object.keys(rest).length > 0}
+                  <pre>{JSON.stringify(rest, null, 2)}</pre>
+                {/if}
+              </div>
+            {/each}
+          </Stack>
+        </Box>
       </Column>
     </Row>
   </Grid>

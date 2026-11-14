@@ -1,0 +1,129 @@
+<script lang="ts">
+  import type {
+    DataTableHeader,
+    DataTableRow,
+  } from "carbon-components-svelte/DataTable/DataTable.svelte";
+  import DataTable from "carbon-components-svelte/DataTable/DataTable.svelte";
+  import Toolbar from "carbon-components-svelte/DataTable/Toolbar.svelte";
+  import ToolbarContent from "carbon-components-svelte/DataTable/ToolbarContent.svelte";
+  import ToolbarSearch from "carbon-components-svelte/DataTable/ToolbarSearch.svelte";
+
+  const rows = [
+    { id: "row-1", name: "Laptop", price: 999 },
+    { id: "row-2", name: "Phone", price: 599 },
+    { id: "row-3", name: "Desk", price: 299 },
+  ] as const;
+
+  type Row = (typeof rows)[number];
+
+  const headers: ReadonlyArray<DataTableHeader<Row>> = [
+    { key: "id", value: "ID" },
+    { key: "name", value: "Name" },
+    { key: "price", value: "Price" },
+  ];
+
+  let filteredRowIds: ReadonlyArray<Row["id"]> = [];
+  let searchValue = "";
+
+  // `true` selects the default filter. The union annotation is what lets
+  // ToolbarSearch infer its `Row` generic from `shouldFilterRows`; a bare
+  // boolean carries no row type, so `Row` would fall back to `DataTableRow`.
+  const filterRowsDefault = true as
+    boolean | ((row: Row, value: string | number) => boolean);
+
+  const numericRows = [
+    { id: 1, name: "Item 1", category: "Electronics" },
+    { id: 2, name: "Item 2", category: "Furniture" },
+    { id: 3, name: "Item 3", category: "Electronics" },
+  ] as const;
+
+  type NumericRow = (typeof numericRows)[number];
+
+  const numericHeaders: ReadonlyArray<DataTableHeader<NumericRow>> = [
+    { key: "id", value: "ID" },
+    { key: "name", value: "Name" },
+    { key: "category", value: "Category" },
+  ];
+
+  let numericFilteredRowIds: ReadonlyArray<NumericRow["id"]> = [];
+  let numericSearchValue = "";
+
+  const numericFilterRowsDefault = true as
+    boolean | ((row: NumericRow, value: string | number) => boolean);
+
+  interface ProductRow extends DataTableRow<string> {
+    name: string;
+    price: number;
+    inStock: boolean;
+  }
+
+  const productRows: ReadonlyArray<ProductRow> = [
+    { id: "prod-1", name: "Widget", price: 10, inStock: true },
+    { id: "prod-2", name: "Gadget", price: 20, inStock: false },
+    { id: "prod-3", name: "Thing", price: 15, inStock: true },
+  ];
+
+  const productHeaders: ReadonlyArray<DataTableHeader<ProductRow>> = [
+    { key: "id", value: "ID" },
+    { key: "name", value: "Name" },
+    { key: "price", value: "Price" },
+    { key: "inStock", value: "In Stock" },
+  ];
+
+  let productFilteredRowIds: ReadonlyArray<ProductRow["id"]> = [];
+  let productSearchValue = "";
+
+  const customProductFilter = (row: ProductRow, value: string | number) => {
+    const search = String(value).toLowerCase();
+    return (
+      row.name.toLowerCase().includes(search) ||
+      row.id.toLowerCase().includes(search)
+    );
+  };
+</script>
+
+<DataTable {headers} {rows}>
+  <Toolbar>
+    <ToolbarContent>
+      <!-- filteredRowIds should be typed as ReadonlyArray<Row["id"]>, i.e. ReadonlyArray<"row-1" | "row-2" | "row-3"> -->
+      <ToolbarSearch
+        bind:value={searchValue}
+        shouldFilterRows={filterRowsDefault}
+        bind:filteredRowIds
+      />
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+<div data-testid="filtered-ids-1">{JSON.stringify(filteredRowIds)}</div>
+
+<DataTable headers={numericHeaders} rows={numericRows}>
+  <Toolbar>
+    <ToolbarContent>
+      <!-- numericFilteredRowIds should be typed as ReadonlyArray<NumericRow["id"]>, i.e. ReadonlyArray<1 | 2 | 3> -->
+      <ToolbarSearch
+        bind:value={numericSearchValue}
+        shouldFilterRows={numericFilterRowsDefault}
+        bind:filteredRowIds={numericFilteredRowIds}
+      />
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+<div data-testid="filtered-ids-2">{JSON.stringify(numericFilteredRowIds)}</div>
+
+<DataTable headers={productHeaders} rows={productRows}>
+  <Toolbar>
+    <ToolbarContent>
+      <!-- productFilteredRowIds should be typed as ReadonlyArray<ProductRow["id"]>, i.e. ReadonlyArray<string>;
+           customProductFilter receives ProductRow type, not DataTableRow<any> -->
+      <ToolbarSearch
+        bind:value={productSearchValue}
+        shouldFilterRows={customProductFilter}
+        bind:filteredRowIds={productFilteredRowIds}
+      />
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+<div data-testid="filtered-ids-3">{JSON.stringify(productFilteredRowIds)}</div>

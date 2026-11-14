@@ -1,0 +1,87 @@
+<script lang="ts">
+  import RangeSlider from "carbon-components-svelte/Slider/RangeSlider.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let value = 0;
+  export let valueUpper = 100;
+  export let min = 0;
+  export let max = 100;
+  export let step = 1;
+  export let minGap = 0;
+  export let stepMultiplier = 4;
+  export let orientation: ComponentProps<RangeSlider>["orientation"] =
+    "horizontal";
+  export let marks:
+    boolean | ReadonlyArray<{ value: number; label?: string }> | undefined =
+    false;
+  export let snapToMarks = false;
+  export let markSnapDistance = 0;
+  export let trackDrag: ComponentProps<RangeSlider>["trackDrag"] = "handle";
+  export let disabled = false;
+  export let readonly = false;
+  export let hideTextInput = false;
+  export let hideRangeLabels = false;
+  export let labelText = "Range";
+  export let name = "";
+  export let nameUpper = "";
+  export let inputType = "number";
+  export let formatValue: ((value: number) => string) | undefined = undefined;
+  export let ariaLabelInput: string | undefined = undefined;
+  export let ariaLabelInputUpper: string | undefined = undefined;
+  export let selectTextOnFocus = false;
+  export let onchange:
+    | ((event: CustomEvent<{ value: number; valueUpper: number }>) => void)
+    | undefined = undefined;
+  export let oninput:
+    | ((event: CustomEvent<{ value: number; valueUpper: number }>) => void)
+    | undefined = undefined;
+  export let onfocus:
+    | ((
+        event: CustomEvent<{
+          value: number;
+          valueUpper: number;
+          handle: "lower" | "upper";
+        }>,
+      ) => void)
+    | undefined = undefined;
+  export let onblur:
+    | ((
+        event: CustomEvent<{
+          value: number;
+          valueUpper: number;
+          handle: "lower" | "upper";
+        }>,
+      ) => void)
+    | undefined = undefined;
+</script>
+
+<RangeSlider
+  bind:value
+  bind:valueUpper
+  {labelText}
+  {min}
+  {max}
+  {step}
+  {minGap}
+  {stepMultiplier}
+  {orientation}
+  {marks}
+  {snapToMarks}
+  {markSnapDistance}
+  {trackDrag}
+  {disabled}
+  {readonly}
+  {hideTextInput}
+  {hideRangeLabels}
+  {name}
+  {nameUpper}
+  {inputType}
+  {formatValue}
+  ariaLabelInput={ariaLabelInput ?? "Lower bound"}
+  ariaLabelInputUpper={ariaLabelInputUpper ?? "Upper bound"}
+  {selectTextOnFocus}
+  on:change={(e) => onchange?.(e)}
+  on:input={(e) => oninput?.(e)}
+  on:focus={(e) => onfocus?.(e)}
+  on:blur={(e) => onblur?.(e)}
+/>

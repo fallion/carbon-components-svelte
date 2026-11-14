@@ -1,0 +1,357 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../form/form';
+
+/// Select styles
+/// @access private
+/// @group select
+@mixin select {
+  .#{$prefix}--select {
+    @include reset;
+
+    position: relative;
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .#{$prefix}--select-input__wrapper {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+  }
+
+  .#{$prefix}--select-input {
+    @include type-style('body-compact-01');
+    @include focus-outline('reset');
+
+    display: block;
+    width: 100%;
+    height: to-rem(40px);
+    padding-block: 0;
+    padding-inline-start: $spacing-05;
+    padding-inline-end: $spacing-09;
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    appearance: none;
+    background-color: $field;
+    border-radius: 0;
+    color: $text-primary;
+    cursor: pointer;
+    font-family: inherit;
+    // reset disabled <select> opacity
+    opacity: 1;
+
+    &:hover {
+      background-color: $field-hover;
+    }
+
+
+    // Select text renders a little high on Firefox
+    @-moz-document url-prefix() {
+      // Removes dotted inner focus
+      &:-moz-focusring,
+      &::-moz-focus-inner {
+        background-image: none;
+        color: transparent;
+        text-shadow: 0 0 0 #000000;
+      }
+    }
+
+    &:focus {
+      @include focus-outline('outline');
+
+      color: $text-primary;
+    }
+
+    &:disabled,
+    &:hover:disabled {
+      border-bottom-color: $field;
+      background-color: $field;
+      color: $text-disabled;
+      cursor: not-allowed;
+    }
+  }
+
+  .#{$prefix}--select-input--sm {
+    height: to-rem(32px);
+    max-height: to-rem(32px);
+  }
+
+  .#{$prefix}--select-input--xl {
+    height: to-rem(48px);
+    max-height: to-rem(48px);
+  }
+
+  .#{$prefix}--select--disabled .#{$prefix}--label,
+  .#{$prefix}--select--disabled .#{$prefix}--form__helper-text {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--select-input__wrapper[data-invalid] .#{$prefix}--select-input,
+  .#{$prefix}--select--warning .#{$prefix}--select-input {
+    padding-inline-end: carbon--mini-units(9);
+  }
+
+  .#{$prefix}--select-input:disabled ~ .#{$prefix}--select__arrow {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--select__arrow {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    fill: $layer-selected-inverse;
+    pointer-events: none;
+    @include ccs-inset-inline($end: $spacing-05);
+
+    // Windows, Firefox HCM Fix
+    @media screen and (prefers-contrast) {
+      // `ButtonText` is a CSS2 system color to help improve colors in HCM
+      path {
+        fill: ButtonText;
+      }
+    }
+  }
+
+  .#{$prefix}--select__invalid-icon {
+    position: absolute;
+    @include ccs-inset-inline($end: $spacing-08);
+  }
+
+  .#{$prefix}--select-input__wrapper[data-invalid]
+    .#{$prefix}--select-input
+    ~ .#{$prefix}--select__invalid-icon {
+    fill: $support-error;
+  }
+
+  .#{$prefix}--select__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--select__invalid-icon--warning path[fill] {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  optgroup.#{$prefix}--select-optgroup,
+  .#{$prefix}--select-option {
+    // For the options to show in IE11
+    background-color: $background-hover;
+    color: $text-primary;
+
+    &:disabled {
+      color: $text-disabled;
+    }
+  }
+
+  // ccs: a two-column grid, as inline Dropdown and MultiSelect: the label
+  // beside the field, centred on it at any size, and the helper text or
+  // message under the field. (As a flex row, the label centred on the
+  // field and its message together, and helper text went beside the
+  // field.) The field's wrapper is laid out by the grid.
+  .#{$prefix}--select--inline {
+    display: grid;
+    align-items: center;
+    grid-template-columns: auto auto;
+    justify-content: start;
+  }
+
+  .#{$prefix}--select--inline > .#{$prefix}--select-input--inline__wrapper {
+    display: contents;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--select-input__wrapper,
+  .#{$prefix}--select--inline .#{$prefix}--form-requirement,
+  .#{$prefix}--select--inline .#{$prefix}--form__helper-text {
+    grid-column: 2;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--form__helper-text {
+    margin: $carbon--spacing-02 0 0;
+  }
+
+  // Pagination's selects keep their own row (see _pagination.scss).
+  .#{$prefix}--pagination .#{$prefix}--select.#{$prefix}--select--inline {
+    display: flex;
+  }
+
+  .#{$prefix}--pagination
+    .#{$prefix}--select--inline
+    > .#{$prefix}--select-input--inline__wrapper {
+    display: flex;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--label {
+    margin-block: 0;
+    margin-inline-start: 0;
+    margin-inline-end: $carbon--spacing-03;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--select-input {
+    width: auto;
+    padding-inline-start: $carbon--spacing-03;
+    padding-inline-end: $spacing-07;
+    border-bottom: none;
+    background-color: transparent;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--select-input:focus,
+  .#{$prefix}--select--inline .#{$prefix}--select-input:focus option,
+  .#{$prefix}--select--inline .#{$prefix}--select-input:focus optgroup {
+    background-color: $background;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--select-input[disabled],
+  .#{$prefix}--select--inline .#{$prefix}--select-input[disabled]:hover {
+    background-color: $field;
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--select__arrow {
+    @include ccs-inset-inline($end: $carbon--spacing-03);
+  }
+
+  // ccs: warn lays out like invalid
+  .#{$prefix}--select--inline.#{$prefix}--select--invalid
+    .#{$prefix}--select-input,
+  .#{$prefix}--select--inline.#{$prefix}--select--warning
+    .#{$prefix}--select-input {
+    padding-inline-end: to-rem(56px);
+  }
+
+  .#{$prefix}--select--inline.#{$prefix}--select--invalid
+    .#{$prefix}--select-input
+    ~ .#{$prefix}--select__invalid-icon,
+  .#{$prefix}--select--inline.#{$prefix}--select--warning
+    .#{$prefix}--select-input
+    ~ .#{$prefix}--select__invalid-icon {
+    @include ccs-inset-inline($end: $spacing-07);
+  }
+
+  .#{$prefix}--select--inline .#{$prefix}--select-input:disabled {
+    color: $disabled;
+    cursor: not-allowed;
+
+    ~ * {
+      cursor: not-allowed;
+    }
+  }
+
+  .#{$prefix}--select.#{$prefix}--skeleton {
+    @include skeleton;
+
+    width: 100%;
+    height: 2.5rem;
+  }
+
+  // ccs: size the skeleton like the field it stands in for
+  .#{$prefix}--select--xs.#{$prefix}--skeleton {
+    height: to-rem(24px);
+  }
+
+  .#{$prefix}--select--sm.#{$prefix}--skeleton {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--select--xl.#{$prefix}--skeleton {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--select.#{$prefix}--skeleton .#{$prefix}--select-input {
+    display: none;
+  }
+
+  // Windows HCM fix
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--select__arrow {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('select') {
+  @include select;
+}
+
+// carbon-components-svelte patch (formerly css/_select.scss)
+// Extends the v10 select with the extra-small (`xs`) size added in newer
+// Carbon (React `size="xs"`, 24px height). v10 only ships sm/md/lg.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Extra-small select (Carbon React size="xs")
+/// @access private
+/// @group components
+@mixin select-xs {
+  .#{$prefix}--select-input--xs {
+    height: to-rem(24px);
+    max-height: to-rem(24px);
+  }
+}
+
+@include exports("select-xs") {
+  @include select-xs;
+}
+
+// carbon-components-svelte patch (formerly css/_select-readonly.scss)
+/// Readonly select styles
+/// @access private
+/// @group select
+@mixin select-readonly {
+  .#{$prefix}--select--readonly .#{$prefix}--select-input {
+    background-color: transparent;
+    border-block-end-color: $border-subtle;
+    cursor: default;
+  }
+
+  .#{$prefix}--select--readonly .#{$prefix}--select-input:hover {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--select--readonly .#{$prefix}--select__arrow {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--select--readonly.#{$prefix}--select--inline .#{$prefix}--select-input:hover { // ccs: dedupe
+    background-color: transparent;
+  }
+}
+
+@include exports("select-readonly") {
+  @include select-readonly;
+}
+
+// carbon-components-svelte patch
+// Carbon's form item is `flex: 1 1 auto`, so an inline select stretched
+// across any flex row. Keep it at its content width; it can still shrink.
+// Double class beats the base `.bx--form-item`, which emits after patches.
+
+/// Inline select form item
+/// @access private
+/// @group components
+@mixin select-inline-form-item {
+  .#{$prefix}--form-item.#{$prefix}--select__form-item--inline {
+    flex: 0 1 auto;
+  }
+}
+
+@include exports("select-inline-form-item") {
+  @include select-inline-form-item;
+}

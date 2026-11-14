@@ -1,6 +1,23 @@
 <script>
-  /** Specify the value of the slider */
+  /**
+   * @restProps {div}
+   * @event {number} change
+   * @event {number} input
+   */
+
+  /**
+   * Specify the value of the slider.
+   * Kept when the owning form resets.
+   * @bindable writable
+   */
   export let value = 0;
+
+  /**
+   * Set the size of the number input.
+   * Inherits `"xs"` from a parent `Form`.
+   * @type {"xs" | undefined}
+   */
+  export let size = undefined;
 
   /** Set the maximum slider value */
   export let max = 100;
@@ -14,8 +31,39 @@
   /** Specify the label for the min value */
   export let minLabel = "";
 
+  /**
+   * Format displayed values for range labels and `aria-valuetext`.
+   * Does not change the numeric model; the text input stays numeric.
+   * @type {undefined | ((value: number) => string)}
+   */
+  export let formatValue = undefined;
+
   /** Set the step value */
   export let step = 1;
+
+  /**
+   * Show tick marks along the track.
+   * Set to `true` to place a tick at every `step`, or pass an array of
+   * `{ value, label? }` for specific stops with optional labels below the track.
+   * A label is also announced in `aria-valuetext` while the value sits on its mark.
+   * Snapping follows `step` unless `snapToMarks` is set.
+   * @type {boolean | ReadonlyArray<{ value: number; label?: string }>}
+   */
+  export let marks = false;
+
+  /**
+   * Set to `true` to snap drag, click, and arrow key navigation to the configured `marks`
+   * instead of `step`. Has no effect when `marks` is not set.
+   */
+  export let snapToMarks = false;
+
+  /**
+   * Snap drags and clicks to a mark when the pointer comes within this many pixels
+   * of it, so meaningful values are easy to hit while other values stay reachable
+   * by `step`. Keyboard navigation is unaffected. Set to `0` to disable.
+   * Has no effect when `marks` is not set or `snapToMarks` is set.
+   */
+  export let markSnapDistance = 0;
 
   /** Set the step multiplier value */
   export let stepMultiplier = 4;
@@ -29,193 +77,546 @@
   /** Set to `true` to disable the slider */
   export let disabled = false;
 
-  /** Set to `true` to enable the light variant */
-  export let light = false;
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
+
+  /**
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
 
   /** Set to `true` to hide the text input */
   export let hideTextInput = false;
 
+  /**
+   * Set to `true` to hide the min and max labels beside the track,
+   * as when a readout elsewhere already shows the range.
+   */
+  export let hideRangeLabels = false;
+
+  /**
+   * Set to `true` for the slider to span
+   * the full width of its containing element.
+   */
+  export let fullWidth = false;
+
+  /**
+   * Set to "vertical" to lay out the slider along the vertical axis
+   * @type {"horizontal" | "vertical"}
+   */
+  export let orientation = "horizontal";
+
   /** Set an id for the slider div element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
   /** Set to `true` to indicate an invalid state */
   export let invalid = false;
 
-  /** Specify the label text */
+  /** Specify the invalid state text */
+  export let invalidText = "";
+
+  /** Set to `true` to indicate a warning state */
+  export let warn = false;
+
+  /** Specify the warning state text */
+  export let warnText = "";
+
+  /** Specify the helper text */
+  export let helperText = "";
+
+  /**
+   * Specify the label text.
+   * Alternatively, use the "labelChildren" slot.
+   * @example
+   * ```svelte
+   * <Slider>
+   *   <span slot="labelChildren">Custom Label</span>
+   * </Slider>
+   * ```
+   */
   export let labelText = "";
+
+  /** Set to `true` to visually hide the label text */
+  export let hideLabel = false;
 
   /** Set a name for the slider element */
   export let name = "";
 
-  /** Obtain a reference to the HTML element */
+  /**
+   * Specify the id of a form element outside the component to associate
+   * the value input with.
+   * @type {string | undefined}
+   */
+  export let form = undefined;
+
+  /**
+   * Obtain a reference to the HTML element.
+   * @bindable readonly
+   * @type {null | HTMLDivElement}
+   */
   export let ref = null;
 
-  import { createEventDispatcher } from "svelte";
+  /** Set to `true` to select the number input's text when it receives focus */
+  export let selectTextOnFocus = false;
+
+  import { createEventDispatcher, getContext, tick } from "svelte";
+  import { FORM_SIZE_CONTEXT_KEY } from "../constants/context-keys.js";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { hasModifierKey } from "../utils/has-modifier-key.js";
+  import { getLayoutDirection } from "../utils/layout-direction.js";
+  import { clamp, parse } from "../utils/numeric-format.js";
+  import { pointerDrag } from "../utils/pointer-drag.js";
+  import { preserveFocusSelection } from "../utils/preserve-focus-selection.js";
+  import { reflectDefaultValue } from "../utils/reflect-default-value.js";
+  import {
+    getMarkLabels,
+    markNearPointer,
+    nearestMark,
+    resolveSliderMarks,
+    stepMarks,
+  } from "../utils/resolve-slider-marks.js";
+  import {
+    formatRangeLabel as formatSliderRangeLabel,
+    getTextInputWidth,
+    getValueText,
+    isTrackRtl,
+    snapToStep,
+    TRACK_MIRROR,
+    trackLeft,
+    trackSign,
+    valueFromPointer,
+  } from "../utils/slider-value.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
+
+  $: textInputWidth = getTextInputWidth(min, max, step);
 
   const dispatch = createEventDispatcher();
 
+  // Naming and description belong on the slider thumb and its text input,
+  // not the wrapper. A consumer `aria-label` replaces the visible label.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
+  $: controlLabelledBy = ariaLabelledBy ?? (ariaLabel ? undefined : labelId);
+
+  /** @type {null | HTMLDivElement} */
   let trackRef = null;
-  let dragging = false;
-  let holding = false;
+  /** @type {null | HTMLDivElement} */
+  let thumbRef = null;
+  /** @type {null | HTMLInputElement} */
+  let textInputRef = null;
 
-  function startDragging() {
-    dragging = true;
+  /** @type {(label: string, numericValue: number) => string | number} */
+  function formatRangeLabel(label, numericValue) {
+    return formatSliderRangeLabel(label, numericValue, formatValue);
   }
 
-  function startHolding() {
-    holding = true;
+  /** @type {(e: PointerEvent) => boolean | undefined} */
+  function handleDragStart(event) {
+    if (effectiveDisabled || readonly) return false;
+    readDirection();
+    // Focus the thumb so arrow keys work after a press on the track. The
+    // compat `mousedown` would otherwise move focus to the body.
+    event.preventDefault();
+    thumbRef?.focus({ preventScroll: true });
+    calcValue(event);
   }
 
-  function stopHolding() {
-    holding = false;
-    dragging = false;
+  function handleDragEnd() {
+    if (!effectiveDisabled && !readonly) dispatch("change", value);
   }
 
-  function move() {
-    if (holding) {
-      startDragging();
+  function handleTextInputFocus() {
+    if (selectTextOnFocus && !effectiveDisabled) {
+      tick().then(() => textInputRef?.select());
     }
   }
 
-  function calcValue(e) {
-    if (disabled) return;
+  /** @type {(e: PointerEvent) => void} */
+  function calcValue(event) {
+    if (effectiveDisabled || readonly || !event) return;
 
-    const offsetX = e.touches ? e.touches[0].clientX : e.clientX;
-    const { left, width } = trackRef.getBoundingClientRect();
-    let nextValue =
-      min +
-      Math.round(((max - min) * ((offsetX - left) / width)) / step) * step;
-
-    if (nextValue <= min) {
-      nextValue = min;
-    } else if (nextValue >= max) {
-      nextValue = max;
+    const rect = /** @type {HTMLDivElement} */ (
+      trackRef
+    ).getBoundingClientRect();
+    let nextValue = valueFromPointer(event, rect, {
+      orientation,
+      min,
+      max,
+      step,
+      rtl: horizontalRtl,
+    });
+    if (nextValue == null) return;
+    if (snapToMarks && resolvedMarks.length) {
+      nextValue = /** @type {{ value: number }} */ (
+        nearestMark(nextValue, resolvedMarks)
+      ).value;
+    } else {
+      nextValue =
+        markNearPointer(event, rect, {
+          orientation,
+          min,
+          max,
+          marks: resolvedMarks,
+          distance: markSnapDistance,
+          rtl: horizontalRtl,
+        })?.value ?? nextValue;
     }
-
     value = nextValue;
+    dispatch("input", value);
   }
 
   $: labelId = `label-${id}`;
+  $: ({ errorId, warnId, readonlyId, helperId } = buildFieldIds(id));
+  $: inputId = `input-${id}`;
+  // Invalid/warn states are suppressed when the slider is disabled or read-only.
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
+  }));
   $: range = max - min;
-  $: left = ((value - min) / range) * 100;
-  $: {
-    if (value <= min) {
-      value = min;
-    } else if (value >= max) {
-      value = max;
-    }
+  $: left = range === 0 ? 0 : ((value - min) / range) * 100;
 
-    if (dragging) {
-      calcValue(event);
-      dragging = false;
-    }
+  // In RTL, `min` sits at the right end of a horizontal track. The
+  // styles place the thumbs, fill and marks by the nearest `dir` (see
+  // `trackSign`), so server-rendered markup sits right before the script
+  // runs, and follows a `dir` change. The script reads the direction for
+  // the keys and the pointer: the track's nearest `dir`, else a
+  // LayoutDirection, else the computed direction. Read at mount, when a
+  // LayoutDirection changes, and again when the pointer enters, the thumb
+  // takes focus, or a key is pressed.
+  const layoutDirection = getLayoutDirection();
+  let horizontalRtl = false;
 
-    if (!holding && !disabled) {
-      dispatch("change", value);
-    }
+  /**
+   * @param {"horizontal" | "vertical"} axis
+   * @param {"ltr" | "rtl" | undefined} contextDirection
+   * @param {Element | null} track
+   */
+  function syncDirection(axis, contextDirection, track) {
+    horizontalRtl = isTrackRtl(axis, contextDirection, track);
   }
+
+  function readDirection() {
+    syncDirection(orientation, $layoutDirection, trackRef);
+  }
+
+  $: syncDirection(orientation, $layoutDirection, trackRef);
+
+  $: resolvedMarks = resolveSliderMarks(marks, min, max, step);
+  $: markLabels = getMarkLabels(resolvedMarks);
+  $: hasMarkLabels = markLabels.size > 0;
+  $: value = clamp(value, min, max);
+
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = size ?? ($formSize === "xs" ? "xs" : undefined);
 </script>
 
-<svelte:window
-  on:mousemove="{move}"
-  on:touchmove="{move}"
-  on:mouseup="{stopHolding}"
-  on:touchend="{stopHolding}"
-  on:touchcancel="{stopHolding}"
-/>
-
 <!-- svelte-ignore a11y-mouse-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
-  class:bx--form-item="{true}"
-  {...$$restProps}
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  class:bx--form-item={true}
+  class:bx--form-item--fit={!fullWidth}
+  class:bx--slider-form-item--vertical={orientation === "vertical"}
+  {...wrapperProps}
   on:click
   on:mouseover
   on:mouseenter
   on:mouseleave
 >
+  <!-- A hidden input cannot be labelled; the thumb is named through aria-labelledby. -->
   <label
-    for="{id}"
-    id="{labelId}"
-    class:bx--label="{true}"
-    class:bx--label--disabled="{disabled}"
+    for={hideTextInput || readonly ? undefined : inputId}
+    id={labelId}
+    class:bx--label={true}
+    class:bx--label--disabled={effectiveDisabled}
+    class:bx--visually-hidden={hideLabel}
   >
-    <slot name="labelText">
-      {labelText}
-    </slot>
+    <slot name="labelChildren">{labelText}</slot>
   </label>
-  <div class:bx--slider-container="{true}">
-    <span class:bx--slider__range-label="{true}">{minLabel || min}</span>
+  <div
+    class:bx--slider-container={true}
+    class:bx--slider-container--full-width={fullWidth}
+    class:bx--slider-container--no-range-labels={hideRangeLabels}
+    class:bx--slider-container--no-text-input={hideTextInput}
+    class:bx--slider-container--readonly={readonly}
+    class:bx--slider-container--vertical={orientation === "vertical"}
+    style:width={fullWidth ? "100%" : undefined}
+  >
+    {#if !hideRangeLabels}
+      <span class:bx--slider__range-label={true}
+        >{formatRangeLabel(minLabel, min)}</span
+      >
+    {/if}
     <div
-      bind:this="{ref}"
-      role="presentation"
-      tabindex="-1"
-      class:bx--slider="{true}"
-      class:bx--slider--disabled="{disabled}"
-      on:mousedown="{startDragging}"
-      on:mousedown="{startHolding}"
-      on:touchstart="{startHolding}"
-      on:keydown="{({ shiftKey, key }) => {
-        const keys = {
-          ArrowDown: -1,
-          ArrowLeft: -1,
-          ArrowRight: 1,
-          ArrowUp: 1,
-        };
-        if (keys[key]) {
-          value +=
-            step * (shiftKey ? range / step / stepMultiplier : 1) * keys[key];
-        }
-      }}"
+      bind:this={ref}
+      class:bx--slider={true}
+      class:bx--slider--disabled={effectiveDisabled}
+      class:bx--slider--readonly={readonly}
+      class:bx--slider--with-marks={resolvedMarks.length > 0}
+      class:bx--slider--with-mark-labels={hasMarkLabels}
+      class:bx--slider--vertical={orientation === "vertical"}
+      style:max-width={fullWidth ? "none" : undefined}
+      style:--ccs-slider-sign={orientation === "vertical"
+        ? undefined
+        : trackSign(horizontalRtl)}
+      use:pointerDrag={{
+        onStart: handleDragStart,
+        onMove: calcValue,
+        onEnd: handleDragEnd,
+      }}
+      on:pointerenter={readDirection}
     >
       <div
+        bind:this={thumbRef}
         role="slider"
-        tabindex="0"
-        class:bx--slider__thumb="{true}"
-        style="left: {left}%"
-        aria-labelledby="{labelId}"
-        aria-valuemax="{max}"
-        aria-valuemin="{min}"
-        aria-valuenow="{value}"
-        id="{id}"
+        aria-disabled={effectiveDisabled || undefined}
+        tabindex={effectiveDisabled ? undefined : 0}
+        class:bx--slider__thumb={true}
+        style:left={orientation === "vertical" ? undefined : trackLeft(left)}
+        style:top={orientation === "vertical" ? `${100 - left}%` : undefined}
+        aria-valuemax={max}
+        aria-valuemin={min}
+        aria-valuenow={value}
+        aria-valuetext={getValueText(value, formatValue, markLabels)}
+        aria-label={ariaLabel}
+        aria-labelledby={controlLabelledBy}
+        aria-orientation={orientation}
+        aria-describedby={joinDescribedBy(
+          readonly ? readonlyId : null,
+          resolveStatusDescribedBy({
+            showInvalid,
+            showWarn,
+            invalidText,
+            warnText,
+            helperText,
+            errorId,
+            warnId,
+            helperId,
+          }),
+          ariaDescribedBy,
+        )}
+        aria-invalid={showInvalid || undefined}
+        aria-readonly={readonly || undefined}
+        {id}
+        on:focus={readDirection}
+        on:keydown={(event) => {
+          // Alt/Ctrl/Meta+Arrow belong to the browser (Alt/Cmd+Left is Back).
+          if (effectiveDisabled || readonly || hasModifierKey(event)) return;
+          readDirection();
+
+          if (event.key === "Home" || event.key === "End") {
+            // Prevent the browser from also scrolling to the top/bottom of the page.
+            event.preventDefault();
+            value = event.key === "Home" ? min : max;
+            dispatch("input", value);
+            dispatch("change", value);
+            return;
+          }
+
+          // Left and right move the thumb the way they point, as they do
+          // on a native range input in RTL.
+          /** @type {Record<string, number>} */
+          const keys = {
+            ArrowDown: -1,
+            ArrowLeft: horizontalRtl ? 1 : -1,
+            ArrowRight: horizontalRtl ? -1 : 1,
+            ArrowUp: 1,
+            PageDown: -1,
+            PageUp: 1,
+          };
+          if (keys[event.key]) {
+            // Prevent the arrow/page keys from also scrolling the page.
+            event.preventDefault();
+            const isLargeStep =
+              event.shiftKey ||
+              event.key === "PageUp" ||
+              event.key === "PageDown";
+
+            if (snapToMarks && resolvedMarks.length) {
+              value = stepMarks(
+                value,
+                resolvedMarks,
+                keys[event.key] * (isLargeStep ? stepMultiplier : 1),
+              );
+            } else {
+              const delta =
+                step *
+                (isLargeStep ? range / step / stepMultiplier : 1) *
+                keys[event.key];
+              value = snapToStep(value + delta, { min, max, step });
+            }
+            dispatch("input", value);
+            dispatch("change", value);
+          }
+        }}
       ></div>
-      <div bind:this="{trackRef}" class:bx--slider__track="{true}"></div>
+      <div bind:this={trackRef} class:bx--slider__track={true}></div>
       <div
-        class:bx--slider__filled-track="{true}"
-        style="transform: translate(0, -50%) scaleX({left / 100})"
+        class:bx--slider__filled-track={true}
+        style:transform={orientation === "vertical"
+          ? `translate(-50%, 0) scaleY(${left / 100})`
+          : `${TRACK_MIRROR} translate(0, -50%) scaleX(${left / 100})`}
       ></div>
-      <input
-        type="hidden"
-        class:bx--slider__input="{true}"
-        name="{name}"
-        value="{value}"
-        required="{required}"
-        min="{min}"
-        max="{max}"
-        step="{step}"
-      />
+      {#if resolvedMarks.length > 0}
+        <div class:bx--slider__marks={true} aria-hidden="true">
+          {#each resolvedMarks as mark (mark.value)}
+            {@const percent =
+              range === 0 ? 0 : ((mark.value - min) / range) * 100}
+            <span
+              class:bx--slider__mark={true}
+              style:left={orientation === "vertical"
+                ? undefined
+                : trackLeft(percent)}
+              style:top={orientation === "vertical"
+                ? `${100 - percent}%`
+                : undefined}
+            >
+              {#if mark.label != null && mark.label !== ""}
+                <span class:bx--slider__mark-label={true}>{mark.label}</span>
+              {/if}
+            </span>
+          {/each}
+        </div>
+      {/if}
     </div>
-    <span class:bx--slider__range-label="{true}">{maxLabel || max}</span>
-    <input
-      type="{hideTextInput ? 'hidden' : inputType}"
-      style="{hideTextInput ? 'display: none' : undefined}"
-      id="input-{id}"
-      name="{name}"
-      class:bx--text-input="{true}"
-      class:bx--slider-text-input="{true}"
-      class:bx--text-input--light="{light}"
-      class:bx--text-input--invalid="{invalid}"
-      value="{value}"
-      aria-label="{$$props['aria-label'] || 'Slider number input'}"
-      disabled="{disabled}"
-      required="{required}"
-      min="{min}"
-      max="{max}"
-      step="{step}"
-      on:change="{({ target }) => {
-        value = Number(target.value);
-      }}"
-      data-invalid="{invalid || null}"
-      aria-invalid="{invalid || null}"
-    />
+    {#if !hideRangeLabels}
+      <span class:bx--slider__range-label={true}
+        >{formatRangeLabel(maxLabel, max)}</span
+      >
+    {/if}
+    <div class:bx--slider-text-input-wrapper={true}>
+      {#if showInvalid}
+        <WarningFilled class="bx--slider__invalid-icon" />
+      {:else if showWarn}
+        <WarningAltFilled
+          class="bx--slider__invalid-icon bx--slider__invalid-icon--warning"
+        />
+      {/if}
+      <input
+        bind:this={textInputRef}
+        use:preserveFocusSelection={selectTextOnFocus && !effectiveDisabled}
+        use:reflectDefaultValue={value}
+        type={hideTextInput || readonly ? "hidden" : inputType}
+        id={inputId}
+        {name}
+        {form}
+        class:bx--text-input={true}
+        class:bx--slider-text-input={true}
+        style:width={textInputWidth}
+        class:bx--slider-text-input--xs={effectiveSize === "xs"}
+        class:bx--text-input--invalid={showInvalid}
+        class:bx--slider-text-input--warn={showWarn}
+        {value}
+        aria-labelledby={controlLabelledBy}
+        aria-label={ariaLabel ?? "Slider number input"}
+        disabled={effectiveDisabled}
+        {readonly}
+        {required}
+        {min}
+        {max}
+        {step}
+        on:change={(event) => {
+          if (readonly) return;
+          // An empty or unparsable entry keeps the current value.
+          const next = parse(
+            /** @type {HTMLInputElement} */ (event.target).value.trim(),
+            true,
+          );
+          if (next !== null) {
+            value = clamp(next, min, max);
+            dispatch("change", value);
+          }
+          // Show the value the slider holds. Svelte skips the update when a
+          // clamped or rejected entry leaves `value` unchanged.
+          /** @type {HTMLInputElement} */ (event.target).value = String(value);
+        }}
+        data-invalid={showInvalid || null}
+        data-warn={showWarn || null}
+        aria-invalid={showInvalid || null}
+        aria-describedby={joinDescribedBy(
+          resolveStatusDescribedBy({
+            showInvalid,
+            showWarn,
+            invalidText,
+            warnText,
+            helperText,
+            errorId,
+            warnId,
+            helperId,
+          }),
+          ariaDescribedBy,
+        )}
+        on:focus
+        on:focus={handleTextInputFocus}
+        on:blur
+      />
+      <!-- NVDA announces a read-only number input as editable, so a read-only
+        slider shows its value as text. The thumb already exposes the value. -->
+      {#if readonly && !hideTextInput}
+        <div
+          aria-hidden="true"
+          class:bx--text-input={true}
+          class:bx--slider-text-input={true}
+          class:bx--slider-text-input--readonly={true}
+          class:bx--slider-text-input--xs={effectiveSize === "xs"}
+        >
+          {value}
+        </div>
+      {/if}
+    </div>
   </div>
+  {#if showInvalid && invalidText}
+    <div
+      id={errorId}
+      role="alert"
+      class:bx--slider__validation-msg={true}
+      class:bx--slider__validation-msg--invalid={true}
+      class:bx--form-requirement={true}
+    >
+      {invalidText}
+    </div>
+  {/if}
+  {#if showWarn && warnText}
+    <div
+      id={warnId}
+      class:bx--slider__validation-msg={true}
+      class:bx--form-requirement={true}
+    >
+      {warnText}
+    </div>
+  {/if}
+  {#if helperText && !showInvalid && !showWarn}
+    <div
+      id={helperId}
+      class:bx--form__helper-text={true}
+      class:bx--form__helper-text--disabled={effectiveDisabled}
+    >
+      {helperText}
+    </div>
+  {/if}
+  {#if readonly}
+    <span id={readonlyId} class:bx--visually-hidden={true}>{readonlyText}</span>
+  {/if}
 </div>

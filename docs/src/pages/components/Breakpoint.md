@@ -1,0 +1,51 @@
+---
+description: Breakpoint declaratively reports the current Carbon responsive breakpoint size, or hides an element outside a breakpoint range with the hideAtBreakpoint action.
+---
+
+<script>
+  import { Breakpoint, hideAtBreakpoint } from "carbon-components-svelte";
+</script>
+
+## Breakpoints
+
+The Carbon Design System [grid implementation](https://carbondesignsystem.com/guidelines/2x-grid/implementation#responsive-options) defines five responsive breakpoints. This utility component uses the [Window.matchMedia API](https://developer.mozilla.org/en-US/docs/Web/API/Window/matchMedia) to declaratively determine the current Carbon breakpoint size.
+
+| Breakpoint   | Width range           |
+| ------------ | --------------------- |
+| **Small**    | Less than 672px       |
+| **Medium**   | 672px – 1056px        |
+| **Large**    | 1056px – 1312px       |
+| **X-Large**  | 1312px – 1584px       |
+| **Max**      | Greater than 1584px   |
+
+## Basic
+
+Bind to `size` to determine the current breakpoint. Possible values include `"sm"`, `"md"`, `"lg"`, `"xlg"`, and `"max"`.
+
+The on:change event fires when the size is initially determined and when a breakpoint change occurs (for example, when the browser is resized). `event.detail` includes `size` and the matching `breakpointValue` in pixels.
+
+<FileSource src="/framed/Breakpoint/Breakpoint" />
+
+### Slot props
+
+Use the default slot to access `size` and `sizes` without binding a variable. `sizes` is also available as a bindable prop; it provides the same information as `size` but as an object of booleans keyed by breakpoint (`sm`, `md`, `lg`, `xlg`, `max`), which is convenient for `{#if sizes.lg}`-style checks.
+
+<Breakpoint let:size let:sizes>
+  <p>Current size: {size}</p>
+  <p>Large or up: {sizes.lg || sizes.xlg || sizes.max}</p>
+</Breakpoint>
+
+## Store and breakpoint values
+
+Use `breakpointObserver` as an alternative to the component to get the current size as a Svelte store. The store provides two additional functions that create derived stores returning a boolean indicating whether the size is smaller or larger than a certain breakpoint.
+
+Access the breakpoints dictionary to map from BreakpointSize to BreakpointValue.
+
+<FileSource src="/framed/Breakpoint/BreakpointObserver" />
+
+## use:hideAtBreakpoint
+
+Use the `hideAtBreakpoint` action to hide an element outside a breakpoint range, without wrapping it in `Breakpoint`. Set `above`, `below`, or both. Resize the browser to see the elements toggle.
+
+<div use:hideAtBreakpoint={{ above: "md" }}>Hidden at md and up</div>
+<div use:hideAtBreakpoint={{ below: "lg" }}>Hidden below lg</div>

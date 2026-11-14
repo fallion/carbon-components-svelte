@@ -1,0 +1,679 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../form/form';
+@import './calendar';
+
+@include date-picker-calendar;
+
+/// Date picker styles
+/// @access private
+/// @group date-picker
+@mixin date-picker {
+  .#{$prefix}--date-picker {
+    display: flex;
+  }
+
+  // V11: Possibly deprecate
+  .#{$prefix}--date-picker ~ .#{$prefix}--label {
+    order: 1;
+  }
+
+  // ccs: a container narrower than the picker's fixed widths shrinks it
+  // to fit: the containers may shrink below their content, and the inputs
+  // are no wider than them.
+  .#{$prefix}--date-picker-container {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--single,
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--range {
+    max-width: 100%;
+  }
+
+  .#{$prefix}--date-picker-input__wrapper,
+  .#{$prefix}--date-picker .#{$prefix}--date-picker__anchor {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .#{$prefix}--date-picker-input__wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker__input {
+    width: to-rem(120px);
+  } // ccs: dropped `.bx--label` from this selector so a label longer than
+  // the 120px input overflows onto its own width instead of wrapping inside it
+
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker-input__wrapper--invalid,
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--simple
+    .#{$prefix}--date-picker-input__wrapper--warn {
+    .#{$prefix}--date-picker__input,
+    ~ .#{$prefix}--form-requirement {
+      width: to-rem(152px);
+    }
+  }
+
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--simple.#{$prefix}--date-picker--short {
+    .#{$prefix}--date-picker__input {
+      width: 5.7rem;
+    }
+  }
+
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--single
+    .#{$prefix}--date-picker__input {
+    width: to-rem(288px);
+    max-width: 100%;
+  }
+
+  .#{$prefix}--date-picker
+    .#{$prefix}--date-picker-input__wrapper--warn
+    ~ .#{$prefix}--form-requirement {
+    color: $text-primary;
+  }
+  .#{$prefix}--date-picker__input {
+    @include reset;
+    @include type-style('code-02');
+    @include focus-outline('reset');
+
+    position: relative;
+    display: block;
+    overflow: hidden;
+    height: to-rem(40px);
+    padding: 0 $carbon--spacing-05;
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    background-color: $field;
+    color: $text-primary;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    // ccs: a date reads in its own direction, so in RTL "03/15/2024 2:30
+    // PM" keeps its order instead of showing as "PM 2:30 03/15/2024".
+    unicode-bidi: plaintext;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    &:focus { // ccs: dropped unrendered .bx--focused
+      @include focus-outline('outline');
+    }
+
+    &:disabled {
+      border-bottom: 1px solid transparent;
+      background-color: $field;
+      color: $text-disabled;
+      cursor: not-allowed;
+    }
+
+    &:disabled::placeholder {
+      color: $text-disabled;
+    }
+
+    @media (any-hover: hover) {
+      &:disabled:hover {
+        border-bottom: 1px solid transparent;
+      }
+    }
+
+    &::placeholder {
+      @include placeholder-colors;
+    }
+  }
+
+  .#{$prefix}--date-picker__input--xl {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--date-picker__input--sm {
+    height: to-rem(32px);
+  }
+
+  // Chromium/Firefox/WebKit only render `text-overflow: ellipsis` on an
+  // <input> while it is blurred. For "multiple" mode's potentially long
+  // joined value, an overlay renders the same text as ellipsized static
+  // content on top of the (visually transparent, but still focusable and
+  // typable) real input. While the input has focus, the overlay hides and
+  // the input shows its own text. See DatePickerInput.svelte.
+  .#{$prefix}--date-picker__input--ghost-text {
+    color: transparent;
+    caret-color: $text-primary;
+  }
+
+  .#{$prefix}--date-picker__input-overlay--hidden {
+    visibility: hidden;
+  }
+
+  .#{$prefix}--date-picker__input-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    pointer-events: none;
+
+    // `display: flex` on the overlay itself (needed to vertically center
+    // the text) prevents `text-overflow: ellipsis` from taking effect
+    // directly on it, so the truncation happens on this nested flex child
+    // instead; `min-width: 0` lets it actually shrink below its content
+    // size rather than the flexbox default of refusing to.
+    // `dir="auto"` in the markup reads the direction from the dates, as
+    // `unicode-bidi: plaintext` does on the input.
+    > span {
+      overflow: hidden;
+      min-width: 0;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    // ccs: one inline-block per date. The ellipsis hides an atomic inline
+    // whole, so it falls between dates and never inside one.
+    > span > span {
+      display: inline-block;
+      unicode-bidi: plaintext;
+    }
+  }
+
+  .#{$prefix}--date-picker__icon {
+    position: absolute;
+    z-index: 1;
+    // vertically center icon within parent container on IE11
+    top: 50%;
+    fill: $icon-primary;
+    pointer-events: none;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: 1rem);
+  }
+
+  .#{$prefix}--date-picker__icon--invalid,
+  .#{$prefix}--date-picker__icon--warn {
+    cursor: auto;
+  }
+
+  .#{$prefix}--date-picker__icon--warn {
+    fill: $support-warning;
+  }
+
+  // V11: Do we have an always black token?
+  .#{$prefix}--date-picker__icon--warn path:first-of-type {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--date-picker__icon--invalid {
+    fill: $support-error;
+  }
+
+  // The icon renders after the input in the DOM (Svelte component markup
+  // order), so a sibling selector from the icon can't reach a preceding
+  // input. This marker class is set whenever an icon renders instead.
+  .#{$prefix}--date-picker__input--with-icon {
+    padding-inline-end: $carbon--spacing-09;
+  }
+
+  .#{$prefix}--date-picker__input:disabled ~ .#{$prefix}--date-picker__icon {
+    cursor: not-allowed;
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--date-picker--range
+    > .#{$prefix}--date-picker-container:first-child {
+    margin-inline-end: to-rem(1px);
+  }
+
+  .#{$prefix}--date-picker--range .#{$prefix}--date-picker-container,
+  .#{$prefix}--date-picker--range .#{$prefix}--date-picker__input {
+    width: to-rem(143.5px);
+    max-width: 100%;
+  }
+
+  // ccs: the icon spans 16-32px from the right edge. The 3rem default
+  // leaves a 143.5px range input ~80px of text, clipping a code-02
+  // `mm/dd/yyyy` (~87px); 2rem still keeps the text clear of the icon.
+  .#{$prefix}--date-picker--range .#{$prefix}--date-picker__input--with-icon {
+    padding-inline-end: $carbon--spacing-07;
+  }
+
+  .#{$prefix}--date-picker.#{$prefix}--skeleton input,
+  .#{$prefix}--date-picker__input.#{$prefix}--skeleton {
+    @include skeleton;
+
+    width: 100%;
+
+    &::placeholder {
+      color: transparent;
+    }
+  }
+
+  .#{$prefix}--date-picker.#{$prefix}--skeleton .#{$prefix}--label {
+    @include skeleton;
+
+    width: to-rem(75px);
+    height: to-rem(14px);    // ccs: centered in the 16px line a real label takes, as on other
+    // field skeletons.
+    margin-top: to-rem(1px);
+    margin-bottom: calc(#{$carbon--spacing-03} + #{to-rem(1px)});
+  }
+
+  // Windows HCM fix
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--date-picker__icon {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('date-picker') {
+  @include date-picker;
+}
+
+// carbon-components-svelte patch (formerly css/_datepicker.scss)
+@mixin date-picker-input-wrapper {
+  .#{$prefix}--date-picker-input__wrapper {
+    width: fit-content;
+  }
+}
+
+@include exports('datepicker-input-wrapper') {
+  @include date-picker-input-wrapper;
+}
+
+// Readonly date picker (v11 backport).
+// The `readonly` prop marks the wrapper. `allowInput={false}` also makes the
+// input `[readonly]`, but the field is still active: it opens on click.
+@mixin date-picker-readonly {
+  .#{$prefix}--date-picker__input[readonly] {
+    cursor: pointer;
+  }
+
+  .#{$prefix}--date-picker-input__wrapper--readonly .#{$prefix}--date-picker__input {
+    background: transparent;
+    border-bottom-color: $icon-disabled;
+    cursor: text;
+  }
+
+  // Use a wrapper-level class because the calendar wraps the first input in
+  // `__anchor` in `static` mode, which breaks the `~` sibling combinator from
+  // the input to the icon.
+  .#{$prefix}--date-picker-input__wrapper--readonly .#{$prefix}--date-picker__icon {
+    fill: $icon-secondary;
+  }
+}
+
+@include exports('datepicker-readonly') {
+  @include date-picker-readonly;
+}
+
+// Carbon's `:disabled ~ .icon` rule fails for the same reason the readonly
+// fix above is needed: the calendar's `__anchor` wrapper breaks the sibling
+// combinator. Match it via the wrapper class instead.
+@mixin date-picker-disabled {
+  .#{$prefix}--date-picker-input__wrapper--disabled .#{$prefix}--date-picker__icon {
+    cursor: not-allowed;
+    fill: $icon-disabled;
+  }
+}
+
+@include exports('datepicker-disabled') {
+  @include date-picker-disabled;
+}
+
+// The prev/next month buttons when `minDate`/`maxDate` bound navigation.
+@mixin date-picker-month-nav-disabled {
+  .#{$prefix}--date-picker__nav-button--disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .#{$prefix}--date-picker__nav-button--disabled svg {
+    fill: $icon-disabled;
+  }
+}
+
+@include exports('datepicker-month-nav-disabled') {
+  @include date-picker-month-nav-disabled;
+}
+
+// carbon-components-svelte patch
+// The month, quarter, and year grids (`datePickerType="month"`, `"quarter"`,
+// `"year"`). Carbon v10 has no styles for them, so they match the token
+// usage of the day cells.
+@mixin date-picker-grid {
+  .#{$prefix}--date-picker__decade {
+    display: inline-block;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--date-picker__grid {
+    display: grid;
+    // The grid sits in the flex `__days`; fill it.
+    flex: 1;
+    grid-template-columns: repeat(3, 1fr);
+    margin: to-rem(10px) to-rem(1px) to-rem(3px);
+  }
+
+  .#{$prefix}--date-picker__grid--quarters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .#{$prefix}--date-picker__grid-cell {
+    box-sizing: border-box;
+    display: flex;
+    padding: to-rem(10px);
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: $text-primary;
+    cursor: pointer;
+    font-weight: 400;
+    text-align: center;
+
+    &:focus {
+      outline: 1px solid $focus;
+      outline-offset: -1px;
+    }
+  }
+
+  .#{$prefix}--date-picker__grid-cell.#{$prefix}--date-picker__grid-cell--selected {
+    background-color: $background-brand;
+    color: $text-on-color;
+  }
+
+  .#{$prefix}--date-picker__grid-cell.#{$prefix}--date-picker__grid-cell--today:not(.#{$prefix}--date-picker__grid-cell--selected) {
+    position: relative;
+    color: $link-primary;
+    font-weight: 600;
+
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: to-rem(7px);
+      left: 50%;
+      display: block;
+      width: to-rem(4px);
+      height: to-rem(4px);
+      background-color: $link-primary;
+      transform: translateX(-50%);
+    }
+  }
+
+  .#{$prefix}--date-picker__grid-cell.#{$prefix}--date-picker__grid-cell--disabled {
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  @media (any-hover: hover) {
+    .#{$prefix}--date-picker__grid-cell:hover {
+      background: $layer-hover;
+    }
+
+    .#{$prefix}--date-picker__grid-cell.#{$prefix}--date-picker__grid-cell--disabled:hover {
+      background: none;
+    }
+  }
+
+  // The grids are shorter than the day grid the open calendar is sized for
+  // (21rem). Three classes out-specify that base rule.
+  .#{$prefix}--date-picker__calendar.#{$prefix}--date-picker__calendar--open.#{$prefix}--date-picker__calendar--month,
+  .#{$prefix}--date-picker__calendar.#{$prefix}--date-picker__calendar--open.#{$prefix}--date-picker__calendar--year {
+    height: to-rem(224px);
+  }
+
+  .#{$prefix}--date-picker__calendar.#{$prefix}--date-picker__calendar--open.#{$prefix}--date-picker__calendar--quarter {
+    height: to-rem(148px);
+  }
+}
+
+@include exports('datepicker-grid') {
+  @include date-picker-grid;
+}
+
+// carbon-components-svelte patch
+// A year-first locale writes a word after the year ("2000年1月"). Size the
+// year input to its four digits so the word follows it, and drop the
+// hover-only spin arrows that would otherwise sit on top of the word.
+@mixin date-picker-year-suffix {
+  .#{$prefix}--date-picker__year.#{$prefix}--date-picker__year--suffixed {
+    // 2px of slack: WebKit measures four digits a little wider than 4ch.
+    width: calc(4ch + #{$carbon--spacing-02} + #{to-rem(2px)});
+  }
+
+  .#{$prefix}--date-picker__year--suffixed .#{$prefix}--date-picker__year-input {
+    padding-inline-end: 0;
+  }
+
+  .#{$prefix}--date-picker__year--suffixed .#{$prefix}--date-picker__year-step {
+    display: none;
+  }
+}
+
+@include exports("date-picker-year-suffix") {
+  @include date-picker-year-suffix;
+}
+
+// carbon-components-svelte patch
+// `dayDescription`: a day with a description gets a marker at the top,
+// clear of the "today" mark at the bottom.
+@mixin date-picker-day-described {
+  .#{$prefix}--date-picker__day.#{$prefix}--date-picker__day--described {
+    position: relative;
+
+    &::before {
+      position: absolute;
+      top: to-rem(5px);
+      left: 50%;
+      display: block;
+      width: to-rem(4px);
+      height: to-rem(4px);
+      border-radius: 50%;
+      background-color: $interactive;
+      transform: translateX(-50%);
+      content: "";
+    }
+  }
+
+  .#{$prefix}--date-picker__day.#{$prefix}--date-picker__day--selected.#{$prefix}--date-picker__day--described::before,
+  .#{$prefix}--date-picker__day.#{$prefix}--date-picker__day--range-start.#{$prefix}--date-picker__day--described::before,
+  .#{$prefix}--date-picker__day.#{$prefix}--date-picker__day--range-end.#{$prefix}--date-picker__day--described::before {
+    background-color: $text-on-color;
+  }
+}
+
+@include exports("date-picker-day-described") {
+  @include date-picker-day-described;
+}
+
+// carbon-components-svelte patch
+// `clearable`: a clear button, styled like Search's close button. It takes
+// the calendar icon's place, or sits before the invalid/warn icon.
+@mixin date-picker-clear {
+  .#{$prefix}--date-picker__clear {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    display: flex;
+    width: $carbon--spacing-06;
+    height: $carbon--spacing-06;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    fill: $icon-primary;
+    transform: translateY(-50%);
+    // Centered where the 1rem icon 1rem from the end sits.
+    @include ccs-inset-inline($end: to-rem(12px));
+
+    @media (any-hover: hover) {
+      &:hover {
+        background-color: $field-hover;
+      }
+    }
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+  }
+
+  .#{$prefix}--date-picker__clear--with-icon {
+    @include ccs-inset-inline($end: to-rem(36px));
+  }
+
+  .#{$prefix}--date-picker--fluid .#{$prefix}--date-picker__clear {
+    top: to-rem(43px);
+  }
+
+  .#{$prefix}--date-picker__input--with-clear {
+    padding-inline-end: $carbon--spacing-09;
+  }
+
+  // The clear button spans 12-36px from the right edge; see the range
+  // `--with-icon` rule above. Must precede the clear+icon rule below.
+  .#{$prefix}--date-picker--range .#{$prefix}--date-picker__input--with-clear {
+    padding-inline-end: to-rem(36px);
+  }
+
+  .#{$prefix}--date-picker__input--with-clear.#{$prefix}--date-picker__input--with-icon {
+    padding-inline-end: to-rem(64px);
+  }
+}
+
+@include exports('datepicker-clear') {
+  @include date-picker-clear;
+}
+
+// carbon-components-svelte patch
+// `datePickerType="week"`: the calendar marks all seven days `--week` and
+// `--selected`. Keep the row's ends selected and give the days between
+// them the in-range look, so the week reads as one span like a range. Each
+// row starts on the locale's first day, so its first and last days are the
+// week's ends.
+@mixin date-picker-week-select {
+  .#{$prefix}--date-picker__day.#{$prefix}--date-picker__day--week.#{$prefix}--date-picker__day--selected:not(:first-child):not(:last-child) {
+    color: $text-primary;
+    background-color: $highlight;
+  }
+}
+
+@include exports('datepicker-week-select') {
+  @include date-picker-week-select;
+}
+
+// carbon-components-svelte patch
+// `minRangeDays`: while a range start is pending, the start day itself can
+// be disabled (picking it again would make a one-day range). Keep its
+// selected look.
+@mixin date-picker-range-length {
+  .#{$prefix}--date-picker__day.#{$prefix}--date-picker__day--selected.#{$prefix}--date-picker__day--disabled {
+    background-color: $background-brand;
+    color: $text-on-color;
+  }
+}
+
+@include exports('datepicker-range-length') {
+  @include date-picker-range-length;
+}
+
+// carbon-components-svelte patch
+// Extra-small (`xs`, 24px) input, matching the other field components'
+// `size="xs"`. v10 only ships sm/md/xl.
+@mixin date-picker-xs {
+  .#{$prefix}--date-picker__input--xs {
+    height: to-rem(24px);
+  }
+}
+
+@include exports('datepicker-xs') {
+  @include date-picker-xs;
+}
+
+// carbon-components-svelte patch
+// `fullWidth` fills the parent instead of the fixed input widths above. Those
+// qualify `.bx--date-picker` with a type modifier, so these rules do the same
+// with `--full-width` and win on order.
+@mixin date-picker-full-width {
+  // The calendar wraps the input in `__anchor`, a flex item that otherwise
+  // keeps the input's intrinsic width.
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--full-width,
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--full-width
+    .#{$prefix}--date-picker-input__wrapper,
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--full-width
+    .#{$prefix}--date-picker__anchor {
+    width: 100%;
+  }
+
+  // Qualified through the wrapper to match the simple picker's short, invalid
+  // and warning widths, which come earlier and would otherwise win.
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--full-width
+    .#{$prefix}--date-picker-input__wrapper
+    .#{$prefix}--date-picker__input,
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--full-width
+    .#{$prefix}--date-picker-input__wrapper
+    ~ .#{$prefix}--form-requirement {
+    width: 100%;
+  }
+
+  // Range: the two inputs share the row.
+  .#{$prefix}--date-picker.#{$prefix}--date-picker--full-width
+    .#{$prefix}--date-picker-container {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+}
+
+@include exports("date-picker-full-width") {
+  @include date-picker-full-width;
+}
+
+// carbon-components-svelte patch
+// `unicode-bidi: plaintext` on the input aligns a left-to-right date to the
+// left, even on an RTL page. Keep it at the page's start.
+/// @access private
+/// @group components
+@mixin date-picker-rtl-text {
+  [dir="rtl"] .#{$prefix}--date-picker__input {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("date-picker-rtl-text") {
+  @include date-picker-rtl-text;
+}
+
+// carbon-components-svelte patch
+// An inline range calendar sits in the start field's container. The row
+// stretched the end container to the same height, and its
+// `space-between` then put the end input at the bottom, over the
+// calendar's last week. Keep each container as tall as its own content.
+/// @access private
+/// @group components
+@mixin date-picker-inline-range {
+  .#{$prefix}--date-picker--range.#{$prefix}--date-picker--inline {
+    align-items: flex-start;
+  }
+}
+
+@include exports("date-picker-inline-range") {
+  @include date-picker-inline-range;
+}

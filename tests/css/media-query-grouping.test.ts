@@ -1,0 +1,60 @@
+// @vitest-environment node
+import { compileEntry } from "./compile";
+
+describe("any-hover media query grouping", () => {
+  it("does not regress back to one block per hover rule", async () => {
+    const css = await compileEntry("all.scss");
+    // Grouped adjacent `(any-hover: hover)` rules per component close one
+    // @media block instead of N. Was 72 blocks before grouping (see
+    // .context/css-size-followup-results.md); this caps well below that so
+    // a future change re-scattering the blocks gets caught. Raised from 40
+    // when the hand-authored partials adopted the guard (one block each,
+    // more only where moving a hover rule would reorder the cascade).
+    // Raised again from 55 to 61 when Tabs guarded its base and patch hover
+    // rules (components/tabs/_tabs.scss): 1 block for the base mixin, 1 each
+    // for tabs-container-disabled-hover, tabs-dismissible, and vertical
+    // tabs' two breakpoint scopes, and 4 (one per size, from the `@each`
+    // loop) for tabs-size.
+    // Raised again from 61 to 62 for ToggleButtonGroup's one hover block
+    // (_toggle-button-group.scss).
+    // Raised again from 62 to 63 for the resizable SideNav handle's one
+    // hover block (side-nav-resize in components/ui-shell/_side-nav.scss).
+    // Raised again from 63 to 64 for the DatePicker clear button's one
+    // hover block (date-picker-clear in
+    // components/date-picker/_date-picker.scss).
+    // Raised again from 64 to 65 for the Carousel prev/next buttons' one
+    // hover block (_carousel.scss).
+    // Raised again from 65 to 67 for TabsVertical's pinned `orientation`
+    // row and column, one top-level hover block each (tabs-vertical in
+    // components/tabs/_tabs.scss).
+    // Raised again from 67 to 68 for the TableOfContents link's one hover
+    // block (_table-of-contents.scss).
+    // Lowered from 68 to 67 when the SideNav resize handle's hover block
+    // became a JS-toggled class (ui-shell/_side-nav.scss).
+    // Raised again from 67 to 68 for AILabel's one hover block
+    // (_ai-label.scss).
+    // Raised again from 68 to 69 for ChatMessage's actions, revealed on
+    // hover (_chat.scss).
+    // Raised again from 69 to 70 for FileDownloadItem's one hover block
+    // (_file-download-item.scss).
+    // Held at 70 when the calendar replaced flatpickr: the DatePicker month,
+    // quarter, and year grids gained one hover block (date-picker-grid in
+    // components/date-picker/_date-picker.scss, replacing four unguarded
+    // hover rules), and _calendar.scss has one fewer than _flatpickr.scss.
+    // Raised again from 70 to 71 for ChatButton's quick-action hover block
+    // (_chat-button.scss).
+    // Raised again from 71 to 72 for InlineEdit's one hover block
+    // (_inline-edit.scss).
+    // Raised again from 72 to 73 for the toast action button's one hover
+    // block (components/notification/_toast-notification.scss).
+    // Raised again from 73 to 74 for fluid Select's one hover block, which
+    // hides the status divider under a hovered field (_fluid-select.scss).
+    // Raised again from 74 to 75 for menu shortcuts' one hover block, which
+    // gives a hovered danger option's keys its color (_menu-shortcut.scss).
+    // Whitespace-tolerant so the count holds for expanded and compressed
+    // output; the lower bound fails the test if the pattern stops matching.
+    const blocks = css.match(/@media\s*\(any-hover:\s*hover\)\s*\{/g) ?? [];
+    expect(blocks.length).toBeGreaterThan(0);
+    expect(blocks.length).toBeLessThanOrEqual(75);
+  }, 30_000);
+});

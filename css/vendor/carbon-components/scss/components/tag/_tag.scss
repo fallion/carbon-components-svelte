@@ -1,0 +1,657 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/component-tokens';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import 'mixins';
+@import 'tokens';
+
+/// Tag styles
+/// @access private
+/// @group tag
+@mixin tags {
+  .#{$prefix}--tag {
+    @include button-reset($width: false, $omit: (display, padding, cursor));
+    @include type-style('label-01');
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-gray'),
+      get-token-value($tag-colors, 'tag-color-gray'),
+      get-token-value($tag-colors, 'tag-hover-gray'),
+      $emit-hover: false
+    );
+
+    display: inline-flex;
+    // ensures tag stays pill shaped;
+    min-width: to-rem(32px);
+    // restricts size of contained elements
+    // ccs: v11 caps a tag at 208px; a longer label truncates
+    max-width: to-rem(208px);
+    min-height: to-rem(24px);
+    align-items: center;
+    justify-content: center;
+    padding: $carbon--spacing-02 $carbon--spacing-03;
+    // ccs: v11 drops v10's outer margin; the container spaces tags
+    border-radius: to-rem(15px);
+    cursor: default;
+    // ccs: a link tag (`href`) drops the anchor's underline
+    text-decoration: none;
+    vertical-align: middle;
+    word-break: break-word;
+  }
+
+  .#{$prefix}--tag--red {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-red'),
+      get-token-value($tag-colors, 'tag-color-red'),
+      get-token-value($tag-colors, 'tag-hover-red'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--magenta {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-magenta'),
+      get-token-value($tag-colors, 'tag-color-magenta'),
+      get-token-value($tag-colors, 'tag-hover-magenta'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--purple {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-purple'),
+      get-token-value($tag-colors, 'tag-color-purple'),
+      get-token-value($tag-colors, 'tag-hover-purple'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--blue {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-blue'),
+      get-token-value($tag-colors, 'tag-color-blue'),
+      get-token-value($tag-colors, 'tag-hover-blue'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--cyan {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-cyan'),
+      get-token-value($tag-colors, 'tag-color-cyan'),
+      get-token-value($tag-colors, 'tag-hover-cyan'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--teal {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-teal'),
+      get-token-value($tag-colors, 'tag-color-teal'),
+      get-token-value($tag-colors, 'tag-hover-teal'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--green {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-green'),
+      get-token-value($tag-colors, 'tag-color-green'),
+      get-token-value($tag-colors, 'tag-hover-green'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--gray {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-gray'),
+      get-token-value($tag-colors, 'tag-color-gray'),
+      get-token-value($tag-colors, 'tag-hover-gray'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--cool-gray {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-cool-gray'),
+      get-token-value($tag-colors, 'tag-color-cool-gray'),
+      get-token-value($tag-colors, 'tag-hover-cool-gray'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--warm-gray {
+    @include tag-theme(
+      get-token-value($tag-colors, 'tag-background-warm-gray'),
+      get-token-value($tag-colors, 'tag-color-warm-gray'),
+      get-token-value($tag-colors, 'tag-hover-warm-gray'),
+      $emit-hover: false
+    );
+  }
+
+  .#{$prefix}--tag--high-contrast {
+    @include tag-theme($background-inverse, $text-inverse, $background-inverse-hover, $emit-hover: false);
+  }
+
+  .#{$prefix}--tag--outline {
+    @include tag-theme($background, $text-primary, $layer-hover, $emit-hover: false);
+
+    box-shadow: inset 0 0 0 1px $background-inverse;
+  }
+
+  .#{$prefix}--tag--disabled,
+  .#{$prefix}--tag--filter.#{$prefix}--tag--disabled,
+  .#{$prefix}--tag--interactive.#{$prefix}--tag--disabled {
+    @include tag-theme($layer, $text-disabled, $emit-hover: false); // ccs: v11
+  }
+
+  .#{$prefix}--tag__label {
+    // ccs: v11; also clips inside the truncation tooltip's trigger
+    display: block;
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ccs: v11 focus ring, outside the tag
+  .#{$prefix}--tag--interactive:focus {
+    outline: 2px solid $focus;
+    outline-offset: 1px;
+  }
+
+  .#{$prefix}--tag--filter {
+    padding-top: 0;
+    padding-inline-end: 0;
+    padding-bottom: 0;
+    cursor: pointer;
+  }
+
+  // ccs: grouped this component's any-hover rules into one block
+  // (order-safe: none of these rules collide with another rule on the same
+  // element/property in between; each has either a unique property or a
+  // higher specificity than any same-property rule it could tie with)
+  @media (any-hover: hover) {
+    .#{$prefix}--tag--disabled:hover,
+    .#{$prefix}--tag--filter.#{$prefix}--tag--disabled:hover,
+    .#{$prefix}--tag--interactive.#{$prefix}--tag--disabled:hover {
+      cursor: not-allowed;
+    }
+
+    .#{$prefix}--tag--interactive:hover {
+      cursor: pointer;
+    }
+
+    .#{$prefix}--tag--filter:hover {
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--tag--interactive {
+    transition: background-color $duration--fast-01 motion(entrance, productive);
+  }
+
+  .#{$prefix}--tag__close-icon {
+    display: flex;
+    width: to-rem(24px);
+    height: to-rem(24px);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    margin-block: 0;
+    margin-inline: to-rem(2px) 0;
+    background-color: transparent;
+    border-radius: 50%;
+    color: currentColor;
+    cursor: pointer;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  .#{$prefix}--tag__custom-icon {
+    width: to-rem(16px);
+    height: to-rem(16px);
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    margin-inline-end: $spacing-02;
+    background-color: transparent;
+    color: currentColor;
+    outline: none;
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  .#{$prefix}--tag--disabled .#{$prefix}--tag__close-icon {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--tag__close-icon:focus {
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px $focus;
+    outline: none;
+  }
+
+  .#{$prefix}--tag--high-contrast .#{$prefix}--tag__close-icon:focus {
+    box-shadow: inset 0 0 0 1px $focus-inverse;
+  }
+
+  // ccs: removing a tag hands focus to the next tag's close button, so a
+  // click would ring a button the pointer never touched. Ring it only for
+  // the keyboard. A browser without `:focus-visible` drops this rule and
+  // keeps the ring.
+  .#{$prefix}--tag__close-icon:focus:not(:focus-visible) {
+    box-shadow: none;
+  }
+
+  .#{$prefix}--tag--filter.#{$prefix}--tag--disabled svg {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--tag--sm {
+    min-height: to-rem(18px);
+    padding: 0 $carbon--spacing-03;
+  }
+
+  .#{$prefix}--tag--sm.#{$prefix}--tag--filter {
+    padding-inline-end: 0;
+  }
+
+  .#{$prefix}--tag--sm .#{$prefix}--tag__close-icon {
+    width: to-rem(18px);
+    height: to-rem(18px);
+    margin-inline-start: to-rem(5px);
+  }
+
+  .#{$prefix}--tag.#{$prefix}--skeleton {
+    @include skeleton;
+    @include tag-theme($bg-color: $skeleton-background, $text-color: $text-primary, $emit-hover: false);
+
+    overflow: hidden;
+    width: to-rem(60px);
+
+    // Safari specific bug (#7672)
+    @media not all and (min-resolution: 0.001dpcm) {
+      @supports (-webkit-appearance: none) and (stroke-color: transparent) {
+        transform: translateZ(0);
+      }
+    }
+  }
+
+  // ccs: grouped this file's ~15 tag-theme() any-hover rules (one per
+  // color/variant call site above, each with $emit-hover: false) into one
+  // block instead of 15 (order-safe: no other rule in this file sets
+  // background-color on `&.tag--interactive`/`.tag__close-icon` for any of
+  // these specific color/variant classes at equal or higher specificity)
+  @media (any-hover: hover) {
+    .#{$prefix}--tag.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-gray');
+    }
+
+    .#{$prefix}--tag--red.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--red .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-red');
+    }
+
+    .#{$prefix}--tag--magenta.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--magenta .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-magenta');
+    }
+
+    .#{$prefix}--tag--purple.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--purple .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-purple');
+    }
+
+    .#{$prefix}--tag--blue.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--blue .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-blue');
+    }
+
+    .#{$prefix}--tag--cyan.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--cyan .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-cyan');
+    }
+
+    .#{$prefix}--tag--teal.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--teal .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-teal');
+    }
+
+    .#{$prefix}--tag--green.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--green .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-green');
+    }
+
+    .#{$prefix}--tag--gray.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--gray .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-gray');
+    }
+
+    .#{$prefix}--tag--cool-gray.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--cool-gray .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-cool-gray');
+    }
+
+    .#{$prefix}--tag--warm-gray.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--warm-gray .#{$prefix}--tag__close-icon:hover {
+      background-color: get-token-value($tag-colors, 'tag-hover-warm-gray');
+    }
+
+    .#{$prefix}--tag--high-contrast.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--high-contrast .#{$prefix}--tag__close-icon:hover {
+      background-color: $background-inverse-hover;
+    }
+
+    .#{$prefix}--tag--outline.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--outline .#{$prefix}--tag__close-icon:hover {
+      background-color: $layer-hover;
+    }
+
+    .#{$prefix}--tag--disabled.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--disabled .#{$prefix}--tag__close-icon:hover,
+    .#{$prefix}--tag--filter.#{$prefix}--tag--disabled.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--filter.#{$prefix}--tag--disabled .#{$prefix}--tag__close-icon:hover,
+    .#{$prefix}--tag--interactive.#{$prefix}--tag--disabled.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag--interactive.#{$prefix}--tag--disabled .#{$prefix}--tag__close-icon:hover {
+      background-color: $layer; // ccs: v11
+    }
+
+    // Must stay after the disabled rule above: same selector, same
+    // specificity, and this one needs to win the tie.
+    .#{$prefix}--tag--filter.#{$prefix}--tag--disabled
+      .#{$prefix}--tag__close-icon:hover {
+      background-color: transparent;
+    }
+
+    .#{$prefix}--tag.#{$prefix}--skeleton.#{$prefix}--tag--interactive:hover,
+    .#{$prefix}--tag.#{$prefix}--skeleton .#{$prefix}--tag__close-icon:hover {
+      background-color: $skeleton-background;
+    }
+  }
+
+  // Windows HCM fix
+  /* stylelint-disable */
+  .#{$prefix}--tag {
+    @include high-contrast-mode('outline');
+  }
+
+  .#{$prefix}--tag__close-icon svg,
+  .#{$prefix}--tag__custom-icon svg {
+    @include high-contrast-mode('icon-fill');
+  }
+
+  .#{$prefix}--tag__close-icon:focus {
+    @include high-contrast-mode('focus');
+  }
+  /* stylelint-enable */
+}
+
+@include exports('tags') {
+  @include tags;
+}
+
+// carbon-components-svelte patch (formerly css/_tag.scss)
+/// 16px tag for 24px (`xs`) fields, which leave an 18px `sm` tag one
+/// pixel inside their 2px focus or invalid outline. The label keeps
+/// `label-01`'s 16px line height, and the close icon stays 16px, filling
+/// its button.
+/// @access private
+/// @group components
+@mixin tag-xs {
+  .#{$prefix}--tag--xs {
+    min-height: to-rem(16px);
+    padding: 0 $carbon--spacing-03;
+  }
+
+  .#{$prefix}--tag--xs.#{$prefix}--tag--filter {
+    padding-inline-end: 0;
+  }
+
+  .#{$prefix}--tag--xs .#{$prefix}--tag__close-icon {
+    width: to-rem(16px);
+    height: to-rem(16px);
+    margin-inline-start: to-rem(4px);
+  }
+}
+
+@mixin tag-lg {
+  .#{$prefix}--tag--lg {
+    min-height: to-rem(32px);
+    padding: 0 $carbon--spacing-04;
+  }
+
+  .#{$prefix}--tag--lg.#{$prefix}--tag--filter {
+    padding-inline-end: 0;
+  }
+
+  // Match the close button to the tag height, as `--sm` does.
+  .#{$prefix}--tag--lg .#{$prefix}--tag__close-icon {
+    width: to-rem(32px);
+    height: to-rem(32px);
+  }
+}
+
+/// v11 tightens the leading padding next to a custom icon. v11 selects
+/// the tag with `:has(.bx--tag__custom-icon)`, which the CSS baseline
+/// lacks, so the component marks the tag with `--with-icon` instead.
+/// Emits after `tag-lg` to win its padding tie.
+/// @access private
+/// @group components
+@mixin tag-with-icon {
+  .#{$prefix}--tag--with-icon {
+    padding-inline-start: $carbon--spacing-02;
+  }
+
+  .#{$prefix}--tag--lg.#{$prefix}--tag--with-icon {
+    padding-inline-start: $carbon--spacing-03;
+  }
+}
+
+/// Truncation tooltip inside a capped-width tag. The trigger itself is
+/// restyled in tooltip/_tooltip.scss, which emits after this file.
+/// @access private
+/// @group components
+@mixin tag-truncate {
+  .#{$prefix}--tag--truncate {
+    min-width: 0;
+  }
+
+  .#{$prefix}--tag__label-tooltip {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@include exports("tag-xs") {
+  @include tag-xs;
+}
+
+@include exports("tag-lg") {
+  @include tag-lg;
+}
+
+@include exports("tag-with-icon") {
+  @include tag-with-icon;
+}
+
+@include exports("tag-truncate") {
+  @include tag-truncate;
+}
+
+// carbon-components-svelte patch (formerly css/_selectable-tag.scss)
+@import '../../globals/scss/helper-mixins';
+
+@mixin selectable-tag {
+  // No block padding: the border would add 2px to `min-height`.
+  .#{$prefix}--tag--selectable {
+    padding-top: 0;
+    padding-bottom: 0;
+    border: 1px solid $border-inverse;
+    background-color: $layer;
+    color: $text-primary;
+    cursor: pointer;
+  }
+
+  .#{$prefix}--tag--selectable-selected {
+    background-color: $layer-selected-inverse;
+    color: $text-inverse;
+  }
+
+  .#{$prefix}--tag--selectable.#{$prefix}--tag--disabled {
+    border: 1px solid $border-disabled;
+    background-color: $layer;
+    color: $text-disabled;
+  }
+
+  // Same order as the resting rules above, so selected and disabled still
+  // out-rank the plain hover fill.
+  @media (any-hover: hover) {
+    .#{$prefix}--tag--selectable:hover {
+      background-color: $layer-hover;
+      outline: none;
+    }
+
+    .#{$prefix}--tag--selectable-selected:hover {
+      background-color: $layer-selected-inverse;
+    }
+
+    .#{$prefix}--tag--selectable.#{$prefix}--tag--disabled:hover {
+      background-color: $layer;
+      cursor: not-allowed;
+    }
+  }
+
+  // After the hover block: its `outline: none` ties on specificity, and a
+  // hovered tag that has focus keeps its ring.
+  .#{$prefix}--tag--selectable:focus {
+    outline: 2px solid $focus;
+    outline-offset: 1px;
+  }
+
+  // Forced-colors mode repaints the selected background, which left
+  // selected and unselected tags identical. The selected tag fills with
+  // `Highlight` and opts out of forcing: forced text gets a `Canvas`
+  // backplate, which hid the `HighlightText` label. Its border and focus
+  // ring, which unforcing brings back, use system colors too.
+  @media (forced-colors: active) {
+    .#{$prefix}--tag--selectable.#{$prefix}--tag--selectable-selected:not(.#{$prefix}--tag--disabled) {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    // The ring sits outside the tag, on the page background.
+    .#{$prefix}--tag--selectable:focus {
+      outline-color: CanvasText;
+    }
+
+    // Disabled wins over selected: muted text and border, with an outer
+    // outline keeping a selected disabled tag distinct from an unselected one.
+    .#{$prefix}--tag--selectable.#{$prefix}--tag--disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+
+    .#{$prefix}--tag--selectable.#{$prefix}--tag--disabled.#{$prefix}--tag--selectable-selected {
+      outline: to-rem(1px) solid GrayText;
+      outline-offset: to-rem(1px);
+    }
+  }
+}
+
+@include exports('selectable-tag') {
+  @include selectable-tag;
+}
+
+// carbon-components-svelte patch (operational tag)
+/// OperationalTag: a tag-styled button that discloses a popover. The whole
+/// tag is the trigger, with `--interactive`'s 2px focus outline.
+/// @access private
+/// @group components
+@mixin tag-operational {
+  .#{$prefix}--operational-tag {
+    position: relative;
+    display: inline-flex;
+  }
+
+  // A 1px border in the type's `tag-border-*` color marks it as a trigger.
+  // No block padding: the border would add 2px to `min-height`.
+  .#{$prefix}--tag--operational {
+    padding-top: 0;
+    padding-bottom: 0;
+    border: 1px solid get-token-value($tag-colors, "tag-border-gray");
+    font-family: inherit;
+  }
+
+  @each $type
+    in (red, magenta, purple, blue, cyan, teal, green, gray, cool-gray, warm-gray)
+  {
+    .#{$prefix}--tag--operational.#{$prefix}--tag--#{$type} {
+      border-color: get-token-value($tag-colors, "tag-border-#{$type}");
+    }
+  }
+
+  // After the types: same specificity. The fill and text color come from
+  // `.#{$prefix}--tag--interactive.#{$prefix}--tag--disabled`.
+  .#{$prefix}--tag--operational.#{$prefix}--tag--disabled {
+    border-color: $border-disabled;
+  }
+
+  // Clear the trigger's 2px focus outline, in place and in a portal.
+  .#{$prefix}--popover.#{$prefix}--operational-tag__popover {
+    --cds-popover-offset: #{$carbon--spacing-02};
+  }
+
+  .#{$prefix}--operational-tag__content {
+    @include type-style("body-compact-01");
+
+    padding: $carbon--spacing-05;
+  }
+}
+
+@include exports("tag-operational") {
+  @include tag-operational;
+}
+
+// carbon-components-svelte patch (tag-forced-colors)
+// Forced-colors mode paints a disabled tag like an enabled one. It reads
+// `GrayText`, as a disabled selectable tag already does.
+
+/// Disabled tag in forced-colors mode.
+/// @access private
+/// @group tag
+@mixin tag-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--tag.#{$prefix}--tag--disabled {
+      color: GrayText;
+      outline-color: GrayText;
+    }
+
+    .#{$prefix}--tag--disabled .#{$prefix}--tag__close-icon svg,
+    .#{$prefix}--tag--disabled .#{$prefix}--tag__custom-icon svg {
+      fill: GrayText;
+    }
+  }
+}
+
+@include exports("tag-forced-colors") {
+  @include tag-forced-colors;
+}

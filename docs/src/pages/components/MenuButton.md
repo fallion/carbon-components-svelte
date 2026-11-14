@@ -1,0 +1,262 @@
+---
+components: ["MenuButton", "MenuItem", "MenuDivider", "MenuItemGroup", "MenuItemRadioGroup"]
+description: MenuButton is a labeled button that opens a dropdown of actions, including nested submenus.
+---
+
+<script>
+  import { MenuButton, MenuDivider, MenuItem } from "carbon-components-svelte";
+  import Copy from "carbon-icons-svelte/lib/Copy.svelte";
+  import Cut from "carbon-icons-svelte/lib/Cut.svelte";
+  import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
+</script>
+
+## Basic
+
+Wrap `MenuItem` components in `MenuButton` and set `labelText` for the trigger label. Use the `labelChildren` slot for custom trigger content. Unlike [Menu](/components/Menu), `MenuButton` includes the trigger; you don't pass an anchor. See [Events](#events) for the menu's `close` event.
+
+<MenuButton labelText="Actions">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+  <MenuItem disabled>Delete</MenuItem>
+</MenuButton>
+
+## Reactive example
+
+Control the menu state programmatically by binding to `open`.
+
+<FileSource src="/framed/MenuButton/MenuButtonReactive" />
+
+## Kind
+
+Set `kind` to match the importance of the action.
+
+### Primary
+
+The default kind is `"primary"`.
+
+<MenuButton labelText="Actions">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+### Tertiary
+
+<MenuButton labelText="Actions" kind="tertiary">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+### Ghost
+
+<MenuButton labelText="Actions" kind="ghost">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+## Size
+
+Set `size` to scale the trigger button and each menu item's row height together. The default is `"md"`.
+
+### Extra small
+
+<MenuButton labelText="Actions" size="xs">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+### Small
+
+<MenuButton labelText="Actions" size="sm">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+### Large
+
+<MenuButton labelText="Actions" size="lg">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+## Icon-only
+
+Set `iconOnly` for an icon-only trigger. `labelText` is no longer rendered, but it remains the trigger's accessible name. Use this trigger for overflow menus that need submenus, which [OverflowMenu](/components/OverflowMenu) does not support.
+
+<MenuButton iconOnly labelText="Row actions">
+  <MenuItem on:click={() => console.log("Rename")}>Rename</MenuItem>
+  <MenuItem labelText="Export as">
+    <MenuItem on:click={() => console.log("PDF")}>PDF</MenuItem>
+    <MenuItem on:click={() => console.log("CSV")}>CSV</MenuItem>
+  </MenuItem>
+  <MenuDivider />
+  <MenuItem icon={TrashCan} kind="danger" on:click={() => console.log("Delete")}>
+    Delete
+  </MenuItem>
+</MenuButton>
+
+### Custom icon
+
+Pass `icon` to swap the glyph. The default is the overflow (kebab) icon.
+
+<MenuButton iconOnly labelText="Copy options" icon={Copy}>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Copy as reference")}>Copy as reference</MenuItem>
+</MenuButton>
+
+### Icon description
+
+The icon-only trigger needs its own accessible label, since it has no visible text. Override `iconDescription` to change it; the default is `labelText`.
+
+<MenuButton iconOnly labelText="Row actions" iconDescription="More row actions">
+  <MenuItem on:click={() => console.log("Rename")}>Rename</MenuItem>
+  <MenuItem icon={TrashCan} kind="danger" on:click={() => console.log("Delete")}>
+    Delete
+  </MenuItem>
+</MenuButton>
+
+## Direction
+
+Set `direction` to `"top"` or `"bottom"` (default) for which side of the trigger the menu opens on. The menu flips to the opposite side when there isn't room on the preferred side. See [Menu placement](/components/Menu#placement) for gap and offset props.
+
+### Top
+
+<MenuButton labelText="Actions" direction="top">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+### Alignment
+
+Set `intrinsicAlign` to `"start"` (default), `"center"`, or `"end"` to align the menu edge with the trigger.
+
+<MenuButton labelText="Actions" intrinsicAlign="end">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+## Scrollable
+
+Set `maxHeight` to cap the menu height and scroll the remaining items. A number is treated as pixels; a string is used as any CSS length, such as `"20rem"`. Keyboard navigation scrolls the focused item into view.
+
+<FileSource src="/framed/MenuButton/MenuButtonScrollable" />
+
+## Disabled
+
+Set `disabled` to `true` to disable the trigger button.
+
+<MenuButton labelText="Actions" disabled>
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+</MenuButton>
+
+## Menu items
+
+`MenuItem` takes `disabled`, an `icon`, `kind="danger"` for destructive rows, and nested children for submenus. Use `MenuDivider` between groups.
+
+### Disabled
+
+Set `disabled` on a `MenuItem` to make it non-interactive.
+
+<MenuButton labelText="Actions">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem disabled on:click={() => console.log("Copy")}>Copy</MenuItem>
+</MenuButton>
+
+### Icons
+
+Pass a Carbon icon to `icon`.
+
+<MenuButton labelText="Actions">
+  <MenuItem icon={Cut} on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem icon={Copy} on:click={() => console.log("Copy")}>Copy</MenuItem>
+</MenuButton>
+
+### Shortcuts
+
+Set `shortcut` to show its keys on the right of the row, such as `"mod+x"`, which shows <DocKbd shortcut="mod+x" variant="muted" /> on your platform. The item announces them with `aria-keyshortcuts`. The menu only shows the keys, since it's usually closed when they're pressed: bind the command itself with `onShortcut`. For other content, use `shortcutText` or the `shortcutChildren` slot, which take precedence.
+
+<MenuButton labelText="Actions">
+  <MenuItem icon={Cut} shortcut="mod+x" on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem icon={Copy} shortcut="mod+c" on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem shortcut="mod+v" on:click={() => console.log("Paste")}>Paste</MenuItem>
+</MenuButton>
+
+### Danger
+
+Set `kind="danger"` on `MenuItem` for a destructive action.
+
+<MenuButton labelText="Actions">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuDivider />
+  <MenuItem icon={TrashCan} kind="danger" on:click={() => console.log("Delete")}>
+    Delete
+  </MenuItem>
+</MenuButton>
+
+### Dividers
+
+Put a `MenuDivider` between groups.
+
+<MenuButton labelText="Actions">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem on:click={() => console.log("Paste")}>Paste</MenuItem>
+  <MenuDivider />
+  <MenuItem kind="danger" on:click={() => console.log("Delete")}>Delete</MenuItem>
+</MenuButton>
+
+### Selectable
+
+Wrap items in `MenuItemGroup` to make them checkboxes that hold state, such as which table columns are visible. Give every item an id, then bind `selectedIds` for the chosen ones. Set `selected` on an item to check it when the menu first opens, or set `selectable` on a single item outside a group for a standalone toggle.
+
+Choosing an item closes the menu by default. See [Keep open on selection](#keep-open-on-selection) to change that.
+
+<FileSource src="/framed/MenuButton/MenuButtonSelectable" />
+
+### Radio group
+
+Wrap items in `MenuItemRadioGroup` for a set where one choice is active at a time, such as row density. Bind `selectedId` for the active id; picking another item clears the previous one. Choosing an item closes the menu by default; see [Keep open on selection](#keep-open-on-selection) to change that.
+
+<FileSource src="/framed/MenuButton/MenuButtonRadioGroup" />
+
+### Nested
+
+Set `labelText` on a `MenuItem` and nest child `MenuItem` rows to get a submenu. Open it with <DocKbd label="→" />, click, or hover (short delay). <DocKbd label="←" /> closes it and refocuses the parent. Picking a nested item closes the whole menu, including open submenus. See [Keep open on selection](#keep-open-on-selection) to change that.
+
+<MenuButton labelText="Actions">
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+  <MenuItem labelText="Export as">
+    <MenuItem on:click={() => console.log("PDF")}>PDF</MenuItem>
+    <MenuItem on:click={() => console.log("JPG")}>JPG</MenuItem>
+    <MenuItem on:click={() => console.log("PNG")}>PNG</MenuItem>
+  </MenuItem>
+</MenuButton>
+
+### Keep open on selection
+
+Choosing an item closes the menu by default, including any open submenus. Call `event.preventDefault()` in the item's `on:click` handler to keep the menu open. A selectable or radio item still updates its own state; only the close is canceled. Use this for multi-select, or for a radio choice in a submenu that should stay open after a pick.
+
+<FileSource src="/framed/MenuButton/MenuButtonKeepOpen" />
+
+## Events
+
+Respond to menu close attempts.
+
+### Close event
+
+Use `on:close` to respond to every close attempt, regardless of cause. The event detail's `trigger` is `"escape-key"`, `"outside-click"`, or `"select"`.
+
+<MenuButton labelText="Actions" on:close={(e) => console.log(e.detail.trigger)}>
+  <MenuItem on:click={() => console.log("Cut")}>Cut</MenuItem>
+  <MenuItem on:click={() => console.log("Copy")}>Copy</MenuItem>
+</MenuButton>

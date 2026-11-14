@@ -1,68 +1,78 @@
 <script>
-  /**
-   * @typedef {"close" | "open"} ListBoxFieldTranslationId
-   */
-
   /** Set to `true` to disable the list box field */
   export let disabled = false;
+
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
 
   /** Specify the role attribute */
   export let role = "combobox";
 
-  /** Specify the tabindex */
+  /**
+   * Specify the tabindex
+   * @type {number | string | undefined}
+   */
   export let tabindex = "-1";
 
-  /** Default translation ids */
-  export const translationIds = { close: "close", open: "open" };
+  /** Set an id for the top-level element */
+  export let id = uniqueId();
 
   /**
-   * Override the default translation ids
-   * @type {(id: ListBoxFieldTranslationId) => string}
+   * Obtain a reference to the top-level HTML element.
+   * @bindable readonly
+   * @type {null | HTMLButtonElement}
    */
-  export let translateWithId = (id) => defaultTranslations[id];
-
-  /** Set an id for the top-level element */
-  export let id = "ccs-" + Math.random().toString(36);
-
-  /** Obtain a reference to the top-level HTML element */
   export let ref = null;
 
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
+  import { tabindexAttribute } from "../utils/tabindex.js";
+  import { uniqueId } from "../utils/unique-id.js";
 
-  const defaultTranslations = {
-    [translationIds.close]: "Close menu",
-    [translationIds.open]: "Open menu",
-  };
-  const ctx = getContext("MultiSelect");
+  const ctx = getContext("carbon:MultiSelect");
+
+  // `bind:this` may already have nulled `ref` by the time the cleanup runs,
+  // so keep the node that was declared for `releaseRef`.
+  /** @type {null | HTMLButtonElement} */
+  let declaredRef = null;
 
   $: if (ctx && ref) {
+    declaredRef = ref;
     ctx.declareRef({ key: "field", ref });
   }
 
+  onMount(() => () => {
+    if (declaredRef) ctx?.releaseRef?.({ key: "field", ref: declaredRef });
+  });
+
+  // `aria-expanded` reaches the button through `$$restProps`; callers pass
+  // a string, so Svelte 3 and 4 write `"true"` on the server.
   $: ariaExpanded = $$props["aria-expanded"];
+  $: expanded = ariaExpanded === true || ariaExpanded === "true";
   $: menuId = `menu-${id}`;
 </script>
 
-<div
-  bind:this="{ref}"
-  role="{ariaExpanded ? 'combobox' : role}"
-  aria-expanded="{ariaExpanded}"
-  aria-owns="{(ariaExpanded && menuId) || undefined}"
-  aria-controls="{(ariaExpanded && menuId) || undefined}"
-  aria-disabled="{disabled}"
-  aria-label="{ariaExpanded
-    ? translateWithId('close')
-    : translateWithId('open')}"
-  tabindex="{disabled ? '-1' : tabindex}"
-  class:bx--list-box__field="{true}"
+<button
+  bind:this={ref}
+  type="button"
+  {id}
+  {role}
+  aria-controls={expanded ? menuId : undefined}
+  aria-disabled={disabled ? "true" : "false"}
+  aria-readonly={readonly ? "true" : undefined}
+  tabindex={tabindexAttribute(disabled ? "-1" : tabindex)}
+  class:bx--list-box__field={true}
   {...$$restProps}
   on:click
   on:mouseover
   on:mouseenter
   on:mouseleave
-  on:keydown|preventDefault|stopPropagation
+  on:keydown
+  on:keydown={(event) => {
+    // ListBox decides whether Escape propagates, based on the open state.
+    if (event.key !== "Escape") event.stopPropagation();
+  }}
   on:focus
   on:blur
 >
   <slot />
-</div>
+</button>

@@ -1,0 +1,84 @@
+import { render, screen } from "@testing-library/svelte";
+import { getBoundText } from "../utils/get-bound-text";
+import { getForm } from "../utils/get-form";
+import { resetForm } from "../utils/reset-form";
+import { user } from "../utils/user";
+import RadioButtonGroupForm from "./RadioButtonGroup.form.test.svelte";
+
+describe("RadioButtonGroup form reset", () => {
+  it("unchecks every radio and clears the bound value without firing change", async () => {
+    const onChange = vi.fn();
+    render(RadioButtonGroupForm, { props: { selected: "a", onChange } });
+
+    await user.click(screen.getByRole("radio", { name: "B" }));
+    onChange.mockClear();
+
+    await resetForm();
+
+    expect(screen.getByRole("radio", { name: "A" })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "B" })).not.toBeChecked();
+    expect(getBoundText()).toBe("undefined");
+    expect([...new FormData(getForm())]).toEqual([]);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("follows the radio's default state, as with server-rendered markup", async () => {
+    const onChange = vi.fn();
+    render(RadioButtonGroupForm, { props: { selected: "a", onChange } });
+    const radioA = screen.getByRole("radio", { name: "A" });
+    assert(radioA instanceof HTMLInputElement);
+    // Server-rendered markup carries the state as the `checked` attribute.
+    radioA.defaultChecked = true;
+
+    await user.click(screen.getByRole("radio", { name: "B" }));
+    onChange.mockClear();
+
+    await resetForm();
+
+    expect(radioA).toBeChecked();
+    expect(screen.getByRole("radio", { name: "B" })).not.toBeChecked();
+    expect(getBoundText()).toBe("a");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("restores a numeric value that allowDeselect can then clear", async () => {
+    render(RadioButtonGroupForm, {
+      props: { values: [1, 2], allowDeselect: true },
+    });
+    const radioB = screen.getByRole("radio", { name: "B" });
+    assert(radioB instanceof HTMLInputElement);
+    radioB.defaultChecked = true;
+
+    await resetForm();
+    await user.click(radioB);
+
+    expect(radioB).not.toBeChecked();
+    expect(getBoundText()).toBe("undefined");
+  });
+
+  it("leaves the selection alone when the reset is canceled", async () => {
+    const onChange = vi.fn();
+    render(RadioButtonGroupForm, { props: { selected: "a", onChange } });
+    getForm().addEventListener("reset", (event) => event.preventDefault());
+
+    await resetForm();
+
+    expect(screen.getByRole("radio", { name: "A" })).toBeChecked();
+    expect(getBoundText()).toBe("a");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("keeps a read-only group's selection", async () => {
+    const onChange = vi.fn();
+    render(RadioButtonGroupForm, {
+      props: { selected: "a", readonly: true, onChange },
+    });
+
+    await resetForm();
+
+    expect(screen.getByRole("radio", { name: "A" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "B" })).not.toBeChecked();
+    expect(getBoundText()).toBe("a");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

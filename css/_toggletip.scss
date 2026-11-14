@@ -1,0 +1,135 @@
+// Toggletip from @carbon/styles. The floating content reuses the popover
+// styles; this partial adds the toggletip-specific button, label, content,
+// and actions.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Toggletip component
+/// @access private
+/// @group components
+@mixin toggletip {
+  .#{$prefix}--toggletip-container {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+  }
+
+  .#{$prefix}--toggletip {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .#{$prefix}--toggletip-label {
+    @include type-style("label-01");
+
+    margin-inline-end: $carbon--spacing-03;
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--toggletip-button {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .#{$prefix}--toggletip-button svg {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--toggletip--open .#{$prefix}--toggletip-button svg {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--toggletip-button:focus {
+    outline: 1px solid $focus;
+  }
+
+  // Start and end alignment point the caret at the button's center for any
+  // button size, as v11 does: the rules below place the popover edge
+  // `--ccs-toggletip-caret` (from its corner to the caret's center: the 8px
+  // offset plus half the 8px caret) before that center. For the 16px info
+  // button that is 4px past the button's edge.
+  .#{$prefix}--popover.#{$prefix}--toggletip-popover {
+    --cds-popover-caret-offset: #{to-rem(8px)};
+    --ccs-toggletip-caret: #{to-rem(12px)};
+    // The button's size. In a portal, Popover sets it inline in px.
+    --ccs-popover-anchor-width: 100%;
+    --ccs-popover-anchor-height: 100%;
+  }
+
+  // In place, the offset is from the button's wrapper. In a portal, it moves
+  // the popover from the button's edge, where the portal put it.
+  @each $edge, $size, $sides in (left width (top, bottom), right width (top, bottom), top height (left, right), bottom height (left, right)) {
+    @each $side in $sides {
+      .#{$prefix}--popover.#{$prefix}--toggletip-popover.#{$prefix}--popover--#{$side}-#{$edge} {
+        #{$edge}: calc(var(--ccs-popover-anchor-#{$size}) / 2 - var(--ccs-toggletip-caret));
+      }
+    }
+  }
+
+  // A bare paragraph keeps the content's type style. A page's `p` rule, or
+  // this library's own default type, matches the element and would beat
+  // inheritance. `Text` and other classed paragraphs keep their own style.
+  .#{$prefix}--toggletip-content p:not([class]) {
+    margin: 0;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  // The content sits on the inverse (dark) popover surface, so its links
+  // read the inverse link colors through Link's hooks, as in v11. Set a
+  // hook inside the content to recolor its links.
+  .#{$prefix}--toggletip-content {
+    @include type-style("body-compact-01");
+
+    --cds-link-text-color: #{$link-inverse};
+    --cds-link-hover-text-color: #{ccs-token("link-inverse-hover")};
+    --cds-link-visited-text-color: #{ccs-token("link-inverse-visited")};
+    --cds-link-focus-text-color: #{$focus-inverse};
+
+    display: grid;
+    max-width: to-rem(288px);
+    padding: $carbon--spacing-05;
+    row-gap: $carbon--spacing-05;
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    .#{$prefix}--toggletip-button:hover svg {
+      fill: $icon-primary;
+    }
+  }
+
+  // The focus ring (also shown while pressed) clears the text on the dark
+  // surface. Its color comes from the hook above.
+  .#{$prefix}--toggletip-content .#{$prefix}--link:focus,
+  .#{$prefix}--toggletip-content .#{$prefix}--link:active {
+    outline-offset: 2px;
+  }
+
+  .#{$prefix}--toggletip-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    column-gap: $carbon--spacing-05;
+  }
+
+  // Forced-colors mode leaves SVG fills alone, and the button's icon fills
+  // outrank the global `ButtonText` icon rule, so the theme's dark gray icon
+  // vanished on a dark contrast theme. The icon reads `ButtonText` when
+  // closed, open and hovered.
+  @media (forced-colors: active) {
+    .#{$prefix}--toggletip .#{$prefix}--toggletip-button svg {
+      fill: ButtonText;
+    }
+  }
+}
+
+@include exports("toggletip") {
+  @include toggletip;
+}

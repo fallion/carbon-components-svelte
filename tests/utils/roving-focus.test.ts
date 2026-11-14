@@ -1,0 +1,219 @@
+import { rovingFocus } from "../../src/utils/roving-focus.js";
+
+type Options = Parameters<typeof rovingFocus>[1];
+
+function setup(count: number, options: Partial<Options> = {}) {
+  const container = document.createElement("div");
+  const items = Array.from({ length: count }, (_, i) => {
+    const button = document.createElement("button");
+    button.setAttribute("role", "option");
+    button.textContent = `Item ${i}`;
+    container.appendChild(button);
+    return button;
+  });
+  document.body.appendChild(container);
+
+  let active = 0;
+  const onMove = vi.fn((index: number) => {
+    active = index;
+  });
+
+  const action = rovingFocus(container, {
+    selector: "[role='option']",
+    getActiveIndex: () => active,
+    onMove,
+    ...options,
+  });
+
+  return {
+    container,
+    items,
+    onMove,
+    action,
+    setActive: (index: number) => {
+      active = index;
+    },
+  };
+}
+
+function keydown(target: Element, key: string, init: KeyboardEventInit = {}) {
+  const event = new KeyboardEvent("keydown", { key, bubbles: true, ...init });
+  const preventDefault = vi.spyOn(event, "preventDefault");
+  target.dispatchEvent(event);
+  return { event, preventDefault };
+}
+
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+describe("rovingFocus", () => {
+  it("ArrowRight moves to the next index", () => {
+    const { items, onMove } = setup(3);
+    keydown(items[0], "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(1, expect.any(KeyboardEvent));
+  });
+
+  it("ArrowLeft wraps from the first item to the last", () => {
+    const { items, onMove } = setup(3);
+    keydown(items[0], "ArrowLeft");
+    expect(onMove).toHaveBeenCalledWith(2, expect.any(KeyboardEvent));
+  });
+
+  it("swaps ArrowLeft and ArrowRight while `rtl` returns true", () => {
+    let rtl = true;
+    const { items, onMove } = setup(3, { rtl: () => rtl });
+    keydown(items[0], "ArrowLeft");
+    expect(onMove).toHaveBeenLastCalledWith(1, expect.any(KeyboardEvent));
+    keydown(items[1], "ArrowRight");
+    expect(onMove).toHaveBeenLastCalledWith(0, expect.any(KeyboardEvent));
+
+    // Read on each key, not once.
+    rtl = false;
+    keydown(items[0], "ArrowRight");
+    expect(onMove).toHaveBeenLastCalledWith(1, expect.any(KeyboardEvent));
+  });
+
+  it("keeps Up/Down and Home/End when `rtl` returns true", () => {
+    const { items, onMove } = setup(3, {
+      orientation: "both",
+      rtl: () => true,
+    });
+    keydown(items[0], "ArrowDown");
+    expect(onMove).toHaveBeenLastCalledWith(1, expect.any(KeyboardEvent));
+    keydown(items[1], "End");
+    expect(onMove).toHaveBeenLastCalledWith(2, expect.any(KeyboardEvent));
+    keydown(items[2], "Home");
+    expect(onMove).toHaveBeenLastCalledWith(0, expect.any(KeyboardEvent));
+  });
+
+  it("horizontal orientation ignores ArrowUp/ArrowDown", () => {
+    const { items, onMove } = setup(3);
+    keydown(items[0], "ArrowDown");
+    keydown(items[0], "ArrowUp");
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("vertical orientation uses ArrowDown/ArrowUp, not Left/Right", () => {
+    const { items, onMove } = setup(3, { orientation: "vertical" });
+    keydown(items[0], "ArrowDown");
+    expect(onMove).toHaveBeenCalledWith(1, expect.any(KeyboardEvent));
+
+    onMove.mockClear();
+    keydown(items[0], "ArrowRight");
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("both orientation handles all four arrow keys", () => {
+    const { items, onMove } = setup(3, { orientation: "both" });
+    keydown(items[0], "ArrowRight");
+    keydown(items[0], "ArrowDown");
+    expect(onMove).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["Home", 2, 0],
+    ["End", 0, 2],
+  ])("%s from %i lands on %i and calls preventDefault", (key, from, to) => {
+    const { items, onMove, setActive } = setup(3);
+    setActive(from);
+    const { preventDefault } = keydown(items[from], key);
+    expect(onMove).toHaveBeenCalledWith(to, expect.any(KeyboardEvent));
+    expect(preventDefault).toHaveBeenCalledOnce();
+  });
+
+  it.each(["altKey", "ctrlKey", "metaKey"])(
+    "leaves Home and End with %s held to the browser",
+    (modifier) => {
+      const { items, onMove, setActive } = setup(3);
+      setActive(1);
+      for (const key of ["Home", "End"]) {
+        const { preventDefault } = keydown(items[1], key, {
+          [modifier]: true,
+        });
+        expect(preventDefault).not.toHaveBeenCalled();
+      }
+      expect(onMove).not.toHaveBeenCalled();
+    },
+  );
+
+  it("arrow keys do not call preventDefault", () => {
+    const { items } = setup(3);
+    const { preventDefault } = keydown(items[0], "ArrowRight");
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it("skipDisabled skips disabled items", () => {
+    const { items, onMove } = setup(3, { skipDisabled: true });
+    items[1].disabled = true;
+    keydown(items[0], "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(2, expect.any(KeyboardEvent));
+  });
+
+  it("without skipDisabled, navigation lands on a disabled item", () => {
+    const { items, onMove } = setup(3);
+    items[1].disabled = true;
+    keydown(items[0], "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(1, expect.any(KeyboardEvent));
+  });
+
+  it("ignores keydown outside the selector", () => {
+    const { container, onMove } = setup(3);
+    const stray = document.createElement("input");
+    container.appendChild(stray);
+    keydown(stray, "ArrowRight");
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("ArrowRight on the container moves to the next index", () => {
+    const { container, onMove } = setup(3);
+    keydown(container, "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(1, expect.any(KeyboardEvent));
+  });
+
+  it("wrap: false clamps at the ends instead of wrapping", () => {
+    const { items, onMove, setActive } = setup(3, { wrap: false });
+    setActive(2);
+    keydown(items[2], "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(2, expect.any(KeyboardEvent));
+  });
+
+  it("focusOnMove focuses the resolved item", () => {
+    const { items } = setup(3, { focusOnMove: true });
+    keydown(items[0], "ArrowRight");
+    expect(document.activeElement).toBe(items[1]);
+  });
+
+  it("getItems sets the item list and count", () => {
+    const { items, onMove, setActive } = setup(4, {
+      getItems: () => {
+        const all = Array.from(
+          document.querySelectorAll<HTMLElement>("[role='option']"),
+        );
+        return all.slice(0, 3);
+      },
+    });
+    setActive(2);
+    keydown(items[2], "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(0, expect.any(KeyboardEvent));
+  });
+
+  it("itemsOnly ignores keydown from matching elements outside getItems", () => {
+    const { items, onMove } = setup(4, {
+      itemsOnly: true,
+      getItems: () => items.slice(0, 3),
+    });
+    keydown(items[3], "ArrowRight");
+    expect(onMove).not.toHaveBeenCalled();
+
+    keydown(items[0], "ArrowRight");
+    expect(onMove).toHaveBeenCalledWith(1, expect.any(KeyboardEvent));
+  });
+
+  it("destroy removes the keydown listener", () => {
+    const { items, onMove, action } = setup(3);
+    action.destroy();
+    keydown(items[0], "ArrowRight");
+    expect(onMove).not.toHaveBeenCalled();
+  });
+});

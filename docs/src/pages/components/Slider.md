@@ -1,0 +1,499 @@
+---
+components: ["Slider", "RangeSlider", "SliderSkeleton", "RangeSliderSkeleton"]
+description: Sliders provide a visual way to select a value from a range, with keyboard navigation, custom ranges, step values, and various states.
+---
+
+<script>
+  import { Box, Layer, RangeSlider, RangeSliderSkeleton, Slider, SliderSkeleton } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic slider with a label and the default range from 0 to 100.
+
+<Slider labelText="Instances" value={0} />
+
+## Sizes
+
+Set `size` to `"xs"` for a 24px number input. Inside a `Form` with `size="xs"`, sliders inherit it.
+
+<Slider size="xs" labelText="Instances" value={4} max={10} />
+<RangeSlider size="xs" labelText="Maintenance window (hours)" value={2} valueUpper={6} max={24} />
+
+## Helper text
+
+Add helper text below the slider to provide additional context or instructions.
+
+<Slider labelText="Instances" helperText="Applies to new deployments only" value={4} />
+
+## Labels and layout
+
+Control how the slider label, text input, and width render.
+
+### Full width
+
+Set `fullWidth` to `true` for the slider to span the full width of its container.
+
+<Slider labelText="Instances" fullWidth value={0} />
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<Slider labelText="Instances" hideLabel value={0} />
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom label content.
+
+<Slider labelText="" value={0}>
+  <strong slot="labelChildren">Instances</strong>
+</Slider>
+
+### Hidden text input
+
+Set `hideTextInput` to `true` to hide the numeric input while keeping the slider.
+
+<Slider labelText="Instances" hideTextInput value={0} />
+
+### Hidden range labels
+
+Set `hideRangeLabels` to `true` to hide the min and max labels beside the track, as when a readout elsewhere already shows the range.
+
+<Slider labelText="Rollout" hideRangeLabels fullWidth value={35} />
+
+### Input type
+
+Set `inputType` to change the native `type` attribute of the text input—for example, `"text"` to avoid the browser's built-in number spinner controls. The bound `value` stays numeric regardless of `inputType`.
+
+<Slider inputType="text" labelText="Instances" value={0} />
+
+### Select on focus
+
+Set `selectTextOnFocus` to select the full value in the number input when it receives focus.
+
+<Slider selectTextOnFocus labelText="Instances" value={4} />
+
+## Range and steps
+
+Control the allowed values and increment.
+
+### Custom range
+
+Set `min`, `max`, `minLabel`, and `maxLabel` to customize the range.
+
+<Slider labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={100} />
+
+### Custom step
+
+Set `step` to control increment size.
+
+<Slider labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={100} step={10} />
+
+### Step multiplier
+
+Set `stepMultiplier` to control how far <DocKbd label="Shift" /> + Arrow key presses, or <DocKbd label="PageUp" />/<DocKbd label="PageDown" />, move the value. Holding Shift while pressing an arrow key, or pressing <DocKbd label="PageUp" />/<DocKbd label="PageDown" /> alone, moves the value by `(max - min) / stepMultiplier`, rounded to the nearest `step`, instead of a single step. Defaults to `4`.
+
+<Slider labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={100} step={10} stepMultiplier={2} />
+
+## Formatting
+
+Control how range labels and `aria-valuetext` are displayed.
+
+### Formatted values
+
+Use `formatValue` to format range labels and `aria-valuetext` (for example currency or percent). The text input and bound `value` stay numeric.
+
+<Slider labelText="Budget" value={50} formatValue={(v) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)} />
+
+<Slider labelText="CPU utilization" value={75} formatValue={(v) => `${v}%`} />
+
+## Marks
+
+Set `marks` to show tick marks along the track. Pass an array of stops with optional labels, or set `marks` to `true` to tick every `step`. Snapping follows `step` unless [`snapToMarks`](#snap-to-marks) or [`markSnapDistance`](#magnetic-marks) is set.
+
+While the value sits on a labeled mark, screen readers announce the label as the value text. With `formatValue`, they announce the formatted value followed by the label, for example "68°F, Comfortable".
+
+<Slider
+  labelText="Log verbosity"
+  hideTextInput
+  min={0}
+  max={3}
+  step={1}
+  value={1}
+  marks={[
+    { value: 0, label: "Off" },
+    { value: 1, label: "Low" },
+    { value: 2, label: "Med" },
+    { value: 3, label: "High" },
+  ]}
+/>
+
+### Every step
+
+Set `marks` to `true` to place a tick at every `step`.
+
+<Slider labelText="Instances" hideTextInput min={0} max={10} step={2} value={4} marks />
+
+### Snap to marks
+
+Set `snapToMarks` to `true` to make dragging and clicking land on the nearest mark instead of the nearest `step`. <DocKbd label="ArrowLeft" />/<DocKbd label="ArrowRight" /> (and <DocKbd label="ArrowDown" />/<DocKbd label="ArrowUp" />) move to the adjacent mark; <DocKbd label="Shift" /> + Arrow, <DocKbd label="PageUp" />, and <DocKbd label="PageDown" /> skip `stepMultiplier` marks. <DocKbd label="Home" /> and <DocKbd label="End" /> still jump to `min` and `max`. A `value` set programmatically is not moved onto a mark.
+
+<Slider
+  labelText="Cache size (GB)"
+  min={0}
+  max={64}
+  value={8}
+  snapToMarks
+  marks={[
+    { value: 0, label: "0" },
+    { value: 8, label: "8" },
+    { value: 16, label: "16" },
+    { value: 32, label: "32" },
+    { value: 64, label: "64" },
+  ]}
+/>
+
+### Magnetic marks
+
+Set `markSnapDistance` to pull drags and clicks onto a mark once the pointer comes within that many pixels of it. Unlike `snapToMarks`, every other `step` stays reachable, so a meaningful value such as a default or a neutral point is easy to hit without restricting the control to its marks. Arrow keys still move by `step`.
+
+<Slider
+  labelText="Thermostat"
+  min={60}
+  max={80}
+  value={65}
+  markSnapDistance={12}
+  formatValue={(v) => `${v}°F`}
+  marks={[
+    { value: 60, label: "Cold" },
+    { value: 68, label: "Comfortable" },
+    { value: 80, label: "Hot" },
+  ]}
+/>
+
+## Vertical
+
+Set `orientation` to `"vertical"` to lay the track out along the vertical axis, with `min` at the bottom and `max` at the top. <DocKbd label="ArrowUp" /> and <DocKbd label="ArrowRight" /> increase the value; <DocKbd label="ArrowDown" /> and <DocKbd label="ArrowLeft" /> decrease it. The `max` label sits at the top of the track and the `min` label at the bottom, on the side where lines end: the right in a left-to-right page, the left in a right-to-left one. The text input sits below the track.
+
+<Slider labelText="Volume" orientation="vertical" value={40} />
+
+### Fluid height
+
+A vertical slider fills the height of its container, minus its label and helper text. Without a container height, the track defaults to about 200px.
+
+<Box display="flex" gap={7}>
+  <Box height="12rem">
+    <Slider labelText="12rem" orientation="vertical" value={40} />
+  </Box>
+  <Box height="18rem">
+    <Slider labelText="18rem" orientation="vertical" value={40} />
+  </Box>
+  <Box height="24rem">
+    <Slider labelText="24rem" orientation="vertical" value={40} />
+  </Box>
+</Box>
+
+### Custom range and step
+
+`min`, `max`, `step`, and `stepMultiplier` work the same as on a horizontal slider.
+
+<Slider labelText="Runtime memory (MB)" orientation="vertical" min={10} max={990} maxLabel="990 MB" step={10} value={100} />
+
+### Marks
+
+Mark labels render beside the track, on the same side as the range labels, instead of below it.
+
+<Slider
+  labelText="Log verbosity"
+  orientation="vertical"
+  hideTextInput
+  min={0}
+  max={3}
+  step={1}
+  value={1}
+  marks={[
+    { value: 0, label: "Off" },
+    { value: 1, label: "Low" },
+    { value: 2, label: "Med" },
+    { value: 3, label: "High" },
+  ]}
+/>
+
+### Snap to marks
+
+Combine `orientation="vertical"` with `snapToMarks` to land on a mark when dragging, clicking, or pressing an arrow key.
+
+<Slider
+  labelText="Cache size (GB)"
+  orientation="vertical"
+  min={0}
+  max={64}
+  value={8}
+  snapToMarks
+  marks={[
+    { value: 0, label: "0" },
+    { value: 8, label: "8" },
+    { value: 16, label: "16" },
+    { value: 32, label: "32" },
+    { value: 64, label: "64" },
+  ]}
+/>
+
+### Hidden text input
+
+Set `hideTextInput` to `true` to show only the track and range labels.
+
+<Slider labelText="Volume" orientation="vertical" hideTextInput value={40} />
+
+### Formatted values
+
+`formatValue` formats the range labels and `aria-valuetext`; the bound `value` stays numeric.
+
+<Slider labelText="CPU utilization" orientation="vertical" value={75} formatValue={(v) => `${v}%`} />
+
+### Disabled
+
+Set `disabled` to `true` to prevent interaction.
+
+<Slider labelText="Volume" orientation="vertical" disabled value={40} />
+
+### Read-only
+
+Set `readonly` to `true` to display a value while preventing changes.
+
+<Slider labelText="Volume" orientation="vertical" readonly value={40} />
+
+### Vertical range slider
+
+`RangeSlider` accepts `orientation` too. The lower handle sits below its value and the upper handle above it, with the filled track between them. Clicking or dragging moves whichever handle is vertically closer to the pointer.
+
+<RangeSlider labelText="Alert threshold (%)" orientation="vertical" value={20} valueUpper={70} />
+
+### Read-only vertical range slider
+
+Set `readonly` to `true` to display the range while preventing changes. Each handle stays in the tab order so its value can still be read; arrow keys leave it unchanged.
+
+<RangeSlider labelText="Alert threshold (%)" orientation="vertical" readonly value={20} valueUpper={70} />
+
+### Vertical range slider with fluid height
+
+The upper input sits beside the `max` label and the lower input beside the `min` label, so both stay aligned with the track ends as the container grows.
+
+<Box height="24rem">
+  <RangeSlider labelText="Price range ($)" orientation="vertical" min={0} max={500} step={10} value={100} valueUpper={350} />
+</Box>
+
+### Vertical range slider with marks
+
+<RangeSlider
+  labelText="Log verbosity"
+  orientation="vertical"
+  hideTextInput
+  min={0}
+  max={3}
+  step={1}
+  value={0}
+  valueUpper={2}
+  marks={[
+    { value: 0, label: "Off" },
+    { value: 1, label: "Low" },
+    { value: 2, label: "Med" },
+    { value: 3, label: "High" },
+  ]}
+/>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <Slider labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={100} step={10} />
+  </Box>
+</Layer>
+
+## Events
+
+Respond to value changes as the user drags the handle, uses the keyboard, or edits the text input.
+
+Use `on:input` to listen for every value while dragging or pressing an arrow key, and `on:change` to listen for committed changes—when the drag ends, an arrow key is pressed, or the text input is committed. Both events dispatch the numeric value directly as `event.detail`.
+
+<Slider
+  on:input={(e) => console.log(e.detail)} // number
+  on:change={(e) => console.log(e.detail)} // number
+  labelText="Instances"
+  value={0}
+/>
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Set `invalid` to `true` to show a validation error. Invalid takes precedence over the [warning state](#warning) when both are set.
+
+<Slider invalid invalidText="Value must be a multiple of 10" labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={105} step={10} />
+
+### Warning
+
+Set `warn` to `true` to show a warning. The warning icon appears next to the input field, with a message below the slider.
+
+<Slider warn warnText="Value must be an increment of 5" labelText="Concurrency limit" min={0} max={100} value={51} step={5} />
+
+### Disabled
+
+Set `disabled` to `true` to prevent interaction.
+
+<Slider disabled labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={100} step={10} />
+
+### Read-only
+
+Set `readonly` to `true` to display a value while preventing changes.
+
+<Slider readonly labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" value={100} step={10} />
+
+## Range slider
+
+Use `RangeSlider` to select a range with two handles. Bind to `value` for the lower bound and `valueUpper` for the upper bound. `RangeSlider` supports the same layout and state options as `Slider`, including a [vertical orientation](#vertical-range-slider).
+
+<RangeSlider labelText="Alert threshold (%)" value={10} valueUpper={90} />
+
+### Full width
+
+Set `fullWidth` to `true` for the range slider to span the full width of its container.
+
+<RangeSlider labelText="Alert threshold (%)" fullWidth value={10} valueUpper={90} />
+
+### Hidden text inputs
+
+Set `hideTextInput` to `true` to hide both numeric inputs while keeping the slider.
+
+<RangeSlider labelText="Alert threshold (%)" hideTextInput value={0} valueUpper={100} />
+
+### Custom range and step
+
+Set `min`, `max`, and `step` to customize the range.
+
+<RangeSlider labelText="Runtime memory (MB)" min={10} max={990} maxLabel="990 MB" step={10} value={100} valueUpper={500} />
+
+### Minimum gap
+
+Set `minGap` to keep the handles at least that far apart. Dragging, arrow keys, <DocKbd label="Home" />/<DocKbd label="End" />, and both text inputs stop a handle `minGap` short of the other. A `value` or `valueUpper` set programmatically that closes the gap is corrected by moving `valueUpper` up (or `value` down when `valueUpper` is already at `max`). Defaults to `0`, which lets the handles meet.
+
+<RangeSlider labelText="Alert threshold (%)" minGap={10} value={40} valueUpper={60} />
+
+### Select on focus
+
+Set `selectTextOnFocus` to select the full value in either number input when it receives focus.
+
+<RangeSlider selectTextOnFocus labelText="Alert threshold (%)" value={10} valueUpper={90} />
+
+### Formatted values
+
+`formatValue` applies to both thumbs' `aria-valuetext` and the range labels. Bound `value` / `valueUpper` stay numeric.
+
+<RangeSlider labelText="Price range" value={20} valueUpper={80} formatValue={(v) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)} />
+
+### Marks
+
+Set `marks` the same way as on `Slider` for tick marks and optional labels. `snapToMarks` and `markSnapDistance` work the same way too; a handle only lands on marks that keep [`minGap`](#minimum-gap) from the other handle.
+
+<RangeSlider
+  labelText="Log verbosity"
+  hideTextInput
+  min={0}
+  max={3}
+  step={1}
+  value={0}
+  valueUpper={2}
+  marks={[
+    { value: 0, label: "Off" },
+    { value: 1, label: "Low" },
+    { value: 2, label: "Med" },
+    { value: 3, label: "High" },
+  ]}
+/>
+
+### Drag the range
+
+Set `trackDrag` to `"range"` to move both handles together when a drag starts inside the selected range. The range keeps its width and stops against `min` and `max`, the pointer shows a grab cursor over it, and both handles are highlighted while it moves. A press outside the range still moves the nearer handle. Useful for sliding a fixed-length window, such as a time span, along the track.
+
+<RangeSlider labelText="Maintenance window (hour)" trackDrag="range" min={0} max={24} value={2} valueUpper={6} />
+
+### Brush a new range
+
+Set `trackDrag` to `"brush"` to also paint a new range by dragging across the track outside the current one; the pointer shows a crosshair there. Press on the empty track, hold, and drag: the range runs from the press point to the pointer, in either direction. A click without dragging moves the nearer handle, as it does by default. Both handles stay keyboard-operable, since neither mode adds a keyboard interaction.
+
+<RangeSlider labelText="Price range" trackDrag="brush" value={20} valueUpper={40} formatValue={(v) => `$${v}`} />
+
+### Handle labels
+
+Set `ariaLabelInput` and `ariaLabelInputUpper` to distinguish the lower and upper bound handles for screen reader users. Defaults to `"Lower bound"` and `"Upper bound"`.
+
+<RangeSlider ariaLabelInput="Minimum price" ariaLabelInputUpper="Maximum price" labelText="Price range" value={20} valueUpper={80} />
+
+### Events
+
+Use `on:input` and `on:change` the same way as `Slider`. Both events dispatch `{ value, valueUpper }` as `event.detail`.
+
+`on:focus` and `on:blur` fire for each number input and add `handle` so you can tell which bound received the event.
+
+<RangeSlider
+  on:input={(e) => console.log(e.detail)} // { value: number; valueUpper: number }
+  on:change={(e) => console.log(e.detail)} // { value: number; valueUpper: number }
+  on:focus={(e) => console.log(e.detail)} // { value: number; valueUpper: number; handle: "lower" | "upper" }
+  on:blur={(e) => console.log(e.detail)} // { value: number; valueUpper: number; handle: "lower" | "upper" }
+  labelText="Alert threshold (%)"
+  value={10}
+  valueUpper={90}
+/>
+
+### Invalid
+
+Set `invalid` to `true` to show a validation error. Invalid takes precedence over the [warning state](#warning) when both are set.
+
+<RangeSlider invalid invalidText="Values must be a multiple of 10" labelText="Alert threshold (%)" min={0} max={100} step={10} value={15} valueUpper={85} />
+
+### Warning
+
+Set `warn` to `true` to show a warning. A warning icon appears next to each input field, with a message below the slider.
+
+<RangeSlider warn warnText="Values must be an increment of 5" labelText="Alert threshold (%)" min={0} max={100} step={5} value={11} valueUpper={89} />
+
+### Disabled
+
+Set `disabled` to `true` to prevent interaction.
+
+<RangeSlider disabled labelText="Alert threshold (%)" value={10} valueUpper={90} />
+
+### Read-only
+
+Set `readonly` to `true` to display values while preventing changes.
+
+<RangeSlider readonly labelText="Alert threshold (%)" value={10} valueUpper={90} />
+
+## Skeleton
+
+Show a loading state with the skeleton variant.
+
+<SliderSkeleton />
+
+### Without label
+
+Show a loading state without a label.
+
+<SliderSkeleton hideLabel />
+
+### Range slider
+
+Show a loading state with the range slider skeleton variant.
+
+<RangeSliderSkeleton />
+
+#### Without label
+
+Show a loading state without a label.
+
+<RangeSliderSkeleton hideLabel />

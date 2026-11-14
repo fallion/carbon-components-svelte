@@ -1,0 +1,300 @@
+---
+components: ["Tag", "SelectableTag", "OperationalTag", "TagSkeleton"]
+description: Tags categorize content with a keyword or label, with various styles, sizes, and interactive states like filterable and selectable.
+keywords: ["chip", "pill"]
+---
+
+<script>
+  import { AILabel, Box, Link, OperationalTag, Stack, Tag, SelectableTag, TagSkeleton, TooltipDefinition } from "carbon-components-svelte";
+  import IbmCloud from "carbon-icons-svelte/lib/IbmCloud.svelte";
+</script>
+
+## Basic
+
+Create a basic tag with text content.
+
+<Tag>IBM Cloud</Tag>
+
+## Sizes
+
+Set `size` to control the tag height. The default is medium.
+
+### Extra small
+
+Use the extra small size (16px) inside 24px (`size="xs"`) fields, where
+TagInput and MultiSelect use it.
+
+<Tag size="xs">IBM Cloud</Tag>
+
+### Small
+
+Use the small size variant for more compact layouts.
+
+<Tag size="sm">IBM Cloud</Tag>
+
+### Large
+
+Use the large size variant for more prominent layouts.
+
+<Tag size="lg">IBM Cloud</Tag>
+
+## Tag types
+
+Choose from a variety of color types to match your design system.
+
+<Stack orientation="horizontal" gap={3} wrap="wrap">
+  <Tag type="red">Critical</Tag>
+  <Tag type="magenta">Security</Tag>
+  <Tag type="purple">Beta</Tag>
+  <Tag type="blue">Info</Tag>
+  <Tag type="cyan">Preview</Tag>
+  <Tag type="teal">Verified</Tag>
+  <Tag type="green">Healthy</Tag>
+  <Tag type="gray">Inactive</Tag>
+  <Tag type="cool-gray">Archived</Tag>
+  <Tag type="warm-gray">Deprecated</Tag>
+  <Tag type="high-contrast">Featured</Tag>
+  <Tag type="outline">Draft</Tag>
+</Stack>
+
+## Spacing
+
+Tags have no outer margin, as in Carbon v11. Space them with their container: a horizontal `Stack` with `gap={3}` gives the 8px Carbon recommends between tags, and `TagSet` spaces its tags for you. The `inline` prop is deprecated and has no effect.
+
+<Stack orientation="horizontal" gap={3}>
+  <Tag>IBM Cloud</Tag>
+  <Tag type="blue">Machine learning</Tag>
+</Stack>
+
+## Filterable
+
+Create a filterable tag with a close button that dispatches `close` when clicked.
+
+<Tag filter on:close>carbon-components</Tag>
+
+### Disabled
+
+Disable a filterable tag to prevent interaction.
+
+<Tag filter disabled on:close>carbon-components</Tag>
+
+### Extra small
+
+Combine the filterable variant with the extra small size.
+
+<Tag size="xs" filter on:close>carbon-components</Tag>
+
+### Small
+
+Combine the filterable variant with the small size.
+
+<Tag size="sm" filter on:close>carbon-components</Tag>
+
+### Large
+
+Combine the filterable variant with the large size.
+
+<Tag size="lg" filter on:close>carbon-components</Tag>
+
+### Click and close
+
+Filterable tags forward `on:click` from the tag body and `on:close` from the close button. Click the tag body to select; click the close icon to remove.
+
+<Tag
+filter
+on:click={() => console.log("click")}
+on:close={() => console.log("close")}
+>
+carbon-components
+</Tag>
+
+### Max width
+
+Tags cap at 208px, as in Carbon v11. A longer label truncates with an ellipsis. Set `maxWidth` to change the cap, for example `"100%"` to fit the container. Accepts any valid CSS length, including `rem`, `px`, `ch`, and `%`.
+
+A static tag shows the full text in a tooltip on hover and focus. Its tooltip trigger is a tab stop. Inside a widget that is one tab stop, such as a card or a grid cell, set `tabindex="-1"` on the tag. The trigger then leaves the tab order, and the tag keeps the full text as its accessible name.
+
+A filter tag shows the full text in the label's `title`, as in Carbon v11. The close button stays its only tab stop, and its accessible name holds the full text.
+
+<Stack gap={5}>
+  <div>
+    <div>Default (208px)</div>
+    <Tag filter on:close>
+      status:active AND region:us-south AND service:cloud-object-storage
+    </Tag>
+  </div>
+  <div>
+    <div>maxWidth="8rem"</div>
+    <Tag filter maxWidth="8rem" on:close>
+      status:active AND region:us-south AND service:cloud-object-storage
+    </Tag>
+  </div>
+  <div>
+    <div>maxWidth="140px"</div>
+    <Tag filter maxWidth="140px" on:close>
+      status:active AND region:us-south AND service:cloud-object-storage
+    </Tag>
+  </div>
+  <div>
+    <div>maxWidth="20ch"</div>
+    <Tag filter maxWidth="20ch" on:close>
+      status:active AND region:us-south AND service:cloud-object-storage
+    </Tag>
+  </div>
+  <div>
+    <div>maxWidth="60%" (relative to the containing block)</div>
+    <Box width={200}>
+      <Tag filter maxWidth="60%" on:close>
+        status:active AND region:us-south AND service:cloud-object-storage
+      </Tag>
+    </Box>
+  </div>
+</Stack>
+
+### Close button label
+
+Set `title` to customize the close button's tooltip, shown on hover and focus, and the leading words of its accessible name. Defaults to `"Clear filter"`. The tag text is appended to the name, so each button reads as "Clear filter carbon-components". The prop labels the close button only, so the tag element gets no `title` attribute from it.
+
+<Tag filter title="Remove filter" on:close>carbon-components</Tag>
+
+## Custom icon
+
+Add a custom icon to the tag. Note: custom icons cannot be used with the filterable variant.
+
+<Tag icon={IbmCloud}>IBM Cloud</Tag>
+
+## Clickable variants
+
+Render the tag as a native interactive element instead of a `div`.
+
+### Interactive
+
+Set `interactive` to render a button element instead of a div for clickable tags.
+
+<Tag interactive>Machine learning</Tag>
+
+### Link
+
+Set `href` to render the tag as an anchor. Link tags reuse interactive styles. Do not wrap a `Tag` in an `<a>`; pass `href` on the tag itself. `href` is mutually exclusive with `filter`; when both are set, `filter` takes precedence.
+
+<Stack orientation="horizontal" gap={3} wrap="wrap">
+  <Tag href="/components/Tag" type="red">Critical</Tag>
+  <Tag href="/components/Tag" type="magenta">Security</Tag>
+  <Tag href="/components/Tag" type="purple">Beta</Tag>
+  <Tag href="/components/Tag" type="blue">Info</Tag>
+  <Tag href="/components/Tag" type="cyan">Preview</Tag>
+  <Tag href="/components/Tag" type="teal">Verified</Tag>
+  <Tag href="/components/Tag" type="green">Healthy</Tag>
+  <Tag href="/components/Tag" type="gray">Inactive</Tag>
+  <Tag href="/components/Tag" type="cool-gray">Archived</Tag>
+  <Tag href="/components/Tag" type="warm-gray">Deprecated</Tag>
+  <Tag href="/components/Tag" type="high-contrast">Featured</Tag>
+  <Tag href="/components/Tag" type="outline">Draft</Tag>
+</Stack>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the tag as AI-generated. The label renders as inline text in the tag's color. Static and filterable tags have the slot.
+
+<Stack orientation="horizontal" gap={3} wrap="wrap">
+  <Tag type="blue">Forecast<AILabel slot="decorator"><p>Generated from the last 90 days of usage.</p></AILabel></Tag>
+  <Tag type="green" filter>us-east-1<AILabel slot="decorator"><p>Suggested because most of the alerts came from this region.</p></AILabel></Tag>
+</Stack>
+
+## Disabled
+
+Filterable, interactive, and link tag variants support a disabled state.
+
+<Stack orientation="horizontal" gap={3} wrap="wrap">
+  <Tag filter disabled>Machine learning</Tag>
+  <Tag interactive disabled>Machine learning</Tag>
+  <Tag href="/components/Tag" disabled>Machine learning</Tag>
+</Stack>
+
+## Tooltip
+
+Embed a tooltip within a tag to provide additional context.
+
+<Tag>
+  <TooltipDefinition tooltipText="IBM Corporate Headquarters is based in Armonk, New York.">
+    Armonk
+  </TooltipDefinition>
+</Tag>
+
+## Operational
+
+Use `OperationalTag` for a tag that reveals related content, such as the rest of a list, in a popover. The whole tag is the trigger, and a border in the tag's color marks it as one. Press <DocKbd label="Enter" /> or <DocKbd label="Space" /> to open it. <DocKbd label="Escape" /> closes it and returns focus to the tag; so does clicking outside or moving focus away. Put the popover content in the `content` slot.
+
+<OperationalTag type="blue">
+  3 policies
+  <Stack slot="content" gap={3}>
+    <Link href="#">Retention</Link>
+    <Link href="#">Encryption at rest</Link>
+    <Link href="#">Access review</Link>
+  </Stack>
+</OperationalTag>
+
+### Types
+
+`OperationalTag` takes the ten color `type`s; it has no `high-contrast` or `outline` variant. The default is `gray`.
+
+<Stack orientation="horizontal" gap={3} wrap="wrap">
+  <OperationalTag type="gray">Gray</OperationalTag>
+  <OperationalTag type="purple">Purple</OperationalTag>
+  <OperationalTag type="teal">Teal</OperationalTag>
+  <OperationalTag type="red">Red</OperationalTag>
+</Stack>
+
+## Selectable
+
+Use `SelectableTag` to create a tag that toggles between selected and unselected states. Toggling dispatches `change` with `{ selected }`.
+
+<FileSource src="/framed/Tag/SelectableTagReactive" />
+
+### With icon
+
+Combine `SelectableTag` with a custom icon.
+
+<FileSource src="/framed/Tag/SelectableTagIconReactive" />
+
+### Type
+
+Combine `SelectableTag` with a color `type`, matching the color types available on `Tag`.
+
+<SelectableTag type="blue">Machine learning</SelectableTag>
+
+### Disabled
+
+Disable a selectable tag to prevent interaction.
+
+<SelectableTag disabled>Machine learning</SelectableTag>
+
+### Small
+
+Use the small size variant for selectable tags.
+
+<SelectableTag size="sm">Compliant</SelectableTag>
+
+### Large
+
+Use the large size variant for selectable tags.
+
+<SelectableTag size="lg">Compliant</SelectableTag>
+
+## Skeleton
+
+Use `TagSkeleton` to show a loading state with the default size.
+
+<TagSkeleton />
+
+### Small
+
+Set `size` to `"sm"` on `TagSkeleton` for a small loading state.
+
+<TagSkeleton size="sm" />
+
+### Large
+
+Set `size` to `"lg"` on `TagSkeleton` for a large loading state.
+
+<TagSkeleton size="lg" />

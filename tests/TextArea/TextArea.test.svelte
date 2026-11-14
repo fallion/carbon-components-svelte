@@ -1,0 +1,66 @@
+<script lang="ts">
+  import TextArea from "carbon-components-svelte/TextArea/TextArea.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let value: ComponentProps<TextArea>["value"] = "";
+  export let placeholder = "";
+  export let cols: ComponentProps<TextArea>["cols"] = undefined;
+  export let rows = 4;
+  export let grow = false;
+  export let maxRows: ComponentProps<TextArea>["maxRows"] = undefined;
+  export let maxCount: ComponentProps<TextArea>["maxCount"] = undefined;
+  export let counterMode: ComponentProps<TextArea>["counterMode"] = undefined;
+  export let counterText: ComponentProps<TextArea>["counterText"] = undefined;
+  export let limitReachedText: ComponentProps<TextArea>["limitReachedText"] =
+    undefined;
+  export let disabled = false;
+  export let readonly = false;
+  export let helperText = "";
+  export let labelText = "App description";
+  export let hideLabel = false;
+  export let invalid = false;
+  export let invalidText = "";
+  export let warn = false;
+  export let warnText = "";
+  export let fluid = false;
+  export let id = "ccs-test";
+  export let name: ComponentProps<TextArea>["name"] = undefined;
+  export let ref: ComponentProps<TextArea>["ref"] = null;
+  export let selectTextOnFocus = false;
+</script>
+
+<TextArea
+  bind:value
+  {placeholder}
+  {cols}
+  {rows}
+  {grow}
+  {maxRows}
+  {maxCount}
+  {counterMode}
+  {counterText}
+  {limitReachedText}
+  {disabled}
+  {readonly}
+  {helperText}
+  {labelText}
+  {hideLabel}
+  {invalid}
+  {invalidText}
+  {warn}
+  {warnText}
+  {fluid}
+  {id}
+  {name}
+  {ref}
+  {selectTextOnFocus}
+  on:change
+  on:input
+  on:keydown
+  on:keyup
+  on:focus
+  on:blur
+  on:paste
+/>
+
+<div data-testid="bound">{value}</div>

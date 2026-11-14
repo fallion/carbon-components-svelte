@@ -1,0 +1,133 @@
+---
+components: ["ContextMenu", "ContextMenuGroup", "ContextMenuRadioGroup", "ContextMenuOption", "ContextMenuDivider"]
+description: Context menus display contextual actions on right-click, with nested submenus and checkbox or radio selection patterns.
+---
+
+<script>
+</script>
+
+## Basic
+
+In the examples, right click anywhere within the iframe. The context menu appears when right-clicking anywhere in the window. Use ContextMenuOption for menu items and ContextMenuDivider for visual separation.
+
+The root element has `role="menu"`. Set `labelText` or `aria-label` on ContextMenu so assistive technologies get a meaningful name. This matters most for the default window-wide behavior (target unset), where there is no visible trigger to label the menu with `aria-labelledby`.
+
+`open`, `x`, and `y` are also bindable, letting you trigger the menu from something other than a right-click; see [Programmatic position](#programmatic-position).
+
+Once open, arrow keys move focus between options without wrapping past the first or last option. <DocKbd label="Home" /> and <DocKbd label="End" /> jump to the first and last option. Disabled options take focus so screen reader users can find them, but they do not run. Type a character to move focus to the next option whose label starts with it; type several characters quickly to match a longer prefix.
+
+<FileSource src="/framed/ContextMenu/ContextMenu" />
+
+## Menu items
+
+`ContextMenuOption` supports the following props:
+
+| Prop            | Description                                                                                                                                                                                                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `labelText`     | Primary label (or use the `labelChildren` slot; see the API reference).                                                                                                                                                                                                                        |
+| `shortcut`      | Keys shown on the right, such as `"mod+c"` (<DocKbd shortcut="mod+c" variant="muted" /> on your platform), announced with `aria-keyshortcuts`. Display only: bind the command with `onShortcut`.                                                                                                                  |
+| `shortcutText`  | Custom text on the right, such as `"F5"`, or use the `shortcutChildren` slot. Takes precedence over `shortcut`. Display only.                                                                                                                                                                |
+| `icon`          | Carbon icon component to the left of the label, or use the `icon` slot for custom content in its place. When an icon is set, the option is indented automatically so rows align; you do not need to pass `indented` for icon rows.                                                            |
+| `indented`      | Indent the label without an icon, for example to align with submenu parents or nested items (see [Nested menu](#nested-menu), [Custom target](#custom-target), and [Multiple targets](#multiple-targets)).                                                                                     |
+| `disabled`      | Non-interactive, dimmed row.                                                                                                                                                                                                                                                                   |
+| `kind`          | `"default"` or `"danger"` for destructive actions.                                                                                                                                                                                                                                               |
+
+For options inside `ContextMenuGroup`, see [Selectable](#selectable), [Selectable (nested)](#selectable-nested), and [Radio group](#radio-group).
+
+<FileSource src="/framed/ContextMenu/ContextMenuOptionProps" />
+
+### Custom label content
+
+Use the `labelChildren` slot to render custom label content, such as a tooltip icon, in place of `labelText`.
+
+<FileSource src="/framed/ContextMenu/ContextMenuLabelChildren" />
+
+### Nested menu
+
+Put children inside a parent `ContextMenuOption` to open a flyout submenu. Use `indented` on the parent when it has no icon so the label aligns with other rows.
+
+Submenus can contain:
+
+| Kind                 | Description                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plain options    | Nested `ContextMenuOption` rows for ordinary actions (no selection state). This page’s example below mixes plain rows with a selectable group; see **Open with** → Preview / Editor.                                                                                                                                                                             |
+| Selectable group | A nested `ContextMenuGroup` with an accessible label; options act as checkboxes and share `bind:selectedIds`. See [Selectable (nested)](#selectable-nested); the **Export as** branch in this example shows the same pattern alongside plain items.                                                                                                            |
+| Radio group      | A nested `ContextMenuRadioGroup` with `bind:selectedId` so only one choice is active. See [Radio group (nested)](#radio-group-nested).                                                                                                                                                                                                                           |
+
+Selecting an option closes only that option's own menu level. At the root, that closes the whole menu. Inside a submenu, it closes just that flyout and leaves the rest open. Call `event.preventDefault()` to keep a flyout open across several picks; see [Prevent menu from closing](#prevent-menu-from-closing).
+
+Typing a character inside an open submenu searches only that submenu's options.
+
+<FileSource src="/framed/ContextMenu/ContextMenuNested" />
+
+### Selectable
+
+Use selectable for a single toggle item, or wrap options in ContextMenuGroup with `bind:selectedIds` for a checkbox-style group. Provide an id on each option in the group. The standalone toggle and the group items are independent, and the group tracks every chosen option in selectedIds.
+
+<FileSource src="/framed/ContextMenu/ContextMenuSelectable" />
+
+### Selectable (nested)
+
+Put ContextMenuGroup inside a parent ContextMenuOption to show the checkbox-style group in a flyout submenu. Use `bind:selectedIds` for the chosen values. See [Nested menu](#nested-menu) for a full submenu example, and [Prevent menu from closing](#prevent-menu-from-closing) to keep the flyout open while changing several checkboxes.
+
+<FileSource src="/framed/ContextMenu/ContextMenuSelectableNested" />
+
+### Radio group
+
+Use ContextMenuRadioGroup to organize related options as a radio set: only one option can be selected at a time, and `bind:selectedId` reflects the active choice.
+
+<FileSource src="/framed/ContextMenu/ContextMenuGroups" />
+
+### Radio group (nested)
+
+Put ContextMenuRadioGroup inside a parent ContextMenuOption to show the radio set in a flyout submenu, similar to the nested checkbox group in [Nested menu](#nested-menu). Use `bind:selectedId` for the active choice.
+
+Selecting an option closes that flyout. Call `event.preventDefault()` in the option's `on:click` handler to leave it open; `selectedId` still updates. See [Prevent menu from closing](#prevent-menu-from-closing).
+
+<FileSource src="/framed/ContextMenu/ContextMenuRadioGroupNested" />
+
+## Triggering
+
+Control which element triggers the menu, or open it programmatically without a right-click at all.
+
+### Custom target
+
+By default, the context menu triggers when you right-click anywhere in the window.
+
+Set `target` to specify which element triggers the context menu.
+
+<FileSource src="/framed/ContextMenu/ContextMenuTarget" />
+
+### Multiple targets
+
+Set `target` to an array of elements to trigger the context menu from multiple sources.
+
+<FileSource src="/framed/ContextMenu/ContextMenuTargets" />
+
+### Programmatic position
+
+`open`, `x`, and `y` are bindable, so you can open the menu from something other than a right-click, such as a "..." overflow button. Compute a position (for example, from the trigger element's bounding rectangle) and set `x` and `y` before setting `open` to `true`.
+
+This does not replace the right-click behavior described above; if `target` is left unset, the window-wide right-click trigger from [Basic](#basic) still applies alongside the button. Set `target` if you want the button to be the only way to open the menu.
+
+<FileSource src="/framed/ContextMenu/ContextMenuProgrammatic" />
+
+## Events
+
+ContextMenu dispatches `open` once it finishes opening, and `close` on every close attempt.
+
+<FileSource src="/framed/ContextMenu/ContextMenuEvents" />
+
+### Open event
+
+`open`'s detail is the DOM element that was right-clicked. When the menu is opened programmatically instead (see [Programmatic position](#programmatic-position)), the detail is `null` unless a prior right-click already populated it.
+
+### Close event
+
+`close`'s detail contains `trigger`, one of `"escape-key"`, `"outside-click"`, or `"select"`, describing why the menu closed. <DocKbd label="Tab" /> reports `"escape-key"`, like the other menus.
+
+### Prevent menu from closing
+
+An option's `click` event is cancelable. Call `event.preventDefault()` in its `on:click` handler to keep the menu open. For a selectable or radio option, selection still updates; only the close is canceled. That is how you leave a nested submenu open while changing several choices. See [Radio group (nested)](#radio-group-nested).
+
+<FileSource src="/framed/ContextMenu/ContextMenuPreventDefault" />

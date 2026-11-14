@@ -1,0 +1,221 @@
+---
+components: ["Pagination", "PaginationSkeleton"]
+description: Pagination provides navigation controls for large data sets, showing the current page and total items, with configurable page sizes.
+---
+
+<script>
+  import { Pagination, PaginationSkeleton, Toolbar, ToolbarContent } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic pagination component with default page size options. The default size is medium.
+
+<Pagination totalItems={102} pageSizes={[10, 15, 20]} />
+
+## Sizes
+
+Set `size` to control the height. The default is medium.
+
+### Extra-small
+
+Set `size` to `"xs"` to pair pagination with a compact data table.
+
+<Pagination size="xs" totalItems={102} pageSizes={[10, 15, 20]} />
+
+### Small
+
+Set `size` to `"sm"` for a small pagination.
+
+<Pagination size="sm" totalItems={102} pageSizes={[10, 15, 20]} />
+
+### Large
+
+Set `size` to `"lg"` for a large pagination.
+
+<Pagination size="lg" totalItems={102} pageSizes={[10, 15, 20]} />
+
+## Page and page size
+
+Configure the current page, and the available and default page sizes.
+
+### Current page
+
+Set the current page with `page`.
+
+<Pagination totalItems={102} page={4} />
+
+### Query string
+
+Keep the page and page size in the URL so a reload or shared link lands on the
+same page. `queryParam` returns a store mirrored to a query parameter; bind
+`page` and `pageSize` to one each. Changes replace the current history entry,
+and other query parameters are preserved. `Pagination` clamps pages above the
+last one but not below 1, so `parse` rejects those. Default values remove their
+parameter. In an app with a router, pass the router's navigation API as
+`replace`.
+
+<FileSource src="/framed/Pagination/PaginationQueryString" />
+
+### Custom sizes
+
+Specify custom page sizes and set a default page size. When the user picks a new size, `page` is recalculated so the first item that was visible stays on screen.
+
+<Pagination totalItems={102} pageSizes={[16, 36, 99]} pageSize={36} />
+
+### Dynamic sizes
+
+Set `dynamicPageSizes` to hide page sizes larger than needed to display all items on one page.
+
+For example, with 9 total items and page sizes of `[5, 10, 15]`, only 5 and 10 appear because 10 already exceeds the total.
+
+<Pagination totalItems={9} pageSizes={[5, 10, 15]} dynamicPageSizes />
+
+### Remember the page size
+
+`pageSize` holds no state of its own between page loads. Bind it to [`LocalStorage`](/components/LocalStorage) so a size the user picks—say, showing 50 rows instead of 10—survives a refresh. Include the stored value in `pageSizes`, or it won't appear in the select.
+
+<FileSource src="/framed/Pagination/PaginationPageSizePersist" />
+
+## Unknown pages
+
+Set `pagesUnknown` when the total page count is unknown, such as with cursor-based APIs. The item range renders without a total, and the forward button is not constrained by totalItems.
+
+Because the component cannot detect the last page, bind to `page` and toggle `forwardButtonDisabled` when there is no more data to load. The back button is disabled automatically once `page` reaches `1`; override `backButtonDisabled` the same way if the consumer needs equivalent manual control over the back button.
+
+<FileSource src="/framed/Pagination/PaginationUnknown" />
+
+### Custom item and page text
+
+Because the total is unknown, this mode falls back to `itemText` and `pageText` instead of `itemRangeText` and `pageRangeText`, since there's no total to describe. Override either to change the wording.
+
+<Pagination
+  pagesUnknown
+  itemText={(min, max) => `Showing ${min}–${max}`}
+  pageText={(page) => `Page ${page}`}
+/>
+
+## Page window
+
+The page-number dropdown uses native `<option>` elements, derived from `totalItems`. For large datasets, use `pageWindow` to cap how many options are rendered (default 1000).
+
+This example also overrides `itemRangeText` and `pageRangeText` to format the item and page counts compactly (for example, `100k` instead of `100,000`).
+
+<FileSource src="/framed/Pagination/PageWindow" />
+
+## Page number input
+
+Set `pageInputType` to `"input"` to replace the page select with a number input. Use this for large page counts so users can jump to any page, including ones outside the windowed select options. It has no effect with `pagesUnknown`, which shows no page control.
+
+<FileSource src="/framed/Pagination/PageInput" />
+
+## Custom page select
+
+Use the `pageSelect` slot to replace the default page-number `Select` with your own control. The slot exposes `currentPage`, `totalPages`, `currentPageSize`, and `selectLabelText` for display; bind `page` on `Pagination` itself and set it from within the slot to navigate.
+
+<FileSource src="/framed/Pagination/PaginationPageSelect" />
+
+## Simple
+
+Set `simple` for a compact previous/next control with page status text. Useful in toolbars and cards.
+
+The example below also overrides `pageText` to show only the page number, omitting the default `"page "` prefix.
+
+<Toolbar size="sm">
+  <ToolbarContent>
+    <Pagination simple size="sm" totalItems={102} pageText={(page) => `${page.toLocaleString()}`} />
+  </ToolbarContent>
+</Toolbar>
+
+## Custom text
+
+Override the button tooltips and items-per-page label independently of the total and item text overrides above.
+
+<Pagination
+  totalItems={102}
+  pageSizes={[10, 15, 20]}
+  forwardText="Next"
+  backwardText="Previous"
+  itemsPerPageText="Rows per page:"
+/>
+
+## Hidden controls
+
+Hide individual pagination controls.
+
+### Page input
+
+Disable the page input with `pageInputDisabled`.
+
+<Pagination totalItems={102} pageInputDisabled />
+
+### Page size
+
+Disable the page size selector with `pageSizeInputDisabled`.
+
+<Pagination totalItems={102} pageSizeInputDisabled />
+
+## Disabled
+
+Set `disabled` to `true` to disable the entire pagination, including the nav buttons and both selects.
+
+<Pagination disabled totalItems={102} pageSizes={[10, 15, 20]} />
+
+## Events
+
+Respond to page and page-size changes.
+
+### Change
+
+Use `on:change` to listen for direct user interaction—the previous/next buttons, or the page and page-size selects. The event detail includes whichever value changed; a page-size change includes both `pageSize` and the recalculated `page`.
+
+<Pagination
+  totalItems={102}
+  pageSizes={[10, 15, 20]}
+  on:change={(e) => console.log(e.detail)} // { page: number } | { pageSize: number, page: number }
+/>
+
+### Update
+
+Use `on:update` to listen for every change to `page` or `pageSize`, including programmatic updates from outside the component (for example, through `bind:page`). Unlike `change`, this fires regardless of whether the update came from user interaction, and the detail always includes both values.
+
+<Pagination
+  totalItems={102}
+  pageSizes={[10, 15, 20]}
+  on:update={(e) => console.log(e.detail)} // { page: number, pageSize: number }
+/>
+
+### Button clicks
+
+Use `on:click:button--previous` and `on:click:button--next` to listen specifically for previous and next button clicks, separate from the page and page-size selects. Both dispatch the resulting page number.
+
+<Pagination
+  totalItems={102}
+  pageSizes={[10, 15, 20]}
+  on:click:button--previous={(e) => console.log(e.detail)} // { page: number }
+  on:click:button--next={(e) => console.log(e.detail)} // { page: number }
+/>
+
+## Skeleton
+
+Show a loading state with the pagination skeleton.
+
+<PaginationSkeleton />
+
+### Extra-small
+
+Show a loading state for the extra small pagination variant.
+
+<PaginationSkeleton size="xs" />
+
+### Small
+
+Show a loading state for the small pagination variant.
+
+<PaginationSkeleton size="sm" />
+
+### Large
+
+Show a loading state for the large pagination variant.
+
+<PaginationSkeleton size="lg" />

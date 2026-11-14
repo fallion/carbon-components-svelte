@@ -1,0 +1,349 @@
+---
+components: ["TreeView", "TreeViewSkeleton"]
+description: A tree view displays hierarchical data in a collapsible structure, with node selection, expansion, icons, and virtualization for large trees.
+---
+
+<script>
+  import { TreeView, TreeViewSkeleton } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic tree view using the `nodes` prop. Each node needs a unique id and display text; icons, disabled state, and nested children are optional.
+
+By default, only one node is selected at a time. For multiple selection, see Multi-select ([Node](#node), [Shallow](#shallow), [Deep](#deep)).
+
+<FileSource src="/framed/TreeView/TreeView" />
+
+## Compact
+
+Use the compact variant by setting `size` to `"compact"`.
+
+<FileSource src="/framed/TreeView/TreeViewCompact" />
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<TreeView
+  hideLabel
+  labelText="Cloud Products"
+  nodes={[
+    { id: 0, text: "AI / Machine learning" },
+    { id: 1, text: "Analytics" },
+    { id: 2, text: "Databases" },
+  ]}
+/>
+
+## Custom label
+
+Use the `labelChildren` slot to provide custom label content instead of `labelText`.
+
+<TreeView
+  labelText=""
+  nodes={[
+    { id: 0, text: "AI / Machine learning" },
+    { id: 1, text: "Analytics" },
+    { id: 2, text: "Databases" },
+  ]}
+>
+  <strong slot="labelChildren">Cloud Products</strong>
+</TreeView>
+
+## Initial state
+
+Set the starting active and expanded nodes.
+
+### Active node
+
+Set the initial active node using `activeId`.
+
+<FileSource src="/framed/TreeView/TreeViewActive" />
+
+### Expanded nodes
+
+Set initially expanded nodes using `expandedIds`.
+
+<FileSource src="/framed/TreeView/TreeViewExpanded" />
+
+## Nodes
+
+Customize how nodes render.
+
+### Icons
+
+Add icons to nodes by defining an `icon` property with a Carbon Svelte icon component.
+
+<FileSource src="/framed/TreeView/TreeViewIcons" />
+
+### Links
+
+Add links to leaf nodes by defining an `href` property. Link nodes render as `<a>` elements with `role="treeitem"`. When a link node is active, `aria-current="page"` is used. Disabled link nodes omit the `href` attribute. <DocKbd label="Enter" /> follows the link; <DocKbd label="Space" /> selects the node without navigating.
+
+<FileSource src="/framed/TreeView/TreeViewLinks" />
+
+### Custom (slot)
+
+Customize node rendering using the default slot with the `let:node` directive. The node object provides:
+
+| Property     | Description                                          |
+| ------------ | ----------------------------------------------------- |
+| id           | The node id.                                           |
+| text         | The node text.                                         |
+| expanded     | True when the node is expanded.                        |
+| leaf         | True when the node does not have child nodes.          |
+| disabled     | True when the node is disabled.                        |
+| selected     | True when the node is selected.                        |
+| checked      | True when the node is checked (`selectionMode="checkbox"`). |
+| indeterminate | True when the node is partially checked (`selectionMode="checkbox"`). |
+
+<FileSource src="/framed/TreeView/TreeViewSlot" />
+
+### Checkbox
+
+Set `selectionMode` to `"checkbox"` to render a checkbox on every node. Checking a branch checks its descendants, and a branch whose descendants are only partly checked renders indeterminate. Checkbox mode also works with [Virtualization](#virtualization).
+
+Bind to `checkedIds` to read and set which nodes are checked. That is separate from `selectedIds`, which tracks row highlighting and is unused in checkbox mode. Bind to `indeterminateIds` to read which nodes are partially checked; it is derived from `checkedIds` and read-only, so writes are overwritten. Checkbox mode carries its own multi-selection, so [Multi-select](#multi-select) is ignored. Link nodes navigate instead of checking and render no checkbox.
+
+<FileSource src="/framed/TreeView/TreeViewCheckbox" />
+
+### Checkbox (independent)
+
+Set `checkMode` to `"node"` to check each node on its own. Parents and children no longer follow each other, and no node is indeterminate.
+
+<FileSource src="/framed/TreeView/TreeViewCheckboxIndependent" />
+
+### Checkbox (compact)
+
+Combine `size="compact"` with `selectionMode="checkbox"`.
+
+<FileSource src="/framed/TreeView/TreeViewCheckboxCompact" />
+
+### Inline editing
+
+Use a `contenteditable` element in each tree view node to enable inline editing of node names. The editable region is wrapped in a container with `stopPropagation` to prevent tree node selection when editing.
+
+<FileSource src="/framed/TreeView/TreeViewInlineEditing" />
+
+## Events
+
+Use `on:select`, `on:toggle`, `on:check`, and `on:focus` for user-driven selection, expansion, checking, and focus. Each detail is the affected node after the gesture, with the same shape as the [Custom (slot)](#custom-slot) node. `on:check` fires only in `selectionMode="checkbox"`, when the checkbox itself is toggled; link nodes (which render no checkbox) fire `on:select` instead.
+
+Use `on:toggle:change`, `on:select:change`, and `on:check:change` to track every expansion, selection, or check change from any source, including imperative methods and bound ids. Each detail includes the full set plus `added` and `removed` deltas (`on:check:change` also includes `indeterminateIds`). Aggregate events skip mount and no-op updates; bulk operations emit one event.
+
+<FileSource src="/framed/TreeView/TreeViewEvents" />
+
+## Keyboard
+
+The tree is one tab stop; arrow keys move focus between visible rows, skipping disabled rows and rows under collapsed parents.
+
+| Key | Behavior |
+| --- | -------- |
+| <DocKbd label="Up" /> / <DocKbd label="Down" /> | Moves focus to the previous or next row. Selection does not change. |
+| <DocKbd label="Right" /> | On a collapsed parent, expands it (fires `on:toggle`). On an expanded parent, moves focus to its first child. |
+| <DocKbd label="Left" /> | On an expanded parent, collapses it. Otherwise moves focus to the parent row. |
+| <DocKbd label="Home" /> / <DocKbd label="End" /> | Moves focus to the first or last row. |
+| <DocKbd label="Enter" /> | Selects the row; on a parent, also expands or collapses it. In `selectionMode="checkbox"`, checks or unchecks the row instead. On a [link node](#links), follows the link. |
+| <DocKbd label="Space" /> | Selects the row without expanding or collapsing it. In checkbox mode, checks or unchecks the row. |
+| Letters | Moves focus to the next row whose text starts with the typed characters. Repeating one letter cycles through rows that start with it. The typed text resets after a short pause. |
+
+In a right-to-left layout, <DocKbd label="Left" /> and <DocKbd label="Right" /> swap, and a collapsed caret points left, toward where its children indent. See [LayoutDirection](/components/LayoutDirection#treeview).
+
+With `multiselect`, these keys also change the selection. A row's unit depends on `multiselectMode`; see [Multi-select](#multi-select).
+
+| Key | Behavior |
+| --- | -------- |
+| <DocKbd label="Ctrl" /> or <DocKbd label="CMD" /> + <DocKbd label="Space" /> | Toggles the focused row's unit, as <DocKbd label="Ctrl" /> + click does. |
+| <DocKbd label="Shift" /> + <DocKbd label="Space" /> | Selects the range from the anchor to the focused row, as <DocKbd label="Shift" /> + click does. |
+| <DocKbd label="Shift" /> + <DocKbd label="Up" /> / <DocKbd label="Down" /> | Moves focus to the previous or next row and toggles that row's unit. |
+| <DocKbd label="Ctrl" /> or <DocKbd label="CMD" /> + <DocKbd label="Shift" /> + <DocKbd label="Home" /> / <DocKbd label="End" /> | Adds every row from the focused row to the first or last row. |
+| <DocKbd label="Ctrl" /> or <DocKbd label="CMD" /> + <DocKbd label="A" /> | Adds every visible, non-disabled row. |
+
+## Multi-select
+
+Set `multiselect` to allow more than one selected row; `multiselectMode` controls the unit each gesture applies to.
+
+For a selection that persists parent and child state instead of highlighting rows, see [Checkbox](#checkbox).
+
+### Node
+
+With the default `multiselectMode="node"`, each gesture applies to the clicked row only, not its children.
+
+| Gesture | Behavior |
+| ------- | -------- |
+| Plain click | Replaces the selection with that row and sets the anchor used for the next range selection. |
+| <DocKbd label="CMD" /> or <DocKbd label="Ctrl" /> + click | Toggles that row's unit: deselect (remove the whole unit from the selection) if it is already selected, add it otherwise. Other selected rows stay selected. The anchor updates to the row you clicked. |
+| <DocKbd label="Shift" /> + click | Replaces the selection with all visible rows from the anchor through the clicked row, in tree order (only rows under expanded parents count; collapsed branches are not included). If no anchor exists yet, behavior matches a plain click. Holding <DocKbd label="Shift" /> together with <DocKbd label="Ctrl" /> or <DocKbd label="CMD" /> still applies range selection, not per-row toggle. |
+| <DocKbd label="Shift" /> + <DocKbd label="Up" /> or <DocKbd label="Down" /> | Moves focus to the previous or next row and toggles that row's unit, as <DocKbd label="Ctrl" /> + click does. |
+
+For selection that includes direct children or the full subtree on each gesture, see [Shallow](#shallow) and [Deep](#deep).
+
+<FileSource src="/framed/TreeView/TreeViewMultiselectNode" />
+
+### Shallow
+
+With `multiselectMode="shallow"`, the same modifier keys apply, but each row acts as a **unit** of one parent plus its immediate non-disabled children (deeper descendants are not included).
+
+| Gesture | Behavior |
+| ------- | -------- |
+| Plain click; <DocKbd label="Ctrl" /> or <DocKbd label="CMD" /> + click | Adds or removes that whole shallow set. Toggle removes every id in that set when the clicked row was already part of the selection. |
+| <DocKbd label="Shift" /> + click | Walks the visible rows between anchor and target as in [node mode](#node), then expands each of those rows to its shallow set and merges the results in order (duplicates omitted). |
+
+<FileSource src="/framed/TreeView/TreeViewMultiselectShallow" />
+
+### Deep
+
+With `multiselectMode="deep"`, each row's unit is that node plus **all** non-disabled descendants recursively (full subtree). Disabled nodes are skipped, and subtrees under a disabled node are not traversed.
+
+| Gesture | Behavior |
+| ------- | -------- |
+| Plain click; <DocKbd label="Ctrl" /> or <DocKbd label="CMD" /> + click | Uses that deep expansion for replace and toggle, respectively. |
+| <DocKbd label="Shift" /> + click | Takes the visible range between anchor and target and unions each row's deep expansion the same way as in shallow mode. |
+
+<FileSource src="/framed/TreeView/TreeViewMultiselectDeep" />
+
+## Expand and collapse
+
+Control expansion via props and imperative methods.
+
+### Auto-collapse siblings
+
+Enable `autoCollapse` to automatically collapse sibling nodes when expanding a node. When enabled, only one node at each level can be expanded at a time, creating an accordion-like behavior.
+
+<FileSource src="/framed/TreeView/TreeViewAutoCollapse" />
+
+### Expand all
+
+Programmatically expand all nodes using `TreeView.expandAll()`.
+
+<FileSource src="/framed/TreeView/TreeViewExpandAll" />
+
+### Collapse all
+
+Programmatically collapse all nodes using `TreeView.collapseAll()`.
+
+<FileSource src="/framed/TreeView/TreeViewCollapseAll" />
+
+### Expand a subset
+
+Use `TreeView.expandNodes` to expand specific nodes based on a condition. Calling `expandNodes()` with no arguments expands all nodes.
+
+<FileSource src="/framed/TreeView/TreeViewExpandNodes" />
+
+### Collapse a subset
+
+Use `TreeView.collapseNodes` to collapse specific nodes based on a condition. Calling `collapseNodes()` with no arguments collapses all nodes.
+
+<FileSource src="/framed/TreeView/TreeViewCollapseNodes" />
+
+## Node access
+
+Programmatically reveal or query specific nodes by id.
+
+### Show a node
+
+Use `TreeView.showNode` to expand, select, and focus a specific node.
+
+<FileSource src="/framed/TreeView/TreeViewShowNode" />
+
+#### With options
+
+Configure `TreeView.showNode` behavior using optional parameters. By default, all three actions occur (`expand`, `select`, `focus`), but you can disable any combination. This is useful for expanding nodes without selecting them, or selecting without expanding.
+
+<FileSource src="/framed/TreeView/TreeViewShowNodeOptions" />
+
+### Node lookup
+
+Use `TreeView.getNode` to resolve a node's text or metadata from its id, useful for a breadcrumb or detail pane driven by `activeId`. Unmatched ids return `null`.
+
+Use `TreeView.getNodes` to resolve multiple ids at once, such as `selectedIds`. Unmatched ids are omitted from the result.
+
+<FileSource src="/framed/TreeView/TreeViewGetNode" />
+
+## Performance
+
+Scale to large trees by loading, rendering, and measuring only what's needed.
+
+### Lazy loading
+
+Set `hasChildren` on a node to render it as an expandable branch before its `nodes` are known. Expanding it fires `toggle` as usual; the handler can fetch and assign `nodes` asynchronously.
+
+While `hasChildren` is `true` and `nodes` is empty, the `childNodes` slot renders in place of the (empty) subtree, receiving the same `node` as the default slot. TreeView has no built-in concept of "loading" or "error" — the slot is generic, so you decide what to render (a spinner, an error message with retry, or nothing) based on whatever fields you put on the node yourself.
+
+With `selectionMode="checkbox"`, a saved id in `checkedIds` can name a node that has not loaded yet. It stays in `checkedIds` while any `hasChildren` node is unloaded, and its row shows as checked once the node arrives. An id that matches no node after every parent has loaded is dropped.
+
+With the default `checkMode="deep"`, unchecking a node that has not loaded, or one of its ancestors, also unchecks the saved ids under it. They leave `checkedIds` as soon as no other unloaded node could hold them, and at the latest when the node's children load.
+
+<FileSource src="/framed/TreeView/TreeViewLazyLoad" />
+
+### Virtualization
+
+Virtualization renders only the rows currently visible in the scroll viewport, improving performance for large trees (for example, file trees and log explorers). Set `virtualize` to enable it. The tree still tracks the full `nodes` dataset; only the on-screen slice is mounted in the DOM.
+
+Row height is fixed and comes from `size` (32px default, 24px compact). Rows do not grow to fit their content, so keep slot content to a single line. Pass `true` for defaults, or an object to customize:
+
+| Field             | Default                       | Description                                                                 |
+| ----------------- | ------------------------------ | --------------------------------------------------------------------------- |
+| `containerHeight` | `maxVisibleRows * itemHeight` | Scroll viewport height. Pass a number (pixels) or a CSS string (`"80%"`, `"100%"`, `"calc(...)"`) when the parent sets height. |
+| `maxVisibleRows`  | `10`                          | Rows visible at once when `containerHeight` is not set.                     |
+| `overscan`        | `3`                           | Extra rows rendered above and below the viewport during scroll.             |
+
+`expandAll` and `expandedIds` only need expandable nodes (those with loaded `nodes` or `hasChildren: true`). Leaf ids in `expandedIds` are ignored for expansion.
+
+<FileSource src="/framed/TreeView/TreeViewVirtualize" />
+
+#### With lazy loading
+
+Combine `virtualize` with `hasChildren` to fetch children on expand. This example starts with the same project-folder roots as [Virtualization](#virtualization), but each subtree loads on demand (including nested folders). The virtualized path does not render the `childNodes` slot, so the demo inserts a temporary disabled "Loading…" child while the request is in flight, then replaces it with the fetched nodes.
+
+<FileSource src="/framed/TreeView/TreeViewVirtualizeLazy" />
+
+### Large and deep trees
+
+The tree view is optimized to handle large datasets efficiently, as shown here with a large tree (1000+ nodes) and a deeply nested tree (100 levels deep).
+
+<FileSource src="/framed/TreeView/TreeViewPerformance" />
+
+### Unchanged reassignment
+
+Reassigning `nodes` to the *same* array reference (the lazy-loading idiom's `node.nodes = children; nodes = nodes`, or any wrapper component or `$:` block that re-runs and hands back the same array) skips the update when nothing was actually mutated. Mutating a node before reassigning still triggers one, so the tree stays correct.
+
+<FileSource src="/framed/TreeView/TreeViewUnchangedReassignment" />
+
+## Data utilities
+
+Transform and filter node data using standalone utility functions.
+
+### Flat data
+
+Convert flat data to a hierarchical structure using the `toHierarchy` utility.
+
+<FileSource src="/framed/TreeView/TreeViewFlatArray" />
+
+### Filtering
+
+Filter nodes with the built-in helpers.
+
+#### By text
+
+Combine a search input with `filterTreeByText` to create an interactive searchable tree. Type to filter nodes by name (case-insensitive substring matching). By default, matching nodes and their ancestors are included to maintain valid tree structure.
+
+<FileSource src="/framed/TreeView/TreeViewFilter" />
+
+#### By ID
+
+Use `filterTreeById` to filter nodes by their ID. Accepts either a single ID or an array of IDs. Click the buttons to filter by a single ID or multiple IDs. Matching nodes and their ancestors are included by default.
+
+<FileSource src="/framed/TreeView/TreeViewFilterById" />
+
+#### Custom predicate
+
+Use `filterTreeNodes` with a predicate function to implement custom filtering logic. The example demonstrates filtering by file extension, filtering leaf nodes only, and using the `includeChildren` option to include all descendants of matching nodes. By default, matching nodes and their ancestors are included.
+
+<FileSource src="/framed/TreeView/TreeViewFilterNodes" />
+
+## Skeleton
+
+Show a loading state with `TreeViewSkeleton`. Match the tree's `size` and its number of top-level rows with `count`, and set `hideLabel` when the tree hides its label.
+
+<TreeViewSkeleton count={5} />

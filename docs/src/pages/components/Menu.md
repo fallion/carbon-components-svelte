@@ -1,0 +1,147 @@
+---
+components: ["Menu", "MenuItem", "MenuDivider", "MenuItemGroup", "MenuItemRadioGroup"]
+description: Menu positions a list of actions next to an anchor element you control. Keyboard navigation and outside-click dismissal are built in.
+---
+
+<script>
+</script>
+
+## Basic
+
+Menu positions its content relative to an `anchor` element and does not render a trigger of its own. Bind a reference to the element that opens the menu, then control `open` from that element's event handler. Use `MenuItem` for each action; set `disabled` to make an item non-interactive.
+
+The root element has `role="menu"`. Set `labelText` or `aria-label` on Menu so assistive technologies get a meaningful name, since there is no visible text the menu is otherwise associated with.
+
+Once open, arrow keys move focus between items without wrapping past the first or last item. <DocKbd label="Home" /> and <DocKbd label="End" /> jump to the first and last item. Disabled items take focus so screen reader users can find them, but they do not run. Type a character to move focus to the next item whose label starts with it; type several characters quickly to match a longer prefix. <DocKbd label="Escape" /> closes the menu and returns focus to the anchor. See [Events](#events) for the full set of ways the menu can close, and how to keep it open after selection.
+
+<FileSource src="/framed/Menu/MenuBasic" />
+
+## Size
+
+Set `size` to control each item's row height. The default is `"sm"`.
+
+### Extra small
+
+`"xs"` is a compact row height for dense layouts.
+
+<FileSource src="/framed/Menu/MenuSizeExtraSmall" />
+
+### Medium
+
+<FileSource src="/framed/Menu/MenuSizeMedium" />
+
+### Large
+
+<FileSource src="/framed/Menu/MenuSizeLarge" />
+
+## Menu items
+
+`MenuItem` takes an `icon`, `kind="danger"` for destructive rows, and nested children for submenus. Use `MenuDivider` between groups.
+
+### Icons
+
+Pass a Carbon icon to `icon`.
+
+<FileSource src="/framed/Menu/MenuItemIcons" />
+
+### Shortcuts
+
+Set `shortcut` to show its keys on the right of the row, such as `"mod+x"`, which shows <DocKbd shortcut="mod+x" variant="muted" /> on your platform. The item announces them with `aria-keyshortcuts`. The menu only shows the keys, since it's usually closed when they're pressed: bind the command itself with `onShortcut`. For other content, use `shortcutText` or the `shortcutChildren` slot, which take precedence. A value that isn't a shortcut, such as `"⌘C"` from Carbon React's free-text `shortcut`, shows as written, with no `aria-keyshortcuts`.
+
+<FileSource src="/framed/Menu/MenuItemShortcuts" />
+
+### Danger
+
+Set `kind="danger"` on `MenuItem` for a destructive action.
+
+<FileSource src="/framed/Menu/MenuItemDanger" />
+
+### Dividers
+
+Put a `MenuDivider` between groups.
+
+<FileSource src="/framed/Menu/MenuItemDividers" />
+
+### Selectable
+
+Wrap items in `MenuItemGroup` to make them checkboxes that hold state, such as which table columns are visible. Set `labelText` on `MenuItemGroup` for the group's accessible name. Give every item an `id`, then bind `selectedIds` for the chosen ones. Set `selected` on an item to check it when the menu first opens, or set `selectable` on a single item outside a group for a standalone toggle. See [MenuButton selectable](/components/MenuButton#selectable) for how this interacts with keeping the menu open on selection.
+
+<FileSource src="/framed/Menu/MenuItemSelectable" />
+
+### Radio group
+
+Wrap items in `MenuItemRadioGroup` for a set where one choice is active at a time, such as row density. Set `labelText` on `MenuItemRadioGroup` for the group's accessible name. Bind `selectedId` for the active id; picking another item clears the previous one.
+
+<FileSource src="/framed/Menu/MenuItemRadioGroup" />
+
+### Indent alignment
+
+A selectable or radio item's checkmark and a `MenuItem`'s own `icon` sit in separate columns: the checkmark column reserves space for every item once any item in the menu is selectable or radio, and the icon column reserves space for every item once any item sets `icon`. This keeps every label in one column, whether or not that particular row has a checkmark, an icon, both, or neither.
+
+<FileSource src="/framed/Menu/MenuItemIndentAlignment" />
+
+### Nested
+
+Set `labelText` on a `MenuItem` and nest child `MenuItem` rows to get a submenu. Use the `labelChildren` slot instead of plain text to customize the label's content; `labelText` is still used as the accessible name and title in that case. See [MenuButton menu items](/components/MenuButton#menu-items) for keyboard and hover behavior. Typing a character inside an open submenu searches only that submenu's items.
+
+<FileSource src="/framed/Menu/MenuItemNested" />
+
+### Custom label content
+
+Use the `labelChildren` slot to render custom label content, such as a tooltip icon, in place of `labelText`.
+
+<FileSource src="/framed/Menu/MenuItemLabelChildren" />
+
+## Scrollable
+
+Set `maxHeight` to cap the menu height and scroll the remaining items. A number is treated as pixels; a string is used as any CSS length, such as `"20rem"`. Keyboard navigation scrolls the focused item into view.
+
+<FileSource src="/framed/Menu/MenuScrollable" />
+
+## Placement
+
+Menu forwards its placement props to [FloatingPortal](/components/FloatingPortal).
+
+### Direction
+
+Set `direction` to `"top"`, `"bottom"` (default), `"left"`, or `"right"` to control which side of the anchor the menu opens toward. The menu flips to the opposite side automatically when there is not enough space.
+
+<FileSource src="/framed/Menu/MenuDirection" />
+
+### Intrinsic width
+
+By default, the menu matches the anchor's width. Set `intrinsicWidth` to `true` to size the menu to its content instead, and set `intrinsicAlign` to `"start"` to keep it flush with the trigger's leading edge, the common menu pattern.
+
+<FileSource src="/framed/Menu/MenuIntrinsicWidth" />
+
+### Intrinsic alignment
+
+When `intrinsicWidth` is `true`, set `intrinsicAlign` to `"start"`, `"center"` (default), or `"end"` to position the menu along the anchor.
+
+<FileSource src="/framed/Menu/MenuIntrinsicAlign" />
+
+### Gaps and offsets
+
+Use `gapTop` and `gapBottom` to add vertical spacing when direction is `"top"` or `"bottom"`. Use `horizontalGapLeft` and `horizontalGapRight` to add horizontal spacing when direction is `"left"` or `"right"`, and `verticalAlignOffsetLeft` / `verticalAlignOffsetRight` to nudge that same content up or down. See [FloatingPortal gaps and offsets](/components/FloatingPortal#gaps-and-offsets) for the full prop reference.
+
+### Custom target
+
+By default, the menu mounts into the anchor's nearest `<dialog>` or `[popover]` ancestor, falling back to `document.body`. Set `target` to mount it into a specific DOM element instead. See the [FloatingPortal custom target](/components/FloatingPortal#custom-target) documentation for typical use cases.
+
+### Z-index
+
+Set `zIndex` to change the menu's stacking order. The default is `9200`.
+
+## Events
+
+Menu dispatches `open` once it finishes opening and focus moves to the first item, and `close` on every close attempt.
+
+<FileSource src="/framed/Menu/MenuEvents" />
+
+### Open event
+
+`open`'s detail is the `anchor` element.
+
+### Close event
+
+Use `on:close` to respond to every close attempt, regardless of cause. The event detail's `trigger` is `"escape-key"`, `"outside-click"`, or `"select"`. An item's `click` event is separately cancelable: call `event.preventDefault()` in a `MenuItem`'s `on:click` handler to keep the menu open after that particular selection. See [MenuButton keep open on selection](/components/MenuButton#keep-open-on-selection).

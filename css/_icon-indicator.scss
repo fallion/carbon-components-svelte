@@ -1,0 +1,105 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/functions";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/component-tokens";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./status-tokens";
+
+/// Icon indicator (absent from v10). Each kind reads one of Carbon v11's
+/// `status-*` tokens, as v11 does, so the colors follow the theme.
+/// @access private
+/// @group components
+@mixin icon-indicator {
+  $status-red: get-token-value($status-colors, "status-red");
+  $status-orange: get-token-value($status-colors, "status-orange");
+  $status-yellow: get-token-value($status-colors, "status-yellow");
+  $status-purple: get-token-value($status-colors, "status-purple");
+  $status-green: get-token-value($status-colors, "status-green");
+  $status-blue: get-token-value($status-colors, "status-blue");
+  $status-gray: get-token-value($status-colors, "status-gray");
+
+  .#{$prefix}--icon-indicator {
+    @include type-style("body-compact-01");
+
+    display: flex;
+    color: $text-secondary;
+  }
+
+  // The icon keeps its size beside a label long enough to wrap.
+  .#{$prefix}--icon-indicator svg {
+    flex: none;
+    margin-inline-end: $carbon--spacing-03;
+    align-self: center;
+  }
+
+  .#{$prefix}--icon-indicator--hide-label svg {
+    margin-inline-end: 0;
+  }
+
+  .#{$prefix}--icon-indicator--20 {
+    @include type-style("body-compact-02");
+  }
+
+  .#{$prefix}--icon-indicator--failed {
+    fill: $status-red;
+  }
+
+  .#{$prefix}--icon-indicator--caution-major {
+    fill: $status-orange;
+
+    path:first-of-type {
+      fill: $carbon--black-100;
+    }
+  }
+
+  .#{$prefix}--icon-indicator--caution-minor {
+    fill: $status-yellow;
+
+    path:first-of-type {
+      fill: $carbon--black-100;
+    }
+  }
+
+  .#{$prefix}--icon-indicator--undefined {
+    fill: $status-purple;
+  }
+
+  .#{$prefix}--icon-indicator--succeeded {
+    fill: $status-green;
+  }
+
+  .#{$prefix}--icon-indicator--normal,
+  .#{$prefix}--icon-indicator--in-progress,
+  .#{$prefix}--icon-indicator--incomplete {
+    fill: $status-blue;
+  }
+
+  .#{$prefix}--icon-indicator--not-started,
+  .#{$prefix}--icon-indicator--pending,
+  .#{$prefix}--icon-indicator--unknown {
+    fill: $status-gray;
+  }
+
+  .#{$prefix}--icon-indicator--informative {
+    fill: $status-blue;
+  }
+
+  // Forced colors leave an SVG fill alone, so the status colors stayed: the
+  // blue is about 2:1 on a black Canvas. The shapes already tell the kinds
+  // apart, so the icon reads as text, and the warning glyph, drawn black on
+  // the triangle, reads as the page behind it so it shows on either Canvas.
+  @media (forced-colors: active) {
+    .#{$prefix}--icon-indicator svg {
+      fill: CanvasText;
+    }
+
+    .#{$prefix}--icon-indicator--caution-major path:first-of-type,
+    .#{$prefix}--icon-indicator--caution-minor path:first-of-type {
+      fill: Canvas;
+    }
+  }
+}
+
+@include exports("icon-indicator") {
+  @include icon-indicator;
+}

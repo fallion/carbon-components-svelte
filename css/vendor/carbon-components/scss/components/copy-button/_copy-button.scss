@@ -1,0 +1,204 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+@import '../button/button';
+@import '../../globals/scss/tooltip';
+@import '../../globals/scss/keyframes';
+
+@include exports('copy-button') {
+  .#{$prefix}--btn--copy {
+    position: relative;
+    overflow: visible;
+
+    .#{$prefix}--btn__icon {
+      margin-left: to-rem(5px);
+    }
+  }
+
+  .#{$prefix}--copy-btn {
+    @include reset;
+
+    position: relative;
+    display: flex;
+    width: $carbon--spacing-08;
+    height: $carbon--spacing-08;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background-color: $layer;
+    cursor: pointer;
+
+    &:hover {
+      background-color: $layer-hover;
+    }
+
+    &:active {
+      background-color: $layer-active;
+    }
+
+    &::before {
+      @include tooltip--caret;
+
+      display: none;
+    }
+
+    .#{$prefix}--copy-btn__feedback {
+      @include tooltip--content('icon');
+
+      display: none;
+      overflow: visible;
+      box-sizing: content-box;
+      margin: auto;
+      clip: auto;
+    }
+
+    @include tooltip--placement('icon', 'bottom', 'center');
+
+    &:focus {
+      @include focus-outline('outline');
+
+      outline-color: $focus;
+    }
+
+    &.#{$prefix}--copy-btn--animating::before,
+    &.#{$prefix}--copy-btn--animating .#{$prefix}--copy-btn__feedback {
+      display: block;
+    }
+
+    &.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-out::before,
+    &.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-out
+      .#{$prefix}--copy-btn__feedback {
+      // https://github.com/stylelint/stylelint/issues/2363
+      // ccs: leaves on the exit curve
+      animation: $duration--fast-02 motion(exit, productive) hide-feedback;
+
+      // ccs: an instant swap, not a fade
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    }
+
+    &.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-in::before,
+    &.#{$prefix}--copy-btn--animating.#{$prefix}--copy-btn--fade-in
+      .#{$prefix}--copy-btn__feedback {
+      // ccs: appears on the entrance curve
+      animation: $duration--fast-02 motion(entrance, productive) show-feedback;
+
+      // ccs: an instant swap, not a fade
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    }
+  }
+
+  // Needs to come after reset so hidden text is not set to font-size: 100%
+  .#{$prefix}--copy {
+    font-size: 0;
+  }
+}
+
+// carbon-components-svelte patch (formerly css/_copy-button-portal.scss)
+// Hide Carbon's `::before` feedback caret when using a portalled tooltip.
+// `_tooltip.scss` loads before `carbon-components/.../styles`, so Carbon's
+// `.bx--copy-btn.bx--copy-btn--animating::before { display: block }` was
+// winning over `.bx--copy-btn--portal-active::before { display: none }`.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+@mixin copy-button-portal {
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--portal-active.#{$prefix}--copy-btn--animating::before,
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--portal-active .#{$prefix}--copy-btn__feedback,
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--portal-active.#{$prefix}--copy-btn--animating
+    .#{$prefix}--copy-btn__feedback,
+  // The inline code snippet variant renders its own button without the
+  // `bx--copy-btn` class, so the rules above do not reach it. Carbon's
+  // `.bx--snippet--inline.bx--copy-btn--animating::before` still shows the
+  // native caret beside the portalled tooltip.
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--portal-active.#{$prefix}--copy-btn--animating::before,
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--portal-active
+    .#{$prefix}--copy-btn__feedback,
+  .#{$prefix}--snippet--inline.#{$prefix}--copy-btn--portal-active.#{$prefix}--copy-btn--animating
+    .#{$prefix}--copy-btn__feedback {
+    display: none;
+  }
+}
+
+@include exports("copy-button-portal") {
+  @include copy-button-portal;
+}
+
+// carbon-components-svelte patch (formerly css/_copy-button.scss)
+// CopyButton variants: a `ghost` kind and a set of square sizes that mirror
+// `Button`. Carbon ships a single, fixed-size `bx--copy-btn` (a 2.5rem square
+// with a `$layer` fill), so these modifiers extend it to match the `Button`
+// API. The ghost kind reuses Button's ghost theme (transparent fill, subtle
+// hover) so a CopyButton can sit beside a ghost Button without a seam; the
+// sizes scale the square to Button's small/lg/xl heights.
+//
+// Loaded after Carbon's base styles (see all.scss), so each modifier is
+// double-classed to win at equal specificity against the base `bx--copy-btn`
+// declarations it overrides.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// CopyButton ghost kind and square sizes.
+/// @access private
+/// @group copy-button
+@mixin copy-button {
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--ghost {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--ghost:hover {
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--ghost:active {
+    background-color: $layer-active;
+  }
+
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--ghost .#{$prefix}--snippet__icon {
+    fill: $icon-primary;
+  }
+
+  // Sizes (square dimensions matching Button's small/lg/xl heights;
+  // `default` keeps Carbon's native 2.5rem)
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--sm {
+    width: to-rem(32px);
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--lg {
+    width: to-rem(48px);
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--xl {
+    width: to-rem(64px);
+    height: to-rem(64px);
+  }
+
+  // Grow the icon on the larger squares so it stays visually centered rather
+  // than marooned in whitespace.
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--lg .#{$prefix}--snippet__icon,
+  .#{$prefix}--copy-btn.#{$prefix}--copy-btn--xl .#{$prefix}--snippet__icon {
+    width: to-rem(20px);
+    height: to-rem(20px);
+  }
+}
+
+@include exports("copy-button-variants") {
+  @include copy-button;
+}

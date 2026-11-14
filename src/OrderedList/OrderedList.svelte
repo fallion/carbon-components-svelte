@@ -9,12 +9,11 @@
   export let expressive = false;
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <ol
-  class:bx--list--ordered="{!native}"
-  class:bx--list--ordered--native="{native}"
-  class:bx--list--nested="{nested}"
-  class:bx--list--expressive="{expressive}"
+  class:bx--list--ordered={!native}
+  class:bx--list--ordered--native={native}
+  class:bx--list--nested={nested}
+  class:bx--list--expressive={expressive}
   {...$$restProps}
   on:click
   on:mouseover

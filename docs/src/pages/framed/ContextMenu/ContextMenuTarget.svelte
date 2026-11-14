@@ -5,31 +5,22 @@
     ContextMenuGroup,
     ContextMenuOption,
   } from "carbon-components-svelte";
-  import CopyFile16 from "carbon-icons-svelte/lib/CopyFile16";
-  import Cut16 from "carbon-icons-svelte/lib/Cut16";
+  import CopyFile from "carbon-icons-svelte/lib/CopyFile.svelte";
+  import Cut from "carbon-icons-svelte/lib/Cut.svelte";
+  import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
 
   let target;
 </script>
 
-<ContextMenu target="{target}" on:open="{(e) => console.log(e.detail)}">
-  <ContextMenuOption
-    indented
-    labelText="Copy"
-    shortcutText="⌘C"
-    icon="{CopyFile16}"
-  />
-  <ContextMenuOption
-    indented
-    labelText="Cut"
-    shortcutText="⌘X"
-    icon="{Cut16}"
-  />
+<ContextMenu {target} on:open={(e) => console.log(e.detail)}>
+  <ContextMenuOption labelText="Copy" shortcut="mod+c" icon={CopyFile} />
+  <ContextMenuOption labelText="Cut" shortcut="mod+x" icon={Cut} />
   <ContextMenuDivider />
   <ContextMenuOption indented labelText="Export as">
     <ContextMenuGroup labelText="Export options">
       <ContextMenuOption id="pdf" labelText="PDF" />
-      <ContextMenuOption id="txt" labelText="TXT" />
-      <ContextMenuOption id="mp3" labelText="MP3" />
+      <ContextMenuOption id="png" labelText="PNG" />
+      <ContextMenuOption id="svg" labelText="SVG" />
     </ContextMenuGroup>
   </ContextMenuOption>
   <ContextMenuDivider />
@@ -41,25 +32,9 @@
     <ContextMenuOption id="2" labelText="Auto-sharpen" />
   </ContextMenuGroup>
   <ContextMenuDivider />
-  <ContextMenuOption indented kind="danger" labelText="Delete" />
+  <ContextMenuOption kind="danger" labelText="Delete" icon={TrashCan} />
 </ContextMenu>
 
-<div>
-  <p bind:this="{target}">Right click this element</p>
+<div data-centered>
+  <p data-outline bind:this={target}>Right click this element</p>
 </div>
-
-<style>
-  div {
-    position: absolute;
-    width: calc(100% - var(--cds-spacing-05));
-    height: calc(100% - var(--cds-spacing-06));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--cds-text-02);
-  }
-
-  p {
-    outline: 1px solid var(--cds-interactive-01);
-  }
-</style>

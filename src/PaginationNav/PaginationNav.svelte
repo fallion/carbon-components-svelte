@@ -1,12 +1,56 @@
+<script context="module">
+  // Compute the visible page window directly instead of
+  // materializing a `total`-length array and slicing it down,
+  // since the rendered window is bounded by `shown`.
+  /**
+   * @param {number} total
+   * @param {number} startOffset
+   * @param {number} front
+   * @param {number} back
+   * @returns {number[]}
+   */
+  function computePageWindow(total, startOffset, front, back) {
+    const start = startOffset + front;
+    const end = total - back - 1;
+    /** @type {number[]} */
+    const window = [];
+
+    for (let i = start; i < end; i++) {
+      window.push(i);
+    }
+
+    return window;
+  }
+
+  /**
+   * Resolve "inside"/"outside" to a concrete side for the previous ("start")
+   * or next ("end") button; concrete positions pass through.
+   * @param {"top" | "right" | "bottom" | "left" | "outside" | "inside"} position
+   * @param {"start" | "end"} edge
+   * @returns {"top" | "right" | "bottom" | "left"}
+   */
+  function edgeTooltipPosition(position, edge) {
+    if (position === "inside") return edge === "start" ? "right" : "left";
+    if (position === "outside") return edge === "start" ? "left" : "right";
+    return position;
+  }
+</script>
+
 <script>
   /**
-   * @event {{ page: number; }} change
-   * @event {{ page: number; }} click:button--previous
-   * @event {{ page: number; }} click:button--next
+   * @event change - Fires after every user interaction
+   * @property {number} page
+   * @event click:button--previous
+   * @property {number} page
+   * @event click:button--next
+   * @property {number} page
    */
 
-  /** Specify the current page index */
-  export let page = 0;
+  /**
+   * Specify the current page index.
+   * @bindable writable
+   */
+  export let page = 1;
 
   /** Specify the total number of pages */
   export let total = 10;
@@ -23,24 +67,65 @@
   /** Specify the backward button text */
   export let backwardText = "Previous page";
 
-  import { afterUpdate, createEventDispatcher } from "svelte";
-  import CaretLeft16 from "../icons/CaretLeft16.svelte";
-  import CaretRight16 from "../icons/CaretRight16.svelte";
+  /**
+   * Set the position of the tooltip relative to the pagination buttons.
+   * @type {"top" | "right" | "bottom" | "left" | "outside" | "inside"}
+   */
+  export let tooltipPosition = "bottom";
+
+  /**
+   * Override the page text, which names each page button.
+   * @type {(page: number) => string}
+   */
+  export let pageText = function pageText(page) {
+    return `Page ${page}`;
+  };
+
+  /**
+   * Override the page range text. It follows the page text in the
+   * announcement made when the page changes ("Page 3 of 10").
+   * @type {(current: number, total: number) => string}
+   */
+  export let pageRangeText = function pageRangeText(_current, total) {
+    return `of ${total}`;
+  };
+
+  /**
+   * Override the accessible label for the overflow page select.
+   * @type {(total: number) => string}
+   */
+  export let pageSelectLabelText = function pageSelectLabelText(_total) {
+    return "Select page number";
+  };
+
+  import { createEventDispatcher } from "svelte";
+  import Button from "../Button/Button.svelte";
+  import CaretLeft from "../icons/CaretLeft.svelte";
+  import CaretRight from "../icons/CaretRight.svelte";
   import PaginationItem from "./PaginationItem.svelte";
   import PaginationOverflow from "./PaginationOverflow.svelte";
-  import Button from "../Button/Button.svelte";
 
   const dispatch = createEventDispatcher();
   const MIN = 4;
 
-  afterUpdate(() => {
-    dispatch("change", { page });
-  });
-
+  // number of overflow pages near the beginning of the nav
   let front = 0;
+
+  // number of overflow pages near the end of the nav
   let back = 0;
 
-  $: fit = shown >= MIN ? shown : MIN;
+  // Keep the page in range when `total` shrinks, as Pagination does.
+  $: if (page > total) page = Math.max(total, 1);
+
+  // The page the user last chose in this instance, or null. Two navs bound
+  // to one `page` (above and below a table) both see the change; only the
+  // one the user acted on writes it to its live region.
+  /** @type {number | null} */
+  let statusPage = null;
+  $: if (statusPage !== null && page !== statusPage) statusPage = null;
+
+  // number of nav overflow or items that may appear
+  $: fit = Math.max(shown, MIN);
   $: startOffset = fit <= MIN && page > 1 ? 0 : 1;
   $: if (fit >= total) {
     front = 0;
@@ -49,8 +134,8 @@
   $: if (fit < total) {
     const split = Math.ceil(fit / 2) - 1;
 
-    front = page - split + 1;
-    back = total - page - (fit - split) + 1;
+    front = page - split;
+    back = total - page - (fit - split) + 2;
 
     if (front <= 1) {
       back -= front <= 0 ? Math.abs(front) + 1 : 0;
@@ -62,99 +147,125 @@
       back = 0;
     }
   }
-  $: items = Array.from({ length: total })
-    .map((e, i) => i)
-    .slice(startOffset + front, (back + 1) * -1);
+
+  // all enumerable items to render in between
+  // overflow menus
+  $: items = computePageWindow(total, startOffset, front, back);
 </script>
 
-<nav aria-label="pagination" class:bx--pagination-nav="{true}" {...$$restProps}>
-  <ul class:bx--pagination-nav__list="{true}">
-    <li class:bx--pagination-nav__list-item="{true}">
+<nav aria-label="pagination" class:bx--pagination-nav={true} {...$$restProps}>
+  <ul class:bx--pagination-nav__list={true}>
+    <li class:bx--pagination-nav__list-item={true}>
       <Button
-        hasIconOnly
+        size="default"
         kind="ghost"
         tooltipAlignment="center"
-        tooltipPosition="bottom"
-        iconDescription="{backwardText}"
-        disabled="{!loop && page === 0}"
-        icon="{CaretLeft16}"
-        on:click="{() => {
-          if (page - 1 < 0) {
-            if (loop) page = total - 1;
+        tooltipPosition={edgeTooltipPosition(tooltipPosition, "start")}
+        iconDescription={backwardText}
+        disabled={!loop && page === 1}
+        icon={CaretLeft}
+        on:click={() => {
+          if (page <= 1) {
+            if (loop) page = total;
           } else {
             page--;
           }
-          dispatch('click:button--previous', { page });
-        }}"
+          dispatch("click:button--previous", { page });
+          statusPage = page;
+          dispatch("change", { page });
+        }}
       />
     </li>
     {#if fit > MIN || (fit <= MIN && page <= 1)}
       <PaginationItem
-        page="{1}"
-        active="{page === 0}"
-        on:click="{() => (page = 0)}"
-      >
-        {page === 0 ? "Active, Page" : "Page"}
-      </PaginationItem>
+        page={1}
+        label={pageText(1)}
+        active={page === 1}
+        on:click={() => {
+          page = 1;
+          statusPage = page;
+          dispatch("change", { page });
+        }}
+      />
     {/if}
     <PaginationOverflow
-      fromIndex="{startOffset}"
-      count="{front}"
-      on:select="{({ detail }) => (page = detail.index)}"
+      {total}
+      {pageText}
+      {pageSelectLabelText}
+      fromIndex={startOffset}
+      count={front}
+      on:select={(event) => {
+        page = event.detail.index;
+        statusPage = page;
+        dispatch("change", { page });
+      }}
     />
-    {#each items as item}
+    {#each items as item (item)}
       <PaginationItem
-        page="{item + 1}"
-        active="{page === item}"
-        on:click="{() => (page = item)}"
-      >
-        {page === item ? "Active, Page" : "Page"}
-      </PaginationItem>
+        page={item + 1}
+        label={pageText(item + 1)}
+        active={page === item + 1}
+        on:click={() => {
+          page = item + 1;
+          statusPage = page;
+          dispatch("change", { page });
+        }}
+      />
     {/each}
     <PaginationOverflow
-      fromIndex="{total - back - 1}"
-      count="{back}"
-      on:select="{({ detail }) => {
-        page = detail.index;
-      }}"
+      {total}
+      {pageText}
+      {pageSelectLabelText}
+      fromIndex={total - back - 1}
+      count={back}
+      on:select={(event) => {
+        page = event.detail.index;
+        statusPage = page;
+        dispatch("change", { page });
+      }}
     />
     {#if total > 1}
       <PaginationItem
-        page="{total}"
-        active="{page === total - 1}"
-        on:click="{() => (page = total - 1)}"
-      >
-        {page === total - 1 ? "Active, Page" : "Page"}
-      </PaginationItem>
+        page={total}
+        label={pageText(total)}
+        active={page === total}
+        on:click={() => {
+          page = total;
+          statusPage = page;
+          dispatch("change", { page });
+        }}
+      />
     {/if}
-    <li class:bx--pagination-nav__list-item="{true}">
+    <li class:bx--pagination-nav__list-item={true}>
       <Button
-        hasIconOnly
+        size="default"
         kind="ghost"
         tooltipAlignment="center"
-        tooltipPosition="bottom"
-        iconDescription="{forwardText}"
-        disabled="{!loop && page === total - 1}"
-        icon="{CaretRight16}"
-        on:click="{() => {
-          if (page + 1 >= total) {
-            if (loop) page = 0;
+        tooltipPosition={edgeTooltipPosition(tooltipPosition, "end")}
+        iconDescription={forwardText}
+        disabled={!loop && page === total}
+        icon={CaretRight}
+        on:click={() => {
+          if (page >= total) {
+            if (loop) page = 1;
           } else {
             page++;
           }
-          dispatch('click:button--next', { page });
-        }}"
+          dispatch("click:button--next", { page });
+          statusPage = page;
+          dispatch("change", { page });
+        }}
       />
     </li>
   </ul>
   <div
     aria-live="polite"
     aria-atomic="true"
-    class:bx--pagination-nav__accessibility-label="{true}"
+    class:bx--pagination-nav__accessibility-label={true}
   >
-    Page
-    {page + 1}
-    of
-    {total}
+    {#if statusPage !== null}
+      {pageText(page)}
+      {pageRangeText(page, total)}
+    {/if}
   </div>
 </nav>

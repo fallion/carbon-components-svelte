@@ -1,0 +1,515 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vars';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import 'mixins';
+
+@mixin structured-list {
+  .#{$prefix}--structured-list--selection .#{$prefix}--structured-list-td,
+  .#{$prefix}--structured-list--selection .#{$prefix}--structured-list-th {
+    @include padding--data-structured-list;
+  }
+  @if feature-flag-enabled('enable-v11-release') {
+    .#{$prefix}--structured-list-row--focused-within {
+      @include focus-outline('outline');
+    }
+  }
+  // Else: the `structured-list-input-focusable` patch below always sets
+  // `display: inline-block` on `.bx--structured-list-input` instead, so it
+  // stays in the tab order (see that mixin's docstring).
+
+  .#{$prefix}--structured-list {
+    @include reset;
+
+    display: table;
+    width: 100%;
+    // ccs: no bottom margin, as in v11. v10's 5rem pushed apart a list in a
+    // card or panel and whatever followed it; the layout sets that spacing.
+
+    background-color: transparent;
+    border-collapse: collapse;
+    border-spacing: 0;
+    overflow-x: auto;
+
+  }
+
+  // Keeps the block class: outranks `.bx--structured-list--selection
+  // .bx--structured-list-td:first-child` (0,3,0) below by order.
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--condensed .#{$prefix}--structured-list-td,
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--condensed .#{$prefix}--structured-list-th { // ccs: specificity
+    @include padding-td--condensed;
+    //8px padding all over
+  }
+
+  .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-td:first-of-type,
+  .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th:first-of-type { // ccs: flatten
+    padding-left: 1rem;
+    // specs require 16px spacing between columns
+    // 8px side padding between col creates 16 px, with exception of 1st col, which needs an override to be 16px
+  }
+
+  .#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-td,
+  .#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th,
+  .#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-td:first-of-type,
+  .#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th:first-of-type { // ccs: flatten
+    padding-right: 1rem;
+    padding-left: 0;
+  }
+
+  // ccs: a top border on each row and a bottom border on the last body row,
+  // as in v11, so a hovered or selected row can recolor the line above it.
+  .#{$prefix}--structured-list-row {
+    display: table-row;
+    border-top: 1px solid $border-subtle;
+    transition: background-color $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--structured-list-tbody
+    .#{$prefix}--structured-list-row:last-child {
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--structured-list-row.#{$prefix}--structured-list-row--header-row {
+    border: none; // ccs: v11 draws no header border
+    cursor: inherit;
+  }
+
+  // ccs: v11's selected row, a `$layer-selected` fill and lines, with
+  // primary text. The line below it is the next row's top border.
+  .#{$prefix}--structured-list--selection
+    .#{$prefix}--structured-list-row.#{$prefix}--structured-list-row--selected {
+    border-color: $layer-selected;
+    background-color: $layer-selected;
+  }
+
+  .#{$prefix}--structured-list--selection
+    .#{$prefix}--structured-list-row--selected
+    + .#{$prefix}--structured-list-row {
+    border-color: $layer-selected;
+  }
+
+  .#{$prefix}--structured-list--selection
+    .#{$prefix}--structured-list-row.#{$prefix}--structured-list-row--selected
+    > .#{$prefix}--structured-list-td {
+    color: $text-primary;
+  }
+
+  @if not feature-flag-enabled('enable-v11-release') {
+    .#{$prefix}--structured-list-row:focus:not(.#{$prefix}--structured-list-row--header-row) {
+      @include focus-outline('outline');
+    }
+  }
+
+  // ccs: grouped this component's any-hover rules into one block
+  // (order-safe: no rule in between touches the row's border-color/
+  // background-color or the cell's color at equal specificity). The
+  // hovered row recolors its own top line and the next row's, as in v11,
+  // instead of v10's bottom border and cell top border.
+  @media (any-hover: hover) {
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row:hover:not(.#{$prefix}--structured-list-row--header-row):not(.#{$prefix}--structured-list-row--selected) {
+      border-color: $layer-hover;
+      background-color: $layer-hover;
+      cursor: pointer;
+    }
+
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row:hover:not(.#{$prefix}--structured-list-row--header-row):not(.#{$prefix}--structured-list-row--selected)
+      + .#{$prefix}--structured-list-row {
+      border-color: $layer-hover;
+    }
+
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row:hover:not(.#{$prefix}--structured-list-row--header-row)
+      > .#{$prefix}--structured-list-td {
+      color: $text-primary;
+    }
+  }
+
+  .#{$prefix}--structured-list-thead {
+    display: table-header-group;
+    vertical-align: middle;
+  }
+
+  .#{$prefix}--structured-list-th {
+    @include reset;
+    @include padding-th;
+    @include type-style('heading-compact-01', $omit: (font-weight));
+
+    display: table-cell;
+    height: to-rem(40px);
+    color: $text-primary;
+    font-weight: 600;
+    text-align: left;
+    text-transform: $structured-list-text-transform;
+    vertical-align: top;
+  }
+
+  .#{$prefix}--structured-list-tbody {
+    display: table-row-group;
+    vertical-align: middle;
+  }
+
+  .#{$prefix}--structured-list-td {
+    @include reset;
+    @include type-style('body-01');
+    @include padding-td;
+
+    position: relative;
+    display: table-cell;
+    max-width: 36rem;
+    color: $text-secondary;
+    @if feature-flag-enabled('enable-v11-release') {
+      border-top: 1px solid $border-subtle;
+    }
+
+    transition: color $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--structured-list-content--nowrap {
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--structured-list-svg {
+    display: inline-block;
+    fill: transparent;
+    // ccs: only fill differs (checked); avoid `all` so the browser doesn't
+    // interpolate the rest of the animatable property set.
+    transition: fill $duration--fast-02 motion(standard, productive);
+    vertical-align: middle;
+  }
+
+  .#{$prefix}--structured-list-input:checked
+    + .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-svg,
+  .#{$prefix}--structured-list-input:checked
+    + .#{$prefix}--structured-list-td
+    .#{$prefix}--structured-list-svg {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--structured-list.#{$prefix}--skeleton {
+    .#{$prefix}--structured-list-th {
+      &:first-child {
+        width: 8%;
+      }
+
+      &:nth-child(3n + 2) {
+        width: 30%;
+      }
+
+      &:nth-child(3n + 3) {
+        width: 15%;
+      }
+    }
+
+    span {
+      @include skeleton;
+
+      display: block;
+
+      width: 75%;
+      height: 1rem;
+    }
+
+    // ccs: each bar centered in its cell's line, a heading's 18px and a
+    // row's 20px, so the skeleton's rows are as tall as the list's.
+    .#{$prefix}--structured-list-th span {
+      margin-block: to-rem(1px);
+    }
+
+    .#{$prefix}--structured-list-td span {
+      margin-block: to-rem(2px);
+    }
+  }
+
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--selection.#{$prefix}--skeleton
+    .#{$prefix}--structured-list-th:first-child {
+    width: 5%;
+
+    span {
+      display: none;
+    }
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--structured-list-input:checked
+    + .#{$prefix}--structured-list-td
+    .#{$prefix}--structured-list-svg {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('structured-list') {
+  @include structured-list;
+}
+
+// carbon-components-svelte patch (formerly css/_structured-list-input-focusable.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+// Carbon's base `.bx--structured-list-input` is `display: none`, which
+// worked when the row's own <label> carried the radio/checkbox role and
+// tabindex. Now that the label is a plain wrapper (role isn't allowed on
+// <label>) and the native input is the focusable, checkbox/radio-shaped
+// control, it must stay in the tab order and accessibility tree -- visually
+// hidden the same way SelectableTile's input is, instead of display: none.
+//
+// The input renders as a sibling of the row's `.bx--structured-list-td`
+// cells (inside the CSS-table `.bx--structured-list-row`). Any non-`none`
+// display value on that raw sibling -- regardless of position -- makes the
+// browser's table auto-layout allocate it an oversized anonymous column,
+// opening a visible gap between cells. Giving the wrapper an explicit
+// `display: table-cell` makes it a real, correctly-sized column instead of
+// an anonymous one. Native radio/checkbox inputs can't take `table-cell`
+// display themselves (browsers force them back to `inline-block`), so the
+// wrapper carries the table-cell display; the clipping that hides the input
+// stays on the input itself, since a table-cell box is stretched to the
+// row's height regardless of its own `height`, which would defeat a 1px
+// clip applied to the wrapper.
+@mixin structured-list-input-focusable {
+  .#{$prefix}--structured-list-input-wrapper {
+    display: table-cell;
+    position: relative;
+    width: 1px;
+    box-sizing: border-box;
+  }
+
+  .#{$prefix}--structured-list-input {
+    display: inline-block;
+    @include hidden;
+  }
+
+  // Scoped to `--selection`: `:focus-within` also fires for any focusable
+  // content a consumer places inside a plain row (e.g. a sort button in a
+  // header row), which isn't the row-level selection state this is for.
+  .#{$prefix}--structured-list--selection
+    .#{$prefix}--structured-list-row:focus-within {
+    @include focus-outline("outline");
+  }
+
+  // Carbon's base CSS fills the selection icon via
+  // `.bx--structured-list-input:checked + .bx--structured-list-td`, an
+  // adjacent-sibling selector that requires the input to be a direct
+  // sibling of the cell. Wrapping the input for the table-layout fix above
+  // breaks that adjacency. `:has()` would restore it, but it's unsupported
+  // at the Svelte 5 browser baseline (Safari 14, Chrome 87 -- see
+  // _datepicker.scss), so instead StructuredListInput mirrors `checked`
+  // onto the wrapper itself, keeping the same adjacent-sibling shape.
+  .#{$prefix}--structured-list-input-wrapper--checked
+    + .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-svg,
+  .#{$prefix}--structured-list-input-wrapper--checked
+    + .#{$prefix}--structured-list-td
+    .#{$prefix}--structured-list-svg {
+    fill: $icon-primary;
+  }
+}
+
+@include exports("structured-list-input-focusable") {
+  @include structured-list-input-focusable;
+}
+
+// carbon-components-svelte patch (formerly css/_structured-list-sort.scss)
+// Carbon does not ship a sortable structured list upstream (sorting is a
+// DataTable-only feature there). `StructuredListCell` renders this button in
+// place of its plain header markup when `sortable` is set.
+//
+// The click/hover/focus target is the button, so it needs to fill the full
+// header cell -- not just wrap its text. The cell's own padding is zeroed
+// and the same values move onto the button, so the button's padding box
+// covers what used to be dead (unclickable) padding space around the text.
+//
+// That alone sizes the button correctly under normal conditions, since the
+// moved padding sums to the same total the cell used to reserve. It falls
+// short under `--condensed`: Carbon's `.bx--structured-list-th` carries an
+// unconditional `height: to-rem(40px)` that the condensed variant's shrunk
+// padding no longer reaches, so the cell renders taller than the button's
+// own content. `height: 100%` on the button closes that gap -- percentage
+// heights resolve reliably against a table-cell's final row height, fixed
+// or content-driven, so this works regardless of which one produced it.
+/// @access private
+/// @group components
+@mixin structured-list-sort {
+  .#{$prefix}--structured-list-th--sortable {
+    padding: 0;
+  }
+
+  .#{$prefix}--structured-list-sort {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    gap: $carbon--spacing-03;
+    padding: $carbon--spacing-05 $carbon--spacing-03 $carbon--spacing-03
+      $carbon--spacing-03;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  // Matches the `:first-of-type` inset every other header/body cell gets
+  // (see `_structured-list.scss`), moved from the cell onto the button so
+  // the extra space stays part of the clickable target. That base rule is
+  // nested under `.bx--structured-list`, so the override needs the same
+  // ancestor to match its specificity -- a bare `.bx--structured-list-row
+  // .bx--structured-list-th--sortable:first-of-type` loses the tie and the
+  // cell keeps its own 1rem inset alongside the button's.
+  .#{$prefix}--structured-list
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th--sortable:first-of-type {
+    padding-left: 0;
+  }
+
+  .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th--sortable:first-of-type
+    .#{$prefix}--structured-list-sort {
+    padding-left: to-rem(16px);
+  }
+
+  // Same specificity concern for the condensed and flush variants: their
+  // cell padding rules are nested under `.bx--structured-list` too.
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--condensed
+    .#{$prefix}--structured-list-th--sortable {
+    padding: 0;
+  }
+
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--condensed
+    .#{$prefix}--structured-list-sort {
+    padding: $structured-list-padding * 0.25;
+  }
+
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th--sortable,
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-th--sortable:first-of-type {
+    padding: 0;
+  }
+
+  .#{$prefix}--structured-list.#{$prefix}--structured-list--flush
+    .#{$prefix}--structured-list-row
+    .#{$prefix}--structured-list-sort {
+    padding-right: to-rem(16px);
+    padding-left: 0;
+  }
+
+  .#{$prefix}--structured-list-sort:hover,
+  .#{$prefix}--structured-list-sort.#{$prefix}--structured-list-sort--active {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--structured-list-sort:focus {
+    @include focus-outline("outline");
+  }
+
+  .#{$prefix}--structured-list-sort__icon-unsorted {
+    fill: $icon-primary;
+    opacity: 0;
+  }
+
+  .#{$prefix}--structured-list-sort:hover
+    .#{$prefix}--structured-list-sort__icon-unsorted,
+  .#{$prefix}--structured-list-sort:focus
+    .#{$prefix}--structured-list-sort__icon-unsorted {
+    opacity: 0.6;
+  }
+
+  .#{$prefix}--structured-list-sort__icon {
+    display: none;
+    fill: $icon-primary;
+    transform: rotate(0);
+    transition: transform $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--structured-list-sort--active
+    .#{$prefix}--structured-list-sort__icon {
+    display: block;
+  }
+
+  .#{$prefix}--structured-list-sort--active
+    .#{$prefix}--structured-list-sort__icon-unsorted {
+    display: none;
+  }
+
+  .#{$prefix}--structured-list-sort--ascending
+    .#{$prefix}--structured-list-sort__icon {
+    transform: rotate(180deg);
+  }
+}
+
+@include exports("structured-list-sort") {
+  @include structured-list-sort;
+}
+
+// carbon-components-svelte patch (structured-list-forced-colors)
+// The selected row is a `$layer-selected` fill, which forced-colors mode
+// repaints as Canvas, so only the icon told it apart. Author system colors
+// survive forcing, so fill it with Highlight, as TreeView does. The row
+// opts out of forcing: forced text gets a `Canvas` backplate, which hid
+// the `HighlightText` cells. Its border, which unforcing brings back, uses
+// a system color too. The hover rule for cell text outranks the plain
+// selected rule, so its `:hover` twin re-asserts HighlightText.
+
+/// Selected structured list row in forced-colors mode.
+/// @access private
+/// @group components
+@mixin structured-list-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row.#{$prefix}--structured-list-row--selected {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row.#{$prefix}--structured-list-row--selected
+      > .#{$prefix}--structured-list-td,
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row.#{$prefix}--structured-list-row--selected:hover
+      > .#{$prefix}--structured-list-td {
+      color: HighlightText;
+    }
+
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row--selected
+      .#{$prefix}--structured-list-svg {
+      fill: HighlightText;
+    }
+
+    // The focus ring sits inside the row, on the Highlight fill.
+    .#{$prefix}--structured-list--selection
+      .#{$prefix}--structured-list-row--selected:focus-within {
+      outline-color: HighlightText;
+    }
+  }
+}
+
+@include exports("structured-list-forced-colors") {
+  @include structured-list-forced-colors;
+}

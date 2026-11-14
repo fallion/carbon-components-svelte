@@ -1,0 +1,377 @@
+---
+components: ["Accordion", "AccordionItem", "AccordionSkeleton"]
+description: Accordions stack expandable sections vertically to show or hide content, with custom titles, multiple sizes, and disabled and skeleton states.
+---
+
+<script>
+  import {
+    Accordion,
+    AccordionItem,
+    AccordionSkeleton,
+    Stack,
+    Text,
+  } from "carbon-components-svelte";
+  import Notification from "carbon-icons-svelte/lib/Notification.svelte";
+</script>
+
+## Basic
+
+Use the accordion and accordion item components to compose a collapsible list of
+items.
+
+By default, the chevron icon is on the right side of the accordion item.
+
+<Accordion>
+  <AccordionItem title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+## Layout
+
+Adjust chevron alignment and container spacing. The two interact: flush has
+no effect when the chevron is left-aligned.
+
+### Left-aligned chevron
+
+Align the chevron icon to the left side of the accordion item by setting `align` to `"start"`.
+
+<Accordion align="start">
+  <AccordionItem title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+### Flush
+
+Set `flush` to remove the accordion's gutter, aligning it flush with the
+edges of its container. This works well in full-bleed layouts and side
+panels. `flush` has no effect when `align` is `"start"`.
+
+<Accordion flush>
+  <AccordionItem title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+## Title
+
+Customize the item heading content and its accessible name.
+
+### Custom title slot
+
+Customize the title content with the title slot instead of the title prop for
+more complex layouts with multiple elements.
+
+<Accordion>
+  <AccordionItem>
+    <svelte:fragment slot="title">
+      <h5>Billing and invoices</h5>
+      <div>Finance</div>
+    </svelte:fragment>
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem>
+  <svelte:fragment slot="title">
+      <h5>API access</h5>
+      <div>Developer tools</div>
+    </svelte:fragment>
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem>
+  <svelte:fragment slot="title">
+      <h5>Team permissions</h5>
+      <div>Access control</div>
+    </svelte:fragment>
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+### Accessible label
+
+Set `ariaLabel` to give the item's heading button an accessible name that's
+independent of its visible content. This matters when the title slot doesn't
+render readable text, such as an icon-only title, since screen readers would
+otherwise have nothing to announce for the control.
+
+<Accordion>
+  <AccordionItem ariaLabel="Notifications">
+    <svelte:fragment slot="title">
+      <Notification />
+    </svelte:fragment>
+    <p>You have no new notifications.</p>
+  </AccordionItem>
+</Accordion>
+
+## Open state
+
+Control which items are open by default, exclusively, or programmatically.
+
+### First item open
+
+Set `open` on an item to have it expanded by default when the
+accordion is first rendered.
+
+<Accordion>
+  <AccordionItem open title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+### Single-open
+
+Set `type` to `"single"` so that opening an item automatically closes any
+other open item. This is useful for FAQs, step-by-step wizards, or settings
+panels where only one section should be expanded at a time. The default is
+`"multiple"`, which allows any number of items to be open simultaneously.
+
+<Accordion type="single">
+  <AccordionItem open title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+### Programmatic example
+
+Programmatically control the accordion items with the `bind:open` directive,
+expanding and collapsing items based on user interactions or application state.
+
+<FileSource src="/framed/Accordion/ExpandableAccordion" />
+
+### Reacting to toggles
+
+Listen for `toggle` on an item to react when a user expands or collapses it.
+The event's `detail.open` is the item's next open state, so a parent can
+track which item was toggled and to what state without binding to `open`.
+
+<FileSource src="/framed/Accordion/ToggleAccordion" />
+
+## Nested
+
+Put an `Accordion` inside an `AccordionItem` to compose nested clusters.
+Nested items keep their own open state, independent of the parent.
+
+<Accordion>
+  <AccordionItem open title="Platform services">
+    <Stack orientation="horizontal" gap={6}>
+      <Accordion>
+        <AccordionItem open title="Authentication service">
+          <Stack gap={5}>
+            <Text type="body-01" color="secondary">
+              Handles user login, session tokens, and single sign-on across
+              all connected applications.
+            </Text>
+            <Stack gap={2}>
+              <Text type="label-01" color="secondary">Region</Text>
+              <Text type="body-compact-01">us-east-1</Text>
+            </Stack>
+          </Stack>
+        </AccordionItem>
+      </Accordion>
+      <Accordion>
+        <AccordionItem open title="Notification service">
+          <Stack gap={5}>
+            <Text type="body-01" color="secondary">
+              Delivers email, SMS, and in-app alerts triggered by workflow
+              events.
+            </Text>
+            <Stack gap={2}>
+              <Text type="label-01" color="secondary">Region</Text>
+              <Text type="body-compact-01">eu-west-1</Text>
+            </Stack>
+          </Stack>
+        </AccordionItem>
+      </Accordion>
+    </Stack>
+  </AccordionItem>
+</Accordion>
+
+## Lazy loading
+
+Set `lazy` on an accordion item to defer mounting its panel content until the
+item first opens. Use it for panels with heavy content, such as API-fetched
+data or charts, so they mount only when needed. The content stays mounted
+after the item collapses.
+
+| Do | Why |
+| --- | --- |
+| Set `lazy` on items with heavy content, or in long accordions most visitors only skim. | A collapsed item still builds all its content; `lazy` waits until the item first opens. |
+| Leave it off when the content must be in server-rendered markup. | Deferred content isn't in the page until its item opens. |
+
+<Accordion>
+  <AccordionItem lazy title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem lazy title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem lazy title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+## Sizes
+
+Set `size` to control row height. The default is `md`.
+
+### Extra-large
+
+Display the accordion in an extra-large size by setting `size` to `"xl"`.
+
+<Accordion size="xl">
+  <AccordionItem title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+### Small
+
+Set `size` to `"sm"` for a smaller accordion in compact layouts or
+when space is limited.
+
+<Accordion size="sm">
+  <AccordionItem title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+## Disabled
+
+Disable the whole accordion or individual items.
+
+### All
+
+Set `disabled` on the accordion to disable all items at once. Users can no
+longer expand or collapse any item.
+
+<Accordion disabled>
+  <AccordionItem title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+### Batch
+
+Programmatically toggle the disabled state of all accordion items. In this example, disabling all items also collapses them.
+
+<FileSource src="/framed/Accordion/BatchDisableAccordion" />
+
+### Item
+
+Disable an individual item by setting `disabled` on a specific accordion
+item for finer control over which items are interactive.
+
+<Accordion>
+  <AccordionItem disabled title="Billing and invoices">
+   <p>Manage payment methods, view invoice history, and download receipts for your organization's subscription.
+   </p>
+  </AccordionItem>
+  <AccordionItem title="API access">
+    <p>Generate and manage API keys, set rate limits, and configure webhook endpoints for programmatic access.</p>
+  </AccordionItem>
+  <AccordionItem title="Team permissions">
+    <p>Assign roles and control which team members can view, edit, or administer workspace resources.</p>
+  </AccordionItem>
+</Accordion>
+
+## Skeleton
+
+Use `AccordionSkeleton` to show a loading state while content loads.
+
+<AccordionSkeleton />
+
+### Left-aligned chevron
+
+Align the chevron icon to the left side by setting `align` to `"start"`.
+
+<AccordionSkeleton align="start" />
+
+### Custom count
+
+By default, the skeleton displays 4 items. Set `count` to specify
+the number of skeleton items to display.
+
+<AccordionSkeleton count={3} />
+
+### Closed
+
+By default, the first skeleton item is open. Set `open={false}` to render the
+skeleton collapsed.
+
+<AccordionSkeleton open={false} />
+
+### Extra-large
+
+Set `size` to `"xl"` for an extra-large skeleton.
+
+<AccordionSkeleton size="xl" />
+
+### Small
+
+Set `size` to `"sm"` for a small skeleton.
+
+<AccordionSkeleton size="sm" />
+
+### Flush
+
+Set `flush` to remove the skeleton's gutter, matching the flush variant.
+
+<AccordionSkeleton flush />

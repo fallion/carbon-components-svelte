@@ -1,0 +1,213 @@
+---
+components: ["Breadcrumb", "BreadcrumbItem", "BreadcrumbSkeleton"]
+description: Breadcrumbs display a hierarchical navigation trail showing the user's location, with current-page indication and overflow handling.
+---
+
+<script>
+  import {
+    Box,
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbSkeleton,
+    OverflowMenu,
+    OverflowMenuItem,
+    Stack,
+    Text
+  } from "carbon-components-svelte";
+  import Calendar from "carbon-icons-svelte/lib/Calendar.svelte";
+  import Document from "carbon-icons-svelte/lib/Document.svelte";
+  import Home from "carbon-icons-svelte/lib/Home.svelte";
+</script>
+
+## Basic
+
+Display a hierarchical navigation trail with slashes between items. Mark the current page with `isCurrentPage`.
+
+<Breadcrumb>
+  <BreadcrumbItem href="/">Dashboard</BreadcrumbItem>
+  <BreadcrumbItem href="/reports">Annual reports</BreadcrumbItem>
+  <BreadcrumbItem href="/reports/2019" isCurrentPage>2019</BreadcrumbItem>
+</Breadcrumb>
+
+## No trailing slash
+
+Remove the trailing slash from the last item with `noTrailingSlash`.
+
+<Breadcrumb noTrailingSlash>
+  <BreadcrumbItem href="/">Home</BreadcrumbItem>
+  <BreadcrumbItem href="/account-settings" isCurrentPage>Account settings</BreadcrumbItem>
+</Breadcrumb>
+
+## Separator
+
+Change the separator rendered between breadcrumb items with `separator`. Defaults to `"/"`.
+
+### Character
+
+Pass a text character to render it through CSS, matching upstream Carbon.
+
+<FileSource src="/framed/Breadcrumb/BreadcrumbSeparator" />
+
+### Icon
+
+Pass a component reference (for example an icon) to render it as a real separator element instead of a text character.
+
+<FileSource src="/framed/Breadcrumb/BreadcrumbSeparatorIcon" />
+
+## Icons
+
+Set `icon` on `BreadcrumbItem` to render a leading icon before the label. This works in both the `href` and custom link (`let:props`) branches.
+
+### Every item
+
+<Breadcrumb>
+  <BreadcrumbItem href="/" icon={Home}>Home</BreadcrumbItem>
+  <BreadcrumbItem href="/reports" icon={Document}>Reports</BreadcrumbItem>
+  <BreadcrumbItem href="/reports/2019" icon={Calendar} isCurrentPage>
+    2019
+  </BreadcrumbItem>
+</Breadcrumb>
+
+### First item only
+
+Pass `icon` only to the items that need it — for example, a home icon to anchor the start of the trail.
+
+<Breadcrumb>
+  <BreadcrumbItem href="/" icon={Home}>Home</BreadcrumbItem>
+  <BreadcrumbItem href="/reports">Annual reports</BreadcrumbItem>
+  <BreadcrumbItem href="/reports/2019" isCurrentPage>2019</BreadcrumbItem>
+</Breadcrumb>
+
+### All except the current page
+
+Omit `icon` from the current page to de-emphasize it relative to the navigable items.
+
+<Breadcrumb>
+  <BreadcrumbItem href="/" icon={Home}>Home</BreadcrumbItem>
+  <BreadcrumbItem href="/reports" icon={Document}>Annual reports</BreadcrumbItem>
+  <BreadcrumbItem href="/reports/2019" isCurrentPage>2019</BreadcrumbItem>
+</Breadcrumb>
+
+## Overflow and sizing
+
+Handle long breadcrumb trails with an overflow menu, a compact size, or both together.
+
+### Overflow menu
+
+Add an overflow menu to handle long breadcrumb trails. Use overflow menu item components for menu options.
+
+<Breadcrumb>
+  <BreadcrumbItem href="/">Home</BreadcrumbItem>
+  <BreadcrumbItem href="/api">API documentation</BreadcrumbItem>
+  <BreadcrumbItem>
+    <OverflowMenu>
+      <OverflowMenuItem href="/api/data" text="Data" />
+      <OverflowMenuItem href="/api/data/latest" text="Latest" />
+    </OverflowMenu>
+  </BreadcrumbItem>
+  <BreadcrumbItem href="/api/data/latest/usage" isCurrentPage>
+    Usage
+  </BreadcrumbItem>
+</Breadcrumb>
+
+### Small
+
+Use `size="sm"` for a compact breadcrumb. This pairs with an overflow menu when space is tight.
+
+<Breadcrumb size="sm">
+  <BreadcrumbItem href="/">Home</BreadcrumbItem>
+  <BreadcrumbItem href="/api">API</BreadcrumbItem>
+  <BreadcrumbItem>
+    <OverflowMenu size="sm">
+      <OverflowMenuItem href="/api/data" text="Data" />
+      <OverflowMenuItem href="/api/data/latest" text="Latest" />
+    </OverflowMenu>
+  </BreadcrumbItem>
+  <BreadcrumbItem href="/api/data/latest/usage" isCurrentPage>
+    Usage
+  </BreadcrumbItem>
+</Breadcrumb>
+
+## Orientation
+
+By default, items stack vertically below the `md` breakpoint (672px) and lay out in a wrapping row above it. Set `orientation` to pin one layout at every viewport width.
+
+| Value | Layout | Use when |
+| --- | --- | --- |
+| `undefined` (default) | Stacked below `md`, row above | The breadcrumb spans the page width |
+| `"vertical"` | Always stacked | The breadcrumb sits in a narrow column, such as a side panel |
+| `"horizontal"` | Always a wrapping row | Short trails that fit on one line even on small screens |
+
+The breakpoint follows the viewport, not the container. In a narrow column on a wide screen, the default wraps the trail wherever it runs out of room; `orientation="vertical"` puts each level on its own line.
+
+<Box display="flex" gap={5} wrap="wrap" align="start">
+  <Stack gap={3}>
+    <Text type="label-01" color="secondary">Default</Text>
+    <Box width={240} padding={4} border="subtle">
+      <Breadcrumb>
+        <BreadcrumbItem href="/">Dashboard</BreadcrumbItem>
+        <BreadcrumbItem href="/reports">Annual reports</BreadcrumbItem>
+        <BreadcrumbItem href="/reports/2019">2019</BreadcrumbItem>
+        <BreadcrumbItem href="/reports/2019/q4" isCurrentPage>Fourth quarter</BreadcrumbItem>
+      </Breadcrumb>
+    </Box>
+  </Stack>
+  <Stack gap={3}>
+    <Text type="label-01" color="secondary">orientation="vertical"</Text>
+    <Box width={240} padding={4} border="subtle">
+      <Breadcrumb orientation="vertical">
+        <BreadcrumbItem href="/">Dashboard</BreadcrumbItem>
+        <BreadcrumbItem href="/reports">Annual reports</BreadcrumbItem>
+        <BreadcrumbItem href="/reports/2019">2019</BreadcrumbItem>
+        <BreadcrumbItem href="/reports/2019/q4" isCurrentPage>Fourth quarter</BreadcrumbItem>
+      </Breadcrumb>
+    </Box>
+  </Stack>
+</Box>
+
+## Breadcrumb trail
+
+Build a full breadcrumb trail with multiple items and a current page indicator.
+
+<FileSource src="/framed/Breadcrumbs/Breadcrumbs" />
+
+## Accessibility
+
+Preserve ARIA semantics when rendering custom link elements or renaming the nav's accessible label.
+
+### Custom link element
+
+Omit href and use `let:props` to render a custom link element (for example, a router link). Spread props onto the element to apply the Carbon link class and forward aria-current when isCurrentPage is set.
+
+<Breadcrumb>
+  <BreadcrumbItem let:props>
+    <a {...props} href="/">Dashboard</a>
+  </BreadcrumbItem>
+  <BreadcrumbItem let:props>
+    <a {...props} href="/reports">Annual reports</a>
+  </BreadcrumbItem>
+  <BreadcrumbItem isCurrentPage let:props>
+    <a {...props} href="/reports/2019">2019</a>
+  </BreadcrumbItem>
+</Breadcrumb>
+
+### Accessible label
+
+Set `labelText` to change the nav's accessible name from the default `"Breadcrumb"`. This is useful when a page has more than one breadcrumb trail and each needs a distinguishable landmark label for assistive technology.
+
+<Breadcrumb labelText="Secondary breadcrumb">
+  <BreadcrumbItem href="/">Home</BreadcrumbItem>
+  <BreadcrumbItem href="/team-management" isCurrentPage>Team management</BreadcrumbItem>
+</Breadcrumb>
+
+## Skeleton
+
+Use `BreadcrumbSkeleton` to show a loading state. Use `count` to specify the number of items.
+
+<BreadcrumbSkeleton noTrailingSlash count={3} />
+
+### Small
+
+Set `size` to `"sm"` on `BreadcrumbSkeleton` for a compact loading state.
+
+<BreadcrumbSkeleton size="sm" count={3} />

@@ -1,0 +1,196 @@
+---
+title: Server-side rendering
+layout: guide
+description: Render Carbon Components Svelte on the server with SvelteKit, avoid theme and layout flashes, and keep generated ids stable.
+---
+
+## Basic
+
+Carbon Components Svelte renders on the server without extra setup. Import one stylesheet in your root layout and keep the `optimizeImports` preprocessor from the [quick start](/quick-start).
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import "carbon-components-svelte/css/white.css";
+</script>
+
+<slot />
+```
+
+SvelteKit emits the stylesheet as a `<link>` in the document `<head>`, so the first paint is styled. Use `carbon-components-svelte/css/all.css` instead when you need dynamic themes with `Theme` or `ThemeZone`; `white.css`, `g10.css`, `g80.css`, `g90.css`, and `g100.css` each contain a single fixed theme.
+
+| Do | Why |
+| :--- | :--- |
+| Add `optimizeCss()` from `carbon-preprocess-svelte` to `vite.config.js`. | It prunes the stylesheet to the components you use. With `all.css`, the `[theme]` rules still apply. |
+
+Nothing in the library needs `{#if browser}` to avoid a server error. Every exported component renders on the server without throwing. Child components such as `Tab` or `MenuItem` need their parent, as they do in the browser.
+
+## Hydration
+
+Components hydrate in place, and Svelte reports no warnings for them. Most keep every DOM node; generated ids change (see [Stable ids](#stable-ids)) and Svelte 5 rebuilds `<option>` elements, neither of which you can see.
+
+These hydrate with no visible change: Accordion, Breadcrumb, Button, Checkbox, ComboBox, ComposedModal and Modal when closed, ContentSwitcher, CopyButton, DataTable, Dropdown, FileUploader, Form, Link, Menu when closed, MultiSelect, InlineNotification, ToastNotification, NumberInput, PageHeader, Pagination, ProgressIndicator, RadioButton, Search, Select, Slider, StructuredList, Tabs, TabsVertical, TextArea, TextInput, Tile, TimePicker, Toggle, ToggleButtonGroup, UserAvatarGroup, and every skeleton. The text fields among them lose text typed before hydration (see the table).
+
+The rest change between the first server paint and the end of hydration.
+
+| Component | Server output | After hydration |
+| :--- | :--- | :--- |
+| Carousel | No slide labels | Each slide labeled "Slide 2 of 3" |
+| InterstitialScreen with `open` | No progress indicator | Progress indicator appears <!-- FIX: SSR-04 --> |
+| Dialog with `open` and `modal` | Closed | Open, since `showModal()` needs the browser |
+| SideNav | See [Side navigation](#side-navigation) | Hamburger appears on small screens <!-- FIX: SSR-12 --> |
+| TagSet | One row, clipped to its width, no overflow counter | Overflow counter appears after measuring |
+| Open `Menu`, portalled menus and tooltips, Portal | Not in the server HTML | Mounted in the body |
+| ExpandableTile | A `<button>` around links or inputs | A `<div>` with a chevron button when it holds interactive content |
+| LazyMount | The placeholder slot | The content, once near the viewport |
+| Breakpoint | The slot sees `size` as `undefined` | The slot sees the real size |
+| LocalStorage, SessionStorage | The default value | The stored value |
+| CodeSnippet, ScrollGradient, open OverflowMenu and Tooltip | Unmeasured state | Measured state |
+| ImageLoader | A hidden `<img>` | Image shown after load |
+| NotificationQueue | Empty by design | Notifications added in `onMount` appear |
+| Modal, ComposedModal with `open` | Visible, body scroll not locked | Body gets `bx--body--with-modal-open` |
+| TextInput, TextArea, Search, ToolbarSearch, HeaderSearch, ComboBox, filterable MultiSelect, TimePicker, DatePicker | Plain input | Text typed before hydration is cleared, a Svelte bug ([sveltejs/svelte#19096](https://github.com/sveltejs/svelte/issues/19096)) |
+
+Svelte repairs mismatched attributes and text without a warning, so a quiet console does not prove the server and client agree.
+
+| Do | Why |
+| :--- | :--- |
+| Gate client-only content with a flag set in `onMount`. | The server and the first client render match, so Svelte keeps the nodes. |
+| Avoid `{#if browser}` around markup. | `browser` is already `true` during hydration, so the branches differ and Svelte rebuilds the nodes without a warning. |
+| Prefer CSS media queries over `Breakpoint` for layout. | The server has no viewport, so `Breakpoint` renders its fallback until mount. |
+| Set `hasInteractiveContent` on an `ExpandableTile` that holds links or inputs. | The server renders the `<div>` and chevron button from the start, instead of a `<button>` the browser has to split. |
+| Pass `estimatedHeight` to `LazyMount`. | The placeholder holds the space, so the page doesn't shift when the content mounts. |
+
+```svelte
+<script>
+  import { onMount } from "svelte";
+  import { LocalStorage } from "carbon-components-svelte";
+
+  let mounted = false;
+  let value = "default";
+
+  onMount(() => (mounted = true));
+</script>
+
+<LocalStorage key="draft" bind:value />
+<p>{mounted ? value : "Loading"}</p>
+```
+
+## Theme without a flash
+
+`Theme` sets the `theme` attribute, `color-scheme`, and custom `tokens` on `<html>` only in the browser, and `persist` and `system` resolve after mount. The server HTML has no `theme` attribute, so a saved or system dark theme paints white first. Each option below sets the theme before the first paint. All of them need `all.css`.
+
+| You need | Use |
+| :--- | :--- |
+| White or Gray 100, following the system, with no JavaScript | `<html theme="system">` in `src/app.html` |
+| One fixed theme | `<html theme="g100">` in `src/app.html`, and the same `theme` on `Theme` |
+| A saved choice, another system pair, or custom `tokens` | `themeScript` in `<head>` |
+| A region in another theme, such as a dark header | `ThemeZone` |
+
+`themeScript` returns a small script that sets the theme on `<html>` before the page renders. Pass it the same `theme`, `tokens`, `persist`, `persistKey`, `system`, and `systemThemes` values as `Theme`, so both pick the same theme. In SvelteKit, add a placeholder to `src/app.html` and replace it in a server hook.
+
+```html
+<!-- src/app.html -->
+<head>
+  <script nonce="%sveltekit.nonce%">%carbon.theme%</script>
+  %sveltekit.head%
+</head>
+```
+
+```js
+// src/hooks.server.js
+import { themeScript } from "carbon-components-svelte";
+
+const script = themeScript({ persist: true, system: true });
+
+export function handle({ event, resolve }) {
+  return resolve(event, {
+    transformPageChunk: ({ html }) => html.replace("%carbon.theme%", script),
+  });
+}
+```
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import "carbon-components-svelte/css/all.css";
+  import { Theme } from "carbon-components-svelte";
+</script>
+
+<Theme persist system />
+
+<slot />
+```
+
+| Do | Why |
+| :--- | :--- |
+| Import `all.css`, not `white.css`. | Only `all.css` contains the `[theme]` rules that the attribute selects. |
+| Put the script first in `<head>`. | It must run before the first paint. |
+| Keep `nonce="%sveltekit.nonce%"` when you set a CSP. | Strict policies block inline scripts without a nonce. |
+
+`ThemeZone` renders its theme class in the server HTML, so a zone paints in its theme from the start. Content it portals, such as a menu, mounts after hydration and keeps the zone's theme. See [Theme](/components/Theme#apply-before-first-paint) and [ThemeZone](/components/ThemeZone) for the options.
+
+## Right-to-left
+
+Set `dir="rtl"` and `lang` on `<html>` in `src/app.html`, so the first paint is mirrored. `Slider` and `RangeSlider` place their thumbs by the nearest `dir` in the styles, so they render mirrored from the server too. The attribute alone doesn't reach script on the server. Wrap the root layout in `LayoutDirection` so components read the direction from context before hydration too. Portalled menus and tooltips keep the direction too.
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import { LayoutDirection } from "carbon-components-svelte";
+</script>
+
+<LayoutDirection dir="rtl">
+  <slot />
+</LayoutDirection>
+```
+
+See the [right-to-left guide](/right-to-left) for what flips and what stays left to right.
+
+## Side navigation
+
+Before hydration `SideNav` is neither expanded nor collapsed, since nothing has measured the window. The library's CSS lays out `Content` beside the nav on screens 66rem and wider, at the `resizable` width, and at the edge below that, so `Content` does not move on hydration. Two setups still move it: a `Header` with `expandedByDefault={false}`, and an `expansionBreakpoint` other than the default.
+
+On a small screen the hamburger button is missing until hydration, so the navigation cannot be opened without JavaScript. Set `persistentHamburgerMenu` on `Header` to render it on the server. The server also renders the nav with `aria-hidden`, even where CSS shows it, so assistive technology finds it only after hydration. <!-- FIX: SSR-12 -->
+
+On the server, `Content` takes the `resizable` width from a `SideNav` rendered before it. Render `SideNav` first. Otherwise `Content` starts at the default width and moves on hydration.
+
+## Stable ids
+
+Most components generate an id with a random value, such as `ccs-8t2995v243o`, for `id`, `for`, `aria-controls`, `aria-labelledby`, and form `name` attributes. The server and the browser draw different values. Svelte rewrites the attributes during hydration and keeps every reference matched, so nothing breaks, but three things follow.
+
+| Effect | Why it matters |
+| :--- | :--- |
+| Prerendered HTML differs on every build. | Snapshot tests and cache diffs show noise. |
+| A CSS selector, anchor, or script that uses a generated id sees a different value after hydration. | The rewrite is silent. |
+| A form submitted without JavaScript posts a random field name. | Applies to `RadioButtonGroup`, `TileGroup`, and `StructuredList` with `selection` when you pass no `name`, and to `DataTable` selection inputs with neither `id` nor `inputName`. |
+
+Pass your own `id` or `name` to make the markup identical on every render. Ids must be unique on the page, so derive them from the item key inside `{#each}` blocks. In a Svelte 5 component, `$props.id()` gives you a value that matches on the server and the client.
+
+```svelte
+<TextInput id="email" labelText="Email" name="email" />
+<RadioButtonGroup legendText="Plan" name="plan" id="plan">
+  <RadioButton id="plan-free" value="free" labelText="Free" />
+  <RadioButton id="plan-pro" value="pro" labelText="Pro" />
+</RadioButtonGroup>
+<DataTable id="orders" selectable {headers} {rows} />
+```
+
+| Component | Props that fix its ids |
+| :--- | :--- |
+| TextInput, PasswordInput, TextArea, NumberInput, Search, Slider, Toggle, Select, Dropdown, ComboBox, MultiSelect, Modal, ComposedModal, InterstitialScreen, Pagination, CodeSnippet, CopyInput, Tag, TooltipIcon, TooltipDefinition, Disclosure, Carousel, Toggletip, HeaderSearch, HeaderSwitcher, ProfileMenu, InlineNotification, ToastNotification, TreeView, TableContainer, FormGroup, ProgressBar, Meter, FileUploader | `id` |
+| DataTable | `id` (`inputName` sets the selection name) |
+| OverflowMenu | `id`, and `id` on each `OverflowMenuItem` |
+| Tooltip | `tooltipId` and `triggerId` |
+| Tabs, TabsVertical | `id` on each `Tab` (a `TabContent` without one takes `{tabId}-panel`) |
+| Accordion | `id` on each `AccordionItem` |
+| ContentSwitcher | `id` on each `Switch` and `SwitchPanel` |
+| ProgressIndicator | `id` on each `ProgressStep` |
+| CheckboxGroup, RadioButtonGroup | `id` on the group and on each `Checkbox` or `RadioButton` |
+| RadioButtonGroup, TileGroup, StructuredList | `name` on the group |
+| TagSet | `id` on `TagSet` and on each `Tag` |
+| DatePicker | `id` on `DatePicker` and on each `DatePickerInput` |
+
+## Locale and time
+
+`Pagination` formats its item and page counts with the runtime locale, so a server in one locale and a browser in another print `12,345` and `12.345`. Svelte replaces the text on hydration. Pass `itemText`, `itemRangeText`, `pageText`, and `pageRangeText` functions that format with a fixed locale. `BigNumber`, `Meter`, and `RelativeTime` accept `locale`. `RelativeTime` also accepts `now` and `timeZone`. Pass fixed values from the request to keep prerendered HTML correct.

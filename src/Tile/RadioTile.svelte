@@ -1,82 +1,279 @@
 <script>
-  /** Set to `true` to check the tile */
+  /**
+   * @restProps {label}
+   * @template {string} [Value=string]
+   */
+
+  /**
+   * Set to `true` to check the tile.
+   * @bindable writable
+   */
   export let checked = false;
 
-  /** Set to `true` to enable the light variant */
-  export let light = false;
+  /**
+   * Set the size: `"sm"` for a compact tile, such as a row in a list of
+   * choices, with less padding, no minimum height, and the checkmark
+   * pulled in. Defaults to the size of a parent tile group.
+   * @type {"sm" | "md" | undefined}
+   */
+  export let size = undefined;
 
   /** Set to `true` to disable the tile */
   export let disabled = false;
 
-  /** Specify the value of the radio input */
-  export let value = "";
+  /** Set to `true` to stretch the tile to fill the height of its container */
+  export let fullHeight = false;
 
-  /** Specify the tabindex */
+  /**
+   * Set to `true` to round the tile's corners when it has a `decorator`,
+   * such as an `AILabel`. Carbon reserves rounded tiles for AI content.
+   */
+  export let rounded = false;
+
+  /** Set to `true` to mark the field as required */
+  export let required = false;
+
+  /**
+   * Specify the value of the radio input.
+   * @type {Value}
+   */
+  export let value = /** @type {Value} */ ("");
+
+  /**
+   * Specify the tabindex
+   * @type {number | string | undefined}
+   */
   export let tabindex = "0";
 
-  /** Specify the ARIA label for the radio tile checkmark icon */
+  /**
+   * Specify the title for the radio tile checkmark icon.
+   * The icon is hidden from assistive technology, so this only sets the
+   * tooltip shown on hover.
+   */
   export let iconDescription = "Tile checkmark";
 
   /** Set an id for the input element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
-  /** Specify a name attribute for the input */
-  export let name = "";
+  /**
+   * Specify a name attribute for the radio tile input.
+   * @type {string | undefined}
+   */
+  export let name = undefined;
 
-  import { getContext } from "svelte";
-  import CheckmarkFilled16 from "../icons/CheckmarkFilled16.svelte";
+  /**
+   * Specify the id of a form element outside the component to associate
+   * the radio input with.
+   * @type {string | undefined}
+   */
+  export let form = undefined;
 
-  const { add, update, selectedValue } = getContext("TileGroup");
+  /**
+   * Obtain a reference to the input HTML element.
+   * @bindable readonly
+   * @type {null | HTMLInputElement}
+   */
+  export let ref = null;
+
+  import { getContext, onMount } from "svelte";
+  import { readable, writable } from "svelte/store";
+  import {
+    registerRadioButton,
+    updateGroupSelection,
+  } from "../RadioButton/radio-button-registry.js";
+  import CheckmarkFilled from "../icons/CheckmarkFilled.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { formReset } from "../utils/form-reset.js";
+  import { noop } from "../utils/noop.js";
+  import { uniqueId } from "../utils/unique-id.js";
+  import TileWrapper from "./TileWrapper.svelte";
+
+  // Naming and description belong on the input, not the label.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: labelRestProps,
+  } = splitAriaNaming($$restProps));
+
+  const ctx = getContext("carbon:TileGroup");
+  const add = ctx?.add ?? noop;
+  const remove = ctx?.remove ?? noop;
+  const update = ctx?.update ?? noop;
+  const selectedValue = ctx?.selectedValue ?? readable(undefined);
+  const groupName = ctx?.groupName ?? readable(undefined);
+  const groupForm = ctx?.groupForm ?? readable(undefined);
+  const fallbackName = ctx?.fallbackName;
+  const groupRequired = ctx?.groupRequired ?? readable(undefined);
+  const groupDisabled = ctx?.groupDisabled ?? readable(false);
+  const groupSize = ctx?.groupSize ?? readable(undefined);
+  $: effectiveSize = size ?? $groupSize;
+
+  // A disabled TileGroup disables the input natively through its fieldset;
+  // mirror that in the tile's styling and tab order. The `disabled`
+  // attribute stays the tile's own.
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || $groupDisabled || inDisabledFieldset;
 
   add({ value, checked });
 
-  $: checked = value === $selectedValue;
+  // The `checked` this tile last derived from the group. A different
+  // `checked` on the next run was written from outside, so push it into the
+  // group instead of overwriting it. One block, so the comparison always
+  // sees the write before the re-derive.
+  let syncedChecked = checked;
+  // A checked tile whose `value` changes carries the selection to the new
+  // value, as SelectableTile does, rather than leaving the group's
+  // `selected` naming a value no radio has.
+  let prevValue = value;
+
+  $: if (ctx) {
+    let current = $selectedValue;
+    if (value !== prevValue) {
+      if (current === prevValue && syncedChecked) {
+        selectedValue.set(value);
+        current = value;
+      }
+      remove(prevValue);
+      add({ value, checked: false });
+      prevValue = value;
+    }
+    if (checked !== syncedChecked) {
+      if (checked) current = value;
+      else if (current === value) current = undefined;
+      selectedValue.set(current);
+    }
+    const derived = value === current;
+    // Write only on change: under Svelte 5, every write to a prop bound to
+    // an array item (`bind:checked={a[i]}`) re-runs this block in every tile.
+    if (checked !== derived) checked = derived;
+    syncedChecked = derived;
+  }
+
+  // Standalone tiles that share a `name` form a native radio group, which
+  // unchecks the others without an event. Share the RadioButton registry so
+  // a checked tile (by click or by prop) unchecks its siblings' `checked`.
+  const instanceKey = {};
+  /** @type {null | ReturnType<typeof registerRadioButton>} */
+  let registration = null;
+  let unsubscribeRegistry = noop;
+
+  /** @type {(radioName: string | undefined) => void} */
+  function register(radioName) {
+    unregister();
+    if (!radioName) return;
+    registration = registerRadioButton(radioName, instanceKey, checked);
+    unsubscribeRegistry = registration.selectedKey.subscribe((key) => {
+      if (checked && key !== undefined && key !== instanceKey) checked = false;
+    });
+  }
+
+  function unregister() {
+    unsubscribeRegistry();
+    unsubscribeRegistry = noop;
+    registration?.unregister();
+    registration = null;
+  }
+
+  $: if (!ctx) register(name);
+
+  // Push only a false → true change: Svelte 5 re-runs this block for every
+  // tile when a parent mutates an array bound with `bind:checked={a[i]}`,
+  // and a tile that was already checked must not reclaim the selection.
+  let registeredChecked = checked;
+
+  $: if (registration) {
+    if (checked && !registeredChecked)
+      updateGroupSelection(/** @type {string} */ (name), instanceKey);
+    registeredChecked = checked;
+  }
+
+  onMount(() => () => {
+    unregister();
+    remove(value);
+  });
+
+  // A form reset restores the radio without a change event. Inside
+  // `TileGroup`, the group reads the result back; standalone, sync here.
+  function handleFormReset() {
+    if (ctx || !ref) return;
+    checked = ref.checked;
+  }
+
+  /**
+   * Starts active for a filled slot, so the server renders the AI surface.
+   * `Decorator` clears it when no `AILabel` claims the slot.
+   * @type {import("svelte/store").Writable<undefined | "active" | "revert">}
+   */
+  const aiLabelState = writable($$slots.decorator ? "active" : undefined);
 </script>
 
-<input
-  type="radio"
-  id="{id}"
-  name="{name}"
-  value="{value}"
-  checked="{checked}"
-  tabindex="{disabled ? undefined : tabindex}"
-  disabled="{disabled}"
-  class:bx--tile-input="{true}"
-  on:change
-  on:change="{() => {
-    if (disabled) return;
-    update(value);
-  }}"
-  on:keydown
-  on:keydown="{(e) => {
-    if (disabled) return;
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      update(value);
-    }
-  }}"
-/>
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
-<label
-  for="{id}"
-  class:bx--tile="{true}"
-  class:bx--tile--selectable="{true}"
-  class:bx--tile--is-selected="{checked}"
-  class:bx--tile--light="{light}"
-  class:bx--tile--disabled="{disabled}"
-  {...$$restProps}
-  on:click
-  on:mouseover
-  on:mouseenter
-  on:mouseleave
+<TileWrapper
+  decorated={$$slots.decorator}
+  state={aiLabelState}
+  class="bx--tile__wrapper--radio"
 >
-  <span class:bx--tile__checkmark="{true}">
-    <CheckmarkFilled16
-      aria-label="{iconDescription}"
-      title="{iconDescription}"
-    />
-  </span>
-  <span class:bx--tile-content="{true}">
-    <slot />
-  </span>
-</label>
+  <input
+    use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+    bind:this={ref}
+    use:formReset={handleFormReset}
+    type="radio"
+    {id}
+    name={$groupName ?? (name || fallbackName)}
+    form={$groupForm ?? form}
+    {value}
+    {checked}
+    tabindex={effectiveDisabled ? undefined : tabindex}
+    {disabled}
+    required={$groupRequired ?? required}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledBy}
+    aria-describedby={ariaDescribedBy}
+    class:bx--tile-input={true}
+    on:change
+    on:change={(event) => {
+      if (ctx) update(value);
+      else checked = event.currentTarget.checked;
+    }}
+    on:focus
+    on:blur
+    on:keydown
+    on:keydown={(event) => {
+      // Space is left to the native radio, which checks it and fires
+      // `change`. Enter has no native radio behavior beyond implicit form
+      // submission, so cancel that and click instead; an already-checked
+      // radio fires no `change`, matching a pointer click.
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (!event.currentTarget.checked) event.currentTarget.click();
+      }
+    }}
+  />
+  <label
+    for={id}
+    class:bx--tile={true}
+    class:bx--tile--selectable={true}
+    class:bx--tile--is-selected={checked}
+    class:bx--tile--sm={effectiveSize === "sm"}
+    class:bx--tile--disabled={effectiveDisabled}
+    class:bx--tile--full-height={fullHeight}
+    class:bx--tile--decorator={$$slots.decorator}
+    class:bx--tile--decorator-rounded={rounded && $$slots.decorator}
+    class:bx--tile--ai-label={$aiLabelState === "active"}
+    {...labelRestProps}
+    on:click
+    on:mouseover
+    on:mouseenter
+    on:mouseleave
+  >
+    <span aria-hidden="true" class:bx--tile__checkmark={true}>
+      <CheckmarkFilled aria-label={iconDescription} title={iconDescription} />
+    </span>
+    <span class:bx--tile-content={true}> <slot /> </span>
+  </label>
+  <svelte:fragment slot="decorator">
+    <slot name="decorator" />
+  </svelte:fragment>
+</TileWrapper>

@@ -1,0 +1,559 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../form/form';
+
+/// Toggle styles
+/// @access private
+/// @group toggle
+@mixin toggle {
+  @if feature-flag-enabled('enable-v11-release') {
+    .#{$prefix}--toggle__label-text {
+      @include type-style('label-01');
+
+      display: block;
+      margin-bottom: $spacing-05;
+      color: $text-secondary;
+    }
+
+    .#{$prefix}--toggle__button {
+      @include hidden;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    .#{$prefix}--toggle__appearance {
+      display: grid;
+      align-items: center;
+      column-gap: $spacing-03;
+      cursor: pointer;
+      grid-template-columns: max-content max-content;
+    }
+
+    .#{$prefix}--toggle__switch {
+      position: relative;
+      width: to-rem(48px);
+      height: to-rem(24px);
+      background-color: $toggle-off;
+      border-radius: to-rem(12px);
+      transition: background-color $duration--fast-01 motion(exit, productive);
+
+      &::before {
+        position: absolute;
+        top: to-rem(3px);
+        left: to-rem(3px);
+        width: to-rem(18px);
+        height: to-rem(18px);
+        background-color: $icon-on-color;
+        border-radius: 50%;
+        content: '';
+        transition: transform $duration--fast-01 motion(exit, productive);
+
+        @media screen and (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      }
+    }
+
+    .#{$prefix}--toggle__button:focus
+      + .#{$prefix}--toggle__label
+      .#{$prefix}--toggle__switch,
+    .#{$prefix}--toggle__button:active
+      + .#{$prefix}--toggle__label
+      .#{$prefix}--toggle__switch {
+      box-shadow: 0 0 0 1px $focus-inset, 0 0 0 3px $focus;
+    }
+
+    .#{$prefix}--toggle__switch--checked {
+      background-color: $support-success;
+
+      &::before {
+        transform: translateX(to-rem(24px));
+      }
+    }
+
+    .#{$prefix}--toggle__text {
+      @include type-style('body-01');
+
+      color: $text-primary;
+    }
+
+    .#{$prefix}--toggle__appearance--sm .#{$prefix}--toggle__switch {
+      width: to-rem(32px);
+      height: to-rem(16px);
+
+      &::before {
+        width: to-rem(10px);
+        height: to-rem(10px);
+      }
+    }
+
+    .#{$prefix}--toggle__appearance--sm
+      .#{$prefix}--toggle__switch--checked::before {
+      transform: translateX(to-rem(16px));
+    }
+
+    .#{$prefix}--toggle--disabled .#{$prefix}--toggle__appearance {
+      cursor: not-allowed;
+    }
+
+    .#{$prefix}--toggle--disabled .#{$prefix}--toggle__label-text,
+    .#{$prefix}--toggle--disabled .#{$prefix}--toggle__text {
+      color: $text-disabled;
+    }
+
+    .#{$prefix}--toggle--disabled .#{$prefix}--toggle__switch {
+      background-color: $button-disabled;
+
+      &::before {
+        background-color: $icon-on-color-disabled;
+      }
+    }
+
+    .#{$prefix}--toggle__switch,
+    .#{$prefix}--toggle__switch::before {
+      @include high-contrast-mode('outline');
+    }
+
+    // stylelint-disable-next-line no-duplicate-selectors
+    .#{$prefix}--toggle__button:focus
+      + .#{$prefix}--toggle__label
+      .#{$prefix}--toggle__switch,
+    .#{$prefix}--toggle__button:active
+      + .#{$prefix}--toggle__label
+      .#{$prefix}--toggle__switch {
+      @include high-contrast-mode('focus');
+    }
+  } @else {
+    .#{$prefix}--toggle {
+      @include hidden;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    // ccs: the rules for the old toggle markup (`__label`, `__appearance`)
+    // are gone with it. Only ToggleSkeleton draws `__text--left`: a bar
+    // where the toggle's Off/On text sits.
+    .#{$prefix}--toggle__text--left {
+      position: absolute;
+      left: to-rem(48px);
+      margin-left: $carbon--spacing-03;
+    }
+
+    .#{$prefix}--toggle-input {
+      @include hidden;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    .#{$prefix}--toggle-input__label {
+      @include type-style('label-01');
+
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      color: $text-secondary;
+      cursor: pointer;
+    }
+
+    // ccs: a grid that also holds the state text (v10 positioned it outside
+    // the box), so the toggle's width includes it, as in v11. The track and
+    // handle are absolutely positioned and keep their 48px.
+    .#{$prefix}--toggle__switch {
+      position: relative;
+      display: grid;
+      min-width: to-rem(48px);
+      height: to-rem(24px);
+      align-items: center;
+      cursor: pointer;
+
+      &::before {
+        position: absolute;
+        top: 0;
+        display: block;
+        width: to-rem(48px);
+        height: to-rem(24px);
+        box-sizing: border-box;
+        background-color: $border-strong;
+        border-radius: to-rem(15px);
+        // Corresponds to the double-border for focused state (`0 0 0 1px $layer-02, 0 0 0 3px $focus`)
+        box-shadow: 0 0 0 1px transparent, 0 0 0 3px transparent;
+        content: '';
+        // ccs: no `box-shadow`, which draws the focus ring, so the ring snaps
+        transition: background-color $duration--fast-01 motion(exit, productive);
+
+        @media screen and (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      }
+
+      &::after {
+        position: absolute;
+        top: to-rem(3px);
+        display: block;
+        width: to-rem(18px);
+        height: to-rem(18px);
+        box-sizing: border-box;
+        background-color: $icon-on-color;
+        border-radius: 50%;
+        content: '';
+        transition: transform $duration--fast-01 motion(exit, productive);
+
+        // ccs: starts at the inline start, where the track does
+        @include ccs-inset-inline(to-rem(3px));
+
+        // ccs: the handle holds still, as the track's colors may still fade
+        @media screen and (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      }
+
+      .#{$prefix}--toggle-input__label & {
+        margin-top: $carbon--spacing-05;
+      }
+    }
+
+    // ccs: in flow, both texts in one cell, so the box fits the longer one
+    // and does not change width when the state flips.
+    .#{$prefix}--toggle__text--off,
+    .#{$prefix}--toggle__text--on {
+      @include type-style('body-compact-01');
+
+      grid-area: 1 / 1;
+      margin-inline-start: to-rem(56px); // ccs: was margin-left
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .#{$prefix}--toggle-input:checked
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch
+      > .#{$prefix}--toggle__text--off,
+    .#{$prefix}--toggle-input:not(:checked)
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch
+      > .#{$prefix}--toggle__text--on {
+      visibility: hidden;
+    }
+
+    .#{$prefix}--toggle-input:checked
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch {
+      &::before {
+        background-color: $support-success;
+      }
+
+      &::after {
+        background-color: $icon-on-color;
+        // ccs: travels toward the inline end
+        transform: translateX(calc(#{to-rem(24px)} * var(--ccs-inline-sign, 1)));
+      }
+    }
+
+    .#{$prefix}--toggle-input:focus
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch::before,
+    .#{$prefix}--toggle-input:active
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch::before {
+      box-shadow: 0 0 0 1px $layer-02, 0 0 0 3px $focus;
+    }
+
+    .#{$prefix}--toggle-input:disabled + .#{$prefix}--toggle-input__label {
+      color: $disabled;
+      cursor: not-allowed;
+    }
+
+    .#{$prefix}--toggle-input:disabled
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch {
+      cursor: not-allowed;
+
+      &::before {
+        background-color: $button-disabled;
+      }
+
+      &::after {
+        background-color: $layer-selected-disabled;
+      }
+
+      &::before,
+      &::after {
+        cursor: not-allowed;
+        // ccs: the track's background and the handle's transform, not `all`
+        transition: background-color $duration--fast-01 motion(exit, productive),
+          transform $duration--fast-01 motion(exit, productive);
+
+        @media screen and (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      }
+    }
+
+    .#{$prefix}--toggle-input:disabled:active
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch::before {
+      box-shadow: none;
+    }
+
+    .#{$prefix}--toggle-input--small + .#{$prefix}--toggle-input__label {
+      > .#{$prefix}--toggle__switch {
+        min-width: to-rem(32px); // ccs: was `width`, see `.toggle__switch`
+        height: to-rem(16px);
+
+        &::before {
+          width: to-rem(32px);
+          height: to-rem(16px);
+          border-radius: 0.9375rem;
+        }
+
+        &::after {
+          width: to-rem(10px);
+          height: to-rem(10px);
+        }
+      }
+
+      .#{$prefix}--toggle__text--off,
+      .#{$prefix}--toggle__text--on {
+        margin-inline-start: to-rem(40px); // ccs: was margin-left
+      }
+    }
+
+    .#{$prefix}--toggle-input--small:checked
+      + .#{$prefix}--toggle-input__label {
+      > .#{$prefix}--toggle__switch::after {
+        // ccs: travels toward the inline end
+        transform: translateX(calc(#{to-rem(17px)} * var(--ccs-inline-sign, 1)));
+      }
+    }
+
+    .#{$prefix}--toggle.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      .#{$prefix}--toggle__switch {
+      @include skeleton;
+
+      width: 3rem;
+    }
+
+    // ccs: the switch keeps a real toggle's 1rem gap below the label,
+    // and the label bar sits centered in the label's 16px line, so the
+    // skeleton is as tall as the toggle. The bar is as wide as other
+    // field skeletons' label bars.
+    .#{$prefix}--toggle.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      > div {
+      overflow: hidden;
+      width: to-rem(75px);
+      height: 0.5rem;
+      margin: to-rem(4px) 0;
+      //hides text
+      font-size: 0%;
+      line-height: 0;
+
+      @include skeleton;
+    }
+
+    .#{$prefix}--toggle-input--small.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      .#{$prefix}--toggle__switch {
+      @include skeleton;
+
+      width: 2rem;
+    }
+
+    .#{$prefix}--toggle.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      .#{$prefix}--toggle__switch
+      .#{$prefix}--toggle__text--left {
+      @include skeleton($omit: (position));
+
+      position: absolute;
+      width: 1rem;
+      height: 0.5rem;
+    }
+
+    .#{$prefix}--toggle-input--small.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      .#{$prefix}--toggle__switch
+      .#{$prefix}--toggle__text--left {
+      left: 2rem;
+    }
+
+    .#{$prefix}--toggle.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      .#{$prefix}--toggle__switch::after {
+      display: none;
+    }
+
+    .#{$prefix}--toggle.#{$prefix}--skeleton
+      + .#{$prefix}--toggle-input__label
+      .#{$prefix}--toggle__switch::before {
+      border-radius: 0;
+    }
+
+    // HCM Fixes
+    // stylelint-disable-next-line no-duplicate-selectors
+    .#{$prefix}--toggle__switch::before {
+      @include high-contrast-mode('outline');
+    }
+
+    .#{$prefix}--toggle__switch::after,
+    .#{$prefix}--toggle-input:checked
+      + .#{$prefix}--toggle-input__label
+      > .#{$prefix}--toggle__switch::after {
+      @include high-contrast-mode('outline') {
+        background-color: ButtonText;
+      }
+    }
+  }
+}
+
+@include exports('toggle') {
+  @include toggle;
+}
+
+// carbon-components-svelte patch (formerly css/_toggle-readonly.scss)
+/// Readonly toggle styles
+/// @access private
+/// @group toggle
+@mixin toggle-readonly {
+  .#{$prefix}--toggle--readonly .#{$prefix}--toggle-input__label,
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch,
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::before,
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::after {
+    cursor: default;
+  }
+
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::before {
+    border: 1px solid $icon-secondary;
+    background-color: transparent;
+  }
+
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::after {
+    background-color: $icon-primary;
+  }
+
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input:checked
+    + .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::before {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--toggle--readonly
+    .#{$prefix}--toggle-input:checked
+    + .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::after {
+    background-color: $icon-primary;
+  }
+}
+
+@include exports("toggle-readonly") {
+  @include toggle-readonly;
+}
+
+// carbon-components-svelte patch (toggle-validation)
+// Toggle invalid and warning states. v10 ships none of this for Toggle; the
+// reveal shape and tokens follow Checkbox's `checkbox-validation` patch in
+// css/vendor/carbon-components/scss/components/checkbox/_checkbox.scss.
+
+/// Toggle invalid and warning states.
+/// @access private
+/// @group toggle
+@mixin toggle-validation {
+  // 8px, not the 4px text fields use: the switch's 3px focus ring is a
+  // box-shadow drawn outside the track and would nearly touch the message.
+  .#{$prefix}--toggle__validation-msg {
+    display: none;
+    align-items: flex-start;
+    inline-size: 100%;
+    margin-block-start: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--toggle--invalid .#{$prefix}--toggle__validation-msg,
+  .#{$prefix}--toggle--warning .#{$prefix}--toggle__validation-msg {
+    display: flex;
+  }
+
+  .#{$prefix}--toggle--invalid
+    .#{$prefix}--toggle__validation-msg
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--toggle--warning
+    .#{$prefix}--toggle__validation-msg
+    .#{$prefix}--form-requirement {
+    display: block;
+    overflow: visible;
+    margin-block-start: 0;
+    margin-inline-start: $carbon--spacing-03;
+    max-block-size: 100%;
+  }
+
+  .#{$prefix}--toggle__invalid-icon {
+    margin: to-rem(1px) to-rem(1px) 0 to-rem(3px);
+    fill: $support-error;
+    min-inline-size: to-rem(16px);
+  }
+
+  .#{$prefix}--toggle__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--toggle__invalid-icon--warning path:first-of-type {
+    fill: $carbon__black-100;
+  }
+}
+
+@include exports("toggle-validation") {
+  @include toggle-validation;
+}
+
+// carbon-components-svelte patch (toggle-forced-colors)
+// The switch focus ring is a box-shadow, which forced-colors mode drops. The
+// shipped switch only has the 1px transparent outline from the HCM fix above,
+// which forced colors paint the same focused or not, so focus barely
+// registered. (The `.bx--toggle__button` focus outline lives in the
+// `enable-v11-release` branch, which is never compiled.) A focused switch gets
+// a 2px ring with an offset so it reads apart from the unfocused 1px edge.
+
+/// Toggle focus ring in forced-colors mode.
+/// @access private
+/// @group toggle
+@mixin toggle-forced-colors {
+  .#{$prefix}--toggle-input:focus
+    + .#{$prefix}--toggle-input__label
+    > .#{$prefix}--toggle__switch::before {
+    @include high-contrast-mode {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+  }
+}
+
+@include exports("toggle-forced-colors") {
+  @include toggle-forced-colors;
+}

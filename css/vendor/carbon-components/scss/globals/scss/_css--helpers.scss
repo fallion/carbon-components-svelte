@@ -1,0 +1,48 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import 'vars';
+@import 'css--reset';
+@import 'typography';
+@import './vendor/@carbon/elements/scss/import-once/import-once';
+
+/// Include styles for screen reader/assistive text
+/// @access public
+/// @group global-helpers
+@mixin css-helpers {
+  .#{$prefix}--assistive-text,
+  .#{$prefix}--visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    // ccs: no inline margin. Under `dir="rtl"` a -1px inline-start margin
+    // moves the box 1px past the container's right edge, which scrolls a
+    // page whose right edge it touches.
+    margin: -1px 0;
+    clip: rect(0, 0, 0, 0);
+    visibility: inherit;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--body {
+    @include reset;
+    @include type-style('body-compact-01', $omit: (line-height));
+
+    background-color: $background;
+    color: $text-primary;
+    line-height: 1;
+  }
+}
+
+@include exports('css--helpers') {
+  @if variable-exists('css--helpers') == false or $css--helpers == true {
+    @include css-helpers;
+  }
+}

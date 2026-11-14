@@ -1,0 +1,173 @@
+// Fluid TextInput/PasswordInput (v11 port). Standalone `--fluid` overlay;
+// v10 only styles fluid fields inside `.bx--form--fluid`.
+// https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/fluid-text-input/_fluid-text-input.scss
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./fluid-shared";
+
+/// Fluid text input (Carbon React FluidTextInput)
+/// @access private
+/// @group components
+@mixin fluid-text-input {
+  .#{$prefix}--text-input--fluid.#{$prefix}--text-input-wrapper {
+    position: relative;
+    background: $field;
+    block-size: 100%;
+    transition:
+      background-color $duration--fast-01 motion(standard, productive),
+      outline $duration--fast-01 motion(standard, productive);
+  }
+
+  // Block, not flex, so a long label can end in an ellipsis; slotted
+  // labels get their flex row back from `fluid-label-slotted`.
+  .#{$prefix}--text-input--fluid .#{$prefix}--label {
+    position: absolute;
+    z-index: 1;
+    display: block;
+    margin: 0;
+    max-inline-size: calc(100% - #{$carbon--spacing-05 * 2});
+    block-size: to-rem(16px);
+    inset-block-start: to-rem(13px);
+    inline-size: auto;
+    @include ccs-inset-inline($carbon--spacing-05, auto);
+  }
+
+  // The maxCount counter is a second `.bx--label` in the same wrapper, so
+  // without this it inherits the label's own coordinates and the two overlap.
+  // Carbon has no fluid counter to port from.
+  .#{$prefix}--text-input--fluid .#{$prefix}--label.#{$prefix}--text-input__label-counter {
+    @include ccs-inset-inline(auto, $carbon--spacing-05);
+  }
+
+  .#{$prefix}--text-input--fluid.#{$prefix}--text-input-wrapper--readonly .#{$prefix}--text-input__field-wrapper .#{$prefix}--text-input {
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--label.#{$prefix}--label--slotted {
+    @include fluid-label-slotted;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--form__helper-text {
+    display: none;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input {
+    padding: to-rem(32px) $carbon--spacing-05 to-rem(13px);
+    min-block-size: to-rem(64px);
+  }
+
+  .#{$prefix}--text-input__divider,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__divider {
+    display: none;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid],
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper--warning {
+    display: block;
+  }
+
+  .#{$prefix}--text-input--fluid input[data-invalid] {
+    outline: none;
+  }
+
+  // The error/warn message is rendered inside the input wrapper in the
+  // fluid variant. The base v10 styles only reveal a message that is a
+  // sibling of the wrapper.
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid] .#{$prefix}--form-requirement,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper--warning .#{$prefix}--form-requirement {
+    @include fluid-requirement;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid] .#{$prefix}--form-requirement {
+    color: $text-error;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--form-requirement {
+    @include fluid-requirement-padding;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input--invalid,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input--warning {
+    border-block-end: none;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input--invalid~.#{$prefix}--text-input__divider,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input--warning~.#{$prefix}--text-input__divider {
+    @include fluid-divider-frame;
+  }
+
+  // Status icon pinned to the first line of the message; the base rule
+  // already sets the inline offset, so this can't take
+  // fluid-status-icon().
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__invalid-icon {
+    inset-block-start: to-rem(80px);
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid]>.#{$prefix}--text-input--invalid,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper--warning>.#{$prefix}--text-input--warning {
+    outline: none;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper--warning {
+    border-block-end: 1px solid $border-strong;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid]:not(:focus-within) {
+    @include focus-outline("invalid");
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid]:focus-within,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper--warning:focus-within {
+    @include focus-outline("outline");
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper[data-invalid]>.#{$prefix}--text-input--invalid:focus,
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input__field-wrapper--warning>.#{$prefix}--text-input--warning:focus {
+    outline: none;
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--text-input.#{$prefix}--password-input {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-input--fluid.#{$prefix}--password-input-wrapper .#{$prefix}--text-input__invalid-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--text-input--fluid .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger {
+    block-size: to-rem(32px);
+    inline-size: to-rem(32px);
+    inset-block-start: to-rem(26px);
+    @include ccs-inset-inline($end: $carbon--spacing-03);
+  }
+
+  .#{$prefix}--text-input--fluid__skeleton {
+    position: relative;
+    background: $skeleton-background;
+    block-size: to-rem(64px);
+    border-block-end: 1px solid $skeleton-element;
+  }
+
+  .#{$prefix}--text-input--fluid__skeleton .#{$prefix}--skeleton {
+    @include fluid-skeleton-label;
+  }
+
+  .#{$prefix}--text-input--fluid__skeleton .#{$prefix}--label {
+    margin-block-start: 0;
+
+    @include fluid-skeleton-field;
+  }
+}
+
+@include exports("fluid-text-input") {
+  @include fluid-text-input;
+}

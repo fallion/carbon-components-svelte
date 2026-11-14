@@ -1,0 +1,96 @@
+---
+description: ScrollGradient overlays a fading edge on a scrollable container to hint at more content, and hides once that edge is scrolled into view.
+---
+
+<script>
+  import { Box, ScrollGradient, Stack } from "carbon-components-svelte";
+
+  const auditLogEntries = [
+    "Signed in from new device",
+    "Updated API key",
+    "Revoked session token",
+    "Created service account",
+    "Modified IAM role: viewer → editor",
+    "Exported audit log (CSV)",
+    "Enabled MFA",
+    "Disabled webhook endpoint",
+    "Rotated database credentials",
+    "Added user to Engineering group",
+    "Removed user from Billing group",
+    "Updated SSO configuration",
+    "Approved access request #482",
+    "Denied access request #483",
+    "Archived project 'legacy-api'",
+    "Restored project 'legacy-api'",
+    "Updated rate limit policy",
+    "Deployed hotfix to production",
+    "Scaled worker pool to 12 nodes",
+    "Rotated TLS certificate",
+  ];
+</script>
+
+## Basic
+
+Wrap scrollable content in `ScrollGradient`. Set `height` so the content overflows vertically — it accepts any CSS length, with autocomplete for common presets like `"100%"` and `"100vh"`. The top gradient appears once the content is scrolled past its start, and the bottom gradient hides once it's scrolled to the end.
+
+<ScrollGradient height="12rem">
+  {#each auditLogEntries as entry}
+    <p>{entry}</p>
+  {/each}
+</ScrollGradient>
+
+## Horizontal
+
+Gradients appear independently for each axis. Set a width to overflow horizontally.
+
+<ScrollGradient height="6rem">
+  <Stack orientation="horizontal" gap={5}>
+    {#each Array(20) as _, i}
+      <Box display="flex" align="center" justify="center" width="6rem" height="4rem" fill="layer-accent">
+        {i + 1}
+      </Box>
+    {/each}
+  </Stack>
+</ScrollGradient>
+
+## Colors
+
+Set `color` to retint the gradient and `background` to repaint the content area. Both default to the `layer` token, which follows the enclosing [Layer](/components/Layer).
+
+### Theme tokens
+
+Set either to a [Box fill](/components/Box#fill) token name, such as `"background"` or `"layer-02"`, so the fade matches the surface it sits on in every theme.
+
+<Box fill="layer-02" padding={3}>
+  <ScrollGradient color="layer-02" background="layer-02" height="12rem">
+    {#each auditLogEntries as entry}
+      <p>{entry}</p>
+    {/each}
+  </ScrollGradient>
+</Box>
+
+### Custom color
+
+Set `color` to any CSS color.
+
+<ScrollGradient color="cornflowerblue" height="12rem">
+  {#each auditLogEntries as entry}
+    <p>{entry}</p>
+  {/each}
+</ScrollGradient>
+
+### Transparent background
+
+Set `background` to `"transparent"` to let the parent's own background show through instead of repainting it. `color` still sets the fade.
+
+<ScrollGradient background="transparent" height="12rem">
+  {#each auditLogEntries as entry}
+    <p>{entry}</p>
+  {/each}
+</ScrollGradient>
+
+## Reactive example
+
+Toggling content demonstrates that the gradients update as the container's overflow changes.
+
+<FileSource src="/framed/ScrollGradient/ReactiveScrollGradient" />

@@ -1,0 +1,50 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import type { ComboBoxItem } from "carbon-components-svelte/ComboBox/ComboBox.svelte";
+  import ComboBox from "carbon-components-svelte/ComboBox/ComboBox.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let comboBoxRef: ComboBox | undefined = undefined;
+
+  export let items: ComponentProps<ComboBox>["items"] = [
+    { id: "0", text: "Slack" },
+    { id: "1", text: "Email" },
+    { id: "2", text: "Fax", disabled: true },
+  ];
+  export let selectedId: ComponentProps<ComboBox>["selectedId"] = undefined;
+  export let direction: ComponentProps<ComboBox>["direction"] = "bottom";
+  export let clearOptions: { focus?: boolean } = {};
+  export let shouldFilterItem: NonNullable<
+    ComponentProps<ComboBox>["shouldFilterItem"]
+  > = (item: ComboBoxItem, value: string) =>
+    item.text.toLowerCase().includes(value.toLowerCase());
+  export let itemToString: NonNullable<
+    ComponentProps<ComboBox>["itemToString"]
+  > = (item: ComboBoxItem) => item.text;
+  export let typeahead = false;
+  export let onSelect: (detail: unknown) => void = () => {};
+</script>
+
+<ComboBox
+  bind:this={comboBoxRef}
+  {items}
+  {selectedId}
+  {direction}
+  {shouldFilterItem}
+  {itemToString}
+  {typeahead}
+  labelText="Contact with icons"
+  placeholder="Select contact method"
+  on:select={(e) => onSelect(e.detail)}
+  let:item
+>
+  <span>Item {item.text}</span>
+</ComboBox>
+
+<button type="button" on:click={() => comboBoxRef?.clear(clearOptions)}>
+  Clear
+</button>
+<button type="button" on:click={() => comboBoxRef?.clear({ open: true })}>
+  Clear (reopen)
+</button>

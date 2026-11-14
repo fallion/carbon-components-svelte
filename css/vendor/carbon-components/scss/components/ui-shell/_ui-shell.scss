@@ -1,0 +1,427 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import 'theme';
+@import 'variables';
+@import 'functions';
+@import 'header';
+@import 'header-panel';
+@import 'switcher';
+@import 'side-nav';
+@import 'content';
+
+// carbon-components-svelte patch (formerly css/_ui-shell.scss)
+// Everything that used to re-theme the shell is now edited into the files
+// above (see _theme.scss). What remains here has no upstream counterpart:
+// the mobile overlay, header utility buttons, header search, nav item icons,
+// and the rail's hidden scrollbar.
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+
+/// @access private
+/// @group ui-shell
+@mixin ccs-ui-shell {
+  // Mobile overlay: the rail's own overlay (above) is scoped to `lg` down;
+  // this one also covers large viewports when the rail expands.
+  .#{$prefix}--side-nav__overlay--mobile.#{$prefix}--side-nav__overlay-active {
+    position: fixed;
+    inset: 0;
+    z-index: z('overlay');
+    display: block;
+    block-size: 100vh;
+    inline-size: 100vw;
+    background-color: $overlay;
+    opacity: 1;
+    transition:
+      opacity 0.3s cubic-bezier(0.5, 0, 0.1, 1),
+      background-color 0.3s cubic-bezier(0.5, 0, 0.1, 1);
+  }
+
+  // Header utilities (HeaderAction, HeaderGlobalAction, HeaderActionLink):
+  // 48px squares with a transparent border that becomes the focus ring. The
+  // search button carries its own treatment (below).
+  .#{$prefix}--header__global .#{$prefix}--header__action {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: to-rem(48px);
+    min-height: to-rem(48px);
+    padding-bottom: 2px;
+  }
+
+  .#{$prefix}--header__global
+    .#{$prefix}--header__action:not(.#{$prefix}--header-search-button) {
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color $duration--fast-02;
+    border: to-rem(1px) solid rgba(0, 0, 0, 0);
+    background-color: transparent;
+  }
+
+  .#{$prefix}--header__global
+    .#{$prefix}--header__action:not(.#{$prefix}--header-search-button):hover {
+    background-color: $background-hover;
+  }
+
+  .#{$prefix}--header__global
+    .#{$prefix}--header__action:not(.#{$prefix}--header-search-button):focus {
+    border-width: $button-border-width;
+    border-color: $focus;
+    // HeaderGlobalAction renders a `.bx--btn`, whose focus box-shadow would
+    // thicken the ring past HeaderAction / HeaderActionLink's 2px border.
+    box-shadow: none;
+    outline: none;
+  }
+
+  // Repeats `--text`'s reserved focus border (below) at this rule's
+  // specificity, which the `border` shorthand above would otherwise reset.
+  .#{$prefix}--header__global
+    .#{$prefix}--header__action--text:not(.#{$prefix}--header-search-button) {
+    border-width: $button-border-width;
+  }
+
+  // HeaderAction's icon tooltip trigger: the 2px border above is the focus
+  // ring, so drop the tooltip trigger's second ring around the icon.
+  .#{$prefix}--header__action.#{$prefix}--tooltip__trigger:focus svg {
+    outline: none;
+  }
+
+  .#{$prefix}--header__global
+    .#{$prefix}--header__action:not(.#{$prefix}--header-search-button):active {
+    background-color: $background-active;
+  }
+
+  .#{$prefix}--header__action.#{$prefix}--btn,
+  .#{$prefix}--header__action.#{$prefix}--btn--ghost:hover,
+  .#{$prefix}--header__action.#{$prefix}--btn--ghost:active {
+    color: inherit;
+  }
+
+  // First-class icon support: render an icon after the nav item text.
+  // Gap matches Carbon's label-to-trailing-icon convention ($spacing-03 / 8px),
+  // as used by .bx--header__menu-arrow (mini-units(1)) and .bx--link__icon.
+  .#{$prefix}--header__menu-item--icon {
+    display: flex;
+    align-items: center;
+    gap: $carbon--spacing-03;
+  }
+
+  // Same shape as header's `.bx--header__menu-item:hover > svg`; wins by order.
+  .#{$prefix}--header__menu-item--icon > svg,
+  .#{$prefix}--header__menu-item--icon:hover > svg,
+  .#{$prefix}--header__menu-item--icon:active > svg,
+  .#{$prefix}--header__menu-item--icon:focus > svg { // ccs: flatten
+    flex-shrink: 0;
+    // Track the text color across default/hover/active/focus states.
+    fill: currentColor;
+  }
+
+  // HeaderNavMenu trigger icon: label, icon, then the chevron. The chevron's
+  // own margin supplies the icon-to-chevron gap. Wins over the header's
+  // `:hover > svg` fill by order, so the icon tracks the text color.
+  .#{$prefix}--header__menu-title > svg:not(.#{$prefix}--header__menu-arrow) {
+    flex-shrink: 0;
+    margin-inline-start: $carbon--spacing-03;
+    fill: currentColor;
+  }
+
+  // A `Tag` in the trigger's `text` slot sits the same distance from the
+  // label as an icon. Tags have no outer margin of their own.
+  .#{$prefix}--header__menu-title > .#{$prefix}--tag {
+    margin-inline-start: $carbon--spacing-03;
+  }
+
+  // An auto-width text action reserves the 2px focus border at rest (the
+  // padding gives the extra pixel back) so `:focus` only swaps the border
+  // color instead of widening the button.
+  .#{$prefix}--header__action--text {
+    display: inline-flex;
+    width: auto;
+    border-width: $button-border-width;
+    padding: 0 calc(#{$carbon--spacing-05} - #{to-rem(1px)})
+      $carbon--spacing-01;
+  }
+
+  .#{$prefix}--header__action-text {
+    margin-inline-start: to-rem(12px);
+    @include type-style('body-compact-01');
+  }
+
+  .#{$prefix}--header__action-text.#{$prefix}--btn--ghost,
+  .#{$prefix}--header__action-text.#{$prefix}--btn--ghost:hover,
+  .#{$prefix}--header__action-text.#{$prefix}--btn--ghost:active {
+    color: inherit;
+  }
+
+  .#{$prefix}--header__search-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px 0; // ccs: no inline margin, see `.bx--visually-hidden`
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    border: 0;
+    visibility: inherit;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .#{$prefix}--header__search {
+    position: relative;
+    display: flex;
+    max-width: to-rem(448px);
+    width: 100%;
+    margin-left: to-rem(8px);
+    height: to-rem(48px);
+    background-color: $layer;
+    color: $text-primary;
+    transition:
+      max-width $duration--fast-02 motion(standard, productive),
+      background $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--header__search:not(.#{$prefix}--header__search--active) {
+    max-width: to-rem(48px);
+    background-color: $background;
+  }
+
+  .#{$prefix}--header__search.#{$prefix}--header__search--active {
+    outline: 2px solid $focus;
+    outline-offset: -2px;
+  }
+
+  .#{$prefix}--header__search-menu {
+    display: flex;
+    flex-grow: 1;
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--header__search-input {
+    width: 100%;
+    height: to-rem(48px);
+    padding: 0;
+    font-size: to-rem(16px);
+    font-weight: 400;
+    line-height: to-rem(22px);
+    letter-spacing: 0;
+    color: $text-primary;
+    caret-color: $text-primary;
+    background-color: initial;
+    border: none;
+    outline: none;
+    // A query reads in its own direction, so in RTL "3 / 4" keeps its
+    // order, as in `.bx--search-input`. Keep it at the page's start.
+    unicode-bidi: plaintext;
+    text-align: left;
+    transition: opacity $duration--fast-02 motion(standard, productive);
+  }
+
+  [dir="rtl"] .#{$prefix}--header__search-input {
+    text-align: ccs-dir(left, right);
+  }
+
+  .#{$prefix}--header__search-input:not(.#{$prefix}--header__search--active) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .#{$prefix}--header-search-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: to-rem(48px);
+    height: 100%;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  /** Match other header actions: transparent default so no background flash on theme change */
+  .#{$prefix}--header-search-button.#{$prefix}--header__action {
+    background: transparent;
+  }
+
+  .#{$prefix}--header-search-button--disabled {
+    border: none;
+    pointer-events: none;
+  }
+
+  .#{$prefix}--header-search-button:hover {
+    background-color: $background-hover;
+  }
+
+  .#{$prefix}--header-search-button:active {
+    background-color: $background-active;
+  }
+
+  .#{$prefix}--header-search-menu {
+    position: absolute;
+    z-index: 10000;
+    padding: to-rem(16px) 0;
+    left: 0;
+    right: 0;
+    top: to-rem(48px);
+    background-color: $layer;
+    border: 1px solid $border-subtle;
+    border-top: none;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .#{$prefix}--header-search-menu-item {
+    padding: 6px to-rem(16px);
+    cursor: pointer;
+    font-size: to-rem(14px);
+    font-weight: 600;
+    line-height: 1.29;
+    letter-spacing: 0.16px;
+    // ccs: only background-color/color differ (hover, selected); avoid
+    // `all` so the browser doesn't interpolate the rest of the animatable
+    // property set.
+    transition:
+      background-color $duration--fast-01 motion(standard, productive),
+      color $duration--fast-01 motion(standard, productive);
+    display: block;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--header-search-menu-item--selected,
+  .#{$prefix}--header-search-menu-item:hover {
+    background-color: $layer-hover;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--header-search-menu-description {
+    font-size: to-rem(12px);
+    font-weight: 400;
+    line-height: 1.34;
+    letter-spacing: 0.32px;
+    color: $text-secondary;
+  }
+
+  // Rich results menu hosted by HeaderSearch's `menu` slot. Positioned like the
+  // legacy header menu, but the inner rows render via the SearchMenu
+  // presentation layer (`_search-menu.scss`) for fuzzy highlighting, groups,
+  // and footer actions.
+  .#{$prefix}--header__search-menu-rich {
+    position: absolute;
+    z-index: 10000;
+    left: 0;
+    right: 0;
+    top: to-rem(48px);
+    padding: $carbon--spacing-03 0;
+    // Cap at 360px, but never taller than the space below the header (which
+    // sits at `top: 3rem`) so short viewports scroll the menu internally
+    // instead of overflowing off-screen with no way to reach the lower rows.
+    max-height: min(to-rem(360px), calc(100vh - to-rem(48px)));
+    overflow-y: auto;
+    background-color: $layer;
+    border: 1px solid $border-subtle;
+    border-top: none;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+
+    // Result text, group headers, and the empty state are flush-left with the
+    // header input text (after the 3rem magnifier button), independent of size.
+    .#{$prefix}--search-menu-item,
+    .#{$prefix}--search-menu-group__header,
+    .#{$prefix}--search-menu__no-results {
+      padding-left: to-rem(48px);
+    }
+
+    // Leading icon centered under the header magnifier (centered in the 3rem
+    // button at 1.5rem); a 16px icon at left: 1rem centers at 1.5rem.
+    .#{$prefix}--search-menu-item__icon {
+      left: to-rem(16px);
+    }
+
+    .#{$prefix}--search-menu-item__icon--right {
+      left: auto;
+      right: to-rem(16px);
+    }
+  }
+
+  // Row density per size. Text alignment is fixed (above); only the row height
+  // changes so smaller sizes fit more results.
+  .#{$prefix}--header__search-menu-rich--sm .#{$prefix}--search-menu-item {
+    min-height: to-rem(32px);
+  }
+
+  .#{$prefix}--header__search-menu-rich--lg .#{$prefix}--search-menu-item {
+    min-height: to-rem(40px);
+  }
+
+  .#{$prefix}--header__search-menu-rich--xl .#{$prefix}--search-menu-item {
+    min-height: to-rem(48px);
+  }
+
+  // sm rich menu rows are shorter; tighten the between-group gap to match.
+  .#{$prefix}--header__search-menu-rich--sm
+    .#{$prefix}--search-menu-group:not(:first-child)
+    .#{$prefix}--search-menu-group__header {
+    margin-top: $carbon--spacing-04;
+  }
+
+  .#{$prefix}--header-panel-divider {
+    margin: to-rem(32px) to-rem(16px) 0;
+    font-size: to-rem(12px);
+    line-height: 1.3;
+    letter-spacing: to-rem(0.32px);
+    color: $text-secondary;
+  }
+
+  // At the rail's narrow (48px) width, an overflowing item list needs to
+  // scroll, but an OS scrollbar (particularly an overlay one, as on macOS)
+  // renders directly on top of the icon column with no room to spare.
+  // Keep scrolling but hide the scrollbar chrome, same technique the
+  // sticky-header data table uses for the same reason.
+  .#{$prefix}--side-nav--rail:not(:hover):not(.#{$prefix}--side-nav--expanded)
+    .#{$prefix}--side-nav__items {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  // Show the scrollbar in step with the width: the nav's delay is the
+  // hover enter delay, the leave delay, or none, by state.
+  .#{$prefix}--side-nav--rail .#{$prefix}--side-nav__items {
+    transition-behavior: allow-discrete;
+    transition-delay: inherit;
+    transition-property: scrollbar-width;
+  }
+
+  // Forced colors drop the selected result's fill, so the keyboard
+  // highlight in HeaderSearch's results vanished. It fills with
+  // `Highlight` and opts out of forcing, as a highlighted SearchMenu row
+  // does.
+  @media (forced-colors: active) {
+    .#{$prefix}--header-search-menu-item.#{$prefix}--header-search-menu-item--selected {
+      forced-color-adjust: none;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--header-search-menu-item--selected
+      .#{$prefix}--header-search-menu-description {
+      color: HighlightText;
+    }
+  }
+}
+
+@include exports('ccs-ui-shell') {
+  @if feature-flag-enabled('ui-shell') {
+    @include ccs-ui-shell;
+  }
+}

@@ -1,0 +1,438 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import 'data-table-action';
+@import 'data-table-core';
+@import 'data-table-expandable';
+@import 'data-table-sort';
+@import 'data-table-skeleton';
+
+// carbon-components-svelte patch (formerly css/_data-table-zebra-hidden.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Zebra striping for DataTable `filterMode="hide"`.
+/// Hidden rows keep their `:nth-child` index, so Carbon's `:nth-child` zebra
+/// rules are disabled (the `--zebra` class is dropped) and striping is recomputed
+/// in JS over visible rows, written to `[data-zebra-even]`.
+/// @access private
+/// @group components
+@mixin data-table-zebra-hidden {
+  .#{$prefix}--data-table tr[hidden] {
+    display: none;
+  }
+
+  .#{$prefix}--data-table tbody tr[data-zebra-even] td {
+    border-top: 1px solid $data-table-zebra-color;
+    border-bottom: 1px solid $data-table-zebra-color;
+    background-color: $data-table-zebra-color;
+  }
+}
+
+@include exports('data-table-zebra-hidden') {
+  @include data-table-zebra-hidden;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-highlighted-row.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Highlighted row styling for DataTable `highlightedRowIds`.
+/// Mirrors row hover styling so a row (e.g. overflow menu open)
+/// stays visually highlighted without pointer hover.
+/// @access private
+/// @group components
+@mixin data-table-highlighted-row {
+  .#{$prefix}--data-table tbody tr.#{$prefix}--data-table--highlighted-row { // ccs: element
+    background: $layer-hover;
+  }
+
+  .#{$prefix}--data-table tbody tr.#{$prefix}--data-table--highlighted-row td,
+  .#{$prefix}--data-table tbody tr.#{$prefix}--data-table--highlighted-row th { // ccs: element
+    border-top: 1px solid $layer-hover;
+    border-bottom: 1px solid $layer-hover;
+    background: $layer-hover;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--data-table--zebra
+    tbody
+    tr:not(.#{$prefix}--parent-row).#{$prefix}--data-table--highlighted-row
+    td {
+    border-top: 1px solid $layer-hover;
+    border-bottom: 1px solid $layer-hover;
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--data-table--zebra
+    tbody
+    tr:nth-child(even).#{$prefix}--data-table--selected.#{$prefix}--data-table--highlighted-row
+    td {
+    border-bottom: 1px solid $data-table-column-hover;
+  }
+
+  .#{$prefix}--data-table--zebra
+    tbody
+    tr:nth-child(odd).#{$prefix}--data-table--selected.#{$prefix}--data-table--highlighted-row
+    td,
+  .#{$prefix}--data-table
+    tbody
+    tr.#{$prefix}--data-table--selected.#{$prefix}--data-table--highlighted-row
+    td { // ccs: element
+    border-top: 1px solid $data-table-column-hover;
+    border-bottom: 1px solid $data-table-column-hover;
+    background: $data-table-column-hover;
+    color: $text-primary;
+  }
+}
+
+@include exports("data-table-highlighted-row") {
+  @include data-table-highlighted-row;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-tooltip-link.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// `Tooltip` uses the inverse (dark) link color since it sits on a dark
+/// popover surface. `DataTable` row hover overrides `.bx--link` color at
+/// equal or higher specificity, so a `Tooltip` inside a hovered row loses its
+/// inverse link color and becomes unreadable. Re-assert the inverse color at
+/// higher specificity for links inside a tooltip.
+/// @access private
+/// @group components
+@mixin data-table-tooltip-link {
+  .#{$prefix}--data-table tr:hover .#{$prefix}--tooltip .#{$prefix}--link,
+  .#{$prefix}--data-table tr:hover .#{$prefix}--tooltip .#{$prefix}--link:visited {
+    color: $link-inverse;
+  }
+
+  .#{$prefix}--data-table tr:hover .#{$prefix}--tooltip .#{$prefix}--link:active,
+  .#{$prefix}--data-table tr:hover .#{$prefix}--tooltip .#{$prefix}--link:active:visited,
+  .#{$prefix}--data-table tr:hover .#{$prefix}--tooltip .#{$prefix}--link:active:visited:hover {
+    color: $text-inverse;
+  }
+}
+
+@include exports("data-table-tooltip-link") {
+  @include data-table-tooltip-link;
+}
+
+// carbon-components-svelte patch (data-table-selected-forced-colors)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// A selected row is a background tint. Forced-colors mode repaints it as
+/// `Canvas`, so a selected row looked like any other and only its checkbox
+/// told them apart. It fills with `Highlight` instead, as a selected tree
+/// node does. The row opts out of forcing so the fill and `HighlightText`
+/// hold under hover and for the zebra and highlighted-row variants, which
+/// the selector outranks. The checkbox box follows the text color.
+/// @access private
+/// @group components
+@mixin data-table-selected-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--data-table
+      tbody
+      .#{$prefix}--data-table--selected
+      td,
+    .#{$prefix}--data-table
+      tbody
+      .#{$prefix}--data-table--selected:hover
+      td {
+      forced-color-adjust: none;
+      border-block-color: Highlight;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--data-table
+      tbody
+      .#{$prefix}--data-table--selected
+      .#{$prefix}--checkbox-label::before {
+      border-color: HighlightText;
+    }
+  }
+}
+
+@include exports("data-table-selected-forced-colors") {
+  @include data-table-selected-forced-colors;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-sticky-column-menu.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Overflow-menu column alignment for a DataTable `stickyHeader`.
+/// In sticky mode `thead` and `tbody` are separate flex rows, so columns only
+/// align when each column's width matches between them. Carbon pairs the
+/// checkbox and expand columns but leaves the overflow-menu column unpaired:
+/// the header is capped at 2.25rem by `th:empty`, while the body cell is
+/// content-width. The mismatch cascades and misaligns every column. Pair the
+/// column to a single fixed width and vertically center the trigger.
+/// See https://github.com/carbon-design-system/carbon-components-svelte/issues/440
+/// See https://github.com/carbon-design-system/carbon-components-svelte/issues/1492
+/// @access private
+/// @group components
+@mixin data-table-sticky-column-menu {
+  .#{$prefix}--data-table--sticky-header .#{$prefix}--table-column-menu { // ccs: flatten
+    width: $carbon--spacing-09;
+    min-width: $carbon--spacing-09;
+    max-width: $carbon--spacing-09;
+    align-items: center;
+    padding: 0;
+  }
+}
+
+@include exports("data-table-sticky-column-menu") {
+  @include data-table-sticky-column-menu;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-sticky-header-scroll.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Sync horizontal scroll between `thead` and `tbody` for a DataTable
+/// `stickyHeader`. Upstream gives `thead` and `tbody` their own
+/// `overflow(-x): scroll`, so a wide table scrolls them as two independent
+/// regions with no JS keeping `scrollLeft` in sync: scrolling the body
+/// desyncs its columns from the header's.
+///
+/// `thead`/`tbody` drop their own scroll regions so they move together as
+/// plain children instead of independently. For that to work, the `table`
+/// itself (`.bx--data-table--sticky-header`) must be free to grow to its
+/// content's natural width rather than stay clamped to the container
+/// (`width: fit-content` floored by `min-width: 100%`, mirroring
+/// carbon-design-system/carbon PR #21732) — otherwise `thead`/`tbody` still
+/// overflow the clamped `table` box with nothing left to scroll them.
+/// Once the `table` can grow past its container, `.bx--data-table_inner-
+/// container` (the direct parent, unique to `stickyHeader`) must clip and
+/// scroll that overflow itself, or it leaks past the container to the page
+/// instead of staying scrollable inside the table's own box. Upstream's
+/// vendored SCSS has no equivalent rule; verified against a live page here
+/// (not just the compiled selectors) since this repo has no Storybook-style
+/// harness that might otherwise mask the gap.
+/// @access private
+/// @group components
+@mixin data-table-sticky-header-scroll {
+  .#{$prefix}--data-table--sticky-header {
+    width: fit-content;
+    min-width: 100%;
+  }
+
+  .#{$prefix}--data-table--sticky-header thead {
+    overflow: visible;
+  }
+
+  .#{$prefix}--data-table--sticky-header tbody {
+    overflow-x: visible;
+  }
+
+  .#{$prefix}--data-table_inner-container {
+    overflow-x: auto;
+  }
+}
+
+@include exports("data-table-sticky-header-scroll") {
+  @include data-table-sticky-header-scroll;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-footer.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Summary row (`tfoot`) rendered by the DataTable `footerCell` slot.
+/// Carbon v10 has no `tfoot` styling, so the row is banded like the header and
+/// given the body cell padding of each size variant. In sticky-header mode
+/// Carbon lays out `thead`, `tbody`, and their rows as flex containers and pairs
+/// the leading column widths between them; `tfoot` is left out of both, so the
+/// footer needs the same treatment or every column drifts from the one above it.
+/// @access private
+/// @group components
+@mixin data-table-footer {
+  .#{$prefix}--data-table tfoot {
+    @include type-style("heading-compact-01");
+
+    background-color: $layer-accent;
+  }
+
+  .#{$prefix}--data-table tfoot td {
+    border-top: 1px solid $layer-active;
+    border-bottom: 0;
+    background-color: $layer-accent;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--data-table--compact tfoot td {
+    padding-top: to-rem(2px);
+    padding-bottom: to-rem(2px);
+  }
+
+  .#{$prefix}--data-table--short tfoot td,
+  .#{$prefix}--data-table--md tfoot td {
+    padding-top: to-rem(7px);
+    padding-bottom: to-rem(6px);
+  }
+
+  .#{$prefix}--data-table--tall tfoot td {
+    padding-top: $carbon--spacing-05;
+    vertical-align: top;
+  }
+
+  .#{$prefix}--data-table--sticky-header tfoot,
+  .#{$prefix}--data-table--sticky-header tfoot tr,
+  .#{$prefix}--data-table--sticky-header tfoot td {
+    display: flex;
+  }
+
+  .#{$prefix}--data-table--sticky-header tfoot {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .#{$prefix}--data-table--sticky-header tfoot .#{$prefix}--table-expand { // ccs: flatten
+    max-width: to-rem(48px);
+  }
+
+  .#{$prefix}--data-table--sticky-header
+    tfoot
+    .#{$prefix}--table-column-checkbox { // ccs: flatten
+    width: to-rem(36px);
+    min-width: to-rem(36px);
+    align-items: center;
+  }
+}
+
+@include exports("data-table-footer") {
+  @include data-table-footer;
+}
+
+// carbon-components-svelte patch (formerly css/_data-table-align.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Per-column alignment for DataTable `headers[].align`.
+/// Carbon v10 has no column alignment class, so the modifier is net-new.
+/// Values are logical, so an `end` column follows the text direction.
+/// Three layouts have to agree:
+/// 1. Body cells and non-sortable headers, where `text-align` is enough.
+/// 2. Sortable headers, whose label sits in a flex `bx--table-sort` button that
+///    ignores `text-align`.
+/// 3. `stickyHeader`, where Carbon lays out every `th` and `td` as a flex
+///    container and `text-align` stops applying.
+/// @access private
+/// @group components
+@mixin data-table-align {
+  $alignments: (
+    start: flex-start,
+    end: flex-end,
+  );
+
+  @each $align, $justify in $alignments {
+    .#{$prefix}--data-table .#{$prefix}--table-column--align-#{$align} { // ccs: flatten
+      text-align: $align;
+    }
+
+    .#{$prefix}--data-table
+      .#{$prefix}--table-column--align-#{$align}
+      .#{$prefix}--table-sort { // ccs: flatten
+      text-align: inherit;
+    }
+
+    .#{$prefix}--data-table--sticky-header
+      .#{$prefix}--table-column--align-#{$align} { // ccs: flatten
+      justify-content: $justify;
+    }
+  }
+
+  // Reversing the sort button puts the icon at the padding edge, with the
+  // label pushed to the opposite edge by the base `space-between` layout,
+  // rather than wedged between the icon and the edge.
+  .#{$prefix}--data-table
+    .#{$prefix}--table-column--align-end
+    .#{$prefix}--table-sort { // ccs: flatten
+    flex-direction: row-reverse;
+    padding-right: $carbon--spacing-05;
+    padding-left: 0;
+  }
+}
+
+@include exports("data-table-align") {
+  @include data-table-align;
+}
+
+// carbon-components-svelte patch (DataTable fixed layout)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Fixed layout for `DataTable` when a header specifies an explicit
+/// `width`/`minWidth` (`Table`'s `fixedLayout` prop, which also sets
+/// `table-layout: fixed` on the `table` element inline). Fixed layout takes a
+/// column's CSS `width` as its exact rendered size; auto layout instead treats
+/// it as a floor and grows the column to fit content. The expand column's
+/// `width: 32px` is one such floor: the expand button's padding and icon need
+/// 40px, so auto layout already renders it at 40px. Fixed layout enforces the
+/// bare 32px instead, visibly shrinking the chevron. Re-declare the column at
+/// the size auto layout already renders it so both layouts agree.
+/// See https://github.com/carbon-design-system/carbon-components-svelte/issues/3777
+/// @access private
+/// @group components
+@mixin data-table-fixed-layout {
+  .#{$prefix}--data-table--fixed-layout .#{$prefix}--table-expand { // ccs: flatten
+    width: to-rem(40px);
+  }
+}
+
+@include exports("data-table-fixed-layout") {
+  @include data-table-fixed-layout;
+}
+
+// carbon-components-svelte patch (DataTable virtualize without stickyHeader)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Keep the header of a virtualized `DataTable` in view while it scrolls.
+/// Without `stickyHeader`, the wrapper around the table scrolls and the `thead`
+/// is `position: sticky`. A sticky box sticks to its nearest scroll container,
+/// and upstream's `overflow-x: auto` on `.bx--data-table-content` makes that
+/// inner `div` the scroll container (the other axis computes to `auto` too).
+/// It never scrolls vertically, so the header sticks to nothing and scrolls
+/// away with the body. The wrapper already scrolls on both axes, so the inner
+/// `div` stops being a scroll container.
+/// @access private
+/// @group components
+@mixin data-table-virtual {
+  .#{$prefix}--data-table-virtual > .#{$prefix}--data-table-content {
+    overflow: visible;
+  }
+}
+
+@include exports("data-table-virtual") {
+  @include data-table-virtual;
+}
+
+// carbon-components-svelte patch (small tag in a cell)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Keep a small `Tag` inside the cell's line. The tag is 18px, the cell's
+/// `body-compact-01` line height, but `vertical-align: middle` centers it
+/// on the font's x-height, which sits below the line's center, so the line
+/// grew to 19.39px and `compact` and `short` rows to 24.39px and 33.39px.
+/// Aligned to the top, the tag fills the line exactly.
+/// @access private
+/// @group components
+@mixin data-table-tag-sm {
+  .#{$prefix}--data-table .#{$prefix}--tag--sm {
+    vertical-align: top;
+  }
+}
+
+@include exports("data-table-tag-sm") {
+  @include data-table-tag-sm;
+}

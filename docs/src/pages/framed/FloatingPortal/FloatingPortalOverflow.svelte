@@ -1,0 +1,97 @@
+<script>
+  import { Box, Button, FloatingPortal, Tile } from "carbon-components-svelte";
+  import { onMount } from "svelte";
+
+  let anchor = null;
+  let container = null;
+  let open = false;
+  let x = 0;
+  let y = 0;
+  let startX = 0;
+  let startY = 0;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  let emptyImage;
+
+  // `Image` is a browser global, so create it after mount, not during SSR.
+  onMount(() => {
+    emptyImage = new Image();
+    emptyImage.src =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  });
+
+  function handleDragStart(e) {
+    const rect = anchor.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    startX = x;
+    startY = y;
+    e.dataTransfer.setDragImage(emptyImage, 0, 0);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "");
+  }
+
+  function handleDrag(e) {
+    if ((e.clientX !== 0 || e.clientY !== 0) && container) {
+      const parentRect = container.getBoundingClientRect();
+      if (
+        e.clientX >= parentRect.left &&
+        e.clientX <= parentRect.right &&
+        e.clientY >= parentRect.top &&
+        e.clientY <= parentRect.bottom
+      ) {
+        x = e.clientX - offsetX - parentRect.left;
+        y = e.clientY - offsetY - parentRect.top;
+      }
+    }
+  }
+
+  function handleDragEnd() {
+    const moved = Math.abs(x - startX) > 5 || Math.abs(y - startY) > 5;
+    if (!moved) open = !open;
+  }
+</script>
+
+<Box
+  display="flex"
+  direction="column"
+  gap={4}
+  overflow="hidden"
+  border="subtle"
+  borderStyle="dashed"
+  padding={5}
+>
+  <div>This container has hidden overflow.</div>
+  <Box
+    bind:ref={container}
+    position="relative"
+    minHeight="200px"
+    minWidth="300px"
+  >
+    <Box position="absolute" left="{x}px" top="{y}px">
+      <div
+        bind:this={anchor}
+        role="button"
+        tabindex="0"
+        draggable="true"
+        style="cursor: move; user-select: none;"
+        on:dragstart={handleDragStart}
+        on:drag={handleDrag}
+        on:dragend={handleDragEnd}
+        on:keydown={(e) => {
+          if (e.key === "Enter") open = !open;
+        }}
+        title="Drag to move, click to toggle"
+      >
+        <Tile>
+          <Button on:click={() => (open = !open)}>View instance details</Button>
+        </Tile>
+      </div>
+    </Box>
+  </Box>
+</Box>
+
+<FloatingPortal {anchor} {open}>
+  <Tile>Instance i-0a1b2c3d: 3 of 4 health checks passing</Tile>
+</FloatingPortal>

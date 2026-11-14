@@ -1,0 +1,158 @@
+import { render, screen } from "@testing-library/svelte";
+import { user } from "../utils/user";
+import ToolbarMenuTest from "./ToolbarMenu.test.svelte";
+
+describe("DataTable Toolbar Menu", () => {
+  describe("ToolbarMenu", () => {
+    it("should render with default props", () => {
+      const { container } = render(ToolbarMenuTest, {
+        props: { testComponent: "ToolbarMenu", slotContent: "Menu content" },
+      });
+
+      const menu = container.querySelector(".bx--toolbar-action");
+      expect(menu).toBeInTheDocument();
+      expect(menu).toHaveClass("bx--overflow-menu");
+    });
+
+    it("should be flipped when open", () => {
+      const { container } = render(ToolbarMenuTest, {
+        props: { testComponent: "ToolbarMenu", menuProps: { open: true } },
+      });
+
+      const menuOptions = container.querySelector(".bx--overflow-menu-options");
+      expect(menuOptions).toHaveClass("bx--overflow-menu--flip");
+    });
+
+    it("should apply custom class", () => {
+      const { container } = render(ToolbarMenuTest, {
+        props: {
+          testComponent: "ToolbarMenu",
+          class: "custom-menu-class",
+        },
+      });
+
+      const menu = container.querySelector(".bx--overflow-menu");
+      expect(menu).toHaveClass("custom-menu-class");
+    });
+
+    it("should render slot content when open", () => {
+      render(ToolbarMenuTest, {
+        props: {
+          testComponent: "ToolbarMenu",
+          menuProps: { open: true },
+          slotContent: "Menu items here",
+        },
+      });
+
+      expect(screen.getByText("Menu items here")).toBeInTheDocument();
+    });
+  });
+
+  describe("ToolbarMenuItem", () => {
+    it("should render with default props when menu is open", async () => {
+      const { container } = render(ToolbarMenuTest, {
+        props: {
+          testComponent: "ToolbarMenuItem",
+          slotContent: "Menu item text",
+        },
+      });
+
+      const button = container.querySelector(".bx--overflow-menu");
+      assert(button);
+      await user.click(button);
+
+      const menuItem = container.querySelector(
+        ".bx--overflow-menu-options__option",
+      );
+      expect(menuItem).toBeInTheDocument();
+      expect(screen.getByText("Menu item text")).toBeInTheDocument();
+    });
+
+    it("should handle click events", async () => {
+      const onevent = vi.fn();
+      const { container } = render(ToolbarMenuTest, {
+        props: {
+          testComponent: "ToolbarMenuItem",
+          slotContent: "Clickable item",
+          onevent,
+        },
+      });
+
+      const button = container.querySelector(".bx--overflow-menu");
+      assert(button);
+      await user.click(button);
+
+      const menuButton = container.querySelector(
+        ".bx--overflow-menu-options__btn",
+      );
+      assert(menuButton);
+      await user.click(menuButton);
+
+      expect(onevent).toHaveBeenCalledWith("click");
+    });
+
+    it("should handle keydown events", async () => {
+      const onevent = vi.fn();
+      const { container } = render(ToolbarMenuTest, {
+        props: {
+          testComponent: "ToolbarMenuItem",
+          slotContent: "Keyboard item",
+          onevent,
+        },
+      });
+
+      const button = container.querySelector(".bx--overflow-menu");
+      assert(button);
+      await user.click(button);
+
+      const menuItem = container.querySelector(
+        ".bx--overflow-menu-options__option",
+      );
+      assert(menuItem instanceof HTMLElement);
+
+      menuItem.focus();
+      await user.keyboard("{Enter}");
+
+      expect(onevent).toHaveBeenCalledWith("keydown");
+    });
+
+    it("should apply custom attributes", async () => {
+      const { container } = render(ToolbarMenuTest, {
+        props: {
+          testComponent: "ToolbarMenuItem",
+          "data-testid": "custom-menu-item",
+          slotContent: "Item",
+        },
+      });
+
+      const button = container.querySelector(".bx--overflow-menu");
+      assert(button);
+      await user.click(button);
+
+      const menuItem = container.querySelector(
+        "[data-testid='custom-menu-item']",
+      );
+      expect(menuItem).toBeInTheDocument();
+    });
+  });
+});
+
+describe("ToolbarMenu overflow cleanup", () => {
+  it("resets parent Toolbar overflow when the menu unmounts while open", async () => {
+    const { container, rerender } = render(ToolbarMenuTest, {
+      props: { testComponent: "ToolbarMenu", slotContent: "Item" },
+    });
+
+    const toolbar = container.querySelector<HTMLElement>(".bx--table-toolbar");
+    const trigger = container.querySelector(".bx--overflow-menu");
+    assert(toolbar);
+    assert(trigger);
+
+    await user.click(trigger);
+    expect(toolbar.style.overflow).toBe("visible");
+
+    await rerender({ showMenu: false });
+
+    expect(toolbar.style.overflow).toBe("inherit");
+  });
+});

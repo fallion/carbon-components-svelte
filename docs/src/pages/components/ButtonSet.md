@@ -1,0 +1,26 @@
+---
+description: Group related buttons together with consistent spacing and alignment.
+---
+
+<script>
+  import { Button, ButtonSet } from "carbon-components-svelte";
+  import Login from "carbon-icons-svelte/lib/Login.svelte";
+</script>
+
+## Basic
+
+Place buttons side by side in a horizontal layout. For a custom modal or panel footer that needs size-aware stacking (one to four actions, ordered automatically by `kind`), use [ActionSet](/components/ActionSet) instead, which wraps `ButtonSet` with that behavior built in. [Modal](/components/Modal) builds its footer from props.
+
+<ButtonSet>
+  <Button kind="secondary">Cancel</Button>
+  <Button>Submit</Button>
+</ButtonSet>
+
+## Stacked
+
+Set `stacked` to `true` to stack the buttons vertically instead of side by side.
+
+<ButtonSet stacked>
+  <Button icon={Login}>Log in</Button>
+  <Button kind="ghost">Sign up</Button>
+</ButtonSet>

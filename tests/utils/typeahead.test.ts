@@ -1,0 +1,132 @@
+import {
+  createTypeaheadBuffer,
+  isTypeaheadKey,
+  typeaheadIndex,
+} from "../../src/utils/typeahead.js";
+
+describe("typeaheadIndex", () => {
+  const fruits = ["Apple", "Apricot", "Banana", "Cherry"].map((text, id) => ({
+    id,
+    text,
+    disabled: false,
+  }));
+  const itemToString = (item: { text: string }) => item.text;
+
+  it("finds the next prefix match after the current index", () => {
+    expect(
+      typeaheadIndex({ items: fruits, query: "a", itemToString, index: 0 }),
+    ).toBe(1);
+  });
+
+  it("wraps to the first prefix match after the end", () => {
+    expect(
+      typeaheadIndex({ items: fruits, query: "a", itemToString, index: 3 }),
+    ).toBe(0);
+  });
+
+  it("matches a multi-character prefix", () => {
+    expect(
+      typeaheadIndex({ items: fruits, query: "apr", itemToString, index: -1 }),
+    ).toBe(1);
+  });
+
+  it("keeps the current item while a longer query still matches it", () => {
+    const items = ["Apple", "Banana", "Bacon"].map((text) => ({ text }));
+
+    expect(typeaheadIndex({ items, query: "b", itemToString, index: 0 })).toBe(
+      1,
+    );
+    expect(typeaheadIndex({ items, query: "ba", itemToString, index: 1 })).toBe(
+      1,
+    );
+    expect(
+      typeaheadIndex({ items, query: "bac", itemToString, index: 1 }),
+    ).toBe(2);
+  });
+
+  it("is case-insensitive and starts at the first item when index is -1", () => {
+    expect(
+      typeaheadIndex({ items: fruits, query: "A", itemToString, index: -1 }),
+    ).toBe(0);
+  });
+
+  it("skips disabled items", () => {
+    const items = [
+      { text: "Banana", disabled: true },
+      { text: "Blueberry", disabled: false },
+    ];
+    expect(typeaheadIndex({ items, query: "b", itemToString, index: -1 })).toBe(
+      1,
+    );
+  });
+
+  it("returns the original index when nothing matches", () => {
+    expect(
+      typeaheadIndex({ items: fruits, query: "z", itemToString, index: 2 }),
+    ).toBe(2);
+  });
+
+  it("returns the original index for an empty query", () => {
+    expect(
+      typeaheadIndex({ items: fruits, query: "", itemToString, index: 1 }),
+    ).toBe(1);
+  });
+
+  it("supports a custom isDisabled predicate", () => {
+    const items = [
+      { label: "Alpha", ok: false },
+      { label: "Apex", ok: true },
+    ];
+    expect(
+      typeaheadIndex({
+        items,
+        query: "a",
+        itemToString: (item) => item.label,
+        index: -1,
+        isDisabled: (item) => !item.ok,
+      }),
+    ).toBe(1);
+  });
+});
+
+describe("isTypeaheadKey", () => {
+  const key = (init: KeyboardEventInit) => new KeyboardEvent("keydown", init);
+
+  it("accepts unmodified printable keys", () => {
+    expect(isTypeaheadKey(key({ key: "a" }))).toBe(true);
+    expect(isTypeaheadKey(key({ key: "A", shiftKey: true }))).toBe(true);
+  });
+
+  it("rejects Space, named keys, and modified keys", () => {
+    expect(isTypeaheadKey(key({ key: " " }))).toBe(false);
+    expect(isTypeaheadKey(key({ key: "Enter" }))).toBe(false);
+    expect(isTypeaheadKey(key({ key: "a", ctrlKey: true }))).toBe(false);
+    expect(isTypeaheadKey(key({ key: "a", metaKey: true }))).toBe(false);
+    expect(isTypeaheadKey(key({ key: "a", altKey: true }))).toBe(false);
+  });
+});
+
+describe("createTypeaheadBuffer", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("accumulates lowercase characters until the delay elapses", () => {
+    const typeahead = createTypeaheadBuffer(500);
+    expect(typeahead.push("A")).toBe("a");
+    expect(typeahead.push("p")).toBe("ap");
+    vi.advanceTimersByTime(500);
+    expect(typeahead.push("b")).toBe("b");
+  });
+
+  it("clear resets the query immediately", () => {
+    const typeahead = createTypeaheadBuffer();
+    typeahead.push("a");
+    typeahead.clear();
+    expect(typeahead.push("b")).toBe("b");
+  });
+});

@@ -1,0 +1,24 @@
+//
+// Copyright IBM Corp. 2018, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+// Compatibility notes (*.import.scss)
+//
+// This file is intended to be consumed and processed with dart-sass.
+// It is incompatible with node-sass/libsass as it contains sass language features
+// or functions that are unavailable in node-sass/libsass, such as `math.div`.
+//
+// The non-`.import` suffixed version of this file eg. `_filename.scss`
+// is intended to be compatible with node-sass/libsass.
+//
+// Styles authored within this file must be duplicated to the corresponding
+// compatibility file to ensure we continue to support node-sass and dart-sass
+// in v10.
+
+@use 'sass:meta';
+@use "sass:math";
+@import 'breakpoint';
+@import 'utilities';
+

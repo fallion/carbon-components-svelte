@@ -1,0 +1,82 @@
+<script lang="ts">
+  import Pagination from "carbon-components-svelte/Pagination/Pagination.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let page = 1;
+  export let totalItems = 0;
+  export let disabled = false;
+  export let forwardText = "Next page";
+  export let backwardText = "Previous page";
+  export let backwardTextTooltipPosition: ComponentProps<Pagination>["backwardTextTooltipPosition"] =
+    undefined;
+  export let forwardTextTooltipPosition: ComponentProps<Pagination>["forwardTextTooltipPosition"] =
+    undefined;
+  export let itemsPerPageText = "Items per page:";
+  export let pageInputDisabled = false;
+  export let pageInputType: ComponentProps<Pagination>["pageInputType"] =
+    "select";
+  export let pageSizeInputDisabled = false;
+  export let simple = false;
+  export let pageSize = 10;
+  export let pageSizes: ComponentProps<Pagination>["pageSizes"] = [10];
+  export let dynamicPageSizes = false;
+  export let pageWindow: ComponentProps<Pagination>["pageWindow"] = undefined;
+  export let pagesUnknown = false;
+  export let pageText: ComponentProps<Pagination>["pageText"] = undefined;
+  export let pageRangeText: ComponentProps<Pagination>["pageRangeText"] =
+    undefined;
+  export let pageSelectLabelText: ComponentProps<Pagination>["pageSelectLabelText"] =
+    undefined;
+  export let itemRangeText: ComponentProps<Pagination>["itemRangeText"] =
+    undefined;
+  export let id: ComponentProps<Pagination>["id"] = undefined;
+  export let size: ComponentProps<Pagination>["size"] = undefined;
+  export let customClass = "";
+  export let forwardButtonDisabled: ComponentProps<Pagination>["forwardButtonDisabled"] =
+    undefined;
+  export let backButtonDisabled: ComponentProps<Pagination>["backButtonDisabled"] =
+    undefined;
+  export let onChange: (detail: {
+    page?: number;
+    pageSize?: number;
+  }) => void = () => {};
+  export let onUpdate: (detail: {
+    page: number;
+    pageSize: number;
+  }) => void = () => {};
+  export let onPrevious: (detail: { page: number }) => void = () => {};
+  export let onNext: (detail: { page: number }) => void = () => {};
+</script>
+
+<Pagination
+  bind:page
+  {totalItems}
+  {disabled}
+  {forwardText}
+  {backwardText}
+  {backwardTextTooltipPosition}
+  {forwardTextTooltipPosition}
+  {itemsPerPageText}
+  {pageInputDisabled}
+  {pageInputType}
+  {pageSizeInputDisabled}
+  {simple}
+  {pageWindow}
+  bind:pageSize
+  {pageSizes}
+  {dynamicPageSizes}
+  {pagesUnknown}
+  {pageText}
+  {pageRangeText}
+  {pageSelectLabelText}
+  {itemRangeText}
+  {id}
+  {size}
+  {forwardButtonDisabled}
+  {backButtonDisabled}
+  class={customClass}
+  on:change={(e) => onChange(e.detail)}
+  on:click:button--previous={(e) => onPrevious(e.detail)}
+  on:click:button--next={(e) => onNext(e.detail)}
+  on:update={(e) => onUpdate(e.detail)}
+/>

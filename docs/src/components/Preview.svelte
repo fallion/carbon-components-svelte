@@ -1,158 +1,195 @@
-<script>
+<script context="module" lang="ts">
+  let offscreenObserver: IntersectionObserver | undefined;
+</script>
+
+<script lang="ts">
   export let code = "";
-  export let codeRaw = "";
   export let src = "";
   export let framed = false;
 
-  import copy from "clipboard-copy";
-  import { CodeSnippet, Button } from "carbon-components-svelte";
-  import Launch16 from "carbon-icons-svelte/lib/Launch16";
-  import { url } from "@sveltech/routify";
+  import { Button, CodeSnippet, LazyMount } from "carbon-components-svelte";
+  import { highlight } from "carbon-components-svelte/syntax";
+  import Launch from "carbon-icons-svelte/lib/Launch.svelte";
+  import { flushSync, onMount } from "svelte";
+  import { codeViewHeight } from "../code-view-height";
+  import { queueIdleMount } from "../idle-mount";
+  import { eagerContent } from "../router";
   import { theme } from "../store";
 
-  $: themedSrcUrl = $url(`${src}?theme=${$theme}`);
+  /** Highlighting adds hundreds of elements, so it waits until near. */
+  const HIGHLIGHT_MARGIN = "1000px 0px";
+
+  let codeView: HTMLElement;
+  let viewer: HTMLElement;
+  let nearViewport = false;
+  let mounted = false;
+  let idle = false;
+  let unqueue = () => {};
+
+  $: if (mounted) unqueue();
+
+  onMount(() => {
+    if (!framed) {
+      offscreenObserver ??= new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            entry.target.toggleAttribute(
+              "data-offscreen",
+              !entry.isIntersecting,
+            );
+          }
+        },
+        { rootMargin: "200px 0px" },
+      );
+      offscreenObserver.observe(viewer);
+    }
+    if (!framed && !mounted) {
+      unqueue = queueIdleMount(viewer, () => {
+        idle = true;
+        flushSync();
+      });
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        nearViewport = true;
+        observer.disconnect();
+      },
+      { rootMargin: HIGHLIGHT_MARGIN },
+    );
+    observer.observe(codeView);
+    return () => {
+      observer.disconnect();
+      unqueue();
+      if (!framed) {
+        offscreenObserver?.unobserve(viewer);
+        viewer.removeAttribute("data-offscreen");
+      }
+    };
+  });
+
+  $: reservedHeight = codeViewHeight(code);
+
+  $: themedSrcUrl = src ? `${src}?theme=${$theme}` : "";
+  $: highlighted = nearViewport ? (highlight(code, "svelte") ?? "") : "";
 </script>
 
 <div class="preview">
   {#if framed}
     <div class="framed-header">
-      <div
-        style="margin-left: var(--cds-spacing-05); color: var(--cds-text-02)"
-      >
-        Content loaded in an iframe
-      </div>
       <Button
-        style="margin-left: auto;"
         kind="ghost"
         target="_blank"
-        size="field"
-        href="{themedSrcUrl}"
-        icon="{Launch16}"
-      >
-        Open in new tab
-      </Button>
+        size="small"
+        href={src}
+        icon={Launch}
+        iconDescription="Isolated preview"
+        tooltipPosition="top"
+        tooltipAlignment="end"
+        style="margin-left: auto;"
+      ></Button>
     </div>
   {/if}
-  <div class="preview-viewer" class:framed>
+  <div class="preview-viewer" class:framed bind:this={viewer}>
     {#if framed}
-      <iframe title="{src.split('/').pop()}" src="{themedSrcUrl}"></iframe>
+      <iframe loading="lazy" title={src.split("/").pop()} src={themedSrcUrl}
+      ></iframe>
     {:else}
-      <slot />
+      <!-- Mounting near the viewport halves a long page's load time. -->
+      <LazyMount
+        rootMargin="1200px"
+        estimatedHeight={64}
+        eager={$eagerContent || idle}
+        bind:mounted
+      >
+        <slot />
+      </LazyMount>
     {/if}
   </div>
-  <div class="code-override">
-    <CodeSnippet type="multi" code="{codeRaw}" copy="{(text) => copy(text)}">
-      {@html code}
-    </CodeSnippet>
+  <div
+    class="code-override"
+    style:contain-intrinsic-size="auto {reservedHeight}"
+    bind:this={codeView}
+  >
+    {#if nearViewport}
+      <CodeSnippet type="multi" {code}>
+        {#if highlighted}{@html highlighted}{:else}{code}{/if}
+      </CodeSnippet>
+    {:else}
+      <pre class="code-placeholder" style:height={reservedHeight}>{code}</pre>
+    {/if}
   </div>
 </div>
 
-<style global>
+<style>
+  /* 293 looping animations on DataTable's page cost a third of the main
+     thread at rest. */
+  .preview-viewer:global([data-offscreen]) :global(*),
+  .preview-viewer:global([data-offscreen]) :global(*::before),
+  .preview-viewer:global([data-offscreen]) :global(*::after) {
+    animation-play-state: paused;
+  }
+
+  .code-placeholder {
+    overflow: hidden;
+    margin: 0;
+    padding: var(--cds-spacing-05);
+    background-color: var(--cds-layer-01);
+    color: var(--cds-text-primary);
+    font-family: "IBM Plex Mono", Menlo, "DejaVu Sans Mono", monospace;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
   .preview {
-    margin-bottom: var(--cds-layout-04);
-    margin-left: -1rem;
-    margin-right: -1rem;
-    max-width: 56rem;
+    margin-bottom: var(--cds-spacing-09);
+    margin-inline: calc(-1 * var(--cds-spacing-05));
   }
 
-  .code-override .bx--snippet {
-    max-width: none;
-  }
-
-  .code-override .bx--copy-btn,
-  .code-override .bx--snippet,
-  .code-override button.bx--btn.bx--snippet-btn--expand {
-    background-color: #262626;
-    color: #f4f4f4;
-  }
-
-  .code-override .bx--copy-btn:hover,
-  .code-override button.bx--btn.bx--snippet-btn--expand:hover {
-    background-color: #393939;
-  }
-
-  .code-override .bx--snippet__icon {
-    fill: #f4f4f4;
-  }
-
-  .code-override .bx--snippet-container pre {
-    font-size: var(--cds-code-02-font-size);
-    line-height: var(--cds-code-02-line-height);
-    letter-spacing: var(--cds-code-02-letter-spacing);
-    cursor: text;
-  }
-
-  .code-override .bx--snippet--multi .bx--snippet-container pre {
-    overflow-x: auto;
-  }
-
-  .token.tag,
-  .token.operator {
-    color: #6ea6ff;
-  }
-
-  .token.attr-name {
-    color: #3ddbd9; /* teal 30 */
-  }
-
-  .token.function {
-    color: #9ef0f0;
-  }
-
-  .token.token.language-javascript,
-  .token.attr-value {
-    color: #d4bbff; /* purple 30 */
-  }
-
-  .token.keyword {
-    color: #bb8eff;
-  }
-
-  .token.punctuation {
-    color: #a8a8a8; /* gray 40 */
-  }
-
-  .token.script .token.language-javascript {
-    color: #3ddbd9; /* teal 30 */
-  }
-
-  .token.string {
-    color: #fa75a6;
-  }
-
-  .token.boolean {
-    color: #bb8eff;
-  }
-
-  .token.number {
-    color: #a7f0ba;
-  }
-
-  .token.comment {
-    color: #bebebe;
-  }
-
-  .code-override {
-    border: 1px solid #262626;
-  }
-
-  html[theme="g90"] .code-override {
-    border: 1px solid var(--cds-ui-03);
+  @media (max-width: 41.98rem) {
+    .preview {
+      margin-left: 0;
+      margin-right: 0;
+    }
   }
 
   .preview-viewer {
-    border: 1px solid var(--cds-ui-03);
+    border: 1px solid var(--cds-border-subtle-01);
     border-bottom: 0;
     position: relative;
-    z-index: 9999;
+    /* Above side nav, below portals. */
+    z-index: 9100;
+  }
+
+  @media (max-width: 65.98rem) {
+    .preview-viewer {
+      z-index: auto;
+    }
   }
 
   .preview-viewer:not(.framed) {
     padding: var(--cds-spacing-06) var(--cds-spacing-05);
   }
 
+  /* Every viewer shares one z-index, so a later one paints over an open
+     menu or calendar that overflows the one in use. Lift that one. */
+  .preview-viewer:not(.framed):focus-within {
+    z-index: 9101;
+  }
+
   .preview-viewer.framed {
     min-height: 20rem;
+  }
+
+  @media (min-width: 1920px) {
+    .preview-viewer.framed {
+      min-height: 32rem;
+    }
+  }
+
+  /* Not on `.preview`: containment would clip overflowing menus. */
+  .code-override {
+    content-visibility: auto;
   }
 
   .framed-header {

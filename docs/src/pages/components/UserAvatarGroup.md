@@ -1,0 +1,216 @@
+---
+components: ["UserAvatarGroup"]
+description: A row of overlapping or spaced user avatars. Extras fold into a "+N" overflow avatar.
+---
+
+<script>
+  import { UserAvatar, UserAvatarGroup } from "carbon-components-svelte";
+  import Bot from "carbon-icons-svelte/lib/Bot.svelte";
+  import Password from "carbon-icons-svelte/lib/Password.svelte";
+  import Group from "carbon-icons-svelte/lib/Group.svelte";
+</script>
+
+## Basic
+
+Put [UserAvatar](/components/UserAvatar) children inside the group. The default layout stacks them with a slight overlap. A ring keeps the circles distinct, and hover brings an avatar to the front. Set `tooltipText` on each avatar to show the name on hover or focus.
+
+<UserAvatarGroup>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+## Overflow
+
+Set `max` to limit how many avatars show. Everyone else goes into a "+N" overflow avatar. Hover it for the hidden names. Counts above 99 show as `99+` so the label fits the circle.
+
+<UserAvatarGroup max={3}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+  <UserAvatar backgroundColor="auto" name="Jared Dunn" tooltipText="Jared Dunn" />
+  <UserAvatar backgroundColor="auto" name="Erlich Bachman" tooltipText="Erlich Bachman" />
+</UserAvatarGroup>
+
+Set `max` to `0` to show every avatar without an overflow.
+
+### Large groups
+
+Every slotted avatar still mounts; CSS hides the ones past `max`. For large lists, render only the faces you need and set `total` to the real headcount so the "+N" chip gets the right number without mounting hundreds of nodes. Set `overflowTooltipText` when the hidden people are not slotted, since the default tooltip only lists mounted `name` values.
+
+<UserAvatarGroup
+  max={3}
+  total={250}
+  overflowTooltipText="Gilfoyle, Jared, Erlich, and 244 others"
+>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+## Spacing
+
+Leave `gap` unset for the default overlapping layout. Set `gap` to a positive value to space the avatars apart, or to a negative length string to tighten the overlap.
+
+### Scale
+
+Set `gap` to a Carbon layout scale from `0` to `13`.
+
+<UserAvatarGroup gap={2}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+<UserAvatarGroup gap={6}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+### Custom length
+
+Set `gap` to any CSS length string for spacing off the scale.
+
+<UserAvatarGroup gap="24px">
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+### Tighter overlap
+
+Set `gap` to a negative length string to overlap the avatars by that amount, tighter than the default stack.
+
+<UserAvatarGroup gap="-1rem">
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+### Stack order
+
+By default, the last avatar paints on top. Set `stackOrder="first"` to keep the first avatar most prominent instead.
+
+<UserAvatarGroup stackOrder="first">
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+</UserAvatarGroup>
+
+## Sizes
+
+Set `size` on the group to resize every avatar at once, including the overflow chip. A child can still override with its own `size`.
+
+### Small
+
+<UserAvatarGroup size="sm" max={3}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+</UserAvatarGroup>
+
+### Medium
+
+<UserAvatarGroup size="md" max={3}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+</UserAvatarGroup>
+
+### Large
+
+<UserAvatarGroup size="lg" max={3}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+</UserAvatarGroup>
+
+### Extra large
+
+<UserAvatarGroup size="xl" max={3}>
+  <UserAvatar backgroundColor="auto" name="Monica" tooltipText="Monica" />
+  <UserAvatar backgroundColor="auto" name="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar backgroundColor="auto" name="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+</UserAvatarGroup>
+
+## Images
+
+Photos, icons, and initials work the same as on a lone `UserAvatar`.
+
+### Small
+
+<UserAvatarGroup size="sm" max={3}>
+  <UserAvatar image="https://i.pravatar.cc/150?img=12" imageDescription="Monica" tooltipText="Monica" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=5" imageDescription="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=33" imageDescription="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+  <UserAvatar backgroundColor="auto" name="Jared Dunn" tooltipText="Jared Dunn" />
+</UserAvatarGroup>
+
+### Medium
+
+<UserAvatarGroup size="md" max={3}>
+  <UserAvatar image="https://i.pravatar.cc/150?img=12" imageDescription="Monica" tooltipText="Monica" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=5" imageDescription="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=33" imageDescription="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+  <UserAvatar backgroundColor="auto" name="Jared Dunn" tooltipText="Jared Dunn" />
+</UserAvatarGroup>
+
+### Large
+
+<UserAvatarGroup size="lg" max={3}>
+  <UserAvatar image="https://i.pravatar.cc/150?img=12" imageDescription="Monica" tooltipText="Monica" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=5" imageDescription="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=33" imageDescription="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+  <UserAvatar backgroundColor="auto" name="Jared Dunn" tooltipText="Jared Dunn" />
+</UserAvatarGroup>
+
+### Extra large
+
+<UserAvatarGroup size="xl" max={3}>
+  <UserAvatar image="https://i.pravatar.cc/150?img=12" imageDescription="Monica" tooltipText="Monica" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=5" imageDescription="Richard Hendricks" tooltipText="Richard Hendricks" />
+  <UserAvatar image="https://i.pravatar.cc/150?img=33" imageDescription="Dinesh Chugtai" tooltipText="Dinesh Chugtai" />
+  <UserAvatar backgroundColor="auto" name="Bertram Gilfoyle" tooltipText="Bertram Gilfoyle" />
+  <UserAvatar backgroundColor="auto" name="Jared Dunn" tooltipText="Jared Dunn" />
+</UserAvatarGroup>
+
+## Icons
+
+Set `icon` on each avatar to render a custom icon, such as one from [carbon-icons-svelte](https://github.com/carbon-design-system/carbon-icons-svelte), instead of a photo or initials.
+
+<UserAvatarGroup>
+  <UserAvatar icon={Bot} backgroundColor="purple" tooltipText="Bot" />
+  <UserAvatar icon={Password} backgroundColor="teal" tooltipText="Password" />
+  <UserAvatar icon={Group} backgroundColor="cool-gray" tooltipText="Group" />
+</UserAvatarGroup>
+
+## Background colors
+
+Every example on this page sets `backgroundColor="auto"` on each `UserAvatar`, which hashes a stable color from `name` (or `initials`) — the same name always gets the same color. See [UserAvatar's background colors section](/components/UserAvatar#background-colors) for the full palette and the other `backgroundColor` values.
+
+### Exported `getAvatarBackgroundColor` utility
+
+Import `getAvatarBackgroundColor` to compute the same color outside a `UserAvatar`, for example to match a name's avatar color in a legend or a custom rendering.
+
+```html
+<script context="module">
+  import { getAvatarBackgroundColor } from "carbon-components-svelte/src/utils/avatar-color.js";
+
+  getAvatarBackgroundColor("Richard Hendricks"); // "teal"
+</script>
+```
+
+## Tooltips
+
+Set `tooltipText` on each avatar to show its name on hover or focus, the same as a standalone [UserAvatar](/components/UserAvatar#tooltip). Within a group, only one avatar's tooltip stays open at a time — hovering a new avatar closes the previous one immediately, whether it's a slotted avatar or the "+N" overflow chip.
+
+Moving the pointer directly from one avatar to a neighbor whose tooltip is already open skips the usual enter delay, so the tooltip swaps in immediately instead of waiting again. Hover across the avatars in the examples above to feel this.

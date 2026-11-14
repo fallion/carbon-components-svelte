@@ -1,0 +1,61 @@
+---
+components: ["IconIndicator"]
+description: Icon indicator pairs a status icon with a label to communicate the state of an item, such as a pipeline run or a task.
+---
+
+<script>
+  import { Stack, IconIndicator } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create an icon indicator with `kind` and `label`.
+
+<IconIndicator kind="succeeded" label="Succeeded" />
+
+## Kinds
+
+Set `kind` to match the status being communicated.
+
+Each kind reads a Carbon v11 `status-*` theme token, such as `status-red` for `failed`, so it follows the theme.
+
+<Stack gap={3}>
+  <IconIndicator kind="failed" label="Failed" />
+  <IconIndicator kind="caution-major" label="Caution major" />
+  <IconIndicator kind="caution-minor" label="Caution minor" />
+  <IconIndicator kind="undefined" label="Undefined" />
+  <IconIndicator kind="succeeded" label="Succeeded" />
+  <IconIndicator kind="normal" label="Normal" />
+  <IconIndicator kind="in-progress" label="In progress" />
+  <IconIndicator kind="incomplete" label="Incomplete" />
+  <IconIndicator kind="not-started" label="Not started" />
+  <IconIndicator kind="pending" label="Pending" />
+  <IconIndicator kind="unknown" label="Unknown" />
+  <IconIndicator kind="informative" label="Informative" />
+</Stack>
+
+## Sizes
+
+Set `size` to control the icon and label size.
+
+### 16px (default)
+
+<IconIndicator kind="succeeded" label="Succeeded" />
+
+### 20px
+
+<IconIndicator kind="succeeded" label="Succeeded" size={20} />
+
+## Hidden label
+
+Set `hideLabel` to show only the icon, such as in a list where nearby text already says the status. Screen readers still read the label.
+
+<IconIndicator kind="succeeded" label="Delivered" hideLabel />
+
+## Custom label
+
+Use the `labelChildren` slot for custom label content instead of `label`.
+
+<IconIndicator kind="succeeded" label="Succeeded">
+  <strong slot="labelChildren">Deploy to production succeeded</strong>
+</IconIndicator>

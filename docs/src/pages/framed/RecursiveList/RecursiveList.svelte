@@ -1,32 +1,32 @@
 <script>
   import { RecursiveList } from "carbon-components-svelte";
 
-  const children = [
+  const nodes = [
     {
-      text: "Item 1",
-      children: [
+      text: "Infrastructure",
+      nodes: [
         {
-          text: "Item 1a",
-          children: [{ html: "<h5>HTML content</h5>" }],
+          text: "Deployment runbooks",
+          nodes: [{ html: "<h5>Last updated: Q3 2026</h5>" }],
         },
       ],
     },
     {
-      text: "Item 2",
-      children: [
+      text: "Incident response",
+      nodes: [
         {
-          href: "https://svelte.dev/",
+          href: "https://status.example.com/incidents",
         },
         {
-          href: "https://svelte.dev/",
-          text: "Link with custom text",
+          href: "https://status.example.com/incidents",
+          text: "View incident history",
         },
       ],
     },
     {
-      text: "Item 3",
+      text: "Billing",
     },
   ];
 </script>
 
-<RecursiveList children="{children}" />
+<RecursiveList {nodes} />

@@ -1,0 +1,87 @@
+---
+components: ["ActionSet"]
+description: A row of action buttons for a custom modal or panel footer that automatically stacks vertically at small sizes or with more than two actions.
+---
+
+<script>
+  import { ActionSet, Box, Button } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Use `ActionSet` for custom footers you compose yourself, typically [ComposedModal](/components/ComposedModal#custom-footer-with-actionset)'s `ModalFooter` slot. [Modal](/components/Modal) builds its footer from props and has no footer slot.
+
+Compose `ActionSet` from ordinary `Button` children, the same way as [ButtonSet](/components/ButtonSet). `size` cascades to every child button that doesn't set its own `size`. The set fills with the current layer color, so a ghost action sits on the same surface as the others.
+
+<ActionSet>
+  <Button kind="secondary">Cancel</Button>
+  <Button>Save</Button>
+</ActionSet>
+
+## Kinds
+
+Buttons are ordered automatically by `kind`: ghost and `"danger-ghost"` first, primary and danger last. Reversed when the set stacks, so the primary action stays closest to the reading direction's end in both layouts. DOM order does not matter.
+
+<ActionSet size="lg">
+  <Button kind="secondary">Cancel</Button>
+  <Button kind="danger">Delete</Button>
+  <Button kind="ghost">Learn more</Button>
+</ActionSet>
+
+`ActionSet` warns in the console when its actions break Carbon's rules: one primary and one ghost action at most, four actions at most (three once they stack), and no ghost action in a stack with others.
+
+## Sizes
+
+Set `size` to control the layout. `"sm"` always stacks; `"md"` stacks once there are more than two actions; `"lg"`, `"xl"`, and `"2xl"` never stack and give actions progressively more room.
+
+### Small
+
+<ActionSet size="sm">
+  <Button kind="secondary">Cancel</Button>
+  <Button>Save</Button>
+</ActionSet>
+
+### Large
+
+<ActionSet size="lg">
+  <Button kind="secondary">Cancel</Button>
+  <Button kind="danger">Delete</Button>
+  <Button>Save</Button>
+</ActionSet>
+
+### Extra large
+
+<ActionSet size="2xl">
+  <Button kind="ghost">Learn more</Button>
+  <Button kind="secondary">Cancel</Button>
+  <Button kind="danger">Delete</Button>
+  <Button>Save</Button>
+</ActionSet>
+
+## Sticky
+
+Set `sticky` to `true` to stick the action set to the bottom of its nearest
+scroll container. Use this for a save bar under a long scrolling form so the
+actions stay visible.
+
+<Box height="8rem" border="subtle" overflowY="auto">
+  <Box height="12rem" padding={5}>Scroll to see the sticky action set below.</Box>
+  <ActionSet sticky>
+    <Button kind="secondary">Discard</Button>
+    <Button>Save</Button>
+  </ActionSet>
+</Box>
+
+## Disable stacking
+
+Set `disableStacking` to `true` to force a horizontal layout even at a size that would normally stack.
+
+<ActionSet size="sm" disableStacking>
+  <Button kind="secondary">Cancel</Button>
+  <Button kind="danger">Delete</Button>
+  <Button>Save</Button>
+</ActionSet>
+
+## Server rendering
+
+`ActionSet` counts its actions in the browser, so the stacking and row layout classes are applied after mount. A server-rendered page can reflow on hydration.

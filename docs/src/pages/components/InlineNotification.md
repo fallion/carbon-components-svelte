@@ -1,0 +1,179 @@
+---
+components: ["InlineNotification", "NotificationActionButton"]
+description: Inline notifications display contextual messages inline with content. They support multiple types (error, warning, success, info) and can include actions.
+---
+
+<script>
+  import { InlineNotification, NotificationActionButton } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Display a basic error notification with title and subtitle by default. See [detailed usage](https://carbondesignsystem.com/components/notification/usage) and the related [ToastNotification](ToastNotification).
+
+<InlineNotification title="Access denied:" subtitle="You do not have permission to edit this record." />
+
+## Reusable
+
+Control notification visibility by binding to `open` to show, hide, and reuse the same component with different messages. Open defaults to true.
+
+<FileSource src="/framed/InlineNotification/InlineNotificationReusable" />
+
+## Autoclose
+
+Automatically close the notification after a specified duration (in milliseconds) with `timeout`. Set `pauseOnHover` to pause the timeout while the pointer is over the notification or while focus is inside it, so users can finish reading (opt-in).
+
+A notification with an action, or an actionable notification, ignores
+`timeout`. It stays open until users act on it or close it, so the
+action never disappears before they reach it.
+
+<FileSource src="/framed/InlineNotification/InlineNotificationTimeout" />
+
+## Full width
+
+Set `fullWidth` to fill the parent's width without the default width limits and outer margin. Use it when the notification sits inside a card, form, or other layout that sizes and spaces its own content.
+
+<InlineNotification fullWidth kind="warning" title="Usage:" subtitle="Build minutes are close to the Team limit." />
+
+## Title and subtitle
+
+Both the title and subtitle are optional and can be customized with slots.
+
+### Optional
+
+Title and subtitle only render when provided.
+
+<InlineNotification subtitle="You do not have permission to perform this action." />
+<InlineNotification title="Unable to process your request." />
+
+### Custom (slots)
+
+Customize the notification content using slots for more flexibility.
+
+<InlineNotification>
+  <svelte:fragment slot="titleChildren">Error: </svelte:fragment>
+  <strong slot="subtitleChildren">Your API key has expired.</strong>
+</InlineNotification>
+
+## Actions
+
+Add interactive elements to notifications using the actions slot. The
+notification's title describes a `NotificationActionButton` for screen
+readers, with no extra setup.
+
+### Action button
+
+<InlineNotification kind="warning" title="Storage limit approaching:" subtitle="Your workspace has used 90% of its allocated storage.">
+  <svelte:fragment slot="actions">
+    <NotificationActionButton>Learn more</NotificationActionButton>
+  </svelte:fragment>
+</InlineNotification>
+
+### Link
+
+The notification action button accepts an href prop to render as a link instead of a button.
+
+<InlineNotification kind="info" title="New features available:" subtitle="Check out what's new in this release.">
+  <svelte:fragment slot="actions">
+    <NotificationActionButton href="https://github.com/carbon-design-system/carbon-components-svelte/releases" target="_blank">View release notes</NotificationActionButton>
+  </svelte:fragment>
+</InlineNotification>
+
+## Actionable
+
+Set `actionable` to `true` when users must reach the action, such as
+an undo after a delete or a retry after a failed save. The notification
+becomes an `alertdialog` named by its title and described by its
+subtitle. When it opens, focus moves to the first action, or to the
+close button if there is no action. Tab stays inside the notification,
+and <DocKbd label="Escape" /> closes it. Focus then returns to where it
+was before, such as the button that opened it.
+
+Set `focusOnOpen` to `false` to leave focus in place, or
+`closeOnEscape` to `false` to keep it open on <DocKbd label="Escape" />.
+If the close button is also hidden, Tab can leave the notification, so
+keyboard users are never trapped. Keep the default for a notification that only informs.
+
+<FileSource src="/framed/InlineNotification/InlineNotificationActionable" />
+
+## Close button
+
+Hide the close button or customize its behavior and label.
+
+### Hidden
+
+Create a persistent notification by hiding the close button. For
+static guidance that screen readers shouldn't announce, use a
+[Callout](/components/Callout) instead.
+
+<InlineNotification hideCloseButton kind="warning" title="Scheduled downtime:" subtitle="The system will be unavailable during tonight's maintenance window." />
+
+### Translated label
+
+Translate the close button label via `closeButtonDescription`.
+
+<InlineNotification
+  title="错误"
+  subtitle="发生内部服务器错误"
+  closeButtonDescription="关闭通知"
+/>
+
+### Prevent default
+
+Prevent the default close behavior using `e.preventDefault()` in the `on:close` event handler.
+
+<InlineNotification title="Delete failed" subtitle="This resource is still in use by another service." on:close={(e) => {
+  e.preventDefault();
+  // custom close logic (e.g., transitions)
+}} />
+
+## ARIA role
+
+Screen readers announce a notification when it appears. The default,
+`role="status"`, waits until the user pauses. Use it for most messages,
+such as a saved change.
+
+Set `role="alert"` for an urgent error that needs action now, such as a
+failed payment. An alert interrupts whatever the screen reader is
+reading, so keep it rare. Set `role="log"` for a running log of
+messages.
+
+<InlineNotification kind="success" title="Profile updated:" subtitle="Your changes are saved." />
+<InlineNotification role="alert" kind="error" title="Payment failed:" subtitle="Update your card to keep the workspace active." />
+
+## Status icon label
+
+The status icon has a label for screen readers, such as "Warning" for
+the warning kinds. Translate it with `statusIconDescription`.
+
+<InlineNotification
+  kind="warning"
+  title="Maintenance planifiée :"
+  subtitle="La facturation est en lecture seule samedi de 02:00 à 04:00 UTC."
+  statusIconDescription="Avertissement"
+  closeButtonDescription="Fermer la notification"
+/>
+
+## Variants
+
+The component supports different notification types.
+
+### High contrast
+
+<InlineNotification kind="error" title="Deployment failed:" subtitle="Build #128 failed to deploy. Check the pipeline logs for details." />
+<InlineNotification kind="info" title="Update available:" subtitle="Restart the application to install the latest updates." />
+<InlineNotification kind="info-square" title="Update available:" subtitle="Restart the application to install the latest updates." />
+<InlineNotification kind="success" title="Sync complete:" subtitle="All records have been synchronized with the server." />
+<InlineNotification kind="warning" title="Scheduled maintenance:" subtitle="Maintenance will last 2-4 hours." />
+<InlineNotification kind="warning-alt" title="Scheduled maintenance:" subtitle="Maintenance will last 2-4 hours." />
+
+### Low contrast
+
+Use low contrast variants for less prominent notifications.
+
+<InlineNotification lowContrast kind="error" title="Deployment failed:" subtitle="Build #128 failed to deploy. Check the pipeline logs for details." />
+<InlineNotification lowContrast kind="info" title="Update available:" subtitle="Restart the application to install the latest updates." />
+<InlineNotification lowContrast kind="info-square" title="Update available:" subtitle="Restart the application to install the latest updates." />
+<InlineNotification lowContrast kind="success" title="Sync complete:" subtitle="All records have been synchronized with the server." />
+<InlineNotification lowContrast kind="warning" title="Scheduled maintenance:" subtitle="Maintenance will last 2-4 hours." />
+<InlineNotification lowContrast kind="warning-alt" title="Scheduled maintenance:" subtitle="Maintenance will last 2-4 hours." />

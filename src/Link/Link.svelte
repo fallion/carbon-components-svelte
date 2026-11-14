@@ -1,13 +1,17 @@
 <script>
   /**
-   * Specify the size of the link
-   * @type {"sm" | "lg"}
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
    */
-  export let size = undefined;
 
   /**
-   * Specify the href value
-   * @type {string}
+   * Specify the size of the link.
+   * @type {"sm" | "md" | "lg"}
+   */
+  export let size = "md";
+
+  /**
+   * Specify the href value.
+   * @type {string | undefined}
    */
   export let href = undefined;
 
@@ -15,58 +19,70 @@
   export let inline = false;
 
   /**
-   * Specify the icon to render
-   * `inline` must be `false`
-   * @type {typeof import("svelte").SvelteComponent}
+   * Specify the icon to render.
+   * `inline` must be `false`.
+   * @type {Icon | undefined}
    */
-  export let icon = undefined;
+  export let icon = /** @type {Icon | undefined} */ (undefined);
 
-  /** Set to `true` to disable the checkbox */
+  /** Set to `true` to disable the link */
   export let disabled = false;
 
   /** Set to `true` to allow visited styles */
   export let visited = false;
 
-  /** Obtain a reference to the top-level HTML element */
+  /**
+   * Set to `true` to inherit the surrounding text color instead of the
+   * link color. Use for inline links within body text.
+   */
+  export let muted = false;
+
+  /**
+   * Obtain a reference to the top-level HTML element.
+   * @bindable readonly
+   * @type {null | HTMLAnchorElement}
+   */
   export let ref = null;
+
+  import { resolveLinkRel } from "../utils/link-rel.js";
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
-{#if disabled}
-  <p
-    bind:this="{ref}"
-    class:bx--link="{true}"
-    class:bx--link--disabled="{disabled}"
-    class:bx--link--inline="{inline}"
-    class:bx--link--visited="{visited}"
-    {...$$restProps}
-    on:click
-    on:mouseover
-    on:mouseenter
-    on:mouseleave
-  >
-    <slot />{#if !inline && icon}<div class:bx--link__icon="{true}">
-        <svelte:component this="{icon}" />
-      </div>{/if}
-  </p>
-{:else}
-  <a
-    bind:this="{ref}"
-    class:bx--link="{true}"
-    class:bx--link--disabled="{disabled}"
-    class:bx--link--inline="{inline}"
-    class:bx--link--visited="{visited}"
-    class:bx--link--sm="{size === 'sm'}"
-    class:bx--link--lg="{size === 'lg'}"
-    rel="{$$restProps.target === '_blank' ? 'noopener noreferrer' : undefined}"
-    href="{href}"
-    {...$$restProps}
-    on:click
-    on:mouseover
-    on:mouseenter
-    on:mouseleave
-    ><slot />{#if !inline && icon}<div class:bx--link__icon="{true}">
-        <svelte:component this="{icon}" />
-      </div>{/if}</a
-  >
-{/if}
+<!-- No whitespace after the slot: an inline link would underline it. -->
+<!-- Whitespace between these nodes renders as text -->
+<!-- prettier-ignore -->
+<a
+  bind:this={ref}
+  role={disabled ? "link" : undefined}
+  aria-disabled={disabled ? "true" : undefined}
+  class:bx--link={true}
+  class:bx--link--disabled={disabled}
+  class:bx--link--inline={inline}
+  class:bx--link--visited={visited}
+  class:bx--link--muted={muted}
+  class:bx--link--sm={!disabled && size === "sm"}
+  class:bx--link--lg={!disabled && size === "lg"}
+  rel={disabled ? undefined : resolveLinkRel($$restProps.target)}
+  href={disabled ? undefined : href}
+  {...$$restProps}
+  on:click={(event) => {
+    if (!disabled) return;
+    // Runs before the forwarded `click`, so a disabled link never reaches
+    // a consumer's handler.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }}
+  on:click
+  on:mouseover
+  on:mouseenter
+  on:mouseleave
+  on:focus
+  on:blur
+  on:keydown
+  on:keyup
+>
+  <slot />{#if !inline && ($$slots.icon || icon)}
+    <span class:bx--link__icon={true}>
+      <slot name="icon"> <svelte:component this={icon} /> </slot>
+    </span>
+  {/if}
+</a>

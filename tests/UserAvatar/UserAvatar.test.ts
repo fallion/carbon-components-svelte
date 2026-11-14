@@ -1,0 +1,325 @@
+import { render, screen, waitFor } from "@testing-library/svelte";
+import type UserAvatarComponent from "carbon-components-svelte/UserAvatar/UserAvatar.svelte";
+import type { ComponentProps } from "svelte";
+import { getAvatarBackgroundColor } from "../../src/utils/avatar-color.js";
+import { user } from "../utils/user";
+import UserAvatar from "./UserAvatar.test.svelte";
+import UserAvatarImageError from "./UserAvatarImageError.test.svelte";
+
+describe("UserAvatar", () => {
+  it("renders the default user icon with no content", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("default");
+    expect(avatar).toHaveClass("bx--user-avatar", "bx--user-avatar--md");
+    expect(avatar.querySelector("svg")).toBeInTheDocument();
+    expect(avatar.querySelector(".bx--user-avatar__text")).toBeNull();
+    expect(avatar.tagName).toBe("SPAN");
+    expect(avatar).not.toHaveClass("bx--user-avatar--interactive");
+  });
+
+  it("derives initials from the first character of each word, capped at two", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("initials-multi");
+    expect(avatar).toHaveTextContent("JD");
+  });
+
+  it("uses the initials prop over initials derived from name", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("initials-override");
+    expect(avatar).toHaveTextContent("XY");
+  });
+
+  it.each([
+    ["image", "A user photo"],
+    ["image-name-alt", "Ann One"],
+    ["image-attributes-alt", "Ann at the summit"],
+    ["image-decorative", ""],
+  ])(
+    "renders the %s image with alt %j, in place of the name",
+    (testId, alt) => {
+      render(UserAvatar);
+
+      const avatar = screen.getByTestId(testId);
+      const img = avatar.querySelector("img");
+      assert(img);
+      expect(img).toHaveAttribute("src", "https://example.com/photo.jpg");
+      expect(img).toHaveAttribute("alt", alt);
+      expect(avatar.textContent?.trim()).toBe("");
+      expect(avatar.querySelector(".bx--user-avatar__text")).toBeNull();
+    },
+  );
+
+  it("spreads imageAttributes onto the img and keeps rest props on the host", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("image-attributes");
+    expect(avatar).toHaveAttribute("data-avatar-host", "true");
+    expect(avatar).not.toHaveAttribute("loading");
+    expect(avatar).not.toHaveAttribute("srcset");
+    expect(avatar).not.toHaveAttribute("referrerpolicy");
+
+    const img = avatar.querySelector("img");
+    assert(img);
+    expect(img).toHaveAttribute("src", "https://example.com/photo.jpg");
+    expect(img).toHaveAttribute("alt", "A user photo");
+    expect(img).toHaveAttribute("loading", "lazy");
+    expect(img).toHaveAttribute("srcset", "https://example.com/photo.jpg 1x");
+    expect(img).toHaveAttribute("referrerpolicy", "no-referrer");
+    expect(img).not.toHaveAttribute("data-testid");
+    expect(img).not.toHaveAttribute("data-avatar-host");
+  });
+
+  it("falls back to initials when the image fails to load and dispatches image:error", async () => {
+    const onImageError = vi.fn();
+    render(UserAvatarImageError, { props: { onImageError } });
+
+    const avatar = screen.getByTestId("image-error");
+    const img = avatar.querySelector("img");
+    assert(img);
+
+    img.dispatchEvent(new Event("error"));
+
+    expect(onImageError).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(avatar.querySelector("img")).toBeNull();
+      expect(avatar).toHaveTextContent("JD");
+    });
+  });
+
+  it("retries the image when the src changes after a failed load, even back to the failed one", async () => {
+    const { rerender } = render(UserAvatarImageError, {
+      props: { image: "https://example.com/broken.jpg" },
+    });
+
+    const avatar = screen.getByTestId("image-error");
+    const img = avatar.querySelector("img");
+    assert(img);
+    img.dispatchEvent(new Event("error"));
+    await waitFor(() => {
+      expect(avatar).toHaveTextContent("JD");
+    });
+
+    await rerender({ image: "https://example.com/photo.jpg" });
+
+    const nextImg = avatar.querySelector("img");
+    assert(nextImg);
+    expect(nextImg).toHaveAttribute("src", "https://example.com/photo.jpg");
+    expect(avatar).not.toHaveTextContent("JD");
+
+    // Returning to the URL that failed retries it.
+    await rerender({ image: "https://example.com/broken.jpg" });
+
+    expect(avatar.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://example.com/broken.jpg",
+    );
+  });
+
+  it("renders a custom icon, taking priority over the name", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("icon");
+    expect(avatar.querySelector("svg")).toBeInTheDocument();
+    expect(avatar.querySelector(".bx--user-avatar__text")).toBeNull();
+  });
+
+  it.each([
+    ["size-lg", "bx--user-avatar--lg"],
+    ["color-blue", "bx--user-avatar--blue"],
+    ["color-cool-gray", "bx--user-avatar--cool-gray"],
+    ["color-cyan-strong", "bx--user-avatar--cyan-strong"],
+  ])("applies the class for %s", (testId, className) => {
+    render(UserAvatar);
+
+    expect(screen.getByTestId(testId)).toHaveClass(className);
+  });
+
+  it('picks a stable background color when backgroundColor is "auto"', () => {
+    render(UserAvatar);
+
+    const expected = `bx--user-avatar--${getAvatarBackgroundColor("John Doe")}`;
+    expect(screen.getByTestId("color-auto")).toHaveClass(expected);
+  });
+
+  it('applies the strong shade to the "auto" color', () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("color-auto-strong");
+    const color = getAvatarBackgroundColor("John Doe");
+    expect(avatar).toHaveClass(`bx--user-avatar--${color}-strong`);
+    expect(avatar).not.toHaveClass(`bx--user-avatar--${color}`);
+  });
+
+  it("wraps the avatar in a floating-portal tooltip by default", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("tooltip");
+    expect(avatar).toHaveClass("bx--user-avatar");
+
+    const trigger = avatar.closest(".bx--tooltip__trigger--definition");
+    assert(trigger);
+    expect(trigger).toHaveClass("bx--tooltip--portal-active");
+  });
+
+  it("renders an inline tooltip when portalTooltip is false", () => {
+    render(UserAvatar);
+
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toHaveTextContent("Jane Roe");
+    expect(tooltip).toHaveClass("bx--assistive-text");
+  });
+
+  it("renders custom default slot content over computed content", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("slot");
+    expect(avatar).toHaveTextContent("custom content");
+    expect(avatar).not.toHaveTextContent("JD");
+  });
+
+  it("merges a consumer class with the base classes", () => {
+    render(UserAvatar);
+
+    expect(screen.getByTestId("custom-class")).toHaveClass(
+      "bx--user-avatar",
+      "bx--user-avatar--md",
+      "my-class",
+    );
+  });
+
+  it("forwards `data-avatar-group-overflow` to the tooltip wrapper, not only the inner avatar", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("tooltip-overflow-marker");
+    expect(avatar).toHaveAttribute("data-avatar-group-overflow", "true");
+
+    const wrapper = avatar.closest(".bx--tooltip--definition");
+    assert(wrapper);
+    expect(wrapper).toHaveAttribute("data-avatar-group-overflow", "true");
+  });
+
+  it("forwards DOM events", async () => {
+    const onClick = vi.fn();
+    const onMouseenter = vi.fn();
+    render(UserAvatar, { props: { onClick, onMouseenter } });
+
+    const avatar = screen.getByTestId("events");
+    await user.click(avatar);
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    await user.hover(avatar);
+    expect(onMouseenter).toHaveBeenCalledTimes(1);
+  });
+
+  it("forwards focus, keydown, and blur events on an interactive avatar", async () => {
+    const onFocus = vi.fn();
+    const onKeydown = vi.fn();
+    const onBlur = vi.fn();
+    render(UserAvatar, { props: { onFocus, onKeydown, onBlur } });
+
+    const avatar = screen.getByTestId("interactive");
+    avatar.focus();
+    expect(onFocus).toHaveBeenCalledTimes(1);
+
+    await user.keyboard("a");
+    expect(onKeydown).toHaveBeenCalledTimes(1);
+
+    avatar.blur();
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a button when interactive is set", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("interactive");
+    expect(avatar.tagName).toBe("BUTTON");
+    expect(avatar).toHaveAttribute("type", "button");
+    expect(avatar).toHaveClass("bx--user-avatar--interactive");
+    expect(avatar).toHaveAttribute("aria-label", "John Doe");
+  });
+
+  it("renders an anchor when href is set", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("href");
+    expect(avatar.tagName).toBe("A");
+    expect(avatar).toHaveAttribute("href", "/profile");
+    expect(avatar).toHaveClass("bx--user-avatar--interactive");
+  });
+
+  it("prefers href over interactive", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("href-over-interactive");
+    expect(avatar.tagName).toBe("A");
+    expect(avatar).toHaveAttribute("href", "/profile");
+    expect(avatar).not.toHaveAttribute("type");
+  });
+
+  it.each([
+    ["tooltip-interactive", "BUTTON"],
+    ["tooltip-href", "A"],
+  ])("skips the tooltip wrapper for %s and keeps it a %s", (testId, tag) => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId(testId);
+    expect(avatar.tagName).toBe(tag);
+    expect(avatar.closest(".bx--tooltip__trigger--definition")).toBeNull();
+  });
+
+  it.each([
+    ["aria-label-override", "Open profile"],
+    ["initials-multi", null],
+  ])("sets aria-label on %s to %j", (testId, label) => {
+    render(UserAvatar);
+
+    expect(screen.getByTestId(testId).getAttribute("aria-label")).toBe(label);
+  });
+
+  it("renders a status badge for each presence status", () => {
+    render(UserAvatar);
+
+    for (const status of ["online", "away", "busy", "offline"] as const) {
+      const avatar = screen.getByTestId(`status-${status}`);
+      const badge = avatar.parentElement?.querySelector(
+        ".bx--user-avatar__badge",
+      );
+      assert(badge);
+      expect(
+        badge.querySelector(`.bx--user-avatar__status--${status}`),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("lets a custom badge slot override the status indicator", () => {
+    render(UserAvatar);
+
+    const avatar = screen.getByTestId("badge-slot");
+    const wrapper = avatar.parentElement;
+    assert(wrapper);
+    expect(wrapper.querySelector(".bx--user-avatar__status")).toBeNull();
+    expect(screen.getByTestId("custom-badge")).toHaveTextContent("99");
+  });
+
+  describe("Generics", () => {
+    it("should support custom Icon types with generics", () => {
+      type CustomIcon = new (...args: unknown[]) => unknown;
+
+      type ComponentType = UserAvatarComponent<CustomIcon>;
+      type Props = ComponentProps<ComponentType>;
+
+      expectTypeOf<Props["icon"]>().toEqualTypeOf<CustomIcon | undefined>();
+    });
+
+    it("should default to any type when generic is not specified", () => {
+      type ComponentType = UserAvatarComponent;
+      type Props = ComponentProps<ComponentType>;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing default any type
+      expectTypeOf<Props["icon"]>().toEqualTypeOf<any>();
+    });
+  });
+});

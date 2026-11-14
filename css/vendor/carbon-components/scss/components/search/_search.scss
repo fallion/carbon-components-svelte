@@ -1,0 +1,548 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/import-once';
+
+/// Search styles
+/// @access private
+/// @group search
+@mixin search {
+  .#{$prefix}--search {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+  }
+
+  .#{$prefix}--search .#{$prefix}--label {
+    @include hidden;
+  }
+
+  .#{$prefix}--search-input {
+    @include reset;
+    @include type-style('body-compact-01');
+    @include focus-outline('reset');
+
+    width: 100%;
+    order: 1;
+    padding: 0 $carbon--spacing-08;
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    appearance: none;
+    background-color: $field;
+    color: $text-primary;
+    text-overflow: ellipsis;
+    // ccs: a query reads in its own direction, so in RTL "3 / 4" keeps
+    // its order instead of showing as "4 / 3". `dir="auto"` would do the
+    // same, but it also turns the field's padding to the value's
+    // direction and puts the text under the icons.
+    unicode-bidi: plaintext;
+    transition: background-color $duration--fast-02 motion(standard, productive);
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+
+    &::placeholder {
+      @include placeholder-colors;
+    }
+
+  }
+
+  .#{$prefix}--search-input[disabled] {
+    border-bottom: 1px solid transparent;
+    background-color: $field;
+    color: $disabled;
+    cursor: not-allowed;
+
+    &::placeholder {
+      color: $disabled;
+    }
+  }
+
+  .#{$prefix}--search--sm .#{$prefix}--search-input,
+  .#{$prefix}--search--sm.#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-input {
+    height: to-rem(32px);
+    // 8px padding on either side of icon + 16px icon (32px)
+    padding: 0 $spacing-07;
+  }
+
+  .#{$prefix}--search--sm .#{$prefix}--search-magnifier-icon {
+    @include ccs-inset-inline($start: to-rem(8px));
+  }
+
+  // V11: change lg to md
+  .#{$prefix}--search--lg .#{$prefix}--search-input,
+  .#{$prefix}--search--lg.#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-input {
+    height: to-rem(40px);
+    // 12px padding on either side of icon + 16px icon (40px)
+    padding: 0 $spacing-08;
+  }
+
+  // V11: change lg to md
+  .#{$prefix}--search--lg .#{$prefix}--search-magnifier-icon {
+    @include ccs-inset-inline($start: to-rem(12px));
+  }
+
+  // V11: change xl to lg
+  .#{$prefix}--search--xl .#{$prefix}--search-input,
+  .#{$prefix}--search--xl.#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-input {
+    height: to-rem(48px);
+    // 16px padding on either side of icon + 16px icon (48px)
+    padding: 0 $spacing-09;
+  }
+
+  .#{$prefix}--search-magnifier-icon {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    width: to-rem(16px);
+    height: to-rem(16px);
+    fill: $icon-secondary;
+    pointer-events: none;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($start: $spacing-05);
+  }
+
+  .#{$prefix}--search-close {
+    @include button-reset(false, $omit: (display));
+    @include focus-outline('reset');
+
+    position: absolute;
+    top: 0;
+    @include ccs-inset-inline($end: 0);
+
+    &::before {
+      position: absolute;
+      top: to-rem(1px);
+      display: block;
+      width: 2px;
+      height: calc(100% - 2px);
+      background-color: $field;
+      content: '';
+      transition: background-color $duration--fast-02
+        motion(standard, productive);
+      @include ccs-inset-inline($start: 0);
+
+      @media screen and (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+    }
+
+    &:hover {
+      border-bottom: 1px solid $border-strong;
+
+      &::before {
+        background-color: $field-hover;
+      }
+    }
+  }
+
+  .#{$prefix}--search-close svg {
+    position: relative; // ccs: v11, above the hover fill in `::before`
+    z-index: 1; // ccs: v11
+    fill: inherit;
+  }
+
+  .#{$prefix}--search-close {
+    display: flex;
+    width: to-rem(40px);
+    height: to-rem(40px);
+    align-items: center;
+    justify-content: center;
+    border-width: 1px 0;
+    border-style: solid;
+    border-color: transparent;
+    fill: $icon-primary;
+    opacity: 1;
+    transition: opacity $duration--fast-02 motion(standard, productive),
+      background-color $duration--fast-02 motion(standard, productive),
+      border $duration--fast-02 motion(standard, productive);
+    visibility: inherit;
+
+    &:hover {
+      background-color: $field-hover;
+    }
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+
+    &:active {
+      @include focus-outline('outline');
+
+      background-color: $layer-selected;
+    }
+  }
+
+  .#{$prefix}--search--disabled .#{$prefix}--search-close,
+  .#{$prefix}--search--disabled.#{$prefix}--search--expandable
+    .#{$prefix}--search-magnifier {
+    cursor: not-allowed;
+    outline: none;
+
+    &:hover {
+      border-bottom-color: transparent;
+      background-color: transparent;
+    }
+
+    &:hover::before {
+      background-color: transparent;
+    }
+  }
+
+  .#{$prefix}--search--disabled svg {
+    fill: $disabled;
+  }
+
+  .#{$prefix}--search-close:focus,
+  .#{$prefix}--search-close:active {
+    &::before {
+      background-color: $focus;
+    }
+  }
+
+  // Upstream drew a second focus ring around the hovered button. As in v11,
+  // its fill and bottom border go clear so the field's ring shows through,
+  // and the start-edge strip in `::before` grows into a fill inside it.
+  .#{$prefix}--search-input:focus ~ .#{$prefix}--search-close:hover { // ccs: v11, one ring
+    border-bottom-color: transparent;
+    background-color: transparent;
+    outline: none;
+
+    &::before {
+      width: calc(100% - 2px);
+    }
+  }
+
+  .#{$prefix}--search--sm {
+    .#{$prefix}--search-close,
+    &.#{$prefix}--search--expandable,
+    &.#{$prefix}--search--expandable .#{$prefix}--search-magnifier {
+      width: to-rem(32px);
+      height: to-rem(32px);
+    }
+
+    &.#{$prefix}--search--expandable .#{$prefix}--search-input::placeholder {
+      padding: 0 to-rem(32px);
+    }
+  }
+
+  // V11: change lg to md
+  .#{$prefix}--search--lg {
+    .#{$prefix}--search-close,
+    &.#{$prefix}--search--expandable,
+    &.#{$prefix}--search--expandable .#{$prefix}--search-magnifier {
+      width: to-rem(40px);
+      height: to-rem(40px);
+    }
+
+    &.#{$prefix}--search--expandable .#{$prefix}--search-input::placeholder {
+      padding: 0 to-rem(40px);
+    }
+  }
+
+  // V11: change xl to lg
+  .#{$prefix}--search--xl {
+    .#{$prefix}--search-close,
+    &.#{$prefix}--search--expandable,
+    &.#{$prefix}--search--expandable .#{$prefix}--search-magnifier {
+      width: to-rem(48px);
+      height: to-rem(48px);
+    }
+
+    &.#{$prefix}--search--expandable .#{$prefix}--search-input::placeholder {
+      padding: 0 to-rem(48px);
+    }
+  }
+
+  .#{$prefix}--search-close--hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  // V11: change xl to lg, lg to md
+  .#{$prefix}--search--xl.#{$prefix}--skeleton .#{$prefix}--search-input,
+  .#{$prefix}--search--lg.#{$prefix}--skeleton .#{$prefix}--search-input,
+  .#{$prefix}--search--sm.#{$prefix}--skeleton .#{$prefix}--search-input {
+    @include skeleton;
+
+    width: 100%;
+
+    &::placeholder {
+      color: transparent;
+    }
+  }
+
+  .#{$prefix}--search--expandable {
+    transition: width $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--search--expandable.#{$prefix}--search--expanded {
+    width: 100%;
+  }
+
+  .#{$prefix}--search--expandable .#{$prefix}--search-input {
+    width: 0;
+    padding: 0;
+    transition: padding $duration--fast-01 motion(standard, productive),
+      width 0s linear $duration--fast-01;
+
+    &::placeholder {
+      position: relative;
+      opacity: 0;
+      transition-duration: $duration--fast-01;
+      transition-property: padding, opacity;
+      transition-timing-function: motion(standard, productive);
+    }
+  }
+
+  .#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-input {
+    width: 100%;
+    transition: padding $duration--fast-01 motion(standard, productive);
+
+    &::placeholder {
+      position: relative;
+      padding: 0;
+      opacity: 1;
+    }
+  }
+
+  .#{$prefix}--search--expandable .#{$prefix}--search-magnifier {
+    @include button-reset(false, $omit: (display, width, cursor));
+    @include focus-outline('reset');
+
+    position: absolute;
+    cursor: pointer;
+  }
+
+  .#{$prefix}--search--expandable .#{$prefix}--search-magnifier:hover {
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--search--expandable .#{$prefix}--search-magnifier:focus {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-magnifier {
+    pointer-events: none;
+  }
+
+  .#{$prefix}--search--expandable .#{$prefix}--search-magnifier-icon {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-magnifier-icon {
+    fill: $icon-secondary;
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--search-close svg,
+  .#{$prefix}--search-magnifier-icon {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('search') {
+  @include search;
+}
+
+// carbon-components-svelte patch (formerly css/_search.scss)
+/// Extra-small search (Carbon React size="xs")
+/// @access private
+/// @group components
+@mixin search-xs {
+  .#{$prefix}--search--xs .#{$prefix}--search-input,
+  .#{$prefix}--search--xs.#{$prefix}--search--expandable.#{$prefix}--search--expanded
+    .#{$prefix}--search-input {
+    height: to-rem(24px);
+    padding: 0 to-rem(24px);
+  }
+
+  .#{$prefix}--search--xs .#{$prefix}--search-magnifier-icon {
+    @include ccs-inset-inline($start: to-rem(4px));
+  }
+
+  .#{$prefix}--search--xs {
+    .#{$prefix}--search-close,
+    &.#{$prefix}--search--expandable,
+    &.#{$prefix}--search--expandable .#{$prefix}--search-magnifier {
+      width: to-rem(24px);
+      height: to-rem(24px);
+    }
+  }
+
+  .#{$prefix}--search--xs.#{$prefix}--skeleton .#{$prefix}--search-input {
+    height: to-rem(24px);
+  }
+}
+
+@include exports("search-xs") {
+  @include search-xs;
+}
+
+/// Suppress native browser chrome for the `type="search"` input
+/// (magnifier/clear icons, results dropdown) in favor of Carbon's own.
+/// @access private
+/// @group components
+@mixin search-native-decoration {
+  .#{$prefix}--search-input {
+    &::-webkit-search-decoration,
+    &::-webkit-search-cancel-button,
+    &::-webkit-search-results-button,
+    &::-webkit-search-results-decoration {
+      display: none;
+      appearance: none;
+    }
+  }
+}
+
+@include exports("search-native-decoration") {
+  @include search-native-decoration;
+}
+
+/// Invalid and warn icons for `Search`. v10 ships no validation variant for
+/// this component; the tokens match `.bx--text-input__invalid-icon`, and each
+/// `right` offset equals that size's close button width.
+/// @access private
+/// @group components
+@mixin search-validation {
+  // v10 reveals `.bx--form-requirement` only after the field wrappers it
+  // lists in `_form.scss`; `.bx--search` isn't one of them.
+  .#{$prefix}--search[data-invalid] ~ .#{$prefix}--form-requirement,
+  .#{$prefix}--search[data-warn] ~ .#{$prefix}--form-requirement {
+    display: block;
+    overflow: visible;
+    max-height: to-rem(200px);
+    font-weight: 400;
+  }
+
+  .#{$prefix}--search[data-invalid] ~ .#{$prefix}--form-requirement {
+    color: $text-error;
+  }
+
+  .#{$prefix}--search-input[data-invalid],
+  .#{$prefix}--search-input[data-warn] {
+    padding-inline-end: to-rem(64px);
+  }
+
+  .#{$prefix}--search__invalid-icon {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    fill: $support-error;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: to-rem(40px));
+  }
+
+  .#{$prefix}--search__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--search__invalid-icon--warning path:first-of-type {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--search--sm .#{$prefix}--search-input[data-invalid],
+  .#{$prefix}--search--sm .#{$prefix}--search-input[data-warn] {
+    padding-inline-end: to-rem(56px);
+  }
+
+  .#{$prefix}--search--sm .#{$prefix}--search__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(32px));
+  }
+
+  .#{$prefix}--search--xl .#{$prefix}--search-input[data-invalid],
+  .#{$prefix}--search--xl .#{$prefix}--search-input[data-warn] {
+    padding-inline-end: to-rem(72px);
+  }
+
+  .#{$prefix}--search--xl .#{$prefix}--search__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(48px));
+  }
+
+  .#{$prefix}--search--xs .#{$prefix}--search-input[data-invalid],
+  .#{$prefix}--search--xs .#{$prefix}--search-input[data-warn] {
+    padding-inline-end: to-rem(44px);
+  }
+
+  .#{$prefix}--search--xs .#{$prefix}--search__invalid-icon {
+    @include ccs-inset-inline($end: to-rem(24px));
+  }
+}
+
+@include exports("search-validation") {
+  @include search-validation;
+}
+
+// carbon-components-svelte patch (search-close-forced-colors)
+/// The clear button sits over the field's inline end. Forced colors paint
+/// its `transparent` resting outline and borders `CanvasText`, and its
+/// start-edge strip and hover fill an opaque `Canvas`, all on top of the
+/// field's 4px `Highlight` focus ring. The field keeps its own resting box,
+/// so the button draws a ring only when it has focus.
+/// @access private
+/// @group components
+@mixin search-close-forced-colors {
+  @media (forced-colors: active) {
+    // The hover selectors tie the vendored hover rules above and win on
+    // order. Each sits beside its resting selector, which it restates.
+    .#{$prefix}--search-close,
+    .#{$prefix}--search-close:hover {
+      border-style: none;
+      background-color: transparent;
+    }
+
+    // `.bx--search-close:focus` outweighs the first selector.
+    .#{$prefix}--search-close,
+    .#{$prefix}--search-input:focus ~ .#{$prefix}--search-close,
+    .#{$prefix}--search-input:focus ~ .#{$prefix}--search-close:hover {
+      outline-style: none;
+    }
+
+    // A `Canvas` strip down the button's start edge.
+    .#{$prefix}--search-close::before {
+      display: none;
+    }
+  }
+}
+
+@include exports("search-close-forced-colors") {
+  @include search-close-forced-colors;
+}
+
+// carbon-components-svelte patch
+// `unicode-bidi: plaintext` on the input aligns each query to its own start:
+// "3 / 4" to the left on an RTL page, Arabic to the right on an LTR one.
+// Keep it at the page's start, by the magnifier.
+/// @access private
+/// @group components
+@mixin search-text-align {
+  .#{$prefix}--search-input {
+    text-align: left;
+  }
+
+  [dir="rtl"] .#{$prefix}--search-input {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("search-text-align") {
+  @include search-text-align;
+}

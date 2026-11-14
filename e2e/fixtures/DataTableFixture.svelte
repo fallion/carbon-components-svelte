@@ -1,0 +1,196 @@
+<script>
+  import {
+    DataTable,
+    Table,
+    TableBody,
+    TableCell,
+    TableRow,
+  } from "carbon-components-svelte";
+
+  const basicHeaders = [
+    { key: "name", value: "Name" },
+    { key: "value", value: "Value" },
+  ];
+
+  const basicRows = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    name: `Row ${i}`,
+    value: `Value ${i}`,
+  }));
+
+  const sortHeaders = [
+    { key: "name", value: "Name" },
+    { key: "n", value: "N" },
+  ];
+
+  const sortRows = [
+    { id: "s1", name: "Zebra", n: 1 },
+    { id: "s2", name: "Alpha", n: 2 },
+    { id: "s3", name: "Mike", n: 3 },
+  ];
+
+  const expandHeaders = [{ key: "name", value: "Name" }];
+
+  const expandRows = [
+    { id: "e1", name: "First" },
+    { id: "e2", name: "Second" },
+    { id: "e3", name: "Third" },
+    { id: "e4", name: "Fourth" },
+  ];
+
+  const prototypeIdRows = [{ id: "toString", name: "Prototype ID" }];
+
+  const batchHeaders = [{ key: "name", value: "Product" }];
+
+  const batchRows = [
+    { id: "b1", name: "Item A" },
+    { id: "b2", name: "Item B" },
+  ];
+
+  const selectRangeHeaders = [{ key: "name", value: "Product" }];
+
+  const fixedLayoutHeaders = [
+    { key: "name", value: "Product", width: "12rem" },
+    { key: "price", value: "Price", width: "8rem" },
+  ];
+
+  const fixedLayoutRows = [
+    { id: "f1", name: "Item A", price: 10 },
+    { id: "f2", name: "Item B", price: 20 },
+  ];
+
+  const selectRangeRows = [
+    { id: "r1", name: "Item A" },
+    { id: "r2", name: "Item B" },
+    { id: "r3", name: "Item C" },
+  ];
+
+  const radioHeaders = [{ key: "name", value: "Product" }];
+
+  const radioRows = [
+    { id: "q1", name: "Item A" },
+    { id: "q2", name: "Item B" },
+    { id: "q3", name: "Item C" },
+  ];
+
+  let radioSelectedRowIds = ["q1"];
+
+  const wideHeaders = [
+    { key: "order", value: "Order" },
+    { key: "placed", value: "Placed" },
+    { key: "items", value: "Items" },
+    { key: "status", value: "Status" },
+    { key: "total", value: "Total" },
+  ];
+
+  const wideRows = [
+    {
+      id: "a",
+      order: "#47655",
+      placed: "Sep 21, 2026",
+      items: "Merino crew sweater, waxed canvas tote",
+      status: "Delivered",
+      total: "$162.00",
+    },
+  ];
+</script>
+
+<div data-testid="data-table-basic">
+  <DataTable headers={basicHeaders} rows={basicRows} />
+</div>
+
+<div data-testid="data-table-sort">
+  <DataTable sortable headers={sortHeaders} rows={sortRows} />
+</div>
+
+<div data-testid="data-table-expand">
+  <DataTable expandable headers={expandHeaders} rows={expandRows}>
+    <svelte:fragment slot="expandedRow" let:row>
+      <p data-testid="expanded-detail">Extra row: {row.name}</p>
+    </svelte:fragment>
+  </DataTable>
+</div>
+
+<div data-testid="data-table-expand-nested-table">
+  <DataTable expandable headers={expandHeaders} rows={expandRows}>
+    <svelte:fragment slot="expandedRow" let:row>
+      <DataTable
+        size="compact"
+        headers={[{ key: "detail", value: "Detail" }]}
+        rows={[{ id: `${row.id}-detail`, detail: `Extra row: ${row.name}` }]}
+      />
+    </svelte:fragment>
+  </DataTable>
+</div>
+
+<div data-testid="data-table-prototype-id">
+  <DataTable expandable headers={expandHeaders} rows={prototypeIdRows}>
+    <svelte:fragment slot="expandedRow" let:row>
+      <p data-testid="prototype-id-detail">Extra row: {row.name}</p>
+    </svelte:fragment>
+  </DataTable>
+</div>
+
+<div data-testid="data-table-expand-selectable">
+  <DataTable
+    expandable
+    batchSelection
+    headers={expandHeaders}
+    rows={expandRows}
+  >
+    <svelte:fragment slot="expandedRow" let:row>
+      <p data-testid="expand-selectable-detail">Extra row: {row.name}</p>
+    </svelte:fragment>
+  </DataTable>
+</div>
+
+<div data-testid="data-table-batch">
+  <DataTable batchSelection headers={batchHeaders} rows={batchRows} />
+</div>
+
+<div data-testid="data-table-select-range">
+  <DataTable selectable headers={selectRangeHeaders} rows={selectRangeRows} />
+</div>
+
+<div data-testid="data-table-fixed-layout-selectable" style:width="300px">
+  <DataTable
+    selectable
+    fixedLayout
+    headers={fixedLayoutHeaders}
+    rows={fixedLayoutRows}
+  />
+</div>
+
+<div data-testid="data-table-radio-deselect">
+  <DataTable
+    radio
+    allowDeselect
+    headers={radioHeaders}
+    rows={radioRows}
+    bind:selectedRowIds={radioSelectedRowIds}
+  />
+</div>
+
+<div
+  data-testid="data-table-narrow-grid"
+  style:display="grid"
+  style:grid-template-columns="1fr"
+  style:width="300px"
+>
+  <DataTable headers={wideHeaders} rows={wideRows} />
+</div>
+
+<div data-testid="data-table-narrow-sticky" style:width="300px">
+  <DataTable stickyHeader headers={wideHeaders} rows={wideRows} />
+</div>
+
+<div data-testid="table-hand-written-cell">
+  <Table>
+    <TableBody>
+      <TableRow>
+        <TableCell>Table cell</TableCell>
+        <td>Hand-written cell</td>
+      </TableRow>
+    </TableBody>
+  </Table>
+</div>

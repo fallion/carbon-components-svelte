@@ -17,46 +17,73 @@
   /** Specify the close icon class */
   export let closeIconClass = "";
 
-  /** Specify the ARIA label for the close icon */
+  /**
+   * Specify the label of the close button.
+   * It names the button and shows in its tooltip.
+   */
   export let iconDescription = "Close";
 
-  import { getContext } from "svelte";
-  import Close20 from "../icons/Close20.svelte";
+  /**
+   * Set to `true` to hide the header close button.
+   * Provide an alternative dismiss path (footer actions or Escape).
+   */
+  export let hideCloseButton = false;
 
-  const { closeModal, updateLabel } = getContext("ComposedModal");
+  import { getContext, onMount } from "svelte";
+  import Button from "../Button/Button.svelte";
+  import Close from "../icons/Close.svelte";
+
+  const { closeModal, updateLabel, updateTitle, ids, registerHeader } =
+    getContext("carbon:ComposedModal");
 
   $: updateLabel(label);
+  $: updateTitle(title);
+  // Register during init, not on mount: Svelte 5 unmounts a swapped-out
+  // header before its replacement mounts, which would clear the new values.
+  const unregisterHeader = registerHeader();
+  onMount(() => unregisterHeader);
 </script>
 
-<div class:bx--modal-header="{true}" {...$$restProps}>
+<div class:bx--modal-header={true} {...$$restProps}>
   {#if label}
     <h2
-      class:bx--modal-header__label="{true}"
-      class:bx--type-delta="{true}"
-      class="{labelClass}"
+      id={$ids.label}
+      class:bx--modal-header__label={true}
+      class:bx--type-delta={true}
+      class={labelClass}
     >
       {label}
     </h2>
   {/if}
   {#if title}
-    <h3
-      class:bx--modal-header__heading="{true}"
-      class:bx--type-beta="{true}"
-      class="{titleClass}"
+    <h2
+      id={$ids.title}
+      class:bx--modal-header__heading={true}
+      class:bx--type-beta={true}
+      class={titleClass}
     >
       {title}
-    </h3>
+    </h2>
   {/if}
   <slot />
-  <button
-    type="button"
-    title="{iconDescription}"
-    aria-label="{iconDescription}"
-    class:bx--modal-close="{true}"
-    class="{closeClass}"
-    on:click
-    on:click="{closeModal}"
-  >
-    <Close20 class="bx--modal-close__icon {closeIconClass}" />
-  </button>
+  {#if !hideCloseButton}
+    <div class:bx--modal-close-button={true}>
+      <Button
+        kind="ghost"
+        class="bx--modal-close {closeClass}"
+        {iconDescription}
+        aria-label={iconDescription}
+        tooltipPosition="left"
+        on:click
+        on:click={closeModal}
+      >
+        <Close
+          slot="icon"
+          size={20}
+          class="bx--modal-close__icon {closeIconClass}"
+          aria-hidden="true"
+        />
+      </Button>
+    </div>
+  {/if}
 </div>

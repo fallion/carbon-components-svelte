@@ -1,0 +1,78 @@
+---
+components: ["FullPageError"]
+description: A full-page error notifies the user that a requested page is unavailable, typically due to an invalid URL or insufficient access permissions.
+---
+
+<script>
+  import { FullPageError, Button, Link } from "carbon-components-svelte";
+  import Robot from "carbon-pictograms-svelte/lib/Robot.svelte";
+</script>
+
+## Basic
+
+Create a full-page error with `labelText`, `title`, and `description`.
+
+<FullPageError
+  labelText="Error"
+  title="Unable to load this workspace"
+  description="We couldn't load this workspace right now. Try again in a few minutes, or contact your administrator if the problem persists."
+/>
+
+## 403
+
+Set `kind` to `"403"` to display the forbidden access illustration.
+
+<FullPageError
+  kind="403"
+  labelText="Error 403"
+  title="Access denied"
+  description="You don't have permission to view this workspace. Contact your workspace administrator to request access."
+/>
+
+## 404
+
+Set `kind` to `"404"` to display the not found illustration.
+
+<FullPageError
+  kind="404"
+  labelText="Error 404"
+  title="Page not found"
+  description="The dashboard you're looking for doesn't exist or has been moved."
+/>
+
+## With action
+
+Use the default slot to add extra body content below the description, such as a button to navigate back home.
+
+<FullPageError
+  labelText="Error"
+  title="This service is temporarily unavailable"
+  description="We're experiencing an unplanned outage. Our engineering team is investigating and will restore access as soon as possible."
+>
+  <Button>Go home</Button>
+</FullPageError>
+
+## Slottable label, title, and description
+
+Use the `labelChildren`, `titleChildren`, and `descriptionChildren` slots to render custom markup instead of plain text.
+
+<FullPageError>
+  <svelte:fragment slot="labelChildren">
+    Error <code>500</code>
+  </svelte:fragment>
+  <svelte:fragment slot="titleChildren">Internal server error</svelte:fragment>
+  <svelte:fragment slot="descriptionChildren">
+    Try again, or <Link size="lg" href="#">contact support</Link> if the problem persists.
+  </svelte:fragment>
+</FullPageError>
+
+## Custom illustration
+
+Use the `illustration` slot to replace the default kind-based SVG. Pictograms from [carbon-pictograms-svelte](https://github.com/carbon-design-system/carbon-pictograms-svelte) work well here.
+
+<FullPageError
+  labelText="Error"
+  title="This automation is currently offline"
+>
+  <Robot slot="illustration" />
+</FullPageError>

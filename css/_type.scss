@@ -1,0 +1,78 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/type/classes";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/type/font-family";
+@import "./text-tokens";
+
+/// Type utility classes and text-color helpers.
+///
+/// Modifier utilities (weight, family, italic) are re-emitted after token
+/// rules so they win when combined (e.g. `.bx--type-body-long-01.bx--type-semibold`).
+/// Color helpers use v11 token names; success text uses the library's
+/// `text-success` (see `_text-tokens.scss`), which Carbon lacks.
+/// @access private
+/// @group components
+@mixin type {
+  @include carbon--type-classes;
+
+  $text-color-tokens: (
+    text-primary: $text-primary,
+    text-secondary: $text-secondary,
+    text-placeholder: $text-placeholder,
+    text-helper: $text-helper,
+    text-on-color: $text-on-color,
+    text-inverse: $text-inverse,
+    text-error: $text-error,
+    text-success: ccs-text-color("text-success"),
+    text-link: $link-primary,
+    text-disabled: $text-disabled,
+  );
+
+  @each $name, $value in $text-color-tokens {
+    .#{$prefix}--type-#{$name} {
+      color: $value;
+    }
+  }
+
+  @each $name, $value in $carbon--font-families {
+    .#{$prefix}--type-#{$name} {
+      font-family: $value;
+    }
+  }
+
+  @each $name, $value in $carbon--font-weights {
+    .#{$prefix}--type-#{$name} {
+      font-weight: $value;
+    }
+  }
+
+  .#{$prefix}--type-italic {
+    font-style: italic;
+  }
+
+  .#{$prefix}--type-break-word {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  .#{$prefix}--type-nowrap {
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--type-balance {
+    text-wrap: balance;
+  }
+
+  .#{$prefix}--type-pretty {
+    text-wrap: pretty;
+  }
+
+  .#{$prefix}--type-full-width {
+    width: 100%;
+  }
+}
+
+@include exports("type") {
+  @include type;
+}

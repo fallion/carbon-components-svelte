@@ -1,35 +1,37 @@
 <script>
   /**
-   * @event {string} change
+   * @template {string | number} [Value=string | number]
+   * @event {Value} update The selected value.
    */
 
   /**
-   * Specify the selected item value
-   * @type {string}
+   * Specify the selected item value.
+   * @type {Value | undefined}
+   * @bindable writable
    */
   export let selected = undefined;
 
   /**
-   * Set the size of the select input
-   * @type {"sm" | "xl"}
+   * Set the size of the select input.
+   * Inherits the parent `Form` size when unset.
+   * Also accepts Carbon v11's `"md"` (the 40px default, which overrides a
+   * `Form` size) and `"lg"` (`"xl"`).
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
    */
   export let size = undefined;
 
   /** Set to `true` to use the inline variant */
   export let inline = false;
 
-  /** Set to `true` to enable the light variant */
-  export let light = false;
-
   /** Set to `true` to disable the select element */
   export let disabled = false;
 
   /** Set an id for the select element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
   /**
-   * Specify a name attribute for the select element
-   * @type {string}
+   * Specify a name attribute for the select element.
+   * @type {string | undefined}
    */
   export let name = undefined;
 
@@ -39,7 +41,7 @@
   /** Specify the invalid state text */
   export let invalidText = "";
 
-  /** Set to `true` to indicate an warning state */
+  /** Set to `true` to indicate a warning state */
   export let warn = false;
 
   /** Specify the warning state text */
@@ -57,149 +59,418 @@
   /** Set to `true` to visually hide the label text */
   export let hideLabel = false;
 
-  /** Obtain a reference to the select HTML element */
+  /**
+   * Obtain a reference to the select HTML element.
+   * @bindable readonly
+   * @type {null | HTMLSelectElement}
+   */
   export let ref = null;
 
   /** Set to `true` to mark the field as required */
   export let required = false;
 
-  import { createEventDispatcher, setContext, afterUpdate } from "svelte";
+  /** Set to `true` for the select to be read-only */
+  export let readonly = false;
+
+  /**
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
+
+  /**
+   * Set to `true` to use the fluid variant.
+   * Inherited from the parent `FluidForm` context,
+   * so it does not need to be set when used inside `FluidForm`.
+   * Cannot be combined with the inline variant.
+   */
+  export let fluid = false;
+
+  import {
+    afterUpdate,
+    createEventDispatcher,
+    getContext,
+    setContext,
+    tick,
+  } from "svelte";
   import { writable } from "svelte/store";
-  import ChevronDown16 from "../icons/ChevronDown16.svelte";
-  import WarningFilled16 from "../icons/WarningFilled16.svelte";
-  import WarningAltFilled16 from "../icons/WarningAltFilled16.svelte";
+  import Decorator from "../AILabel/Decorator.svelte";
+  import {
+    FORM_CONTEXT_KEY,
+    FORM_SIZE_CONTEXT_KEY,
+  } from "../constants/context-keys.js";
+  import ChevronDown from "../icons/ChevronDown.svelte";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import { batchStoreUpdates } from "../utils/batch-store-updates.js";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { normalizeFieldSize } from "../utils/size-aliases.js";
+  import { titleWhenTruncated } from "../utils/title-when-truncated.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
 
   const dispatch = createEventDispatcher();
+  const formContext = getContext(FORM_CONTEXT_KEY);
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = normalizeFieldSize(size ?? $formSize);
+
+  /**
+   * Starts active for a filled slot, so the server renders the AI surface.
+   * `Decorator` clears it when no `AILabel` claims the slot.
+   * @type {import("svelte/store").Writable<undefined | "active" | "revert">}
+   */
+  const aiLabelState = writable($$slots.decorator ? "active" : undefined);
+  /**
+   * `null` until an item sets the default value.
+   * @type {import("svelte/store").Writable<string | number | null | undefined>}
+   */
   const selectedValue = writable(selected);
+  /** @type {import("svelte/store").Writable<string | null>} */
+  const defaultSelectId = writable(null);
+  /** @type {import("svelte/store").Writable<string | number | null>} */
+  const defaultValue = writable(null);
+  /** @type {import("svelte/store").Writable<Record<string, string>>} */
+  const itemTypesByValue = writable({});
+  // Every `SelectItem` registers itself from its own script body during the
+  // same synchronous mount pass; batch those updates into one flush instead
+  // of notifying subscribers once per item.
+  const batchedItemTypesUpdate = batchStoreUpdates(itemTypesByValue);
 
-  setContext("Select", { selectedValue });
+  /**
+   * Use the first `SelectItem` value as the
+   * default value if `selected` is `undefined`.
+   * @type {(id: string, value: string | number) => void}
+   */
+  function setDefaultValue(id, value) {
+    if ($defaultValue === null) {
+      defaultSelectId.set(id);
+      defaultValue.set(value);
+    } else {
+      if ($defaultSelectId === id) {
+        selectedValue.set(value);
+      }
+    }
 
-  afterUpdate(() => {
-    selected = $selectedValue;
-    dispatch("change", $selectedValue);
+    batchedItemTypesUpdate((types) => ({
+      ...types,
+      [value]: typeof value,
+    }));
+  }
+
+  setContext("carbon:Select", {
+    selectedValue,
+    setDefaultValue,
+    syncNativeSelectValue,
   });
 
-  $: errorId = `error-${id}`;
-  $: selectedValue.set(selected);
+  /** @param {Event} event */
+  function handleChange(event) {
+    const select = /** @type {HTMLSelectElement} */ (event.target);
+    // A person can only pick a listed option. No option selected means a
+    // script set a value the select doesn't list, so keep the current one.
+    if (select.selectedIndex === -1) {
+      syncNativeSelectValue();
+      return;
+    }
+
+    /** @type {string | number} */
+    let value = select.value;
+
+    if ($itemTypesByValue[value] === "number") {
+      value = Number(value);
+    }
+
+    selectedValue.set(value);
+  }
+
+  /** @type {(e: MouseEvent) => void} */
+  function handleMousedown(event) {
+    if (readonly) {
+      event.preventDefault();
+      /** @type {HTMLSelectElement} */ (event.currentTarget).focus();
+    }
+  }
+
+  /** @type {(e: KeyboardEvent) => void} */
+  function handleKeydown(event) {
+    // A closed select changes value on arrows, Space, Home/End, and
+    // typeahead letters, so block every key but focus movement. Ctrl/Cmd
+    // shortcuts (copy, find, reload) never change the value.
+    if (
+      readonly &&
+      event.key !== "Tab" &&
+      event.key !== "Shift" &&
+      !event.ctrlKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+    }
+  }
+
+  /** @type {string | number | null | undefined} */
+  let prevSelected = null;
+
+  afterUpdate(() => {
+    if (selected !== $selectedValue) {
+      const isInitialRender = prevSelected === null;
+      selected = /** @type {Value | undefined} */ ($selectedValue);
+      if (!isInitialRender) {
+        dispatch("update", $selectedValue);
+      }
+    }
+
+    prevSelected = selected;
+  });
+
+  // Options mounted after selected is set do not update the native value.
+  // selectedIndex -1 comes back as value "", indistinguishable from an
+  // empty-valued option being selected, so it must be re-asserted explicitly.
+  function syncNativeSelectValue() {
+    tick().then(() => {
+      if (!ref) return;
+      const nextValue = $selectedValue == null ? "" : String($selectedValue);
+      if (ref.selectedIndex === -1 || ref.value !== nextValue) {
+        ref.value = nextValue;
+      }
+    });
+  }
+
+  $: ({ errorId, warnId, helperId, readonlyId } = buildFieldIds(id));
+  $: {
+    selectedValue.set(selected ?? $defaultValue);
+    syncNativeSelectValue();
+  }
+  // Invalid/warn states are suppressed when the select is disabled or read-only.
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
+  }));
+  $: isFluid = !inline && (fluid || !!formContext?.isFluid);
+  $: statusDescribedById = resolveStatusDescribedBy({
+    showInvalid,
+    showWarn,
+    invalidText,
+    warnText,
+    helperText,
+    isFluid,
+    errorId,
+    warnId,
+    helperId,
+  });
+  $: describedById = joinDescribedBy(
+    readonly ? readonlyId : null,
+    statusDescribedById,
+  );
 </script>
 
-<div class:bx--form-item="{true}" {...$$restProps}>
+<div
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  class:bx--form-item={true}
+  class:bx--select--fluid={isFluid}
+  class:bx--select__form-item--inline={inline}
+>
   <div
-    class:bx--select="{true}"
-    class:bx--select--inline="{inline}"
-    class:bx--select--light="{light}"
-    class:bx--select--invalid="{invalid}"
-    class:bx--select--disabled="{disabled}"
-    class:bx--select--warning="{warn}"
+    class:bx--select={true}
+    class:bx--select--inline={inline}
+    class:bx--select--invalid={showInvalid}
+    class:bx--select--disabled={effectiveDisabled}
+    class:bx--select--warning={showWarn}
+    class:bx--select--readonly={readonly}
   >
-    {#if !noLabel}
+    {#if !noLabel && (labelText || $$slots.labelChildren)}
       <label
-        for="{id}"
-        class:bx--label="{true}"
-        class:bx--visually-hidden="{hideLabel}"
-        class:bx--label--disabled="{disabled}"
+        for={id}
+        class:bx--label={true}
+        class:bx--visually-hidden={hideLabel}
+        class:bx--label--disabled={effectiveDisabled}
+        class:bx--label--slotted={isFluid && $$slots.labelChildren}
+        use:titleWhenTruncated={{ enabled: isFluid && !$$slots.labelChildren }}
       >
-        <slot name="labelText">
-          {labelText}
-        </slot>
+        <slot name="labelChildren">{labelText}</slot>
       </label>
     {/if}
     {#if inline}
-      <div class:bx--select-input--inline__wrapper="{true}">
+      <div class:bx--select-input--inline__wrapper={true}>
         <div
-          class:bx--select-input__wrapper="{true}"
-          data-invalid="{invalid || undefined}"
+          class:bx--select-input__wrapper={true}
+          class:bx--select-input__wrapper--decorator={$$slots.decorator &&
+            !isFluid}
+          class:bx--select-input__wrapper--ai-label={$aiLabelState === "active"}
+          data-invalid={showInvalid || undefined}
         >
           <select
-            bind:this="{ref}"
-            aria-describedby="{invalid ? errorId : undefined}"
-            aria-invalid="{invalid || undefined}"
-            disabled="{disabled || undefined}"
-            required="{required || undefined}"
-            id="{id}"
-            name="{name}"
-            class:bx--select-input="{true}"
-            class="{size && `bx--select-input--${size}`}"
-            on:change="{({ target }) => {
-              selectedValue.set(target.value);
-            }}"
+            bind:this={ref}
+            aria-invalid={showInvalid ? "true" : undefined}
+            aria-readonly={readonly ? "true" : undefined}
+            disabled={effectiveDisabled || undefined}
+            required={required || undefined}
+            {id}
+            {name}
+            class:bx--select-input={true}
+            class:bx--select-input--xs={effectiveSize === "xs"}
+            class:bx--select-input--sm={effectiveSize === "sm"}
+            class:bx--select-input--xl={effectiveSize === "xl"}
+            {...$$restProps}
+            aria-describedby={joinDescribedBy(
+              describedById,
+              $$restProps["aria-describedby"],
+            )}
+            on:change={handleChange}
+            on:change
             on:input
             on:focus
             on:blur
+            on:mousedown={handleMousedown}
+            on:keydown={handleKeydown}
           >
             <slot />
           </select>
-          <ChevronDown16 class="bx--select__arrow" />
-          {#if invalid}
-            <WarningFilled16 class="bx--select__invalid-icon" />
+          <ChevronDown class="bx--select__arrow" />
+          {#if $$slots.decorator}
+            <Decorator
+              class="bx--field-decorator bx--select__inner-wrapper--decorator"
+              size={effectiveSize}
+              state={aiLabelState}
+            >
+              <slot name="decorator" />
+            </Decorator>
+          {/if}
+          {#if showInvalid}
+            <WarningFilled class="bx--select__invalid-icon" />
+          {/if}
+          {#if showWarn}
+            <WarningAltFilled
+              class="bx--select__invalid-icon bx--select__invalid-icon--warning"
+            />
           {/if}
         </div>
-        {#if invalid}
-          <div class:bx--form-requirement="{true}" id="{errorId}">
+        {#if readonly}
+          <span id={readonlyId} class:bx--visually-hidden={true}
+            >{readonlyText}</span
+          >
+        {/if}
+        {#if showInvalid && invalidText}
+          <div class:bx--form-requirement={true} id={errorId} role="alert">
             {invalidText}
           </div>
         {/if}
+        {#if showWarn && warnText}
+          <div class:bx--form-requirement={true} id={warnId}>
+            {warnText}
+          </div>
+        {/if}
+        <!-- Under the field, where the messages it alternates with go. -->
+        {#if helperText && !showInvalid && !showWarn}
+          <div
+            id={helperId}
+            class:bx--form__helper-text={true}
+            class:bx--form__helper-text--disabled={effectiveDisabled}
+          >
+            {helperText}
+          </div>
+        {/if}
       </div>
-      {#if helperText}
-        <div
-          class:bx--form__helper-text="{true}"
-          class:bx--form__helper-text--disabled="{disabled}"
-        >
-          {helperText}
-        </div>
-      {/if}
     {/if}
     {#if !inline}
       <div
-        class:bx--select-input__wrapper="{true}"
-        data-invalid="{invalid || undefined}"
+        class:bx--select-input__wrapper={true}
+        class:bx--select-input__wrapper--decorator={$$slots.decorator &&
+          !isFluid}
+        class:bx--select-input__wrapper--ai-label={$aiLabelState === "active"}
+        data-invalid={showInvalid || undefined}
       >
         <select
-          bind:this="{ref}"
-          id="{id}"
-          name="{name}"
-          aria-describedby="{invalid ? errorId : undefined}"
-          disabled="{disabled || undefined}"
-          required="{required || undefined}"
-          aria-invalid="{invalid || undefined}"
-          class:bx--select-input="{true}"
-          class="{size && `bx--select-input--${size}`}"
-          on:change="{({ target }) => {
-            selectedValue.set(target.value);
-          }}"
+          bind:this={ref}
+          {id}
+          {name}
+          disabled={effectiveDisabled || undefined}
+          required={required || undefined}
+          aria-invalid={showInvalid ? "true" : undefined}
+          aria-readonly={readonly ? "true" : undefined}
+          class:bx--select-input={true}
+          class:bx--select-input--xs={effectiveSize === "xs"}
+          class:bx--select-input--sm={effectiveSize === "sm"}
+          class:bx--select-input--xl={effectiveSize === "xl"}
+          {...$$restProps}
+          aria-describedby={joinDescribedBy(
+            describedById,
+            $$restProps["aria-describedby"],
+          )}
+          on:change={handleChange}
+          on:change
           on:input
           on:focus
           on:blur
+          on:mousedown={handleMousedown}
+          on:keydown={handleKeydown}
         >
           <slot />
         </select>
-        <ChevronDown16 class="bx--select__arrow" />
-        {#if invalid}
-          <WarningFilled16 class="bx--select__invalid-icon" />
+        <ChevronDown class="bx--select__arrow" />
+        {#if $$slots.decorator}
+          <Decorator
+            class="bx--field-decorator bx--select__inner-wrapper--decorator"
+            size={effectiveSize}
+            state={aiLabelState}
+          >
+            <slot name="decorator" />
+          </Decorator>
         {/if}
-        {#if !invalid && warn}
-          <WarningAltFilled16
+        {#if showInvalid}
+          <WarningFilled class="bx--select__invalid-icon" />
+        {/if}
+        {#if showWarn}
+          <WarningAltFilled
             class="bx--select__invalid-icon bx--select__invalid-icon--warning"
           />
         {/if}
+        {#if isFluid}
+          <hr class:bx--select__divider={true} />
+          {#if showInvalid && invalidText}
+            <div id={errorId} class:bx--form-requirement={true} role="alert">
+              {invalidText}
+            </div>
+          {/if}
+          {#if showWarn && warnText}
+            <div id={warnId} class:bx--form-requirement={true}>
+              {warnText}
+            </div>
+          {/if}
+        {/if}
       </div>
-      {#if !invalid && helperText}
+      {#if readonly}
+        <span id={readonlyId} class:bx--visually-hidden={true}
+          >{readonlyText}</span
+        >
+      {/if}
+      {#if !isFluid && helperText && !showInvalid && !showWarn}
         <div
-          class:bx--form__helper-text="{true}"
-          class:bx--form__helper-text--disabled="{disabled}"
+          id={helperId}
+          class:bx--form__helper-text={true}
+          class:bx--form__helper-text--disabled={effectiveDisabled}
         >
           {helperText}
         </div>
       {/if}
-      {#if invalid}
-        <div id="{errorId}" class:bx--form-requirement="{true}">
+      {#if !isFluid && showInvalid && invalidText}
+        <div id={errorId} class:bx--form-requirement={true} role="alert">
           {invalidText}
         </div>
       {/if}
-      {#if !invalid && warn}
-        <div id="{errorId}" class:bx--form-requirement="{true}">
-          {warnText}
-        </div>
+      {#if !isFluid && showWarn && warnText}
+        <div id={warnId} class:bx--form-requirement={true}>{warnText}</div>
       {/if}
     {/if}
   </div>

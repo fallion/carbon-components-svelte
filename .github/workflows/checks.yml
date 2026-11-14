@@ -1,0 +1,526 @@
+# `paths`, not `paths-ignore`, so the docs files a test imports can opt back
+# in: the docs files in `roots` (bivium.config.ts). Which suites run is
+# bivium's to decide, in the changes job.
+on:
+  pull_request:
+    paths:
+      - "**"
+      - "!**.md"
+      - "!docs/**"
+      - "!examples/**"
+      - "docs/src/token-reference.ts"
+      - "docs/src/search.ts"
+      - "docs/src/routes.ts"
+      - "docs/src/search-index.ts"
+      - "docs/scripts/slug.ts"
+      - "docs/scripts/visit.ts"
+      - "docs/scripts/frontmatter.ts"
+      - "docs/scripts/markdown.ts"
+      - "docs/scripts/page.ts"
+      - "docs/scripts/format.ts"
+      - "docs/scripts/compile-cache.ts"
+      - "docs/src/idle-mount.ts"
+      - "docs/src/ibm-scripts.ts"
+      - "docs/scripts/page-html.ts"
+      - "docs/scripts/example-source.ts"
+      - "docs/src/pages/framed/DatePicker/**"
+      - "docs/src/code-view-height.ts"
+  push:
+    branches: [master]
+    paths:
+      - "**"
+      - "!**.md"
+      - "!docs/**"
+      - "!examples/**"
+      - "docs/src/token-reference.ts"
+      - "docs/src/search.ts"
+      - "docs/src/routes.ts"
+      - "docs/src/search-index.ts"
+      - "docs/scripts/slug.ts"
+      - "docs/scripts/visit.ts"
+      - "docs/scripts/frontmatter.ts"
+      - "docs/scripts/markdown.ts"
+      - "docs/scripts/page.ts"
+      - "docs/scripts/format.ts"
+      - "docs/scripts/compile-cache.ts"
+      - "docs/src/idle-mount.ts"
+      - "docs/src/ibm-scripts.ts"
+      - "docs/scripts/page-html.ts"
+      - "docs/scripts/example-source.ts"
+      - "docs/src/pages/framed/DatePicker/**"
+      - "docs/src/code-view-height.ts"
+  workflow_dispatch:
+
+# Key on the PR number, not the branch name: two fork PRs can both come
+# from a branch named `patch-1`. Pushes and manual runs get their own group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IBM_TELEMETRY_DISABLED: true
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # `bun lint` is only in canary builds.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: canary
+      - run: bun ci
+      # Fails when a test reaches a file whose dependencies bivium can't read,
+      # which would make that test run on every PR, or when a `@depends-on`,
+      # `@reads` or `import.meta.glob` glob can never select its file. First
+      # because it takes a couple of seconds, so a later failure can't hide it.
+      - run: bunx --bun bivium check --max-unknown 0
+      - run: bun fmt --check
+      - run: bun lint
+      - run: bun run lint:svelte
+
+      - name: Build docs
+        run: bun run build:docs
+
+      - run: bun run test:src-types
+
+      - run: bun run test:src-svelte
+
+      # Needs the declarations `build:docs` writes.
+      - run: bun run check:fixtures
+
+      - run: bun run test:package-exports
+
+      - run: bun run check:package
+
+      - run: bun run thumbnails catalog
+
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docs-deploy: ${{ steps.filter.outputs.docs-deploy }}
+      css: ${{ steps.filter.outputs.css }}
+      css-size: ${{ steps.filter.outputs.css-size }}
+      # Whether `test:types` runs: a change to what it can read, or one
+      # that selects a unit test.
+      types: ${{ steps.filter.outputs.types == 'true' || (steps.select.outputs.unit-tests != '' && steps.select.outputs.unit-tests != 'none') }}
+      # `all`, `none`, or space-separated test files; empty (= all) off PRs.
+      unit-tests: ${{ steps.select.outputs.unit-tests }}
+      e2e-tests: ${{ steps.select.outputs.e2e-tests }}
+      e2e-shards: ${{ steps.shards.outputs.e2e }}
+    steps:
+      # Not actions/checkout, which took 3-7 s here to fetch every commit and
+      # tag. Two commits are enough: a PR's merge commit, whose first parent
+      # is the base tip it merges into, or a push's commit and the one before
+      # it. The PR's diff is then HEAD^1..HEAD, which is what bivium plans
+      # against once origin/<base> points at HEAD^1.
+      - name: Check out
+        id: checkout
+        env:
+          AUTH: ${{ github.token }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          git init -q .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+          # fetch <commit> [depth]: the commit, and with depth 2 its parents.
+          fetch() {
+            git -c "http.extraHeader=Authorization: basic $(printf 'x-access-token:%s' "$AUTH" | base64 -w0)" \
+              fetch -q --no-tags --depth="${2:-1}" origin "$1"
+          }
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              fetch "$GITHUB_SHA" 2
+              git checkout -q --detach "$GITHUB_SHA"
+              git update-ref "refs/remotes/origin/$BASE_REF" HEAD^1
+              echo "base=$(git rev-parse HEAD^1)" >> "$GITHUB_OUTPUT"
+              ;;
+            push)
+              fetch "$GITHUB_SHA"
+              git checkout -q --detach "$GITHUB_SHA"
+              # A new branch has no commit before it, and a force push can
+              # leave one GitHub no longer serves. Both diff as everything.
+              case "$BEFORE" in
+                "" | 0000000000000000000000000000000000000000) ;;
+                *) fetch "$BEFORE" && echo "base=$BEFORE" >> "$GITHUB_OUTPUT" || true ;;
+              esac
+              ;;
+            *)
+              fetch "$GITHUB_SHA"
+              git checkout -q --detach "$GITHUB_SHA"
+              ;;
+          esac
+
+      # Which jobs the diff concerns. A pattern matches a changed path as a
+      # bash `[[ == ]]` glob, where `*` crosses `/`. With no base to diff
+      # against (a manual run, or a push with no commit before it), every
+      # filter is true.
+      - name: Filter changed paths
+        id: filter
+        env:
+          BASE: ${{ steps.checkout.outputs.base }}
+        run: |
+          files=()
+          if [ -n "$BASE" ]; then
+            list=$(git -c core.quotePath=false diff --name-only --no-renames "$BASE" HEAD)
+            [ -z "$list" ] || while IFS= read -r file; do files+=("$file"); done <<< "$list"
+            echo "${#files[@]} changed files against $BASE"
+          fi
+          filter() {
+            local name=$1 file pattern
+            shift
+            if [ -z "$BASE" ]; then
+              echo "$name=true" >> "$GITHUB_OUTPUT"
+              return
+            fi
+            for file in "${files[@]}"; do
+              for pattern in "$@"; do
+                if [[ $file == $pattern ]]; then
+                  echo "$name=true" | tee -a "$GITHUB_OUTPUT"
+                  return
+                fi
+              done
+            done
+            echo "$name=false" | tee -a "$GITHUB_OUTPUT"
+          }
+          filter css 'css/*' crassus.config.ts
+          filter css-size \
+            'css/*' crassus.config.ts scripts/check-css-size.ts \
+            scripts/lib/css-size.ts scripts/lib/css-targets.ts package.json bun.lock
+          # A docs/ change deploys from deploy-docs.yml, whose guard repeats
+          # these patterns.
+          filter docs-deploy \
+            'src/*' 'css/*' 'scripts/*' package.json bun.lock '.github/*'
+          # `test:types` checks tests/ and what it imports. It never reads the
+          # Sass sources, the e2e suite (a unit test that imports from e2e/
+          # selects that test, which runs it too), or the files below, which
+          # only other jobs and tools read.
+          types=false
+          for file in "${files[@]}"; do
+            case "$file" in
+              css/*.scss | e2e/* | bench/* | thumbnails/* | carbon.yml | \
+                telemetry.yml | ostia.config.ts | bunfig.toml | \
+                playwright.config.ts | vite.config.perf.ts | .gitignore) ;;
+              *) types=true && break ;;
+            esac
+          done
+          [ -z "$BASE" ] && types=true
+          echo "types=$types" | tee -a "$GITHUB_OUTPUT"
+
+      # PRs run only the unit and e2e tests the diff can reach in bivium's
+      # static dependency graph (bivium.config.ts). bivium has no
+      # dependencies, so it plans without an install, except to compile and
+      # diff the CSS for a css/ change, which narrows the e2e tests to the
+      # pages that render a changed class (scripts/lib/css-narrower.ts).
+      # Pushes to master run everything, which catches any miss. Bun only
+      # for that css/ install: crassus runs on Bun's APIs.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        if: github.event_name == 'pull_request' && steps.filter.outputs.css == 'true'
+      - run: bun ci --ignore-scripts
+        if: github.event_name == 'pull_request' && steps.filter.outputs.css == 'true'
+      # crassus caches each compile by css/ tree, so a rerun or a later push
+      # that leaves css/ alone skips both.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: github.event_name == 'pull_request' && steps.filter.outputs.css == 'true'
+        with:
+          path: node_modules/.cache/crassus
+          key: crassus-select-${{ hashFiles('css/**', 'crassus.config.ts', 'bun.lock') }}
+          restore-keys: crassus-select-
+      # The bivium bun.lock pins, fetched straight from the registry and
+      # checked against the lock's hash: npx took 1.4 s to install it, and
+      # bunx needs Bun. Node loads the TypeScript config, so only the css/
+      # narrower, which runs crassus on Bun's APIs, needs Bun.
+      - name: Select affected tests
+        id: select
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          CSS: ${{ steps.filter.outputs.css }}
+        run: |
+          read -r version integrity < <(sed -n 's/^ *"bivium": \["bivium@\([^"]*\)".*"\(sha512-[^"]*\)"\],$/\1 \2/p' bun.lock) ||
+            { echo "::error::No bivium in bun.lock"; exit 1; }
+          curl -fsS -o "$RUNNER_TEMP/bivium.tgz" "https://registry.npmjs.org/bivium/-/bivium-$version.tgz"
+          if [ "sha512-$(openssl dgst -sha512 -binary "$RUNNER_TEMP/bivium.tgz" | openssl base64 -A)" != "$integrity" ]; then
+            echo "::error::bivium-$version.tgz doesn't match its bun.lock integrity"
+            exit 1
+          fi
+          tar -xzf "$RUNNER_TEMP/bivium.tgz" -C "$RUNNER_TEMP"
+          if [ "$CSS" = true ]; then runtime=bun; else runtime=node; fi
+          echo "bivium $version on $runtime $("$runtime" --version)"
+          "$runtime" "$RUNNER_TEMP/package/cli.js" plan "origin/$BASE_REF" --github
+
+      # One e2e shard for a small selection. A second one costs a runner and
+      # its own install, browser and CSS setup to save ~0.3 s of tests per
+      # file, so it only pays for itself past ~20 files.
+      - name: Pick e2e shards
+        id: shards
+        env:
+          TESTS: ${{ steps.select.outputs.e2e-tests }}
+        run: |
+          case "$TESTS" in
+            "" | all) shards="[1,2]" ;;
+            *) [ "$(wc -w <<< "$TESTS")" -le 20 ] && shards="[1]" || shards="[1,2]" ;;
+          esac
+          echo "e2e=$shards" >> "$GITHUB_OUTPUT"
+
+  # Informational: prints the compiled-rule delta, specificity histogram and
+  # size movement against the base branch in the job summary, and annotates
+  # each cascade flip at its .scss line. crassus exits non-zero on a cascade
+  # flip candidate, which over-reports by design, so the job never blocks a
+  # merge.
+  css-cascade:
+    needs: [changes]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.css == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun ci
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules/.cache/crassus
+          key: crassus-cascade-${{ hashFiles('css/**', 'crassus.config.ts', 'bun.lock') }}
+          restore-keys: crassus-cascade-
+      - name: Cascade diff against the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        # One run: annotations on stdout, the human report (fenced, cut to
+        # fit the 1 MiB summary limit) appended to the job summary.
+        run: bun run check:css --base "origin/$BASE_REF" --format github --summary "$GITHUB_STEP_SUMMARY"
+
+  # Fails when the PR grows all.css or white.css by more than the per-PR
+  # limit (scripts/lib/css-size.ts) against the base branch. A PR that
+  # needs more names the amount and the reason in a CSS-Size-Growth commit
+  # trailer; see CONTRIBUTING, Guards.
+  css-size:
+    needs: [changes]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.css-size == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun ci --ignore-scripts
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules/.cache/crassus
+            node_modules/.cache/ccs-css-size
+          key: crassus-size-${{ hashFiles('css/**', 'crassus.config.ts', 'bun.lock', 'scripts/lib/css-size.ts', 'scripts/lib/css-targets.ts') }}
+          restore-keys: crassus-size-
+      - name: Size growth against the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bun run check:css:size --base "origin/$BASE_REF" --format github --summary "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: test (${{ matrix.shard }}/2)
+    needs: [changes]
+    # Skipped when bivium selects no unit tests, unless `test:types` has to run.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.unit-tests != 'none' ||
+      needs.changes.outputs.types == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        # Vitest runs on Bun, and only canary runs it reliably so far.
+        with:
+          bun-version: canary
+      - run: bun ci
+
+      # The css tests cache each compiled theme entry (tests/css/compile.ts),
+      # which took a third of this suite's time compiled cold. One cache per
+      # shard, since each compiles different entries. bun.lock is in the key
+      # because a sass-embedded bump changes the output, which the test cache
+      # doesn't key on.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules/.cache/ccs-css-tests
+          key: css-tests-${{ matrix.shard }}-${{ hashFiles('css/**/*.scss', 'bun.lock') }}
+
+      # static-checks fails on sveld diagnostics; this job only needs types.
+      - name: Generate types
+        run: bun run build:docs --no-strict
+
+      - name: Test types (Svelte 5)
+        if: matrix.shard == 1 && (github.event_name != 'pull_request' || needs.changes.outputs.types == 'true')
+        run: bun run test:types
+
+      # Each shard runs half of the selected files, so an empty half passes.
+      - name: Test (Svelte 5)
+        env:
+          TESTS: ${{ needs.changes.outputs.unit-tests }}
+          SHARD: ${{ matrix.shard }}/2
+        run: |
+          case "$TESTS" in
+            "" | all) bunx --bun vitest run --shard="$SHARD" --passWithNoTests ;;
+            none) echo "No unit tests affected." ;;
+            *) read -ra files <<< "$TESTS" && bunx --bun vitest run --shard="$SHARD" --passWithNoTests "${files[@]}" ;;
+          esac
+
+      # The DatePicker calendar does its own date math. Run its tests where a
+      # daylight-saving switch skips midnight, and where a whole day was
+      # skipped (Pacific/Apia, December 2011). The zones run side by side,
+      # one worker each: one after another, this step put 25-38 s on the
+      # longest job in the workflow.
+      - name: Test calendar date math across time zones
+        if: matrix.shard == 2
+        env:
+          TESTS: ${{ needs.changes.outputs.unit-tests }}
+        run: |
+          case "$TESTS" in
+            none) exit 0 ;;
+            "" | all) ;;
+            *) [[ " $TESTS " == *" tests/DatePicker/calendar"* ]] || exit 0 ;;
+          esac
+          zones=(America/Santiago America/Havana Asia/Tehran Pacific/Apia)
+          pids=()
+          for zone in "${zones[@]}"; do
+            TZ="$zone" bunx --bun vitest run tests/DatePicker/calendar --maxWorkers=1 \
+              > "$RUNNER_TEMP/tz-${zone//\//-}.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          for i in "${!zones[@]}"; do
+            if wait "${pids[$i]}"; then result=passed; else result=failed; failed=1; fi
+            echo "::group::TZ=${zones[$i]} ($result)"
+            cat "$RUNNER_TEMP/tz-${zones[$i]//\//-}.log"
+            echo "::endgroup::"
+          done
+          exit "$failed"
+
+  # Starts as soon as the test selection is known, alongside the unit tests,
+  # rather than after them: waiting put both suites on the critical path.
+  test-e2e:
+    name: test-e2e (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: [changes]
+    if: needs.changes.outputs.e2e-tests != 'none'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.changes.outputs.e2e-shards) }}
+    # The bare runner with Chromium's headless shell, not the Playwright
+    # image: starting that container took 26-34 s, more than the ~20% the
+    # runner adds to the tests (#5064).
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      # --ignore-scripts skips the ibmtelemetry postinstall (already disabled
+      # via IBM_TELEMETRY_DISABLED) and Playwright's browser download, which
+      # the cache below covers.
+      - run: bun ci --ignore-scripts
+
+      # Read, not `bunx playwright --version`, which took a second to start.
+      - id: playwright
+        run: echo "version=$(jq -r .version node_modules/playwright/package.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-shell
+      - name: Install Chromium headless shell
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: bunx playwright install --only-shell chromium
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: css
+        with:
+          path: css/*.css
+          key: css-${{ runner.os }}-${{ hashFiles('css/**/*.scss', 'scripts/build-css.ts', 'package.json', 'bun.lock') }}
+
+      - name: Build CSS
+        if: steps.css.outputs.cache-hit != 'true'
+        run: bun run build:css
+
+      - name: E2E tests
+        env:
+          TESTS: ${{ needs.changes.outputs.e2e-tests }}
+          SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
+        run: |
+          case "$TESTS" in
+            "" | all) bunx playwright test --project=chromium --shard="$SHARD" --pass-with-no-tests ;;
+            *) read -ra files <<< "$TESTS" && bunx playwright test --project=chromium --shard="$SHARD" --pass-with-no-tests "${files[@]}" ;;
+          esac
+
+  test-svelte-compat:
+    name: test-svelte-compat (${{ matrix.label }}, ${{ matrix.shard }}/2)
+    needs: [changes]
+    # Skipped when bivium selects no unit tests, unless `test:types` has to run.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.unit-tests != 'none' ||
+      needs.changes.outputs.types == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [tests-svelte3, tests-svelte4]
+        shard: [1, 2]
+        include:
+          - dir: tests-svelte3
+            label: Svelte 3
+          - dir: tests-svelte4
+            label: Svelte 4 compat
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        # Vitest runs on Bun, and only canary runs it reliably so far.
+        with:
+          bun-version: canary
+      - run: bun ci
+
+      - name: Setup ${{ matrix.label }}
+        run: |
+          cd ${{ matrix.dir }}
+          bun ci
+
+      # static-checks fails on sveld diagnostics; this job only needs types.
+      - name: Generate types
+        run: bun run build:docs --no-strict
+
+      - name: Test types (${{ matrix.label }})
+        if: matrix.shard == 1 && (github.event_name != 'pull_request' || needs.changes.outputs.types == 'true')
+        run: |
+          cd ${{ matrix.dir }}
+          bun run test:types
+
+      # Selected files outside this harness's `include` (Svelte 5-only
+      # tests) are dropped, and a shard can get none, so an empty match passes.
+      - name: Test (${{ matrix.label }})
+        env:
+          TESTS: ${{ needs.changes.outputs.unit-tests }}
+          SHARD: ${{ matrix.shard }}/2
+        run: |
+          cd ${{ matrix.dir }}
+          case "$TESTS" in
+            "" | all) bunx --bun vitest run --shard="$SHARD" --passWithNoTests ;;
+            none) echo "No unit tests affected." ;;
+            *) read -ra files <<< "$TESTS" && bunx --bun vitest run --shard="$SHARD" --passWithNoTests "${files[@]/#/../}" ;;
+          esac
+
+  deploy-docs:
+    needs: [static-checks, changes, test]
+    if: |
+      always() &&
+      (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') &&
+      (github.event_name == 'workflow_dispatch' || needs.changes.outputs.docs-deploy == 'true') &&
+      !failure() && !cancelled()
+    uses: ./.github/workflows/deploy-docs.yml
+    with:
+      after-checks: true
+    secrets: inherit

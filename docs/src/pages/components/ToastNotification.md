@@ -1,0 +1,176 @@
+---
+components: ["ToastNotification", "NotificationActionButton"]
+description: Toast notifications are non-modal, time-based messages that appear briefly and dismiss automatically. They support multiple types and custom content.
+---
+
+<script>
+  import { NotificationActionButton, ToastNotification } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Display a basic error notification with title, subtitle, and timestamp by default. See [detailed usage](https://carbondesignsystem.com/components/notification/usage) and the related [InlineNotification](InlineNotification). For an imperative API to manage multiple toasts with automatic queue management, see [NotificationQueue](NotificationQueue).
+
+<ToastNotification title="Session expired" subtitle="Your session has ended. Please sign in again to continue." caption="{new Date().toLocaleString()}" />
+
+## Reusable
+
+Control notification visibility by binding to `open` to show, hide, and reuse the same component with different messages. Open defaults to true.
+
+<FileSource src="/framed/ToastNotification/ToastNotificationReusable" />
+
+## Autoclose
+
+Automatically close the notification after a specified duration (in milliseconds) with `timeout`. Set `pauseOnHover` to pause the timeout while the pointer is over the toast or while focus is inside it, so users can finish reading (opt-in).
+
+A toast with an action, or an actionable toast, ignores `timeout`. It stays
+open until users act on it or close it, so the action never disappears
+before they reach it.
+
+<FileSource src="/framed/ToastNotification/ToastNotificationTimeout" />
+
+## Actions
+
+Add an action, such as a retry, in the `actions` slot. A
+`NotificationActionButton` there renders as a small tertiary button
+under the text, in colors that read on every kind. The toast's title
+describes the button for screen readers, with no extra setup.
+
+<ToastNotification kind="error" title="Upload failed" subtitle="The connection timed out before quarterly-report.pdf finished." caption="{new Date().toLocaleString()}">
+  <svelte:fragment slot="actions">
+    <NotificationActionButton>Retry</NotificationActionButton>
+  </svelte:fragment>
+</ToastNotification>
+<ToastNotification lowContrast kind="error" title="Upload failed" subtitle="The connection timed out before quarterly-report.pdf finished." caption="{new Date().toLocaleString()}">
+  <svelte:fragment slot="actions">
+    <NotificationActionButton>Retry</NotificationActionButton>
+  </svelte:fragment>
+</ToastNotification>
+
+## Actionable
+
+Set `actionable` to `true` when users must reach an action in the
+toast, such as a retry after a failed upload. Place the action in the
+`actions` slot. The toast becomes an `alertdialog` named by its title and
+described by its subtitle. When it opens, focus moves to the first
+action, or to the close button if there is no action. Tab stays inside
+the toast, and <DocKbd label="Escape" /> closes it. Focus then returns
+to where it was before, such as the button that opened it.
+
+Set `focusOnOpen` to `false` to leave focus in place, or
+`closeOnEscape` to `false` to keep it open on <DocKbd label="Escape" />.
+If the close button is also hidden, Tab can leave the toast, so
+keyboard users are never trapped. The toast ignores `timeout`, so it
+cannot close before users act.
+[NotificationQueue](NotificationQueue) accepts the same options.
+
+<FileSource src="/framed/ToastNotification/ToastNotificationActionable" />
+
+## Full width
+
+Span the full container width with `fullWidth`.
+
+<ToastNotification fullWidth title="Session expired" subtitle="Your session has ended. Please sign in again to continue." caption="{new Date().toLocaleString()}" />
+
+## Title, subtitle, caption
+
+All three are optional and can be customized with slots.
+
+### Optional
+
+Title, subtitle, and caption each render only when provided.
+
+<ToastNotification subtitle="Your session has ended. Please sign in again to continue." />
+<ToastNotification title="Session expired" subtitle="Your session has ended. Please sign in again to continue." />
+<ToastNotification subtitle="Your session has ended. Please sign in again to continue." caption="{new Date().toLocaleString()}" />
+<ToastNotification title="Export complete" caption="{new Date().toLocaleString()}" />
+
+### Custom (slots)
+
+Customize the notification content using slots for more flexibility.
+
+<ToastNotification>
+  <strong slot="titleChildren">Session expired: </strong>
+  <strong slot="subtitleChildren">Your session has ended. Please sign in again to continue.</strong>
+  <strong slot="captionChildren">{new Date().toLocaleString()}</strong>
+</ToastNotification>
+
+## Close button
+
+Hide the close button or customize its behavior and label.
+
+### Hidden
+
+Create a persistent notification by hiding the close button.
+
+<ToastNotification hideCloseButton kind="warning" title="Elevated error rate" subtitle="The payments service is experiencing elevated error rates. This message will remain until resolved." caption="{new Date().toLocaleString()}" />
+
+### Translated label
+
+Translate the close button label via `closeButtonDescription`.
+
+<ToastNotification
+  title="会话已过期"
+  subtitle="您的会话已过期,请重新登录以继续。"
+  closeButtonDescription="关闭通知"
+/>
+
+### Prevent default
+
+Prevent the default close behavior using `e.preventDefault()` in the `on:close` event handler.
+
+<ToastNotification title="Session expired" subtitle="Your session has ended. Please sign in again to continue." caption="{new Date().toLocaleString()}" on:close={(e) => {
+  e.preventDefault();
+  // custom close logic (e.g., transitions)
+}} />
+
+## ARIA role
+
+Screen readers announce a notification when it appears. The default,
+`role="status"`, waits until the user pauses. Use it for most messages,
+such as a finished export.
+
+Set `role="alert"` for an urgent error that needs action now, such as a
+failed payment. An alert interrupts whatever the screen reader is
+reading, so keep it rare. Set `role="log"` for a running log of
+messages.
+
+<ToastNotification kind="success" title="Export complete" subtitle="Your report has been exported and is ready for download." caption="{new Date().toLocaleString()}" />
+<ToastNotification role="alert" kind="error" title="Payment failed" subtitle="Update your card to keep the workspace active." caption="{new Date().toLocaleString()}" />
+
+## Status icon label
+
+The status icon has a label for screen readers, such as "Warning" for
+the warning kinds. Translate it with `statusIconDescription`.
+
+<ToastNotification
+  kind="warning"
+  title="Maintenance planifiée"
+  subtitle="La facturation est en lecture seule samedi de 02:00 à 04:00 UTC."
+  statusIconDescription="Avertissement"
+  closeButtonDescription="Fermer la notification"
+/>
+
+## Variants
+
+The component supports different notification types.
+
+### High contrast
+
+<ToastNotification kind="error" title="Session expired" subtitle="Your session has ended. Please sign in again to continue." caption="{new Date().toLocaleString()}" />
+<ToastNotification kind="info" title="Update available" subtitle="A new version of the admin console is ready to install." caption="{new Date().toLocaleString()}"  />
+<ToastNotification kind="info-square" title="Update available" subtitle="A new version of the admin console is ready to install." caption="{new Date().toLocaleString()}" />
+<ToastNotification kind="success" title="Export complete" subtitle="Your report has been exported and is ready for download." caption="{new Date().toLocaleString()}" />
+<ToastNotification kind="warning" title="Disk space low" subtitle="The application server has less than 10% of disk space remaining." caption="{new Date().toLocaleString()}" />
+<ToastNotification kind="warning-alt" title="Disk space low" subtitle="The application server has less than 10% of disk space remaining." caption="{new Date().toLocaleString()}" />
+
+### Low contrast
+
+Use low contrast variants for less prominent notifications.
+
+<ToastNotification lowContrast kind="error" title="Session expired" subtitle="Your session has ended. Please sign in again to continue." caption="{new Date().toLocaleString()}" />
+<ToastNotification lowContrast kind="info" title="Update available" subtitle="A new version of the admin console is ready to install." caption="{new Date().toLocaleString()}" />
+<ToastNotification lowContrast kind="info-square" title="Update available" subtitle="A new version of the admin console is ready to install." caption="{new Date().toLocaleString()}" />
+<ToastNotification lowContrast kind="success" title="Export complete" subtitle="Your report has been exported and is ready for download." caption="{new Date().toLocaleString()}" />
+<ToastNotification lowContrast kind="warning" title="Disk space low" subtitle="The application server has less than 10% of disk space remaining." caption="{new Date().toLocaleString()}" />
+<ToastNotification lowContrast kind="warning-alt" title="Disk space low" subtitle="The application server has less than 10% of disk space remaining." caption="{new Date().toLocaleString()}" />

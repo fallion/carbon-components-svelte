@@ -1,0 +1,83 @@
+<script lang="ts">
+  import Dropdown from "carbon-components-svelte/Dropdown/Dropdown.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let items: ComponentProps<Dropdown>["items"] = [];
+  export let itemToString: ComponentProps<Dropdown>["itemToString"] = undefined;
+  export let selectedId: ComponentProps<Dropdown>["selectedId"] = undefined;
+  export let type: ComponentProps<Dropdown>["type"] = "default";
+  export let direction: ComponentProps<Dropdown>["direction"] = "bottom";
+  export let align: ComponentProps<Dropdown>["align"] = "start";
+  export let size: ComponentProps<Dropdown>["size"] = undefined;
+  export let open: ComponentProps<Dropdown>["open"] = false;
+  export let disabled: ComponentProps<Dropdown>["disabled"] = false;
+  export let readonly: ComponentProps<Dropdown>["readonly"] = false;
+  export let readonlyText: ComponentProps<Dropdown>["readonlyText"] = undefined;
+  export let fluid: ComponentProps<Dropdown>["fluid"] = false;
+  export let condensed: ComponentProps<Dropdown>["condensed"] = false;
+  export let labelText: ComponentProps<Dropdown>["labelText"] = "";
+  export let invalid: ComponentProps<Dropdown>["invalid"] = false;
+  export let invalidText: ComponentProps<Dropdown>["invalidText"] = "";
+  export let warn: ComponentProps<Dropdown>["warn"] = false;
+  export let warnText: ComponentProps<Dropdown>["warnText"] = "";
+  export let helperText: ComponentProps<Dropdown>["helperText"] = "";
+  export let label: ComponentProps<Dropdown>["label"] = undefined;
+  export let hideLabel: ComponentProps<Dropdown>["hideLabel"] = false;
+  export let translateWithId: ComponentProps<Dropdown>["translateWithId"] =
+    undefined;
+  export let translateWithIdSelection: ComponentProps<Dropdown>["translateWithIdSelection"] =
+    undefined;
+  export let clearable: ComponentProps<Dropdown>["clearable"] = false;
+  export let openOnClear: ComponentProps<Dropdown>["openOnClear"] = false;
+  export let clearSelectionText: ComponentProps<Dropdown>["clearSelectionText"] =
+    undefined;
+  export let selectionClearedText: ComponentProps<Dropdown>["selectionClearedText"] =
+    undefined;
+  export let id: ComponentProps<Dropdown>["id"] = "test-dropdown";
+  export let name: ComponentProps<Dropdown>["name"] = undefined;
+  export let ref: ComponentProps<Dropdown>["ref"] = null;
+  export let virtualize: ComponentProps<Dropdown>["virtualize"] = undefined;
+  export let wrapOptions: ComponentProps<Dropdown>["wrapOptions"] = false;
+  export let portalMenu: ComponentProps<Dropdown>["portalMenu"] = false;
+  export let onselect: ((event: CustomEvent) => void) | undefined = undefined;
+  export let onclear: ((event: CustomEvent) => void) | undefined = undefined;
+</script>
+
+<Dropdown
+  {items}
+  {itemToString}
+  bind:selectedId
+  {type}
+  {direction}
+  {align}
+  {size}
+  bind:open
+  {disabled}
+  {readonly}
+  {readonlyText}
+  {fluid}
+  {condensed}
+  {labelText}
+  {invalid}
+  {invalidText}
+  {warn}
+  {warnText}
+  {helperText}
+  {label}
+  {hideLabel}
+  {translateWithId}
+  {translateWithIdSelection}
+  {clearable}
+  {openOnClear}
+  {clearSelectionText}
+  {selectionClearedText}
+  {id}
+  {name}
+  bind:ref
+  {virtualize}
+  {wrapOptions}
+  {portalMenu}
+  on:select={(e) => onselect?.(e)}
+  on:clear={(e) => onclear?.(e)}
+  {...$$restProps}
+/>

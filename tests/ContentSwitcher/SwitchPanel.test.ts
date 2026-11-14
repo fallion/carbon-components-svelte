@@ -1,0 +1,149 @@
+import { screen } from "@testing-library/svelte";
+import { tick } from "svelte";
+import { expectNoContent } from "../utils/no-content";
+import { user } from "../utils/user";
+import ContentSwitcherPanels from "./ContentSwitcher.panels.test.svelte";
+import SwitchPanelAriaLabel from "./SwitchPanel.ariaLabel.test.svelte";
+import { renderAndFlush } from "./helpers";
+
+function panel(id: string) {
+  const element = document.getElementById(id);
+  assert(element);
+  return element;
+}
+
+describe("SwitchPanel", () => {
+  it("links each switch and panel by position", async () => {
+    await renderAndFlush(ContentSwitcherPanels);
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]).toHaveAttribute("aria-controls", "one-panel");
+    expect(tabs[1]).toHaveAttribute("aria-controls", "two-panel");
+
+    expect(panel("one-panel")).toHaveAttribute("role", "tabpanel");
+    expect(panel("one-panel")).toHaveAttribute("tabindex", "0");
+    expect(panel("one-panel")).toHaveAttribute("aria-labelledby", "one-switch");
+    expect(panel("two-panel")).toHaveAttribute("aria-labelledby", "two-switch");
+    expect(panel("three-panel")).toHaveAttribute(
+      "aria-labelledby",
+      "three-switch",
+    );
+  });
+
+  it("names the panel with a consumer aria-label instead of its switch", async () => {
+    await renderAndFlush(SwitchPanelAriaLabel, {
+      props: { "aria-label": "Summary" },
+    });
+
+    const element = panel("one-panel");
+    expect(element).not.toHaveAttribute("aria-labelledby");
+    expect(element).toHaveAccessibleName("Summary");
+  });
+
+  it("keeps a consumer aria-labelledby on the panel", async () => {
+    await renderAndFlush(SwitchPanelAriaLabel, {
+      props: { "aria-labelledby": "custom-label" },
+    });
+
+    expect(panel("one-panel")).toHaveAttribute(
+      "aria-labelledby",
+      "custom-label",
+    );
+  });
+
+  it("keeps an aria-controls passed to Switch", async () => {
+    await renderAndFlush(ContentSwitcherPanels);
+
+    expect(screen.getByRole("tab", { name: "Three" })).toHaveAttribute(
+      "aria-controls",
+      "custom-panel",
+    );
+  });
+
+  it("shows only the selected switch's panel", async () => {
+    await renderAndFlush(ContentSwitcherPanels);
+
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Content 1");
+    expect(panel("two-panel")).not.toBeVisible();
+    expect(panel("three-panel")).not.toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: "Two" }));
+
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Content 2");
+    expect(panel("one-panel")).not.toBeVisible();
+    expect(screen.getByTestId("selected-index")).toHaveTextContent("1");
+  });
+
+  it("follows a selectedIndex set by the parent", async () => {
+    const { rerender } = await renderAndFlush(ContentSwitcherPanels);
+
+    await rerender({ selectedIndex: 2 });
+    await tick();
+
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Content 3");
+  });
+
+  it("pairs panels in DOM order when one mounts late", async () => {
+    const { rerender } = await renderAndFlush(ContentSwitcherPanels, {
+      props: { showFirstPanel: false },
+    });
+
+    // Two panels for three switches: the first two switches get them.
+    expect(screen.getAllByRole("tab")[0]).toHaveAttribute(
+      "aria-controls",
+      "two-panel",
+    );
+
+    await rerender({ showFirstPanel: true });
+    await tick();
+    await tick();
+
+    expect(panel("one-panel")).toHaveAttribute("aria-labelledby", "one-switch");
+    expect(panel("two-panel")).toHaveAttribute("aria-labelledby", "two-switch");
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Content 1");
+  });
+
+  it("re-pairs the remaining panels when a panel unmounts", async () => {
+    const { rerender } = await renderAndFlush(ContentSwitcherPanels);
+
+    await rerender({ showFirstPanel: false });
+    await tick();
+    await tick();
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]).toHaveAttribute("aria-controls", "two-panel");
+    expect(tabs[1]).toHaveAttribute("aria-controls", "three-panel");
+  });
+
+  it("mounts every panel's content by default", async () => {
+    await renderAndFlush(ContentSwitcherPanels);
+
+    expect(panel("two-panel")).toHaveTextContent("Content 2");
+    expect(panel("three-panel")).toHaveTextContent("Content 3");
+  });
+
+  it("defers lazy content until its switch is first selected", async () => {
+    await renderAndFlush(ContentSwitcherPanels, { props: { lazy: true } });
+
+    expect(panel("one-panel")).toHaveTextContent("Content 1");
+    expectNoContent(panel("two-panel"));
+
+    await user.click(screen.getByRole("tab", { name: "Two" }));
+    expect(panel("two-panel")).toHaveTextContent("Content 2");
+
+    await user.click(screen.getByRole("tab", { name: "One" }));
+    expect(panel("two-panel")).toHaveTextContent("Content 2");
+  });
+
+  it("unmounts content on deselect with unmountOnHide", async () => {
+    await renderAndFlush(ContentSwitcherPanels, {
+      props: { unmountOnHide: true },
+    });
+
+    expectNoContent(panel("two-panel"));
+
+    await user.click(screen.getByRole("tab", { name: "Two" }));
+    expect(panel("two-panel")).toHaveTextContent("Content 2");
+    expectNoContent(panel("one-panel"));
+  });
+});

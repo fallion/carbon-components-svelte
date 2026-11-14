@@ -1,0 +1,59 @@
+<script lang="ts">
+  import {
+    Box,
+    Column,
+    Grid,
+    Row,
+    Stack,
+    Text,
+  } from "carbon-components-svelte";
+  import type { CarbonIconProps } from "carbon-icons-svelte";
+  import type { Component } from "svelte";
+  import DocEyebrow from "./DocEyebrow.svelte";
+
+  export let eyebrow = "";
+  export let icon: Component<CarbonIconProps> | undefined = undefined;
+  export let title = "";
+  export let titleType: "fluid-heading-04" | "heading-06" = "heading-06";
+  export let description = "";
+  export let balance = false;
+</script>
+
+<Box tag="section" class="hero band" paddingY={8}>
+  <Grid>
+    <Row style="margin-top: 2rem">
+      <Column>
+        <Stack gap={3}>
+          {#if eyebrow}
+            <DocEyebrow {eyebrow} {icon} />
+          {/if}
+          <Stack gap={7}>
+            {#if $$slots.title}
+              <slot name="title" />
+            {:else}
+              <Text
+                tag="h1"
+                type={titleType}
+                color="primary"
+                {balance}
+                maxWidth={titleType === "fluid-heading-04" ? "32ch" : undefined}
+              >
+                {title}
+              </Text>
+            {/if}
+            {#if $$slots.description}
+              <slot name="description" />
+            {:else if description}
+              <Text type="heading-04" color="secondary" maxWidth="60ch">
+                {description}
+              </Text>
+            {/if}
+            {#if $$slots.actions}
+              <slot name="actions" />
+            {/if}
+          </Stack>
+        </Stack>
+      </Column>
+    </Row>
+  </Grid>
+</Box>

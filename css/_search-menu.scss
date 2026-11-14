@@ -1,0 +1,280 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Search typeahead menu: a results popover composed with Search.
+/// Result text is flush-left with the search input text (the magnifier gutter),
+/// matching the input padding per size.
+/// @access private
+/// @group components
+@mixin search-menu {
+  // [text inset, magnifier gutter, row min-height] per Search size, mirroring
+  // the Carbon v10 search input horizontal padding, magnifier offset, and
+  // input height (xs 24px / sm 32px / lg 40px / xl 48px) so each menu row
+  // tracks the height of the input it sits under.
+  $search-menu-insets: (
+    "xs": ($carbon--spacing-06, $carbon--spacing-02, $carbon--spacing-06),
+    "sm": ($carbon--spacing-07, $carbon--spacing-03, $carbon--spacing-07),
+    "lg": ($carbon--spacing-08, $carbon--spacing-04, $carbon--spacing-08),
+    "xl": ($carbon--spacing-09, $carbon--spacing-05, $carbon--spacing-09),
+  );
+
+  // Top margin on group headers after the first. lg/xl use the unscoped default;
+  // xs/sm shrink the gap so it doesn't swamp the shorter rows. Also used in
+  // _ui-shell.scss for HeaderSearch.
+  $search-menu-group-separation: (
+    "xs": $carbon--spacing-03,
+    "sm": $carbon--spacing-04,
+    "lg": $carbon--spacing-05,
+    "xl": $carbon--spacing-05,
+  );
+
+  .#{$prefix}--search-menu {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
+  .#{$prefix}--search-menu--bar {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .#{$prefix}--search-menu--bar .#{$prefix}--search-menu__before {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+  }
+
+  .#{$prefix}--search-menu__search {
+    display: block;
+    width: 100%;
+  }
+
+  .#{$prefix}--search-menu--bar .#{$prefix}--search-menu__search {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .#{$prefix}--search-menu__menu {
+    width: 100%;
+    background-color: $layer;
+    box-shadow: 0 2px 6px rgba($carbon--black-100, 0.2);
+    overflow-y: auto;
+    max-height: to-rem(360px);
+    padding: $carbon--spacing-03 0;
+  }
+
+  .#{$prefix}--search-menu__menu--inline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: z("dropdown");
+  }
+
+  .#{$prefix}--search-menu__menu--hidden {
+    display: none;
+  }
+
+  .#{$prefix}--search-menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: $carbon--spacing-08;
+    padding-right: $carbon--spacing-05;
+    color: $text-secondary;
+    cursor: pointer;
+    text-decoration: none;
+    @include type-style("body-compact-01");
+
+    // `display: flex` above beats the UA `[hidden] { display: none }`.
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .#{$prefix}--search-menu-item--highlighted {
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--search-menu-item--disabled {
+    color: $text-disabled;
+    cursor: not-allowed;
+
+    // The matched-text highlight otherwise forces text-01; keep it disabled.
+    .#{$prefix}--search-menu-item__highlight {
+      color: $text-disabled;
+    }
+  }
+
+  .#{$prefix}--search-menu-item--skeleton {
+    cursor: default;
+    pointer-events: none;
+
+    .#{$prefix}--skeleton__text {
+      margin: 0;
+    }
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    .#{$prefix}--search-menu-item:hover {
+      background-color: $layer-hover;
+    }
+
+    .#{$prefix}--search-menu-item--disabled:hover {
+      background-color: transparent;
+    }
+
+    .#{$prefix}--search-menu-item--skeleton:hover {
+      background-color: transparent;
+    }
+  }
+
+  .#{$prefix}--search-menu-item__label {
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .#{$prefix}--search-menu-item__highlight {
+    color: $text-primary;
+    font-weight: 600;
+  }
+
+  .#{$prefix}--search-menu-item__icon {
+    position: absolute;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    transform: translateY(-50%);
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  .#{$prefix}--search-menu-item__icon--right {
+    right: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--search-menu-group--hidden {
+    display: none;
+  }
+
+  .#{$prefix}--search-menu-group--divider {
+    border-top: 1px solid $border-subtle;
+    margin-top: $carbon--spacing-03;
+    padding-top: $carbon--spacing-03;
+  }
+
+  // More padding above the label than below, so it reads with the items under it.
+  // Unscoped so SearchMenu and HeaderSearch rich menu share the same header rhythm.
+  .#{$prefix}--search-menu-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    // label-01 line box rounds to 15.98px; min-height pins the header at 2rem to
+    // match sm result rows.
+    min-height: $carbon--spacing-07;
+    padding-top: $carbon--spacing-03;
+    // Header only ever renders alongside its group's items, so keep this
+    // tighter than padding-top to read with the item list directly below.
+    padding-bottom: $carbon--spacing-02;
+    padding-right: $carbon--spacing-05;
+    color: $text-secondary;
+    @include type-style("label-01");
+  }
+
+  // Margin between groups. Skips the first group (menu top padding handles that).
+  // Default is $carbon--spacing-05; xs/sm override in the size loop. HeaderSearch sm
+  // overrides in _ui-shell.scss.
+  .#{$prefix}--search-menu-group:not(:first-child)
+    .#{$prefix}--search-menu-group__header {
+    margin-top: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--search-menu-group__action {
+    flex: 0 0 auto;
+    margin-left: $carbon--spacing-05;
+    @include type-style("label-01");
+  }
+
+  .#{$prefix}--search-menu__no-results {
+    padding-top: $carbon--spacing-05;
+    padding-bottom: $carbon--spacing-05;
+    color: $text-secondary;
+    @include type-style("body-compact-01");
+  }
+
+  @each $size, $inset in $search-menu-insets {
+    $text-inset: nth($inset, 1);
+    $icon-left: nth($inset, 2);
+    $row-height: nth($inset, 3);
+
+    .#{$prefix}--search-menu__menu--#{$size} {
+      .#{$prefix}--search-menu-item,
+      .#{$prefix}--search-menu-item--skeleton,
+      .#{$prefix}--search-menu-group__header,
+      .#{$prefix}--search-menu__no-results {
+        padding-left: $text-inset;
+      }
+
+      .#{$prefix}--search-menu-item {
+        min-height: $row-height;
+      }
+
+      .#{$prefix}--search-menu-group:not(:first-child)
+        .#{$prefix}--search-menu-group__header {
+        margin-top: map-get($search-menu-group-separation, $size);
+      }
+
+      .#{$prefix}--search-menu-item__icon {
+        left: $icon-left;
+      }
+
+      .#{$prefix}--search-menu-item__icon--right {
+        left: auto;
+      }
+    }
+  }
+
+  // Forced-colors mode drops the menu's shadow and repaints the highlighted
+  // row's fill as `Canvas`, so the menu had no edge and arrow keys showed
+  // no row. A disabled row read like the others. The menu gets a
+  // transparent outline, repainted as a visible system color. The
+  // highlighted row fills with `Highlight`, as a native list's current
+  // option does, and opts out of forcing: forced text sits on a `Canvas`
+  // backplate that would hide `HighlightText`. Its matched text follows.
+  // The doubled item class outranks the hover fill. A disabled row reads
+  // `GrayText`.
+  @media (forced-colors: active) {
+    .#{$prefix}--search-menu__menu {
+      outline: 1px solid transparent;
+    }
+
+    .#{$prefix}--search-menu-item.#{$prefix}--search-menu-item--highlighted {
+      forced-color-adjust: none;
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .#{$prefix}--search-menu-item--highlighted
+      .#{$prefix}--search-menu-item__highlight {
+      color: HighlightText;
+    }
+
+    .#{$prefix}--search-menu-item--disabled,
+    .#{$prefix}--search-menu-item--disabled
+      .#{$prefix}--search-menu-item__highlight {
+      color: GrayText;
+    }
+  }
+}
+
+@include exports("search-menu") {
+  @include search-menu;
+}

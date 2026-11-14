@@ -1,0 +1,420 @@
+---
+components: ["TimePicker", "TimePickerSelect", "SelectItem", "TimePickerSkeleton", "FluidTimePickerSkeleton"]
+description: Time pickers provide a time input field with optional period (AM/PM) and timezone selectors, with various sizes and states.
+---
+
+<script>
+  import { Box, FluidTimePickerSkeleton, Layer, SelectItem, TimePicker, TimePickerSelect, TimePickerSkeleton, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a time picker with period (AM/PM) and timezone selectors.
+
+<TimePicker labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+Give each `TimePickerSelect` a `labelText`. The default variant hides it
+visually and uses it as the select's accessible name. The fluid variant shows
+it inside the cell.
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<TimePicker selectTextOnFocus labelText="Cron job" placeholder="hh:mm" value="2:15">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+## Formatting
+
+Customize input validation to match a different time notation.
+
+### 24-hour clock
+
+The default `pattern` validates a 12-hour `h:mm` or `hh:mm` value. Override
+`pattern` (and update `helperText` or `placeholder` to match) to accept a
+24-hour clock instead. A 24-hour field typically drops the AM/PM select.
+
+<TimePicker pattern="([01][0-9]|2[0-3]):[0-5][0-9]" labelText="Cron job" placeholder="hh:mm" helperText="24-hour clock, e.g. 14:30" value="14:30">
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Seconds
+
+Update `pattern` and increase `maxlength` together to accept a `hh:mm:ss`
+value. The default `maxlength` (5) only fits `hh:mm`.
+
+<TimePicker pattern="(1[012]|[1-9]):[0-5][0-9]:[0-5][0-9]" maxlength={8} labelText="Cron job" placeholder="hh:mm:ss" value="2:15:30">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+</TimePicker>
+
+## Events
+
+Respond to edits on the time field and to period/timezone selection.
+
+### Change
+
+`on:change` and `on:input` forward the native input events from the time
+field. Read the current value from `event.target.value`, or use `bind:value`
+for two-way binding.
+
+<TimePicker labelText="Cron job" placeholder="hh:mm" on:change={(e) => console.log(e.target.value)}>
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Period and timezone change
+
+`TimePickerSelect` forwards `on:change` from its native select element the
+same way.
+
+<TimePicker labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm" on:change={(e) => console.log(e.target.value)}>
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+</TimePicker>
+
+## Select icon label
+
+Set `iconDescription` on `TimePickerSelect` to change the chevron icon's ARIA
+label and native tooltip. It defaults to `"Open list of options"`.
+
+<TimePicker labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" iconDescription="Choose AM or PM" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" iconDescription="Choose timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+## Helper text
+
+Add helper text to provide additional context or formatting instructions.
+
+<TimePicker labelText="Cron job" placeholder="hh:mm" helperText="24-hour, e.g. 14:30">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<TimePicker hideLabel labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+</TimePicker>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <TimePicker labelText="Cron job" placeholder="hh:mm">
+      <TimePickerSelect labelText="Period" value="pm">
+        <SelectItem value="am" text="AM" />
+        <SelectItem value="pm" text="PM" />
+      </TimePickerSelect>
+      <TimePickerSelect labelText="Timezone" value="pdt">
+        <SelectItem value="pdt" text="PDT" />
+        <SelectItem value="gmt" text="GMT" />
+      </TimePickerSelect>
+    </TimePicker>
+  </Box>
+</Layer>
+
+## Fluid
+
+Set `fluid` to embed labels inside each field cell. Fluid time pickers work
+standalone or inside [FluidForm](/components/FluidForm), which applies the
+variant automatically.
+
+Fluid time pickers fill their container using percentage-based columns (25% /
+25% / 50% with two selects, 50% / 50% with one). Give the parent a defined
+width so those ratios resolve as intended.
+
+<Box width="350px">
+  <TimePicker fluid labelText="Time" placeholder="hh:mm">
+    <TimePickerSelect labelText="Period" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+With a single period selector, the time input and select share equal width.
+
+<Box width="350px">
+  <TimePicker fluid labelText="Time" placeholder="hh:mm">
+    <TimePickerSelect labelText="Period" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<Box width="350px">
+  <TimePicker fluid labelText="Time" placeholder="hh:mm">
+    <svelte:fragment slot="labelChildren">
+      Time
+      <TooltipIcon tooltipText="Enter the standup time in hh:mm format." icon={Information} />
+    </svelte:fragment>
+    <TimePickerSelect labelText="Period" value="am">
+      <svelte:fragment slot="labelChildren">
+        Period
+        <TooltipIcon tooltipText="Select AM or PM." icon={Information} />
+      </svelte:fragment>
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Invalid
+
+Fluid time pickers display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<Box width="350px">
+  <TimePicker fluid invalid invalidText="A valid standup time is required. Enter the hour and minute in hh:mm format using a 12-hour clock, for example 09:30 or 2:15." labelText="Time" placeholder="hh:mm">
+    <TimePickerSelect labelText="Period" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Warning
+
+<Box width="350px">
+  <TimePicker fluid warn warnText="The selected standup time is outside business hours" labelText="Time" placeholder="hh:mm">
+    <TimePickerSelect labelText="Period" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Disabled
+
+Invalid and warning states are not displayed while the time picker is disabled.
+
+<Box width="350px">
+  <TimePicker fluid disabled invalid invalidText="A valid standup time is required" labelText="Time" placeholder="hh:mm">
+    <TimePickerSelect labelText="Period" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Read-only
+
+Invalid and warning states are not displayed while the time picker is read-only.
+
+<Box width="350px">
+  <TimePicker fluid readonly warn warnText="The selected standup time is outside business hours" labelText="Time" placeholder="hh:mm" value="10:30">
+    <TimePickerSelect labelText="Period" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Skeleton
+
+Display a loading skeleton for the fluid time picker variant.
+
+<FluidTimePickerSkeleton />
+
+Set `isOnlyTwo` to render only two elements.
+
+<FluidTimePickerSkeleton isOnlyTwo />
+
+## Sizes
+
+Set `size` to control the input height. The default is medium.
+
+### Extra-large
+
+Use the extra-large size for more prominent time pickers by setting `size` to `"xl"`.
+
+<TimePicker size="xl" labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Small
+
+Use the small size for more compact time pickers by setting `size` to `"sm"`.
+
+<TimePicker size="sm" labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Extra-small
+
+Use the extra-small size for dense layouts by setting `size` to `"xs"`.
+
+<TimePicker size="xs" labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Show validation errors with `invalid` and a message in `invalidText`.
+
+<TimePicker invalid invalidText="A valid value is required" labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Warning
+
+Show a warning with `warn` and a message in `warnText`.
+
+<TimePicker warn warnText="Time is outside business hours" labelText="Cron job" placeholder="hh:mm">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Disabled
+
+Disable the time picker with `disabled`. Period and timezone selectors inherit it.
+
+<TimePicker labelText="Cron job" placeholder="hh:mm" disabled>
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+### Read-only
+
+Set `readonly` to display a value while preventing edits. Unlike disabled, the input stays focusable and its value is submitted with the form. Period and timezone selectors inherit it.
+
+<TimePicker readonly labelText="Cron job" placeholder="hh:mm" value="10:30">
+  <TimePickerSelect labelText="Period" value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect labelText="Timezone" value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>
+
+## Skeleton
+
+Show a loading state with `TimePickerSkeleton`.
+
+<TimePickerSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<TimePickerSkeleton size="xs" />

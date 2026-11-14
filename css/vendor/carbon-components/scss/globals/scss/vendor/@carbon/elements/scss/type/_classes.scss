@@ -1,0 +1,27 @@
+//
+// Copyright IBM Corp. 2018, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import 'prefix';
+@import 'styles';
+@import 'font-family';
+
+/// Create type classes for font families, weights, styles
+///
+/// The font-family/font-weight/italic modifier classes are only defined by
+/// the sole includer (`css/_type.scss`), which re-emits them after this
+/// mixin's token-class loop so they win when combined with a token class
+/// (e.g. `.bx--type-body-long-01.bx--type-semibold`); defining them here too
+/// would always be dead weight.
+/// @access public
+/// @group @carbon/type
+@mixin carbon--type-classes {
+  @each $name, $value in $tokens {
+    .#{$prefix}--type-#{$name} {
+      @include carbon--type-style($name, map-has-key($value, breakpoints));
+    }
+  }
+}

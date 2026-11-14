@@ -1,106 +1,153 @@
 <script>
   /**
+   * @event {KeyboardEvent | MouseEvent} clear
+   */
+
+  /**
    * @typedef {"clearAll" | "clearSelection"} ListBoxSelectionTranslationId
    */
 
   /**
-   * Specify the number of selected items
-   * @type {number}
+   * Specify the number of selected items.
+   * @type {number | undefined}
    */
   export let selectionCount = undefined;
 
   /** Set to `true` to disable the list box selection */
   export let disabled = false;
 
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
+
   /** Default translation ids */
-  export const translationIds = {
+  export const translationIds = /** @type {const} */ ({
     clearAll: "clearAll",
     clearSelection: "clearSelection",
+  });
+
+  /**
+   * Override the default translation ids.
+   * @type {(id: ListBoxSelectionTranslationId) => string}
+   */
+  export let translateWithId = function translateWithId(id) {
+    return defaultTranslations[id];
   };
 
   /**
-   * Override the default translation ids
-   * @type {(id: ListBoxSelectionTranslationId) => string}
+   * Obtain a reference to the top-level HTML element.
+   * @bindable readonly
+   * @type {null | HTMLDivElement}
    */
-  export let translateWithId = (id) => defaultTranslations[id];
-
-  /** Obtain a reference to the top-level HTML element */
   export let ref = null;
 
-  import { createEventDispatcher, getContext } from "svelte";
-  import Close16 from "../icons/Close16.svelte";
+  import { createEventDispatcher, getContext, onMount } from "svelte";
+  import Close from "../icons/Close.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
 
   const defaultTranslations = {
     [translationIds.clearAll]: "Clear all selected items",
     [translationIds.clearSelection]: "Clear selected item",
   };
   const dispatch = createEventDispatcher();
-  const ctx = getContext("MultiSelect");
+  const ctx = getContext("carbon:MultiSelect");
+
+  // `bind:this` may already have nulled `ref` by the time the cleanup runs,
+  // so keep the node that was declared for `releaseRef`.
+  /** @type {null | HTMLDivElement} */
+  let declaredRef = null;
 
   $: if (ctx && ref) {
+    declaredRef = ref;
     ctx.declareRef({ key: "selection", ref });
   }
 
-  $: description = selectionCount
-    ? translateWithId("clearAll")
-    : translateWithId("clearSelection");
+  onMount(() => () => {
+    if (declaredRef) ctx?.releaseRef?.({ key: "selection", ref: declaredRef });
+  });
+
+  // With a selection count, the close icon takes focus, not the tag, so it
+  // gets the naming and description attributes.
+  $: ({ ariaLabel, ariaLabelledBy, ariaDescribedBy, rest } =
+    splitAriaNaming($$restProps));
+
+  $: translationId =
+    selectionCount !== undefined && selectionCount > 1
+      ? translationIds.clearAll
+      : translationIds.clearSelection;
+  $: description =
+    translateWithId?.(translationId) ?? defaultTranslations[translationId];
+
+  /** @param {MouseEvent} event */
+  function handleClear(event) {
+    if (!disabled && !readonly) {
+      dispatch("clear", event);
+    }
+  }
+
+  /** @param {KeyboardEvent} event */
+  function handleClearKeydown(event) {
+    if (
+      !disabled &&
+      !readonly &&
+      (event.key === "Enter" || event.key === " ")
+    ) {
+      dispatch("clear", event);
+    }
+  }
 </script>
 
 {#if selectionCount !== undefined}
   <div
-    class:bx--tag="{true}"
-    class:bx--tag--filter="{true}"
-    class:bx--tag--high-contrast="{true}"
-    class:bx--tag--disabled="{disabled}"
+    class:bx--tag={true}
+    class:bx--tag--filter={true}
+    class:bx--tag--high-contrast={true}
+    class:bx--tag--disabled={disabled}
+    aria-hidden={readonly ? "true" : undefined}
+    {...rest}
   >
-    <span class:bx--tag__label="{true}" title="{selectionCount}">
+    <span
+      class:bx--tag__label={true}
+      title={selectionCount?.toString()}
+      aria-hidden={readonly ? "true" : undefined}
+    >
       {selectionCount}
     </span>
     <div
-      bind:this="{ref}"
+      bind:this={ref}
       role="button"
-      tabIndex="{disabled ? -1 : 0}"
-      class:bx--tag__close-icon="{true}"
-      on:click|preventDefault|stopPropagation="{(e) => {
-        if (!disabled) {
-          dispatch('clear', e);
-        }
-      }}"
-      on:keydown|stopPropagation="{(e) => {
-        if (!disabled && e.key === 'Enter') {
-          dispatch('clear', e);
-        }
-      }}"
-      disabled="{disabled}"
-      aria-label="{translationIds.clearAll}"
-      title="{description}"
+      tabindex="-1"
+      class:bx--tag__close-icon={true}
+      on:click|preventDefault|stopPropagation={handleClear}
+      on:keydown|stopPropagation={handleClearKeydown}
+      {...{ disabled }}
+      aria-disabled={readonly ? "true" : undefined}
+      aria-label={ariaLabel ?? description}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
+      aria-hidden={readonly ? "true" : undefined}
+      title={description}
     >
-      <Close16 />
+      <Close />
     </div>
   </div>
 {:else}
   <div
-    bind:this="{ref}"
+    bind:this={ref}
     role="button"
-    aria-label="{description}"
-    title="{description}"
-    tabindex="{disabled ? '-1' : '0'}"
-    class:bx--list-box__selection="{true}"
-    class:bx--tag--filter="{selectionCount}"
-    class:bx--list-box__selection--multi="{selectionCount}"
+    aria-label={description}
+    title={description}
+    tabindex="-1"
+    class:bx--list-box__selection={true}
+    class:bx--tag--filter={selectionCount}
+    class:bx--list-box__selection--multi={selectionCount}
+    aria-disabled={readonly ? "true" : undefined}
     {...$$restProps}
-    on:click|preventDefault|stopPropagation="{(e) => {
-      if (!disabled) {
-        dispatch('clear', e);
-      }
-    }}"
-    on:keydown|stopPropagation="{(e) => {
-      if (!disabled && e.key === 'Enter') {
-        dispatch('clear', e);
-      }
-    }}"
+    on:click|preventDefault|stopPropagation={handleClear}
+    on:keydown|stopPropagation={handleClearKeydown}
   >
-    {#if selectionCount !== undefined}{selectionCount}{/if}
-    <Close16 />
+    {#if selectionCount !== undefined}
+      {selectionCount}
+    {/if}
+    <Close />
   </div>
 {/if}

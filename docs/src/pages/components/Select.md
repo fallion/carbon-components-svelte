@@ -1,0 +1,399 @@
+---
+components: ["Select", "SelectItem", "SelectItemGroup", "SelectSkeleton", "FluidSelectSkeleton"]
+description: Selects provide a dropdown menu for selecting a single option, with various states, sizes, validation, and helper text.
+---
+
+<script>
+  import { AILabel, Box, FluidSelectSkeleton, Layer, Select, SelectItem, SelectItemGroup, SelectSkeleton, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a basic select menu with select item components. The first item's value is used as the default if selected is not set.
+
+<Select labelText="Account plan" on:change={e => console.log("value", e.target.value)}>
+  <SelectItem value="free" />
+  <SelectItem value="starter" />
+  <SelectItem value="team" />
+  <SelectItem value="business" />
+  <SelectItem value="enterprise" />
+</Select>
+
+## Reactive
+
+Bind to `selected` for reactive updates, or listen for the `update` event
+directly—Select dispatches it whenever the selected value changes, which is
+what powers the two-way binding.
+
+<FileSource src="/framed/Select/SelectReactive" />
+
+## Content
+
+Customize the option text, the initial selection, the label, and how options are grouped.
+
+### Custom item text
+
+Customize each option's display text with the `text` prop on SelectItem.
+
+<Select labelText="Account plan" on:change={e => console.log("value", e.target.value)}>
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Initial selection
+
+Set the initial selection with `selected`.
+
+<Select labelText="Account plan" selected="starter" on:change={e => console.log("value", e.target.value)}>
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Helper text
+
+Add descriptive text below the select menu.
+
+<Select helperText="This workspace offers 5 plans (2 individual, 3 team)" labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<Select hideLabel labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom label content.
+
+<Select labelText="">
+  <strong slot="labelChildren">Account plan</strong>
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Remove label
+
+Set `noLabel` to `true` to omit the label element entirely. Unlike
+`hideLabel`, which keeps the label available to screen readers, `noLabel`
+removes it from the DOM. Provide an accessible name some other way, such
+as `aria-label` (forwarded through to the select element), when using
+`noLabel`.
+
+<Select noLabel labelText="Account plan" selected="starter" aria-label="Account plan">
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Item groups
+
+Group related options using select item group components. The example below
+also combines `disabled` and `hidden` on the first `SelectItem` to create a
+non-selectable placeholder that appears as the initial value but is absent
+from the open option list.
+
+<Select labelText="Account plan" selected="0">
+  <SelectItem value="0" text="Select a plan" disabled hidden />
+  <SelectItemGroup label="Individual plans">
+    <SelectItem value="free" text="Free" />
+    <SelectItem value="starter" text="Starter" />
+  </SelectItemGroup>
+  <SelectItemGroup label="Team plans">
+    <SelectItem value="team" text="Team" />
+    <SelectItem value="business" text="Business" />
+    <SelectItem value="enterprise" text="Enterprise" />
+  </SelectItemGroup>
+</Select>
+
+### Disabled group
+
+Set `disabled` on `SelectItemGroup` to disable every item within a group.
+
+<Select labelText="Account plan" selected="free">
+  <SelectItemGroup label="Individual plans">
+    <SelectItem value="free" text="Free" />
+    <SelectItem value="starter" text="Starter" />
+  </SelectItemGroup>
+  <SelectItemGroup label="Team plans" disabled>
+    <SelectItem value="team" text="Team" />
+    <SelectItem value="business" text="Business" />
+    <SelectItem value="enterprise" text="Enterprise" />
+  </SelectItemGroup>
+</Select>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<Select labelText="Account plan" selected="team">
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <AILabel slot="decorator">
+    <p>Recommended from your current seat count.</p>
+  </AILabel>
+</Select>
+
+## Sizes
+
+Set `size` to control the height. The default is medium.
+
+### Extra-small
+
+Use the extra-small size variant for the most compact layouts.
+
+<Select size="xs" labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Small
+
+Use the small size variant for compact layouts.
+
+<Select size="sm" labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Extra-large
+
+Use the extra-large size variant for prominent selections.
+
+<Select size="xl" labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+## Variants
+
+Adapt the field to horizontal layouts or light backgrounds.
+
+### Inline
+
+Use the inline variant for horizontal layouts.
+
+<Select inline labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <Select labelText="Account plan" selected="starter" >
+      <SelectItem value="free" text="Free" />
+      <SelectItem value="starter" text="Starter" />
+      <SelectItem value="team" text="Team" />
+      <SelectItem value="business" text="Business" />
+      <SelectItem value="enterprise" text="Enterprise" />
+    </Select>
+  </Box>
+</Layer>
+
+## Fluid
+
+Set `fluid` to embed the label inside the field. Fluid selects work
+standalone or inside [FluidForm](/components/FluidForm), which applies the
+variant automatically. The fluid variant cannot be combined with the inline variant.
+
+<Select fluid labelText="Account plan" selected="starter">
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<Select fluid labelText="Account plan" selected="starter">
+  <svelte:fragment slot="labelChildren">
+    Account plan
+    <TooltipIcon tooltipText="Account plan determines which features are available." icon={Information} />
+  </svelte:fragment>
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Invalid
+
+Fluid selects display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<Select fluid invalid invalidText="Account plan must be a team plan. Individual plans such as Free and Starter are not supported on this page; choose Team, Business, or Enterprise instead." labelText="Account plan" selected="starter">
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Warning
+
+<Select fluid warn warnText="The selected plan will not be persisted" labelText="Account plan" selected="starter">
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Disabled
+
+Invalid and warning states are not displayed while the select is disabled.
+
+<Select fluid disabled invalid invalidText="Account plan must be a team plan" labelText="Account plan" selected="starter">
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Read-only
+
+Invalid and warning states are not displayed while the select is read-only.
+
+<Select fluid readonly warn warnText="The selected plan will not be persisted" labelText="Account plan" selected="starter">
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Skeleton
+
+Display a loading skeleton for the fluid select variant.
+
+<FluidSelectSkeleton />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Show validation errors using the invalid state.
+
+<Select invalid invalidText="Account plan must be a team plan" labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Warning
+
+Show warnings using the warning state.
+
+<Select warn warnText="The selected plan will not be persisted" labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Disabled
+
+Set `disabled` to `true` to prevent interaction.
+
+<Select disabled labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Disabled option
+
+Mark individual items with `disabled` on `SelectItem` for finer control over available selections.
+
+<Select labelText="Account plan" selected="starter">
+  <SelectItem value="free" text="Free" disabled />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+### Read-only
+
+Use the read-only state to display the selected value while preventing changes.
+
+<Select readonly labelText="Account plan" selected="starter" >
+  <SelectItem value="free" text="Free" />
+  <SelectItem value="starter" text="Starter" />
+  <SelectItem value="team" text="Team" />
+  <SelectItem value="business" text="Business" />
+  <SelectItem value="enterprise" text="Enterprise" />
+</Select>
+
+## Skeleton
+
+Show a loading state with the skeleton variant.
+
+### With label
+
+<SelectSkeleton />
+
+### No label
+
+Show a loading state without a label by setting `hideLabel` to `true`.
+
+<SelectSkeleton hideLabel />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<SelectSkeleton size="xs" />

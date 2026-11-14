@@ -1,0 +1,92 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../list-box/list-box';
+@import '../../globals/scss/css--reset';
+
+/// Combo box styles
+/// @access private
+/// @group combo-box
+@mixin combo-box {
+  .#{$prefix}--combo-box:hover {
+    background-color: $field;
+  }
+
+
+  .#{$prefix}--combo-box.#{$prefix}--list-box--expanded
+    .#{$prefix}--text-input {
+    border-bottom-color: $border-subtle;
+  }
+
+  .#{$prefix}--combo-box .#{$prefix}--list-box__field,
+  .#{$prefix}--combo-box.#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--combo-box.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--combo-box.#{$prefix}--list-box--disabled.#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--combo-box.#{$prefix}--list-box--disabled.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field {
+    padding: 0;
+  }
+}
+
+@include exports('combo-box') {
+  @include combo-box;
+}
+
+// carbon-components-svelte patch (formerly css/_combobox-readonly.scss)
+/// Readonly combobox styles
+/// @access private
+/// @group combobox
+@mixin combobox-readonly {
+  .#{$prefix}--combo-box--readonly,
+  .#{$prefix}--combo-box--readonly:hover {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--combo-box--readonly .#{$prefix}--text-input {
+    border-block-end-color: $border-subtle;
+  }
+
+  .#{$prefix}--combo-box--readonly .#{$prefix}--list-box__menu-icon,
+  .#{$prefix}--combo-box--readonly .#{$prefix}--list-box__selection {
+    cursor: default;
+  }
+
+  .#{$prefix}--combo-box--readonly .#{$prefix}--list-box__menu-icon svg {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--combo-box--readonly .#{$prefix}--list-box__selection svg {
+    fill: $icon-disabled;
+  }
+}
+
+@include exports("combobox-readonly") {
+  @include combobox-readonly;
+}
+
+// carbon-components-svelte patch (combo-box-skeleton)
+/// Skeleton state for the plain (non-fluid) ComboBoxSkeleton. The
+/// upstream Carbon combo-box partial never shipped a `.bx--skeleton`
+/// rule (only Dropdown and Select did), so ComboBoxSkeleton renders
+/// with no shimmer without this.
+/// @access private
+/// @group combo-box
+@mixin combobox-skeleton {
+  .#{$prefix}--combo-box.#{$prefix}--skeleton {
+    @include skeleton;
+  }
+}
+
+@include exports("combobox-skeleton") {
+  @include combobox-skeleton;
+}

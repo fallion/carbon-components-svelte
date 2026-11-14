@@ -1,12 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" theme="white">
   <head>
     <meta charset="utf-8" />
+    <!-- Fonts load only from the site. TrustArc's cookie banner asks for
+         its own 156 KB of IBM Plex Sans TTFs, which the page already has.
+         The browser logs a CSP error for each one it blocks. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="font-src 'self' data:"
+    />
+    <!-- The fonts nearly every page's text uses. The stylesheet asks for them
+         only once a page renders, and text waits for its font. The site
+         serves them; see scripts/self-host-plex.ts. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="./node_modules/@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-Regular-Latin1.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="./node_modules/@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-SemiBold-Latin1.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="./node_modules/@ibm/plex-mono/fonts/split/woff2/IBMPlexMono-Regular-Latin1.woff2"
+    />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Svelte implementation of the Carbon Design System"
+    />
     <title>Carbon Components Svelte</title>
+    <script>
+      try {
+        const theme = localStorage.getItem("theme");
+
+        if (["white", "g10", "g80", "g90", "g100"].includes(theme)) {
+          document.documentElement.setAttribute("theme", theme);
+          document.documentElement.style.setProperty(
+            "color-scheme",
+            ["white", "g10"].includes(theme) ? "light" : "dark",
+          );
+        }
+      } catch {}
+    </script>
   </head>
   <body>
-    <script type="module" src="/src/index.js"></script>
+    <script type="module" src="/src/index.ts"></script>
   </body>
 </html>

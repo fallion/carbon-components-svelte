@@ -1,0 +1,1159 @@
+<script>
+  /**
+   * @restProps {div}
+   * @event {{ value: number; valueUpper: number }} change
+   * @event {{ value: number; valueUpper: number }} input
+   * @event {{ value: number; valueUpper: number; handle: "lower" | "upper" }} focus
+   * @event {{ value: number; valueUpper: number; handle: "lower" | "upper" }} blur
+   */
+
+  /**
+   * Specify the lower bound value of the slider.
+   * Kept when the owning form resets.
+   * @bindable writable
+   */
+  export let value = 0;
+
+  /**
+   * Set the size of the number input.
+   * Inherits `"xs"` from a parent `Form`.
+   * @type {"xs" | undefined}
+   */
+  export let size = undefined;
+
+  /**
+   * Specify the upper bound value of the slider.
+   * Kept when the owning form resets.
+   * @bindable writable
+   */
+  export let valueUpper = 100;
+
+  /** Set the maximum slider value */
+  export let max = 100;
+
+  /** Specify the label for the max value */
+  export let maxLabel = "";
+
+  /** Set the minimum slider value */
+  export let min = 0;
+
+  /** Specify the label for the min value */
+  export let minLabel = "";
+
+  /**
+   * Format displayed values for range labels and `aria-valuetext`.
+   * Does not change the numeric model; the text inputs stay numeric.
+   * @type {undefined | ((value: number) => string)}
+   */
+  export let formatValue = undefined;
+
+  /** Set the step value */
+  export let step = 1;
+
+  /**
+   * Show tick marks along the track.
+   * Set to `true` to place a tick at every `step`, or pass an array of
+   * `{ value, label? }` for specific stops with optional labels below the track.
+   * A label is also announced in `aria-valuetext` while a handle sits on its mark.
+   * Snapping follows `step` unless `snapToMarks` is set.
+   * @type {boolean | ReadonlyArray<{ value: number; label?: string }>}
+   */
+  export let marks = false;
+
+  /**
+   * Set to `true` to snap drag, click, and arrow key navigation to the configured `marks`
+   * instead of `step`. A handle only lands on marks that keep `minGap` from the other.
+   * Has no effect when `marks` is not set.
+   */
+  export let snapToMarks = false;
+
+  /**
+   * Snap drags and clicks to a mark when the pointer comes within this many pixels
+   * of it, so meaningful values are easy to hit while other values stay reachable
+   * by `step`. Keyboard navigation is unaffected. Set to `0` to disable.
+   * Has no effect when `marks` is not set or `snapToMarks` is set.
+   */
+  export let markSnapDistance = 0;
+
+  /** Set the step multiplier value */
+  export let stepMultiplier = 4;
+
+  /** Set the minimum allowed distance between `value` and `valueUpper` */
+  export let minGap = 0;
+
+  /**
+   * Set what a drag that starts on the track, not on a handle, does.
+   * `"handle"` moves the nearer handle to the pointer.
+   * `"range"` drags both handles together when the press lands inside the
+   * selected range, keeping its width; elsewhere it behaves like `"handle"`.
+   * `"brush"` also drags the range from inside it, and a drag that starts
+   * outside it paints a new range from the press point.
+   * Moving the whole range follows `step` even when `snapToMarks` is set.
+   * @type {"handle" | "range" | "brush"}
+   */
+  export let trackDrag = "handle";
+
+  /** Set to `true` to require a value */
+  export let required = false;
+
+  /** Specify the input type */
+  export let inputType = "number";
+
+  /** Set to `true` to disable the slider */
+  export let disabled = false;
+
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
+
+  /**
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
+
+  /** Set to `true` to hide the text inputs */
+  export let hideTextInput = false;
+
+  /**
+   * Set to `true` to hide the min and max labels beside the track,
+   * as when a readout elsewhere already shows the range.
+   */
+  export let hideRangeLabels = false;
+
+  /**
+   * Set to `true` for the slider to span
+   * the full width of its containing element.
+   */
+  export let fullWidth = false;
+
+  /**
+   * Set to "vertical" to lay out the slider along the vertical axis
+   * @type {"horizontal" | "vertical"}
+   */
+  export let orientation = "horizontal";
+
+  /** Set an id for the slider div element */
+  export let id = uniqueId();
+
+  /** Set to `true` to indicate an invalid state */
+  export let invalid = false;
+
+  /** Specify the invalid state text */
+  export let invalidText = "";
+
+  /** Set to `true` to indicate a warning state */
+  export let warn = false;
+
+  /** Specify the warning state text */
+  export let warnText = "";
+
+  /** Specify the helper text */
+  export let helperText = "";
+
+  /**
+   * Specify the label text.
+   * Alternatively, use the "labelChildren" slot.
+   * @example
+   * ```svelte
+   * <RangeSlider>
+   *   <span slot="labelChildren">Custom Label</span>
+   * </RangeSlider>
+   * ```
+   */
+  export let labelText = "";
+
+  /** Set to `true` to visually hide the label text */
+  export let hideLabel = false;
+
+  /** Set a name for the lower bound input element */
+  export let name = "";
+
+  /** Set a name for the upper bound input element */
+  export let nameUpper = "";
+
+  /**
+   * Specify the id of a form element outside the component to associate
+   * the lower and upper value inputs with.
+   * @type {string | undefined}
+   */
+  export let form = undefined;
+
+  /** Specify the `aria-label` for the lower bound input and handle */
+  export let ariaLabelInput = "Lower bound";
+
+  /** Specify the `aria-label` for the upper bound input and handle */
+  export let ariaLabelInputUpper = "Upper bound";
+
+  /**
+   * Obtain a reference to the HTML element.
+   * @bindable readonly
+   * @type {null | HTMLDivElement}
+   */
+  export let ref = null;
+
+  /** Set to `true` to select a text input's text when it receives focus */
+  export let selectTextOnFocus = false;
+
+  import { createEventDispatcher, getContext, tick } from "svelte";
+  import { FORM_SIZE_CONTEXT_KEY } from "../constants/context-keys.js";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { hasModifierKey } from "../utils/has-modifier-key.js";
+  import { getLayoutDirection } from "../utils/layout-direction.js";
+  import { clamp, parse } from "../utils/numeric-format.js";
+  import { pointerDrag } from "../utils/pointer-drag.js";
+  import { preserveFocusSelection } from "../utils/preserve-focus-selection.js";
+  import { reflectDefaultValue } from "../utils/reflect-default-value.js";
+  import {
+    getMarkLabels,
+    markNearPointer,
+    nearestMark,
+    resolveSliderMarks,
+    stepMarks,
+  } from "../utils/resolve-slider-marks.js";
+  import {
+    brushRange,
+    formatRangeLabel as formatSliderRangeLabel,
+    getPointerPosition,
+    getTextInputWidth,
+    getTrackAxis,
+    getValueText,
+    isTrackRtl,
+    shiftRange,
+    snapToStep,
+    TRACK_MIRROR,
+    trackLeft,
+    trackSign,
+    valueFromPointer,
+  } from "../utils/slider-value.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
+
+  /** @typedef {{ value: number; valueUpper: number }} RangeSliderChangeDetail */
+  /** @typedef {"lower" | "upper"} ActiveHandle */
+  /** @typedef {RangeSliderChangeDetail & { handle: ActiveHandle }} RangeSliderFocusDetail */
+
+  $: textInputWidth = getTextInputWidth(min, max, step);
+
+  /** @type {(type: "change" | "input" | "focus" | "blur", detail: RangeSliderChangeDetail | RangeSliderFocusDetail) => void} */
+  const dispatch = createEventDispatcher();
+
+  /** @type {HTMLDivElement | null} */
+  let trackRef = null;
+  /** @type {HTMLDivElement | null} */
+  let lowerThumbRef = null;
+  /** @type {HTMLDivElement | null} */
+  let upperThumbRef = null;
+  /** @type {HTMLInputElement | null} */
+  let lowerInputRef = null;
+  /** @type {HTMLInputElement | null} */
+  let upperInputRef = null;
+  /** @type {ActiveHandle} */
+  let activeHandle = "lower";
+  // Pointer distance from the active handle's value point when the press
+  // started on the handle itself, so grabbing a handle doesn't jump it.
+  let grabOffset = 0;
+  /** @type {"handle" | "range" | "brush"} */
+  let dragMode = "handle";
+  // Unsnapped pointer value at the press, and the range it started from,
+  // for moving the whole range.
+  let rangeAnchor = 0;
+  let rangeStart = { lower: 0, upper: 0 };
+  /** @type {"grab" | "crosshair" | undefined} */
+  let hoverCursor;
+  // Snapped value and pointer position of a `trackDrag="brush"` press
+  // outside the range. It moves the nearer handle until the pointer travels
+  // `BRUSH_THRESHOLD` pixels, then paints from `brushAnchor` instead.
+  /** @type {number | null} */
+  let brushAnchor = null;
+  let brushStartPoint = 0;
+  const BRUSH_THRESHOLD = 3;
+
+  /** @type {(label: string, numericValue: number) => string | number} */
+  function formatRangeLabel(label, numericValue) {
+    return formatSliderRangeLabel(label, numericValue, formatValue);
+  }
+
+  /** @type {(e: PointerEvent) => ActiveHandle} */
+  function pickHandle(event) {
+    const target = /** @type {Node | null} */ (event.target);
+    if (target && lowerThumbRef?.contains(target)) return "lower";
+    if (target && upperThumbRef?.contains(target)) return "upper";
+    const vertical = orientation === "vertical";
+    const point = getPointerPosition(event, orientation);
+    if (point == null) return activeHandle;
+    // Pointer offset from a thumb's center, positive toward `max`.
+    /** @type {(rect: DOMRect | undefined) => number} */
+    const offset = (rect) => {
+      if (!rect) return Number.POSITIVE_INFINITY;
+      if (vertical) return rect.top + rect.height / 2 - point;
+      const fromCenter = point - (rect.left + rect.width / 2);
+      return horizontalRtl ? -fromCenter : fromCenter;
+    };
+    const toLower = offset(lowerThumbRef?.getBoundingClientRect());
+    const toUpper = offset(upperThumbRef?.getBoundingClientRect());
+    const dLower = Math.abs(toLower);
+    const dUpper = Math.abs(toUpper);
+    if (dLower !== dUpper) return dLower < dUpper ? "lower" : "upper";
+    // Stacked thumbs tie. The upper one takes presses past them toward
+    // `max`; the lower one could not move there.
+    return toUpper > 0 ? "upper" : "lower";
+  }
+
+  function handleLowerInputFocus() {
+    if (selectTextOnFocus && !effectiveDisabled) {
+      tick().then(() => lowerInputRef?.select());
+    }
+    dispatch("focus", { value, valueUpper, handle: "lower" });
+  }
+
+  function handleLowerInputBlur() {
+    dispatch("blur", { value, valueUpper, handle: "lower" });
+  }
+
+  function handleUpperInputFocus() {
+    if (selectTextOnFocus && !effectiveDisabled) {
+      tick().then(() => upperInputRef?.select());
+    }
+    dispatch("focus", { value, valueUpper, handle: "upper" });
+  }
+
+  function handleUpperInputBlur() {
+    dispatch("blur", { value, valueUpper, handle: "upper" });
+  }
+
+  /** @type {(e: PointerEvent, snap?: number) => number | null} */
+  function getPointerValue(event, snap = step) {
+    if (!trackRef) return null;
+    return valueFromPointer(event, trackRef.getBoundingClientRect(), {
+      orientation,
+      min,
+      max,
+      step: snap,
+      rtl: horizontalRtl,
+    });
+  }
+
+  /** @type {(e: PointerEvent) => boolean} */
+  function isOnThumb(event) {
+    const target = /** @type {Node | null} */ (event.target);
+    return (
+      !!target &&
+      !!(lowerThumbRef?.contains(target) || upperThumbRef?.contains(target))
+    );
+  }
+
+  // Hit-tests the unsnapped pointer value, so a press just outside the
+  // range can't round into it.
+  /** @type {(e: PointerEvent) => number | null} */
+  function getRangePressValue(event) {
+    if (trackDrag === "handle" || isOnThumb(event) || valueUpper <= value) {
+      return null;
+    }
+    const pressed = getPointerValue(event, 0);
+    return pressed != null && pressed >= value && pressed <= valueUpper
+      ? pressed
+      : null;
+  }
+
+  /** @type {(e: PointerEvent) => void} */
+  function handlePointermove(event) {
+    if (effectiveDisabled || readonly || event.buttons !== 0) return;
+    if (getRangePressValue(event) != null) hoverCursor = "grab";
+    else if (trackDrag === "brush" && !isOnThumb(event))
+      hoverCursor = "crosshair";
+    else hoverCursor = undefined;
+  }
+
+  function handlePointerleave() {
+    hoverCursor = undefined;
+  }
+
+  // Moving or painting the whole range sets both handles at once, so
+  // neither keeps focus; both are highlighted while the gesture lasts.
+  function blurThumbs() {
+    const active = document.activeElement;
+    if (active === lowerThumbRef || active === upperThumbRef) {
+      /** @type {HTMLElement} */ (active).blur();
+    }
+  }
+
+  /** @type {(e: PointerEvent) => boolean | undefined} */
+  function handleDragStart(event) {
+    if (effectiveDisabled || readonly) return false;
+    readDirection();
+    const rangePress = getRangePressValue(event);
+    hoverCursor = undefined;
+    // The compat `mousedown` would move focus to the body for a press on
+    // the track, and in Firefox off the thumb for one on its SVG icon too.
+    event.preventDefault();
+    if (rangePress != null) {
+      blurThumbs();
+      dragMode = "range";
+      rangeAnchor = rangePress;
+      rangeStart = { lower: value, upper: valueUpper };
+      return;
+    }
+
+    activeHandle = pickHandle(event);
+    const thumbRef = activeHandle === "lower" ? lowerThumbRef : upperThumbRef;
+    thumbRef?.focus({ preventScroll: true });
+    if (trackDrag === "brush" && !isOnThumb(event)) {
+      brushAnchor = getSnappedPointerValue(event);
+      brushStartPoint = getPointerPosition(event, orientation) ?? 0;
+    }
+
+    grabOffset = 0;
+    const target = /** @type {Node | null} */ (event.target);
+    const point = getPointerPosition(event, orientation);
+    if (trackRef && point != null && target && thumbRef?.contains(target)) {
+      const { start, length } = getTrackAxis(
+        trackRef.getBoundingClientRect(),
+        orientation,
+        horizontalRtl,
+      );
+      const percent = activeHandle === "lower" ? left : leftUpper;
+      grabOffset = point - (start + (length * percent) / 100);
+    }
+    calcValue(event);
+  }
+
+  /** @type {(e: PointerEvent) => void} */
+  function handleDragMove(event) {
+    if (dragMode === "handle" && brushAnchor != null) {
+      const point = getPointerPosition(event, orientation);
+      if (
+        point != null &&
+        Math.abs(point - brushStartPoint) >= BRUSH_THRESHOLD
+      ) {
+        dragMode = "brush";
+        blurThumbs();
+      }
+    }
+    if (dragMode === "range") moveRange(event);
+    else if (dragMode === "brush") paintRange(event);
+    else calcValue(event);
+  }
+
+  function handleDragEnd() {
+    grabOffset = 0;
+    dragMode = "handle";
+    brushAnchor = null;
+    if (!effectiveDisabled && !readonly)
+      dispatch("change", { value, valueUpper });
+  }
+
+  /** @type {(e: PointerEvent) => number | null} */
+  function getSnappedPointerValue(event) {
+    const pointerValue = getPointerValue(event);
+    if (pointerValue == null || !resolvedMarks.length || !trackRef) {
+      return pointerValue;
+    }
+    const mark = snapToMarks
+      ? nearestMark(pointerValue, resolvedMarks)
+      : markNearPointer(event, trackRef.getBoundingClientRect(), {
+          orientation,
+          min,
+          max,
+          marks: resolvedMarks,
+          distance: markSnapDistance,
+          rtl: horizontalRtl,
+        });
+    return mark?.value ?? pointerValue;
+  }
+
+  /** @type {(e: PointerEvent) => void} */
+  function paintRange(event) {
+    if (effectiveDisabled || readonly || brushAnchor == null) return;
+    const pointerValue = getSnappedPointerValue(event);
+    if (pointerValue == null) return;
+    const next = brushRange(brushAnchor, pointerValue, { min, max, minGap });
+    value = next.lower;
+    valueUpper = next.upper;
+    dispatch("input", { value, valueUpper });
+  }
+
+  /** @type {(e: PointerEvent) => void} */
+  function moveRange(event) {
+    if (effectiveDisabled || readonly) return;
+    const pointerValue = getPointerValue(event, 0);
+    if (pointerValue == null) return;
+    const delta = Math.round((pointerValue - rangeAnchor) / step) * step;
+    const next = shiftRange(rangeStart.lower, rangeStart.upper, delta, {
+      min,
+      max,
+      step,
+    });
+    value = next.lower;
+    valueUpper = next.upper;
+    dispatch("input", { value, valueUpper });
+  }
+
+  // The gap applies before the bounds, so a `minGap` wider than the range
+  // can't push a handle outside `[min, max]`.
+  /** @type {(next: number) => number} */
+  function clampLower(next) {
+    return Math.max(min, Math.min(next, valueUpper - minGap));
+  }
+
+  /** @type {(next: number) => number} */
+  function clampUpper(next) {
+    return Math.min(max, Math.max(next, value + minGap));
+  }
+
+  /** @type {(handle: ActiveHandle) => import("../utils/resolve-slider-marks.js").SliderMark[]} */
+  function getReachableMarks(handle) {
+    return resolvedMarks.filter((mark) =>
+      handle === "lower" ? mark.value <= lowerMax : mark.value >= upperMin,
+    );
+  }
+
+  /** @type {(e: PointerEvent) => void} */
+  function calcValue(event) {
+    if (effectiveDisabled || readonly || !trackRef) return;
+
+    const rect = trackRef.getBoundingClientRect();
+    let nextValue = valueFromPointer(event, rect, {
+      orientation,
+      min,
+      max,
+      step,
+      offset: grabOffset,
+      rtl: horizontalRtl,
+    });
+    if (nextValue == null) return;
+    if (snapToMarks && resolvedMarks.length) {
+      const mark = nearestMark(nextValue, getReachableMarks(activeHandle));
+      if (!mark) return;
+      nextValue = mark.value;
+    } else if (markSnapDistance > 0 && resolvedMarks.length) {
+      nextValue =
+        markNearPointer(event, rect, {
+          orientation,
+          min,
+          max,
+          marks: getReachableMarks(activeHandle),
+          distance: markSnapDistance,
+          offset: grabOffset,
+          rtl: horizontalRtl,
+        })?.value ?? nextValue;
+    }
+
+    if (activeHandle === "lower") {
+      value = clampLower(nextValue);
+    } else {
+      valueUpper = clampUpper(nextValue);
+    }
+    dispatch("input", { value, valueUpper });
+  }
+
+  /** @type {(e: KeyboardEvent) => void} */
+  function handleKeydown(event) {
+    // Alt/Ctrl/Meta+Arrow belong to the browser (Alt/Cmd+Left is Back).
+    if (effectiveDisabled || readonly || hasModifierKey(event)) return;
+    readDirection();
+
+    if (event.key === "Home" || event.key === "End") {
+      // Prevent the browser from also scrolling to the top/bottom of the page.
+      event.preventDefault();
+      const next = event.key === "Home" ? min : max;
+      if (activeHandle === "lower") {
+        value = clampLower(next);
+      } else {
+        valueUpper = clampUpper(next);
+      }
+      dispatch("input", { value, valueUpper });
+      dispatch("change", { value, valueUpper });
+      return;
+    }
+
+    // Left and right move the handle the way they point, as they do on a
+    // native range input in RTL.
+    /** @type {Record<string, number>} */
+    const keys = {
+      ArrowDown: -1,
+      ArrowLeft: horizontalRtl ? 1 : -1,
+      ArrowRight: horizontalRtl ? -1 : 1,
+      ArrowUp: 1,
+      PageDown: -1,
+      PageUp: 1,
+    };
+    const dir = keys[event.key];
+    if (!dir) return;
+    // Prevent the arrow/page keys from also scrolling the page.
+    event.preventDefault();
+    const range = max - min;
+    const isLargeStep =
+      event.shiftKey || event.key === "PageUp" || event.key === "PageDown";
+    const delta =
+      step * (isLargeStep ? range / step / stepMultiplier : 1) * dir;
+    if (snapToMarks && resolvedMarks.length) {
+      const stops = getReachableMarks(activeHandle);
+      const count = dir * (isLargeStep ? stepMultiplier : 1);
+      if (activeHandle === "lower") {
+        value = stepMarks(value, stops, count);
+      } else {
+        valueUpper = stepMarks(valueUpper, stops, count);
+      }
+    } else if (activeHandle === "lower") {
+      value = clampLower(snapToStep(value + delta, { min, max, step }));
+    } else {
+      valueUpper = clampUpper(
+        snapToStep(valueUpper + delta, { min, max, step }),
+      );
+    }
+    dispatch("input", { value, valueUpper });
+    dispatch("change", { value, valueUpper });
+  }
+
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
+  }));
+
+  $: labelId = `label-${id}`;
+  // Naming and description belong on the thumbs and text inputs, not the
+  // wrapper. Each control's name joins a group label with its own
+  // `ariaLabelInput*`; a consumer `aria-labelledby` or `aria-label`
+  // replaces the visible label as that group label.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
+  $: ariaLabelId = `aria-label-${id}`;
+  $: groupLabelledBy = ariaLabelledBy ?? (ariaLabel ? ariaLabelId : labelId);
+  $: ({ errorId, warnId, readonlyId, helperId } = buildFieldIds(id));
+  $: lowerInputId = `lower-input-${id}`;
+  $: upperInputId = `upper-input-${id}`;
+  $: upperThumbId = `upper-thumb-${id}`;
+  $: range = max - min;
+  $: left = range === 0 ? 0 : ((value - min) / range) * 100;
+  $: leftUpper = range === 0 ? 0 : ((valueUpper - min) / range) * 100;
+
+  // In RTL, `min` sits at the right end of a horizontal track. The
+  // styles place the thumbs, fill and marks by the nearest `dir` (see
+  // `trackSign`), so server-rendered markup sits right before the script
+  // runs, and follows a `dir` change. The script reads the direction for
+  // the keys and the pointer: the track's nearest `dir`, else a
+  // LayoutDirection, else the computed direction. Read at mount, when a
+  // LayoutDirection changes, and again when the pointer enters, a thumb
+  // takes focus, or a key is pressed.
+  const layoutDirection = getLayoutDirection();
+  let horizontalRtl = false;
+
+  // Each handle hangs off its value point, away from the range. See the
+  // markup.
+  const LOWER_HANDLE_TRANSFORM =
+    "translate(calc(-50% - 50% * var(--ccs-slider-sign, 1)), -50%) scaleX(var(--ccs-slider-sign, 1))";
+  const UPPER_HANDLE_TRANSFORM =
+    "translate(calc(-50% + 50% * var(--ccs-slider-sign, 1)), -50%) scaleX(var(--ccs-slider-sign, 1))";
+
+  /**
+   * @param {"horizontal" | "vertical"} axis
+   * @param {"ltr" | "rtl" | undefined} contextDirection
+   * @param {Element | null} track
+   */
+  function syncDirection(axis, contextDirection, track) {
+    horizontalRtl = isTrackRtl(axis, contextDirection, track);
+  }
+
+  function readDirection() {
+    syncDirection(orientation, $layoutDirection, trackRef);
+  }
+
+  $: syncDirection(orientation, $layoutDirection, trackRef);
+
+  // Furthest each handle may travel toward the other, kept within bounds.
+  // Same as clampLower(max)/clampUpper(min), inlined so Svelte tracks
+  // valueUpper, value, and minGap as dependencies.
+  $: lowerMax = Math.max(min, valueUpper - minGap);
+  $: upperMin = Math.min(max, value + minGap);
+  $: resolvedMarks = resolveSliderMarks(marks, min, max, step);
+  $: markLabels = getMarkLabels(resolvedMarks);
+  $: hasMarkLabels = markLabels.size > 0;
+  $: {
+    value = clamp(value, min, max);
+    valueUpper = clamp(valueUpper, min, max);
+    if (value > valueUpper) value = valueUpper;
+    if (minGap > 0 && valueUpper - value < minGap) {
+      valueUpper = Math.min(max, value + minGap);
+      if (valueUpper - value < minGap)
+        value = Math.max(min, valueUpper - minGap);
+    }
+  }
+
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = size ?? ($formSize === "xs" ? "xs" : undefined);
+</script>
+
+<!-- svelte-ignore a11y-mouse-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  class:bx--form-item={true}
+  class:bx--form-item--fit={!fullWidth}
+  class:bx--slider-form-item--vertical={orientation === "vertical"}
+  {...wrapperProps}
+  on:click
+  on:mouseover
+  on:mouseenter
+  on:mouseleave
+>
+  <!-- A hidden input cannot be labelled; the thumbs are named through aria-labelledby. -->
+  <label
+    for={hideTextInput || readonly ? undefined : lowerInputId}
+    id={labelId}
+    class:bx--label={true}
+    class:bx--label--disabled={effectiveDisabled}
+    class:bx--visually-hidden={hideLabel}
+  >
+    <slot name="labelChildren">{labelText}</slot>
+  </label>
+  {#if ariaLabel}
+    <span id={ariaLabelId} hidden>{ariaLabel}</span>
+  {/if}
+  <div
+    class:bx--slider-container={true}
+    class:bx--slider-container--full-width={fullWidth}
+    class:bx--slider-container--no-range-labels={hideRangeLabels}
+    class:bx--slider-container--no-text-input={hideTextInput}
+    class:bx--slider-container--two-handles={true}
+    class:bx--slider-container--readonly={readonly}
+    class:bx--slider-container--vertical={orientation === "vertical"}
+    class:bx--slider-container--disabled={effectiveDisabled}
+    style:width={fullWidth ? "100%" : undefined}
+  >
+    <div
+      class:bx--slider-text-input-wrapper={true}
+      class:bx--slider-text-input-wrapper--lower={true}
+      class:bx--slider-text-input-wrapper--hidden={hideTextInput}
+    >
+      <input
+        bind:this={lowerInputRef}
+        use:preserveFocusSelection={selectTextOnFocus && !effectiveDisabled}
+        use:reflectDefaultValue={value}
+        type={hideTextInput || readonly ? "hidden" : inputType}
+        id={lowerInputId}
+        {name}
+        {form}
+        class:bx--text-input={true}
+        class:bx--slider-text-input={true}
+        style:width={textInputWidth}
+        class:bx--slider-text-input--lower={true}
+        class:bx--slider-text-input--xs={effectiveSize === "xs"}
+        class:bx--text-input--invalid={showInvalid}
+        class:bx--slider-text-input--warn={showWarn}
+        {value}
+        aria-label={ariaLabelInput}
+        aria-labelledby="{groupLabelledBy} {lowerInputId}"
+        disabled={effectiveDisabled}
+        {readonly}
+        {required}
+        {min}
+        max={lowerMax}
+        {step}
+        on:change={(event) => {
+          if (readonly) return;
+          const target = /** @type {HTMLInputElement} */ (event.currentTarget);
+          // An empty or unparsable entry keeps the current value.
+          const next = parse(target.value.trim(), true);
+          if (next !== null) {
+            value = clampLower(next);
+            dispatch("change", { value, valueUpper });
+          }
+          // Show the value the handle holds. Svelte skips the update when a
+          // clamped or rejected entry leaves `value` unchanged.
+          target.value = String(value);
+        }}
+        data-invalid={showInvalid || null}
+        data-warn={showWarn || null}
+        aria-invalid={showInvalid || null}
+        aria-describedby={joinDescribedBy(
+          resolveStatusDescribedBy({
+            showInvalid,
+            showWarn,
+            invalidText,
+            warnText,
+            helperText,
+            errorId,
+            warnId,
+            helperId,
+          }),
+          ariaDescribedBy,
+        )}
+        on:focus={handleLowerInputFocus}
+        on:blur={handleLowerInputBlur}
+      />
+      <!-- NVDA announces a read-only number input as editable, so a read-only
+        slider shows its value as text. The thumb already exposes the value. -->
+      {#if readonly && !hideTextInput}
+        <div
+          aria-hidden="true"
+          class:bx--text-input={true}
+          class:bx--slider-text-input={true}
+          class:bx--slider-text-input--lower={true}
+          class:bx--slider-text-input--readonly={true}
+          class:bx--slider-text-input--xs={effectiveSize === "xs"}
+        >
+          {value}
+        </div>
+      {/if}
+      {#if showInvalid}
+        <WarningFilled class="bx--slider__invalid-icon" />
+      {:else if showWarn}
+        <WarningAltFilled
+          class="bx--slider__invalid-icon bx--slider__invalid-icon--warning"
+        />
+      {/if}
+    </div>
+    {#if !hideRangeLabels}
+      <span class:bx--slider__range-label={true}
+        >{formatRangeLabel(minLabel, min)}</span
+      >
+    {/if}
+    <div
+      bind:this={ref}
+      class:bx--slider={true}
+      class:bx--slider--disabled={effectiveDisabled}
+      class:bx--slider--readonly={readonly}
+      class:bx--slider--with-marks={resolvedMarks.length > 0}
+      class:bx--slider--with-mark-labels={hasMarkLabels}
+      class:bx--slider--vertical={orientation === "vertical"}
+      class:bx--slider--moving-range={dragMode !== "handle"}
+      style:max-width={fullWidth ? "none" : undefined}
+      style:--ccs-slider-sign={orientation === "vertical"
+        ? undefined
+        : trackSign(horizontalRtl)}
+      style:cursor={dragMode === "range"
+        ? "grabbing"
+        : dragMode === "brush"
+          ? "crosshair"
+          : hoverCursor}
+      use:pointerDrag={{
+        onStart: handleDragStart,
+        onMove: handleDragMove,
+        onEnd: handleDragEnd,
+      }}
+      on:pointerenter={readDirection}
+      on:pointermove={handlePointermove}
+      on:pointerleave={handlePointerleave}
+    >
+      <!-- Each handle sits beside its value point, on the side away from
+        the range. In RTL the sides swap, and the arrows mirror with them. -->
+      <div
+        class:bx--slider__thumb-wrapper={true}
+        class:bx--slider__thumb-wrapper--lower={true}
+        style:left={orientation === "vertical" ? undefined : trackLeft(left)}
+        style:top={orientation === "vertical" ? `${100 - left}%` : undefined}
+        style:transform={orientation === "vertical"
+          ? undefined
+          : LOWER_HANDLE_TRANSFORM}
+      >
+        <div
+          bind:this={lowerThumbRef}
+          role="slider"
+          aria-disabled={effectiveDisabled || undefined}
+          tabindex={effectiveDisabled ? undefined : 0}
+          class:bx--slider__thumb={true}
+          class:bx--slider__thumb--lower={true}
+          aria-valuemax={lowerMax}
+          aria-valuemin={min}
+          aria-valuenow={value}
+          aria-valuetext={getValueText(value, formatValue, markLabels)}
+          aria-label={ariaLabelInput}
+          aria-labelledby="{groupLabelledBy} {id}"
+          aria-orientation={orientation}
+          aria-describedby={joinDescribedBy(
+            readonly ? readonlyId : null,
+            resolveStatusDescribedBy({
+              showInvalid,
+              showWarn,
+              invalidText,
+              warnText,
+              helperText,
+              errorId,
+              warnId,
+              helperId,
+            }),
+            ariaDescribedBy,
+          )}
+          aria-invalid={showInvalid || undefined}
+          aria-readonly={readonly || undefined}
+          on:focus={() => {
+            activeHandle = "lower";
+            readDirection();
+          }}
+          on:keydown={handleKeydown}
+          {id}
+        >
+          <svg
+            class:bx--slider__thumb-icon={true}
+            class:bx--slider__thumb-icon--lower={true}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 24"
+          >
+            <path
+              d="M15.08 6.46H16v11.08h-.92zM4.46 17.54c-.25 0-.46-.21-.46-.46V6.92a.465.465 0 0 1 .69-.4l8.77 5.08a.46.46 0 0 1 0 .8l-8.77 5.08c-.07.04-.15.06-.23.06Z"
+            />
+            <path fill="none" d="M-4 0h24v24H-4z" />
+          </svg>
+          <svg
+            class:bx--slider__thumb-icon={true}
+            class:bx--slider__thumb-icon--lower={true}
+            class:bx--slider__thumb-icon--focus={true}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 24"
+          >
+            <path
+              d="M15.08 6.46H16v11.08h-.92zM4.46 17.54c-.25 0-.46-.21-.46-.46V6.92a.465.465 0 0 1 .69-.4l8.77 5.08a.46.46 0 0 1 0 .8l-8.77 5.08c-.07.04-.15.06-.23.06Z"
+            />
+            <path fill="none" d="M-4 0h24v24H-4z" />
+            <path d="M15.08 0H16v6.46h-.92z" />
+            <path d="M0 0h.92v24H0zM15.08 0H16v24h-.92z" />
+            <path d="M0 .92V0h16v.92zM0 24v-.92h16V24z" />
+          </svg>
+        </div>
+      </div>
+      <div
+        class:bx--slider__thumb-wrapper={true}
+        class:bx--slider__thumb-wrapper--upper={true}
+        style:left={orientation === "vertical"
+          ? undefined
+          : trackLeft(leftUpper)}
+        style:top={orientation === "vertical"
+          ? `${100 - leftUpper}%`
+          : undefined}
+        style:transform={orientation === "vertical"
+          ? undefined
+          : UPPER_HANDLE_TRANSFORM}
+      >
+        <div
+          bind:this={upperThumbRef}
+          role="slider"
+          aria-disabled={effectiveDisabled || undefined}
+          tabindex={effectiveDisabled ? undefined : 0}
+          class:bx--slider__thumb={true}
+          id={upperThumbId}
+          class:bx--slider__thumb--upper={true}
+          aria-valuemax={max}
+          aria-valuemin={upperMin}
+          aria-valuenow={valueUpper}
+          aria-valuetext={getValueText(valueUpper, formatValue, markLabels)}
+          aria-label={ariaLabelInputUpper}
+          aria-labelledby="{groupLabelledBy} {upperThumbId}"
+          aria-orientation={orientation}
+          aria-describedby={joinDescribedBy(
+            readonly ? readonlyId : null,
+            resolveStatusDescribedBy({
+              showInvalid,
+              showWarn,
+              invalidText,
+              warnText,
+              helperText,
+              errorId,
+              warnId,
+              helperId,
+            }),
+            ariaDescribedBy,
+          )}
+          aria-invalid={showInvalid || undefined}
+          aria-readonly={readonly || undefined}
+          on:focus={() => {
+            activeHandle = "upper";
+            readDirection();
+          }}
+          on:keydown={handleKeydown}
+        >
+          <svg
+            class:bx--slider__thumb-icon={true}
+            class:bx--slider__thumb-icon--upper={true}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 24"
+          >
+            <path
+              d="M0 6.46h.92v11.08H0zM11.54 6.46c.25 0 .46.21.46.46v10.15a.465.465 0 0 1-.69.4L2.54 12.4a.46.46 0 0 1 0-.8l8.77-5.08c.07-.04.15-.06.23-.06Z"
+            />
+            <path fill="none" d="M-4 0h24v24H-4z" />
+          </svg>
+          <svg
+            class:bx--slider__thumb-icon={true}
+            class:bx--slider__thumb-icon--upper={true}
+            class:bx--slider__thumb-icon--focus={true}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 24"
+          >
+            <path
+              d="M0 6.46h.92v11.08H0zM11.54 6.46c.25 0 .46.21.46.46v10.15a.465.465 0 0 1-.69.4L2.54 12.4a.46.46 0 0 1 0-.8l8.77-5.08c.07-.04.15-.06.23-.06Z"
+            />
+            <path fill="none" d="M-4 0h24v24H-4z" />
+            <path d="M.92 24H0v-6.46h.92z" />
+            <path d="M16 24h-.92V0H16zM.92 24H0V0h.92z" />
+            <path d="M16 23.08V24H0v-.92zM16 0v.92H0V0z" />
+          </svg>
+        </div>
+      </div>
+      <div bind:this={trackRef} class:bx--slider__track={true}></div>
+      <div
+        class:bx--slider__filled-track={true}
+        style:transform={orientation === "vertical"
+          ? `translate(-50%, ${-left}%) scaleY(${(leftUpper - left) / 100})`
+          : `${TRACK_MIRROR} translate(${left}%, -50%) scaleX(${(leftUpper - left) / 100})`}
+      ></div>
+      {#if resolvedMarks.length > 0}
+        <div class:bx--slider__marks={true} aria-hidden="true">
+          {#each resolvedMarks as mark (mark.value)}
+            {@const percent =
+              range === 0 ? 0 : ((mark.value - min) / range) * 100}
+            <span
+              class:bx--slider__mark={true}
+              style:left={orientation === "vertical"
+                ? undefined
+                : trackLeft(percent)}
+              style:top={orientation === "vertical"
+                ? `${100 - percent}%`
+                : undefined}
+            >
+              {#if mark.label != null && mark.label !== ""}
+                <span class:bx--slider__mark-label={true}>{mark.label}</span>
+              {/if}
+            </span>
+          {/each}
+        </div>
+      {/if}
+    </div>
+    {#if !hideRangeLabels}
+      <span class:bx--slider__range-label={true}
+        >{formatRangeLabel(maxLabel, max)}</span
+      >
+    {/if}
+    <div
+      class:bx--slider-text-input-wrapper={true}
+      class:bx--slider-text-input-wrapper--upper={true}
+      class:bx--slider-text-input-wrapper--hidden={hideTextInput}
+    >
+      <input
+        bind:this={upperInputRef}
+        use:preserveFocusSelection={selectTextOnFocus && !effectiveDisabled}
+        use:reflectDefaultValue={valueUpper}
+        type={hideTextInput || readonly ? "hidden" : inputType}
+        id={upperInputId}
+        name={nameUpper}
+        {form}
+        class:bx--text-input={true}
+        class:bx--slider-text-input={true}
+        style:width={textInputWidth}
+        class:bx--slider-text-input--upper={true}
+        class:bx--slider-text-input--xs={effectiveSize === "xs"}
+        class:bx--text-input--invalid={showInvalid}
+        class:bx--slider-text-input--warn={showWarn}
+        value={valueUpper}
+        aria-label={ariaLabelInputUpper}
+        aria-labelledby="{groupLabelledBy} {upperInputId}"
+        disabled={effectiveDisabled}
+        {readonly}
+        {required}
+        min={upperMin}
+        {max}
+        {step}
+        on:change={(event) => {
+          if (readonly) return;
+          const target = /** @type {HTMLInputElement} */ (event.currentTarget);
+          // An empty or unparsable entry keeps the current value.
+          const next = parse(target.value.trim(), true);
+          if (next !== null) {
+            valueUpper = clampUpper(next);
+            dispatch("change", { value, valueUpper });
+          }
+          // Show the value the handle holds. Svelte skips the update when a
+          // clamped or rejected entry leaves `valueUpper` unchanged.
+          target.value = String(valueUpper);
+        }}
+        data-invalid={showInvalid || null}
+        data-warn={showWarn || null}
+        aria-invalid={showInvalid || null}
+        aria-describedby={joinDescribedBy(
+          resolveStatusDescribedBy({
+            showInvalid,
+            showWarn,
+            invalidText,
+            warnText,
+            helperText,
+            errorId,
+            warnId,
+            helperId,
+          }),
+          ariaDescribedBy,
+        )}
+        on:focus={handleUpperInputFocus}
+        on:blur={handleUpperInputBlur}
+      />
+      {#if readonly && !hideTextInput}
+        <div
+          aria-hidden="true"
+          class:bx--text-input={true}
+          class:bx--slider-text-input={true}
+          class:bx--slider-text-input--upper={true}
+          class:bx--slider-text-input--readonly={true}
+          class:bx--slider-text-input--xs={effectiveSize === "xs"}
+        >
+          {valueUpper}
+        </div>
+      {/if}
+      {#if showInvalid}
+        <WarningFilled class="bx--slider__invalid-icon" />
+      {:else if showWarn}
+        <WarningAltFilled
+          class="bx--slider__invalid-icon bx--slider__invalid-icon--warning"
+        />
+      {/if}
+    </div>
+  </div>
+  {#if showInvalid && invalidText}
+    <div
+      id={errorId}
+      role="alert"
+      class:bx--slider__validation-msg={true}
+      class:bx--slider__validation-msg--invalid={true}
+      class:bx--form-requirement={true}
+    >
+      {invalidText}
+    </div>
+  {/if}
+  {#if showWarn && warnText}
+    <div
+      id={warnId}
+      class:bx--slider__validation-msg={true}
+      class:bx--form-requirement={true}
+    >
+      {warnText}
+    </div>
+  {/if}
+  {#if helperText && !showInvalid && !showWarn}
+    <div
+      id={helperId}
+      class:bx--form__helper-text={true}
+      class:bx--form__helper-text--disabled={effectiveDisabled}
+    >
+      {helperText}
+    </div>
+  {/if}
+  {#if readonly}
+    <span id={readonlyId} class:bx--visually-hidden={true}>{readonlyText}</span>
+  {/if}
+</div>

@@ -1,25 +1,42 @@
+<script context="module">
+  /** @typedef {"white" | "g10" | "g80" | "g90" | "g100"} CarbonTheme */
+
+  /** @type {Record<CarbonTheme, string>} */
+  export const themes = {
+    white: "White",
+    g10: "Gray 10",
+    g80: "Gray 80",
+    g90: "Gray 90",
+    g100: "Gray 100",
+  };
+</script>
+
 <script>
   /**
-   * Dynamic, client-side theming using CSS variables
-   * Only works with `carbon-components-svelte/css/all.css`
+   * Dynamic, client-side theming using CSS variables.
+   * Only works with `carbon-components-svelte/css/all.css`.
    */
 
   /**
-   * @typedef {"white" | "g10" | "g80" | "g90" | "g100"} CarbonTheme
-   * @event {{ theme: CarbonTheme; }} update
+   * @typedef {import("./carbon-tokens").CarbonToken} CarbonToken
+   * @event update
+   * @type {object}
+   * @property {CarbonTheme} theme
    * @slot {{ theme: CarbonTheme; }}
    */
 
   /**
-   * Set the current Carbon theme
+   * Set the current Carbon theme.
    * @type {CarbonTheme}
+   * @bindable writable
    */
   export let theme = "white";
 
   /**
-   * Customize a theme with your own tokens
-   * https://carbondesignsystem.com/guidelines/themes/overview#customizing-a-theme
-   * @type {{ [token: string]: any; }}
+   * Customize a theme with your own tokens. Keys are Carbon v11 token names
+   * (`"button-primary"`, `"layer-01"`), set as `--cds-{token}`.
+   * @see https://carbondesignsystem.com/elements/themes/overview/#customizing-a-theme
+   * @type {Partial<Record<CarbonToken, string>>}
    */
   export let tokens = {};
 
@@ -30,14 +47,27 @@
   export let persistKey = "theme";
 
   /**
-   * Render a toggle or select dropdown to control the theme
-   * @type {"toggle" | "select"}
+   * Set to `true` to follow the operating system color scheme.
+   * `theme` is set from `systemThemes` on mount and on every change;
+   * set `theme` yourself to override until the next system change.
+   */
+  export let system = false;
+
+  /**
+   * Specify the themes to apply for the light and dark system color schemes.
+   * @type {[light: CarbonTheme, dark: CarbonTheme]}
+   */
+  export let systemThemes = ["white", "g100"];
+
+  /**
+   * Render a toggle, select, or dropdown to control the theme.
+   * @type {"toggle" | "select" | "dropdown" | undefined}
    */
   export let render = undefined;
 
   /**
-   * Override the default toggle props
-   * @type {import("../Toggle/Toggle").ToggleProps & { themes?: [labelA: CarbonTheme, labelB: CarbonTheme]; }}
+   * Override the default toggle props.
+   * @type {import("../Toggle/Toggle.svelte").ToggleProps & { themes?: [labelA: CarbonTheme, labelB: CarbonTheme]; }}
    */
   export let toggle = {
     themes: ["white", "g100"],
@@ -47,21 +77,11 @@
     hideLabel: false,
   };
 
-  /** @type {Record<CarbonTheme, string>} */
-  const themes = {
-    white: "White",
-    g10: "Gray 10",
-    g80: "Gray 80",
-    g90: "Gray 90",
-    g100: "Gray 100",
-  };
-
-  /** @type {CarbonTheme} */
-  const themeKeys = Object.keys(themes);
+  const themeKeys = /** @type {CarbonTheme[]} */ (Object.keys(themes));
 
   /**
-   * Override the default select props
-   * @type {import("../Select/Select").SelectProps & { themes?: CarbonTheme[]; }}
+   * Override the default select props.
+   * @type {import("../Select/Select.svelte").SelectProps<CarbonTheme> & { themes?: CarbonTheme[]; }}
    */
   export let select = {
     themes: themeKeys,
@@ -69,50 +89,194 @@
     hideLabel: false,
   };
 
-  import { createEventDispatcher } from "svelte";
-  import Toggle from "../Toggle/Toggle.svelte";
+  /**
+   * Override the default dropdown props.
+   * @type {Omit<import("../Dropdown/Dropdown.svelte").DropdownProps, "items" | "selectedId"> & { themes?: CarbonTheme[]; }}
+   */
+  export let dropdown = {
+    themes: themeKeys,
+    labelText: "Themes",
+    hideLabel: false,
+  };
+
+  import { createEventDispatcher, onMount, tick } from "svelte";
+  import Dropdown from "../Dropdown/Dropdown.svelte";
+  import LocalStorage from "../LocalStorage/LocalStorage.svelte";
   import Select from "../Select/Select.svelte";
   import SelectItem from "../Select/SelectItem.svelte";
-  import LocalStorage from "../LocalStorage/LocalStorage.svelte";
+  import Toggle from "../Toggle/Toggle.svelte";
+  import { withContextualTokens } from "./contextual-tokens.js";
 
   const dispatch = createEventDispatcher();
 
+  let prevTheme = theme;
+  let mounted = false;
+
+  // Captured before LocalStorage restores a stored value.
+  const initialTheme = theme;
+
+  /** @type {MediaQueryList | undefined} */
+  let mql;
+
+  // Tokens set on the document, so one dropped from `tokens` can be removed.
+  /** @type {Set<string>} */
+  const appliedTokens = new Set();
+
+  /** @param {{ matches: boolean }} event */
+  function onSystemChange(event) {
+    theme = event.matches ? systemThemes[1] : systemThemes[0];
+  }
+
+  function watchSystem() {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    if (!mql) {
+      mql = window.matchMedia("(prefers-color-scheme: dark)");
+      mql.addEventListener("change", onSystemChange);
+    }
+    onSystemChange(mql);
+  }
+
+  function unwatchSystem() {
+    mql?.removeEventListener("change", onSystemChange);
+    mql = undefined;
+  }
+
+  function fallbackTheme() {
+    if (mql) return mql.matches ? systemThemes[1] : systemThemes[0];
+    return initialTheme;
+  }
+
+  function finishMount() {
+    // Resolve the system theme before snapshotting so mount does not dispatch `update`.
+    if (system) watchSystem();
+    // A restored theme that is not valid is replaced in the next flush.
+    prevTheme = persist && !(theme in themes) ? fallbackTheme() : theme;
+    mounted = true;
+  }
+
+  onMount(() => {
+    let destroyed = false;
+
+    // With `system` and `persist`, wait for the mount flush to end so the
+    // stored value is restored first. On Svelte 3/4 a second write to the
+    // bound value in the same flush never reaches LocalStorage.
+    if (system && persist) {
+      tick().then(() => {
+        if (!destroyed) finishMount();
+      });
+    } else {
+      finishMount();
+    }
+
+    return () => {
+      destroyed = true;
+      unwatchSystem();
+    };
+  });
+
+  // Runs before the apply block so the resolved theme is applied in the same flush.
+  $: if (mounted) {
+    if (system) {
+      systemThemes;
+      watchSystem();
+    } else {
+      unwatchSystem();
+    }
+  }
+
+  // LocalStorage sets `undefined` when the key is removed or storage is
+  // cleared, and a stored value can be any string.
+  $: if (persist && !(theme in themes)) theme = fallbackTheme();
+
+  $: appliedValues = withContextualTokens(tokens);
+
+  // Apply theme before dispatching update. Reactive blocks run in source order,
+  // and a throwing on:update handler aborts the rest of the flush.
   $: if (typeof window !== "undefined") {
-    Object.entries(tokens).forEach(([token, value]) => {
+    // Components that fade a color on hover would also fade it to the new
+    // theme. Note the transitions running now, so only the ones the swap
+    // starts are canceled below.
+    const running = document.getAnimations
+      ? new Set(document.getAnimations())
+      : undefined;
+
+    for (const token of appliedTokens) {
+      if (token in appliedValues) continue;
+      document.documentElement.style.removeProperty(`--cds-${token}`);
+      appliedTokens.delete(token);
+    }
+
+    for (const [token, value] of Object.entries(appliedValues)) {
       document.documentElement.style.setProperty(`--cds-${token}`, value);
-    });
+      appliedTokens.add(token);
+    }
 
     if (theme in themes) {
       document.documentElement.setAttribute("theme", theme);
-      dispatch("update", { theme });
+      document.documentElement.style.setProperty(
+        "color-scheme",
+        theme === "white" || theme === "g10" ? "light" : "dark",
+      );
     } else {
       console.warn(
         `[Theme.svelte] invalid theme "${theme}". Value must be one of: ${JSON.stringify(
-          Object.keys(themes)
-        )}`
+          Object.keys(themes),
+        )}${
+          // all.css has a CSS-only "system" theme for <html>, but `theme`
+          // holds the concrete theme that controls show and `persist` stores.
+          /** @type {string} */ (theme) === "system"
+            ? '. Set the "system" prop to follow the system color scheme.'
+            : ""
+        }`,
       );
     }
+
+    if (running) {
+      // `getAnimations` applies the new styles, which starts the transitions.
+      for (const animation of document.getAnimations()) {
+        if (animation instanceof CSSTransition && !running.has(animation)) {
+          animation.cancel();
+        }
+      }
+    }
+  }
+
+  $: if (mounted && theme !== prevTheme) {
+    prevTheme = theme;
+    dispatch("update", { theme });
   }
 </script>
 
 {#if persist}
-  <LocalStorage bind:value="{theme}" key="{persistKey}" />
+  <LocalStorage bind:value={theme} key={persistKey} />
 {/if}
 
 {#if render === "toggle"}
+  {@const { themes: toggleThemes = ["white", "g100"], ...toggleProps } = toggle}
   <Toggle
-    {...toggle}
-    toggled="{theme === toggle.themes[1]}"
-    on:toggle="{({ detail }) => {
-      theme = detail.toggled ? toggle.themes[1] : toggle.themes[0];
-    }}"
+    {...toggleProps}
+    toggled={theme === toggleThemes[1]}
+    on:toggle={(event) => {
+      theme = event.detail.toggled ? toggleThemes[1] : toggleThemes[0];
+    }}
   />
 {:else if render === "select"}
-  <Select {...select} bind:selected="{theme}">
-    {#each select.themes as theme (theme)}
-      <SelectItem value="{theme}" text="{themes[theme]}" />
+  {@const { themes: selectThemes = themeKeys, ...selectProps } = select}
+  <Select {...selectProps} bind:selected={theme}>
+    {#each selectThemes as theme (theme)}
+      <SelectItem value={theme} text={themes[theme]} />
     {/each}
   </Select>
+{:else if render === "dropdown"}
+  {@const { themes: dropdownThemes = themeKeys, ...dropdownProps } = dropdown}
+  <Dropdown
+    {...dropdownProps}
+    items={dropdownThemes.map((t) => ({ id: t, text: themes[t] }))}
+    selectedId={theme}
+    on:select={(event) => {
+      theme = event.detail.selectedId;
+    }}
+  />
 {/if}
 
-<slot theme="{theme}" />
+<slot {theme} />

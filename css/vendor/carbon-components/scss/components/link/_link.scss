@@ -1,0 +1,224 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/colors';
+@import '../../globals/scss/vars';
+@import '../../globals/scss/theme';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+
+// ccs: v11's link color hooks. Set one on a link, or on an element that
+// holds links, to recolor them without restating each state. Each falls
+// back to the theme token.
+$link-text-color: var(--cds-link-text-color, #{$link-primary});
+$link-hover-text-color: var(
+  --cds-link-hover-text-color,
+  #{$link-primary-hover}
+);
+$link-visited-text-color: var(--cds-link-visited-text-color, #{$link-visited});
+$link-focus-text-color: var(--cds-link-focus-text-color, #{$focus});
+
+/// Link styles
+/// @access private
+/// @group link
+@mixin link {
+  .#{$prefix}--link {
+    @include reset;
+    @include type-style('body-compact-01');
+
+    display: inline-flex;
+    color: $link-text-color;
+    outline: none;
+    text-decoration: none;
+    transition: color $duration--fast-01 motion(standard, productive);
+
+    &:hover {
+      color: $link-hover-text-color;
+      text-decoration: underline;
+    }
+  }
+
+  // ccs: the `visited` prop shows the visited color whatever the
+  // browser's `:visited` state (v10 only styles `:visited`). These sit
+  // before the pressed and disabled rules, which tie them and win by order.
+  .#{$prefix}--link--visited {
+    color: $link-visited-text-color;
+  }
+
+  .#{$prefix}--link--visited:hover {
+    color: $link-hover-text-color;
+  }
+
+  .#{$prefix}--link {
+    // ccs: v11 keeps the link color while pressed and adds the focus ring
+    &:active,
+    &:active:visited,
+    &:active:visited:hover {
+      @include focus-outline;
+
+      color: $link-text-color;
+      outline-color: $link-focus-text-color;
+      text-decoration: underline;
+    }
+
+    // ccs: v11 underlines a focused link as well as outlining it
+    &:focus {
+      @include focus-outline;
+
+      outline-color: $link-focus-text-color;
+      text-decoration: underline;
+    }
+
+    &:visited {
+      color: $link-text-color;
+    }
+
+    &:visited:hover {
+      color: $link-hover-text-color;
+    }
+  }
+
+  .#{$prefix}--link--disabled,
+  .#{$prefix}--link--disabled:hover {
+    @include reset;
+    @include type-style('body-compact-01', $omit: (font-weight));
+
+    color: $text-disabled;
+    cursor: not-allowed;
+    font-weight: 400;
+    text-decoration: none;
+  }
+
+  // ccs: ties `.#{$prefix}--link:active` and wins by order, so pressing a
+  // disabled link shows no ring, link color or underline (v11 guards the
+  // active rule with `:not(.#{$prefix}--link--disabled)` instead)
+  .#{$prefix}--link--disabled:active {
+    outline: none;
+    color: $text-disabled;
+    text-decoration: none;
+  }
+
+  .#{$prefix}--link--visited:visited { // ccs: flatten
+    color: $link-visited-text-color;
+  }
+
+  .#{$prefix}--link--visited:visited:hover { // ccs: flatten
+    color: $link-hover-text-color;
+  }
+
+  .#{$prefix}--link--disabled.#{$prefix}--link--inline {
+    text-decoration: underline;
+  }
+
+  // ccs: v11 sets `display: inline` so a long link wraps with the running
+  // text, and keeps the underline when the link is focused or visited
+  .#{$prefix}--link--inline { // ccs: flatten
+    display: inline;
+    text-decoration: underline;
+  }
+
+  .#{$prefix}--link--sm {
+    @include type-style('helper-text-01');
+  }
+
+  .#{$prefix}--link--lg {
+    @include type-style('body-compact-02');
+  }
+
+  .#{$prefix}--link__icon {
+    display: inline-flex;
+    align-self: center;
+    // Narrower than upstream's $spacing-03 for the default and sm sizes; lg
+    // restores it below (formerly css/_link.scss).
+    margin-left: $spacing-02; // ccs: value
+  }
+
+  .#{$prefix}--link--lg .#{$prefix}--link__icon { // ccs: flatten
+    margin-left: $spacing-03;
+  }
+}
+
+@include exports('link') {
+  @include link;
+}
+
+// carbon-components-svelte patch (formerly css/_link.scss)
+/// Scale the Link icon to match the link size.
+/// carbon-components v10 ships no icon scaling — `.bx--link__icon` only sets a
+/// fixed gap, so the icon stays 16px at every size and looks oversized on
+/// `sm` links. Size the icon optically to the link text: smaller for `sm`,
+/// larger for `lg`. The default (medium) link keeps the 16px icon. (The
+/// icon-to-text gap is set on `.bx--link__icon` itself, above.) Targets the
+/// rendered `svg` so the scaling applies to both the `icon` prop and the
+/// `icon` slot.
+/// @access private
+/// @group components
+@mixin link-icon {
+  .#{$prefix}--link--sm .#{$prefix}--link__icon svg {
+    width: to-rem(14px);
+    height: to-rem(14px);
+  }
+
+  .#{$prefix}--link--lg .#{$prefix}--link__icon svg {
+    width: to-rem(20px);
+    height: to-rem(20px);
+  }
+}
+
+@include exports("link-icon") {
+  @include link-icon;
+}
+
+/// Muted Link variant: inherit the surrounding text color instead of the
+/// link color, for inline links inside body text. Carbon has no equivalent.
+/// Guard against `disabled` so a disabled link keeps its disabled color. The
+/// `:not()` guard also lifts specificity above Carbon's `:hover`/`:visited`
+/// link rules.
+/// @access private
+/// @group components
+@mixin link-muted {
+  .#{$prefix}--link--muted:not(.#{$prefix}--link--disabled) {
+    &,
+    &:hover,
+    &:active,
+    &:visited,
+    &:visited:hover {
+      color: inherit;
+    }
+  }
+}
+
+@include exports("link-muted") {
+  @include link-muted;
+}
+
+// carbon-components-svelte patch (link-forced-colors)
+// Forced-colors mode paints a disabled link (and a disabled ClickableTile,
+// which renders as one) like plain text. It reads `GrayText`.
+
+/// Disabled link in forced-colors mode.
+/// @access private
+/// @group link
+@mixin link-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--link.#{$prefix}--link--disabled {
+      color: GrayText;
+      outline-color: GrayText;
+    }
+
+    .#{$prefix}--link.#{$prefix}--link--disabled svg {
+      fill: GrayText;
+    }
+  }
+}
+
+@include exports("link-forced-colors") {
+  @include link-forced-colors;
+}

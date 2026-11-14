@@ -1,0 +1,187 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/functions";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./text-tokens";
+
+/// Big number (absent from v10; ported from `carbon-for-ibm-products`).
+/// A dashboard stat widget: a label, a large numeric value, and optional
+/// fraction/percentage/trend adornments.
+/// @access private
+/// @group components
+@mixin big-number {
+  .#{$prefix}--big-number {
+    margin: 0;
+  }
+
+  .#{$prefix}--big-number__label {
+    display: flex;
+    align-items: center;
+    gap: $carbon--spacing-03;
+    color: $text-secondary;
+
+    @include type-style("label-01");
+  }
+
+  // Carbon v11 sizes: the value, and the total and percent sign beside it,
+  // step up together; the label steps up at xl only.
+  //
+  // The row's gap steps up with them, since a fixed 4px gets lost beside
+  // 42px and 54px numerals. The gap is about 0.15 of the value's font size
+  // (4px, 6px, 8px) between the value, trend icon and total. The action
+  // sits twice as far, about 0.3 (8px, 12px, 16px).
+  .#{$prefix}--big-number__value-row {
+    --ccs-big-number-gap: #{$carbon--spacing-02};
+
+    display: flex;
+    align-items: baseline;
+    gap: var(--ccs-big-number-gap);
+    color: $text-primary;
+    font-variant-numeric: tabular-nums;
+
+    @include type-style("heading-04");
+  }
+
+  .#{$prefix}--big-number__denominator,
+  .#{$prefix}--big-number__percentage-mark {
+    @include type-style("body-compact-01");
+  }
+
+  .#{$prefix}--big-number--lg {
+    .#{$prefix}--big-number__value-row {
+      --ccs-big-number-gap: #{$carbon--spacing-02 + $carbon--spacing-01};
+
+      @include type-style("heading-06");
+    }
+
+    .#{$prefix}--big-number__denominator,
+    .#{$prefix}--big-number__percentage-mark {
+      @include type-style("heading-03");
+    }
+  }
+
+  .#{$prefix}--big-number--xl {
+    .#{$prefix}--big-number__label {
+      @include type-style("body-compact-01");
+    }
+
+    .#{$prefix}--big-number__value-row {
+      --ccs-big-number-gap: #{$carbon--spacing-03};
+
+      @include type-style("heading-07");
+    }
+
+    .#{$prefix}--big-number__denominator,
+    .#{$prefix}--big-number__percentage-mark {
+      @include type-style("heading-04");
+    }
+  }
+
+  // The action shares the value's baseline, as the total does: a link's
+  // text sits on it, and an icon-only button, which has no text, gets
+  // a baseline synthesized from its icon's bottom edge, so the icon
+  // stands on the line like a glyph.
+  .#{$prefix}--big-number__action {
+    display: flex;
+    align-items: baseline;
+    margin-inline-start: var(--ccs-big-number-gap);
+  }
+
+  // An icon-only button's padding already sets its icon apart, so the
+  // button sits at the row's gap, as Carbon's icon button does.
+  .#{$prefix}--big-number__action > .#{$prefix}--btn--icon-only {
+    margin-inline-start: calc(-1 * var(--ccs-big-number-gap));
+  }
+
+  // The tooltip icon has no trigger text next to it, so the vendor
+  // text-to-icon spacing and its block-level wrapper (sized by the
+  // inherited line-height rather than the icon) are both unwanted here.
+  .#{$prefix}--big-number__tooltip {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .#{$prefix}--big-number__tooltip .#{$prefix}--tooltip__trigger {
+    margin-left: 0;
+  }
+
+  // Tooltip's own `top`-direction offset math bakes in a 1px fudge tuned
+  // for its default (text + icon) trigger; with an icon-only trigger the
+  // caret lands 1px left of the icon's true center.
+  .#{$prefix}--big-number__tooltip .#{$prefix}--tooltip--top {
+    transform: translateX(1px);
+  }
+
+  .#{$prefix}--big-number__trend-icon {
+    align-self: center;
+  }
+
+  .#{$prefix}--big-number__trend-icon--success {
+    fill: $support-success;
+  }
+
+  .#{$prefix}--big-number__trend-icon--error {
+    fill: $support-error;
+  }
+
+  .#{$prefix}--big-number__trend-icon--neutral {
+    fill: $icon-secondary;
+  }
+
+  .#{$prefix}--big-number__delta {
+    display: flex;
+    gap: $carbon--spacing-02;
+    margin-block-start: $carbon--spacing-02;
+    font-variant-numeric: tabular-nums;
+
+    @include type-style("body-compact-01");
+  }
+
+  // Text colors, not the indicator colors the trend icons use: small text
+  // in support-success reads at about 3:1.
+  .#{$prefix}--big-number__delta-value--success {
+    color: ccs-text-color("text-success");
+  }
+
+  .#{$prefix}--big-number__delta-value--error {
+    color: $text-error;
+  }
+
+  .#{$prefix}--big-number__delta-value--neutral {
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--big-number__delta-label {
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--big-number__footer {
+    margin-block-start: $carbon--spacing-03;
+  }
+
+  // BigNumberSkeleton: a bar in each row's line (70% of its height),
+  // the row keeping the line of its type so each size's height holds.
+  .#{$prefix}--big-number.#{$prefix}--skeleton .#{$prefix}--big-number__label,
+  .#{$prefix}--big-number.#{$prefix}--skeleton .#{$prefix}--big-number__value-row {
+    position: relative;
+  }
+
+  .#{$prefix}--big-number__skeleton-bar {
+    @include skeleton($omit: (position));
+
+    position: absolute;
+    top: 15%;
+    left: 0;
+    width: 60%;
+    height: 70%;
+  }
+
+  .#{$prefix}--big-number__skeleton-bar--label {
+    width: 40%;
+  }
+}
+
+@include exports("big-number") {
+  @include big-number;
+}

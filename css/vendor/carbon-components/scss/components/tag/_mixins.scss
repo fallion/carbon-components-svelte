@@ -1,0 +1,34 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+/// @access private
+/// @group tag
+/// @param {Bool} $emit-hover [true] - set to false when the caller batches
+///   this variant's hover rule into a single grouped `@media` block itself
+///   (see `@mixin tags` in `_tag.scss`), instead of emitting one here
+// ccs: $emit-hover lets `@mixin tags` opt out per-call so its ~15 color/
+// variant invocations close one @media block instead of 15
+@mixin tag-theme(
+  $bg-color,
+  $text-color,
+  $filter-hover-color: $bg-color,
+  $emit-hover: true
+) {
+  background-color: $bg-color;
+  color: $text-color;
+
+  @if $emit-hover {
+    &.#{$prefix}--tag--interactive,
+    .#{$prefix}--tag__close-icon {
+      @media (any-hover: hover) {
+        &:hover {
+          background-color: $filter-hover-color;
+        }
+      }
+    }
+  }
+}

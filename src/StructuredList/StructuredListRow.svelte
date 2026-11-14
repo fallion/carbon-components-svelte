@@ -1,35 +1,75 @@
 <script>
+  /**
+   * @template {string} [Value=string]
+   */
+
   /** Set to `true` to use as a header */
   export let head = false;
 
   /** Set to `true` to render a label slot */
   export let label = false;
 
-  /** Specify the tabindex */
-  export let tabindex = "0";
+  /**
+   * Specify the value of the nested `StructuredListInput`, so a selectable
+   * row can show its own selected state: a selected fill, with no hover
+   * highlight. Only relevant when `selection` is `true` on the parent
+   * `StructuredList`.
+   * @type {Value | undefined}
+   */
+  export let value = undefined;
+
+  /**
+   * Specify the tabindex.
+   * @deprecated no longer applied here -- the row's own `<label>` isn't
+   * a tab stop anymore. Set `tabindex` on `StructuredListInput` instead,
+   * which now owns focus for the selectable row.
+   * @type {number | string | undefined}
+   */
+  export const tabindex = "0";
+
+  import { getContext } from "svelte";
+  import { readable, writable } from "svelte/store";
+  import CheckmarkFilled from "../icons/CheckmarkFilled.svelte";
+  import StructuredListCell from "./StructuredListCell.svelte";
+
+  const ctx = getContext("carbon:StructuredListWrapper");
+  const selection = ctx?.selection ?? readable(false);
+  const icon = ctx?.icon ?? readable(CheckmarkFilled);
+  const multiple = ctx?.multiple ?? readable(false);
+  // Standalone (no wrapper context) never matches, same as StructuredListInput.
+  const selectedValue = ctx?.selectedValue ?? writable(undefined);
+
+  $: isSelected =
+    value !== undefined &&
+    ($multiple
+      ? Array.isArray($selectedValue) && $selectedValue.includes(value)
+      : $selectedValue === value);
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 {#if label}
-  <!-- svelte-ignore a11y-label-has-associated-control -->
   <label
-    tabindex="{tabindex}"
-    class:bx--structured-list-row="{true}"
-    class:bx--structured-list-row--header-row="{head}"
+    class:bx--structured-list-row={true}
+    class:bx--structured-list-row--header-row={head}
+    class:bx--structured-list-row--selected={isSelected}
     {...$$restProps}
     on:click
     on:mouseover
     on:mouseenter
     on:mouseleave
-    on:keydown
   >
     <slot />
+    {#if $selection}
+      <StructuredListCell style="width: 1px; white-space: nowrap;">
+        <svelte:component this={$icon} class="bx--structured-list-svg" />
+      </StructuredListCell>
+    {/if}
   </label>
 {:else}
   <div
-    role="row"
-    class:bx--structured-list-row="{true}"
-    class:bx--structured-list-row--header-row="{head}"
+    role={$selection ? undefined : "row"}
+    class:bx--structured-list-row={true}
+    class:bx--structured-list-row--header-row={head}
+    class:bx--structured-list-row--selected={isSelected}
     {...$$restProps}
     on:click
     on:mouseover
@@ -37,5 +77,10 @@
     on:mouseleave
   >
     <slot />
+    {#if $selection && head}
+      <!-- Keeps the selection column's width. Selection drops the table
+           roles, so a column name here would only be stray text. -->
+      <StructuredListCell head style="width: 1px;"></StructuredListCell>
+    {/if}
   </div>
 {/if}

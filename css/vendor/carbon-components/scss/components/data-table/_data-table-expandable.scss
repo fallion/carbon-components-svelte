@@ -1,0 +1,378 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/vars';
+
+/// Data table expandable styles
+/// @access private
+/// @group data-table
+@mixin data-table-expandable {
+  .#{$prefix}--data-table .#{$prefix}--parent-row:first-of-type td { // ccs: flatten
+    border-top: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--parent-row:not(.#{$prefix}--expandable-row)
+    + tr[data-child-row] { // ccs: flatten
+    height: 0;
+    transition: height $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--parent-row:not(.#{$prefix}--expandable-row)
+    + tr[data-child-row]
+    > td { // ccs: flatten
+    padding-top: 0;
+    padding-bottom: 0;
+    border: 0;
+    background-color: $layer-hover;
+    transition: padding $duration--moderate-01 motion(standard, productive),
+      background-color $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--parent-row:not(.#{$prefix}--expandable-row)
+    + tr[data-child-row]
+    td
+    .#{$prefix}--child-row-inner-container { // ccs: flatten
+    overflow: hidden;
+    max-height: 0;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row + tr[data-child-row] { // ccs: flatten
+    transition: height $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row + tr[data-child-row] > td { // ccs: flatten
+    padding-left: 3.5rem;
+    transition: padding-bottom $duration--fast-02 motion(standard, productive),
+      transform $duration--fast-02 motion(standard, productive),
+      background-color $duration--fast-02 motion(standard, productive);
+  }
+
+  // A checkbox or radio selection column pushes the parent row's own text
+  // past the 3.5rem baseline indent, so the child row needs to reach
+  // further to still land under it.
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row.#{$prefix}--expandable-row--with-selection
+    + tr[data-child-row]
+    > td { // ccs: flatten
+    padding-left: 5.5rem;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row
+    + tr[data-child-row]
+    td
+    .#{$prefix}--child-row-inner-container { // ccs: flatten
+    max-height: 100%;
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  // A nested `DataTable` in the `expandedRow` slot otherwise shares the
+  // parent row's background and reads as more rows of the parent. Other
+  // expandedRow content (plain text, custom markup) keeps the row's
+  // background, since it has no such ambiguity.
+  .#{$prefix}--child-row-inner-container
+    .#{$prefix}--data-table-container { // ccs: inset nested content
+    background-color: $layer-accent;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row > td,
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row + tr[data-child-row] > td {
+    border-bottom: 1px solid $border-subtle;
+    box-shadow: 0 1px $border-subtle;
+  }
+
+  .#{$prefix}--parent-row:not(.#{$prefix}--expandable-row)
+    + tr[data-child-row]
+    > td {
+    box-shadow: none;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row > td:first-of-type {
+    // First td doesn't have a visible border
+    box-shadow: none;
+  }
+
+  .#{$prefix}--parent-row:not(.#{$prefix}--expandable-row) td,
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row td,
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row { // ccs: flatten
+    transition: height $duration--moderate-02 motion(standard, productive),
+      background-color $duration--fast-02 motion(standard, productive);
+  }
+
+  .#{$prefix}--parent-row:not(.#{$prefix}--expandable-row):first-of-type:hover
+    td { // ccs: flatten
+    border-top: 1px solid $border-subtle;
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row:hover td { // ccs: flatten
+    border-top: 1px solid $border-subtle;
+    border-bottom: 1px solid $border-subtle;
+    background-color: $layer-hover;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row:hover td:first-of-type { // ccs: flatten
+    // First td doesn't have a visible border
+    border-bottom: 1px solid $layer-hover;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row:hover
+    + tr[data-child-row]
+    > td { // ccs: flatten
+    border-bottom: 1px solid $border-subtle;
+    background-color: $layer-hover;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--expandable-row--hover + tr[data-child-row] > td { // ccs: flatten
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--expandable-row--hover { // ccs: flatten
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--expandable-row--hover td { // ccs: flatten
+    border-top: 1px solid $border-subtle;
+    border-bottom: 1px solid $border-subtle;
+    background-color: $layer-hover;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row.#{$prefix}--expandable-row--hover
+    td:first-of-type { // ccs: flatten
+    // First parent td doesn't have visible bottom border
+    border-bottom: 1px solid transparent;
+  }
+
+  .#{$prefix}--data-table td.#{$prefix}--table-expand { // ccs: element
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--data-table
+    .#{$prefix}--table-expand
+    + .#{$prefix}--table-column-checkbox { // ccs: flatten
+    padding-right: to-rem(6px);
+    padding-left: to-rem(6px);
+  }
+
+  .#{$prefix}--data-table
+    .#{$prefix}--table-expand
+    + .#{$prefix}--table-column-checkbox
+    + th,
+  .#{$prefix}--data-table
+    .#{$prefix}--table-expand
+    + .#{$prefix}--table-column-checkbox
+    + td { // ccs: flatten
+    padding-left: to-rem(8px);
+  }
+
+  .#{$prefix}--data-table
+    .#{$prefix}--table-expand[data-previous-value='collapsed'] { // ccs: flatten
+    border-bottom: 1px solid transparent;
+  }
+
+  .#{$prefix}--table-expand[data-previous-value='collapsed']
+    .#{$prefix}--table-expand__svg {
+    transform: rotate(270deg);
+    transition: transform $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--table-expand__button {
+    @include button-reset('false', $omit: (display, padding));
+
+    display: inline-flex;
+    width: 100%;
+    // Account for the border in `.bx--table-expand`
+    height: calc(100% + 1px);
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    vertical-align: inherit;
+  }
+
+  .#{$prefix}--table-expand__button:focus {
+    box-shadow: inset 0 0 0 2px $focus;
+    outline: none;
+  }
+
+  .#{$prefix}--table-expand__svg {
+    fill: $layer-selected-inverse;
+    transform: rotate(90deg);
+    transition: transform $duration--moderate-01 motion(standard, productive);
+  }
+
+  // V11: remove tall
+  .#{$prefix}--data-table--tall .#{$prefix}--table-expand__button {
+    width: to-rem(32px);
+    padding: 0;
+  }
+
+  // fix expanded parent separating border length
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row
+    .#{$prefix}--table-expand
+    + td::after { // ccs: flatten
+    position: absolute;
+    bottom: to-rem(-1px);
+    left: 0;
+    width: to-rem(8px);
+    height: to-rem(1px);
+    background: $layer-accent;
+    content: '';
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row:hover
+    .#{$prefix}--table-expand
+    + td::after,
+  .#{$prefix}--parent-row.#{$prefix}--expandable-row.#{$prefix}--expandable-row--hover
+    .#{$prefix}--table-expand
+    + td::after { // ccs: flatten
+    background: $layer-hover;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected
+    .#{$prefix}--table-expand
+    + td::after { // ccs: flatten
+    display: none;
+  }
+
+  // ccs: v11 stripes the second pair, as flat tables stripe the second row
+  .#{$prefix}--data-table--zebra tbody tr[data-parent-row]:nth-child(4n + 1) td,
+  .#{$prefix}--data-table--zebra tbody tr[data-child-row]:nth-child(4n + 2) > td {
+    border-bottom: 1px solid $layer;
+  }
+
+  .#{$prefix}--data-table--zebra tbody tr[data-parent-row]:nth-child(4n + 3) td,
+  .#{$prefix}--data-table--zebra tbody tr[data-child-row]:nth-child(4n + 4) > td {
+    border-top: 1px solid $data-table-zebra-color;
+    border-bottom: 1px solid $data-table-zebra-color;
+    background-color: $data-table-zebra-color;
+  }
+
+  .#{$prefix}--data-table--zebra .#{$prefix}--parent-row td,
+  .#{$prefix}--data-table--zebra
+    .#{$prefix}--parent-row.#{$prefix}--expandable-row
+    + tr[data-child-row]
+    > td { // ccs: flatten
+    transition: transform $duration--moderate-01 motion(standard, productive),
+      border-bottom $duration--moderate-01 motion(standard, productive),
+      border-top $duration--moderate-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--data-table--zebra tbody tr[data-parent-row]:hover td,
+  .#{$prefix}--data-table--zebra
+    tbody
+    tr[data-parent-row]:hover
+    + tr[data-child-row]
+    > td,
+  .#{$prefix}--data-table--zebra tbody tr[data-child-row]:hover > td {
+    border-top: 1px solid $layer-hover;
+    border-bottom: 1px solid $layer-hover;
+    background-color: $layer-hover;
+  }
+
+  .#{$prefix}--data-table--zebra
+    .#{$prefix}--parent-row.#{$prefix}--expandable-row.#{$prefix}--expandable-row--hover
+    td { // ccs: flatten
+    border-top: 1px solid $layer-hover;
+    border-bottom: 1px solid $layer-hover;
+    background: $layer-hover;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected:first-of-type td { // ccs: flatten
+    border-top: 1px solid $layer-active;
+    border-bottom: 1px solid $border-subtle;
+    background: $layer-selected;
+    box-shadow: 0 1px $layer-active;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected td { // ccs: flatten
+    border-bottom: 1px solid transparent;
+    background: $layer-selected;
+    box-shadow: 0 1px $layer-active;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected:last-of-type td { // ccs: flatten
+    border-bottom: 1px solid transparent;
+    background: $layer-selected;
+    box-shadow: 0 1px $border-subtle;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected:not(.#{$prefix}--expandable-row):hover
+    td { // ccs: flatten
+    border-top: 1px solid $layer-selected-hover;
+    border-bottom: 1px solid $border-subtle;
+    background: $layer-selected-hover;
+    box-shadow: 0 1px $layer-selected-hover;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row
+    td,
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row
+    td:first-of-type { // ccs: flatten
+    border-bottom: 1px solid transparent;
+    // No visible border when expanded
+    box-shadow: 0 1px $layer-selected;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row:hover
+    td,
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row:hover
+    td:first-of-type,
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row--hover
+    td,
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row--hover
+    td:first-of-type { // ccs: flatten
+    border-top: 1px solid $layer-selected-hover;
+    border-bottom: 1px solid transparent;
+    background: $layer-selected-hover;
+    box-shadow: 0 1px $layer-selected-hover;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row
+    + tr[data-child-row]
+    > td { // ccs: flatten
+    border-top: 1px solid $layer-active;
+    border-bottom: 1px solid $border-subtle;
+    background-color: $layer-hover;
+    box-shadow: 0 1px $layer-active;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row
+    + tr[data-child-row]:last-of-type
+    > td { // ccs: flatten
+    padding-bottom: to-rem(24px);
+    box-shadow: inset 0 -1px $layer-active;
+  }
+
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row:hover
+    + tr[data-child-row]
+    > td,
+  .#{$prefix}--parent-row.#{$prefix}--data-table--selected.#{$prefix}--expandable-row--hover
+    + tr[data-child-row]
+    > td { // ccs: flatten
+    background: $layer-selected;
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--table-expand__button:focus .#{$prefix}--table-expand__svg {
+    @include high-contrast-mode('focus');
+  }
+
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--table-expand__svg {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('data-table-v2-expandable') {
+  @include data-table-expandable;
+}

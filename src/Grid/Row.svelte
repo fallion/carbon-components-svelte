@@ -1,12 +1,17 @@
 <script>
   /**
-   * @restProps {div}
    * @slot {{ props: { class: string; [key: string]: any; } }}
    */
 
   /**
-   * Set to `true` to render a custom HTML element
-   * Props are destructured as `props` in the default slot (e.g., <Row let:props><section {...props}>...</section></Row>)
+   * Set to `true` to render a custom HTML element.
+   * Props are destructured as `props` in the default slot.
+   * @example
+   * ```svelte
+   * <Row let:props>
+   *   <section {...props}>Content</section>
+   * </Row>
+   * ```
    */
   export let as = false;
 
@@ -28,6 +33,12 @@
   /** Set to `true` to add top and bottom padding to all columns */
   export let padding = false;
 
+  /**
+   * Set the cross-axis alignment of the columns in the row.
+   * @type {"start" | "center" | "end" | "stretch" | undefined}
+   */
+  export let align = undefined;
+
   $: props = {
     ...$$restProps,
     class: [
@@ -39,6 +50,7 @@
       noGutterLeft && "bx--no-gutter--left",
       noGutterRight && "bx--no-gutter--right",
       padding && "bx--row-padding",
+      align && `bx--row--align-${align}`,
     ]
       .filter(Boolean)
       .join(" "),
@@ -46,9 +58,7 @@
 </script>
 
 {#if as}
-  <slot props="{props}" />
+  <slot {props} />
 {:else}
-  <div {...props}>
-    <slot />
-  </div>
+  <div {...props}><slot /></div>
 {/if}

@@ -1,0 +1,98 @@
+---
+components: ["OrderedList", "ListItem"]
+description: Ordered lists display a numbered list of items, with support for nesting, links, and expressive typography.
+---
+
+<script>
+  import { OrderedList, ListItem, Link } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic ordered list by wrapping list item components within the ordered list. For tree-structured data, consider [RecursiveList](/components/RecursiveList#ordered).
+
+<OrderedList>
+  <ListItem>Submit the change request for approval</ListItem>
+  <ListItem>Run the automated test suite in the CI pipeline</ListItem>
+  <ListItem>Deploy the build to the production environment</ListItem>
+</OrderedList>
+
+## With links
+
+Add interactive elements like link components within list items.
+
+<OrderedList>
+  <ListItem>
+    <Link href="#">Review the architecture decision record</Link>
+  </ListItem>
+  <ListItem>
+    <Link href="#">Review the security sign-off checklist</Link>
+  </ListItem>
+  <ListItem>
+    <Link href="#">Review the on-call runbook</Link>
+  </ListItem>
+</OrderedList>
+
+## Nested lists
+
+Create hierarchical lists with support for the browser's native numbering style.
+
+### Standard
+
+Set `nested` on a child ordered list for proper indentation and numbering.
+
+<OrderedList>
+  <ListItem>
+    Triage the incident
+    <OrderedList nested>
+      <ListItem>Acknowledge the PagerDuty alert</ListItem>
+      <ListItem>
+        Assess the blast radius
+        <OrderedList nested>
+          <ListItem>Check the service health dashboard</ListItem>
+          <ListItem>Identify affected customer tenants</ListItem>
+        </OrderedList>
+      </ListItem>
+    </OrderedList>
+  </ListItem>
+  <ListItem>Mitigate the incident</ListItem>
+  <ListItem>Publish the postmortem</ListItem>
+</OrderedList>
+
+### Native styles
+
+Set `native` to `true` to use the browser's native list styles. Useful for large lists where the list number may overlap with the list item text.
+
+<OrderedList native>
+  <ListItem>
+    Triage the incident
+    <OrderedList nested>
+      <ListItem>Acknowledge the PagerDuty alert</ListItem>
+      <ListItem>
+        Assess the blast radius
+        <OrderedList nested>
+          <ListItem>Check the service health dashboard</ListItem>
+          <ListItem>Identify affected customer tenants</ListItem>
+        </OrderedList>
+      </ListItem>
+    </OrderedList>
+  </ListItem>
+  <ListItem>Mitigate the incident</ListItem>
+  <ListItem>Publish the postmortem</ListItem>
+</OrderedList>
+
+## Expressive styles
+
+Use Carbon's expressive typesetting with `expressive`.
+
+<OrderedList expressive>
+  <ListItem><Link size="lg" href="#">Complete the security training module</Link></ListItem>
+  <ListItem>Set up multi-factor authentication</ListItem>
+  <ListItem>Request access to the production VPN</ListItem>
+</OrderedList>
+
+## Virtualization
+
+Render thousands of items with [VirtualList](/components/VirtualList). Set `spacerTag` to `"li"` so it renders only the items in view, straight into the list. Only those items are in the DOM, so set `native` and pass `value={index + 1}` to each `ListItem` to keep the numbering. Wrap the list in a [ScrollGradient](/components/ScrollGradient) and pass its `scrollElementRef` as `scrollElement`. Set `measured` if items can wrap.
+
+<FileSource src="/framed/VirtualList/VirtualListOrderedList" />

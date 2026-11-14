@@ -1,45 +1,95 @@
 <script>
   /**
-   * @slot {{props?: { ["aria-current"]?: string; class: "bx--link"; }}}
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
    */
 
   /**
-   * Set the `href` to use an anchor link
-   * @type {string}
+   * Spread `props` onto a custom element to inherit the link class
+   * and `aria-current` attribute when `isCurrentPage` is set.
+   * @example
+   * ```svelte
+   * <BreadcrumbItem let:props>
+   *   <a {...props} href="/">Home</a>
+   * </BreadcrumbItem>
+   * ```
+   * @restProps {li}
+   * @slot {{props?: { "aria-current"?: boolean | "true" | "false" | "page" | "step" | "location" | "date" | "time"; class: "bx--link"; }}}
+   */
+
+  /**
+   * Set the `href` to use an anchor link.
+   * @type {string | undefined}
    */
   export let href = undefined;
 
   /** Set to `true` if the breadcrumb item represents the current page */
   export let isCurrentPage = false;
 
+  /**
+   * Specify the icon to render before the label.
+   * @type {Icon | undefined}
+   */
+  export let icon = /** @type {Icon | undefined} */ (undefined);
+
+  import { getContext, setContext } from "svelte";
   import Link from "../Link/Link.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
 
-  import { setContext } from "svelte";
+  setContext("carbon:BreadcrumbItem", {});
 
-  setContext("BreadcrumbItem", {});
+  const { separator: separatorStore } = getContext("carbon:Breadcrumb");
+
+  $: ({ "aria-current": ariaCurrent, ...liProps } = $$restProps);
+  // With an `href`, naming and description belong on the link, not the `li`.
+  // Without one there is no built-in focusable element, so they stay put.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: linkItemProps,
+  } = splitAriaNaming(liProps));
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <li
-  class:bx--breadcrumb-item="{true}"
-  class:bx--breadcrumb-item--current="{isCurrentPage &&
-    $$restProps['aria-current'] !== 'page'}"
-  {...$$restProps}
+  class:bx--breadcrumb-item={true}
+  class:bx--breadcrumb-item--current={isCurrentPage || ariaCurrent === "page"}
+  {...href ? linkItemProps : liProps}
   on:click
   on:mouseover
   on:mouseenter
   on:mouseleave
 >
   {#if href}
-    <Link href="{href}" aria-current="{$$restProps['aria-current']}">
+    <Link
+      {href}
+      aria-current={ariaCurrent ?? (isCurrentPage ? "page" : undefined)}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
+    >
+      {#if $$slots.icon || icon}
+        <div class:bx--breadcrumb-item__icon={true}>
+          <slot name="icon"><svelte:component this={icon} /></slot>
+        </div>
+      {/if}
       <slot />
     </Link>
   {:else}
+    {#if $$slots.icon || icon}
+      <div class:bx--breadcrumb-item__icon={true}>
+        <slot name="icon"><svelte:component this={icon} /></slot>
+      </div>
+    {/if}
     <slot
-      props="{{
-        'aria-current': $$restProps['aria-current'],
-        class: 'bx--link',
-      }}"
+      props={{
+        "aria-current": ariaCurrent ?? (isCurrentPage ? "page" : undefined),
+        class: "bx--link",
+      }}
     />
+  {/if}
+  {#if typeof $separatorStore !== "string"}
+    <span class:bx--breadcrumb-item__separator={true} aria-hidden="true">
+      <svelte:component this={$separatorStore} />
+    </span>
   {/if}
 </li>

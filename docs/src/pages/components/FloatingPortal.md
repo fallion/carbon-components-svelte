@@ -1,0 +1,194 @@
+---
+description: Floating portals render content positioned relative to an anchor element, for dropdowns, popovers, and menus.
+---
+
+<script>
+  import { FloatingPortal } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Position floating content below an anchor element. Floating portals build on
+[Portal](/components/Portal): the required `anchor` specifies the element to
+position relative to, and content flips and repositions automatically. Use a
+plain portal when you only need to escape overflow; use a floating portal when you
+need anchored, positioned content. In the examples below, click the button to
+toggle the floating content and drag the tile to move the anchor.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalBasic" />
+
+## Placement
+
+Control how floating content is positioned, how flips are resolved, and how
+that content is sized and stacked.
+
+### Direction
+
+Set `direction` to `"top"`, `"bottom"`, `"left"`, or `"right"` for the preferred
+direction. The component flips to the opposite direction if there is not enough
+space (for example, top flips to bottom, right flips to left).
+
+The default direction is `"bottom"`.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalDirection" />
+
+### Locking the resolved direction
+
+By default (`lockDirection="none"`), the flip check re-runs on every position
+update, so the resolved direction can change as the anchor scrolls, the
+viewport resizes, or the floating content's own size changes.
+
+Set `lockDirection` to change this:
+
+- `"after-flip"`: once the content flips away from the preferred `direction`,
+  that side stays locked for the rest of the open session. This keeps a
+  flipped tooltip stable when its content resizes (for example, text that
+  changes to something narrower) instead of snapping back to the preferred
+  side mid-session. [Tooltip](/components/Tooltip) and other portalled
+  tooltips use this mode.
+- `"always"`: whichever side the initial open settles on—flipped or
+  not—stays locked for the rest of the session, so later scroll or resize
+  updates only reposition along that side instead of re-running the flip
+  check. [Menu](/components/Menu) uses this mode so an open menu does not
+  jump sides while scrolling.
+
+```svelte
+<FloatingPortal {anchor} {open} lockDirection="after-flip">
+  <div>Content</div>
+</FloatingPortal>
+```
+
+### Reading the resolved direction
+
+Use the `direction` slot prop to read the actual rendered direction—after
+auto-flipping and after any `lockDirection` lock takes effect—for conditional
+logic, like styles.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalSlotDirection" />
+
+### Intrinsic width
+
+By default, the floating content matches the anchor's width. Set `intrinsicWidth`
+to `true` to use the content's intrinsic width instead of stretching to the
+anchor width. Useful for tooltips, small popovers, or any floating content that
+should size to its content rather than the trigger.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalIntrinsicWidth" />
+
+### Intrinsic alignment
+
+When intrinsicWidth is `true`, set `intrinsicAlign` to `"start"`, `"center"`, or
+`"end"` (default `"center"`) to position the floating box along the anchor:
+
+| `direction`        | Effect of `intrinsicAlign` (`start` / `center` / `end`)      |
+| ------------------ | ------------------------------------------------------------ |
+| **`top` / `bottom`** | Horizontal alignment to the anchor's left edge, horizontal center, or right edge (LTR). |
+| **`left` / `right`** | Vertical alignment to the anchor's top, vertical center, or bottom. |
+
+Portalled [TooltipIcon](/components/TooltipIcon) and
+[TooltipDefinition](/components/TooltipDefinition) tooltips pass their align
+setting through as intrinsicAlign, so portal positioning matches non-portal Carbon
+alignment.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalIntrinsicAlign" />
+
+### Gaps and offsets
+
+Use these props to fine-tune spacing and nudge side-positioned content:
+
+| Prop                      | Type (default)   | Description                                                                                                                                                    |
+| ------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gapTop`                  | number (`0`)     | Vertical gap in pixels between the anchor and the floating content when direction is `"top"`. Useful for caret clearance (for example, tooltips).                        |
+| `gapBottom`               | number (`0`)     | Vertical gap when direction is `"bottom"`.                                                                                                                     |
+| `horizontalGapLeft`       | number (`0`)     | Horizontal gap in pixels when the content is to the left of the anchor (space between anchor left edge and content right edge).                                |
+| `horizontalGapRight`      | number (`0`)     | Horizontal gap when the content is to the right of the anchor.                                                                                               |
+| `verticalAlignOffsetLeft` | number (`0`)     | Vertical offset in pixels when direction is `"left"` (for example, negative to nudge content up).                                                                        |
+| `verticalAlignOffsetRight` | number (`0`)     | Vertical offset when direction is `"right"`.                                                                                                                  |
+
+These are optional; omit them to use defaults. [Tooltip](/components/Tooltip)
+uses them when portalTooltip is true;
+[TooltipIcon](/components/TooltipIcon) and
+[TooltipDefinition](/components/TooltipDefinition) apply small built-in gaps when
+portalled so spacing matches the non-portal Carbon tooltips.
+
+### Z-index
+
+Set `zIndex` to change the floating content's stacking order. The default is
+`9200`, which supersedes the z-index used by [Modal](/components/Modal)
+(`9000`) and list box menus (`9100`).
+
+```svelte
+<FloatingPortal {anchor} {open} zIndex={2000}>
+  <div>Content</div>
+</FloatingPortal>
+```
+
+## Portal target
+
+Control which DOM node the floating content is mounted into. Positioning is
+always driven by `anchor`; the target only changes which DOM subtree the
+floating content lives in.
+
+### Escaping overflow
+
+Because the floating content is rendered into document.body, it escapes parent
+containers with overflow hidden.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalOverflow" />
+
+### Custom target
+
+Use `target` to mount the floating content into a specific DOM element instead of
+document.body. See the
+[Portal custom target example](/components/Portal#custom-target) for typical use
+cases.
+
+### Native dialog
+
+When the anchor is inside a [Dialog](/components/Dialog) opened as a modal, or
+any other
+[native dialog](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog)
+element, floating content is automatically mounted into that dialog. The
+default target is `anchor.closest("dialog,[popover]")`, which resolves to the
+dialog when the anchor is nested under it. This keeps the content in the
+dialog top layer so it stays visible and interactive.
+
+Components inside the dialog must still enable portalMenu for its menu or content
+to be portalled. Pass an explicit target to override this behavior.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalDialog" />
+
+### Native popover
+
+When the anchor is inside an element with a
+[popover](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/popover)
+attribute (see the
+[Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)), the
+same default target applies: floating content mounts into that popover element so
+it participates in the popover top layer.
+
+<FileSource src="/framed/FloatingPortal/FloatingPortalPopover" />
+
+## Positioning function
+
+`FloatingPortal` measures, scrolls, and renders for you. To place an element yourself, call `floatingPosition`, the pure function it is built on. Pass the `anchorRect` and `floatingRect` from `getBoundingClientRect()`, the `viewport`, and the preferred `direction`. It returns `top`, `left`, and the `actualDirection` it chose.
+
+### Flipping
+
+The function flips the direction when the preferred side lacks space and the opposite side has more. In this example, the anchor near the bottom of the viewport flips from `"bottom"` to `"top"`.
+
+<FileSource src="/framed/FloatingPortal/FloatingPositionBasic" />
+
+### Locked direction
+
+Set `lockedDirection` to skip flip detection and keep a side stable. Lock the side chosen when the floating element opened, so a change in its content never makes it jump to the opposite side.
+
+<FileSource src="/framed/FloatingPortal/FloatingPositionLocked" />
+
+### Intrinsic width
+
+By default, a floating element placed above or below the anchor matches the anchor's width. Set `intrinsicWidth` to `true` to use the element's own width. Set `intrinsicAlign` to `"start"`, `"center"`, or `"end"` to choose which anchor edge it aligns to.
+
+With `"start"` or `"end"`, the result includes `caretNudgePx`, the distance from the aligned edge to the anchor's center, so a caret stays centered on the anchor.
+
+<FileSource src="/framed/FloatingPortal/FloatingPositionIntrinsic" />

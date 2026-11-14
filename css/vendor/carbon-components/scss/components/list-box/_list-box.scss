@@ -1,0 +1,1037 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/css--helpers';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/layout';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+@import '../tag/mixins';
+
+/// @type Number
+/// @access private
+/// @group list-box
+$list-box-width: 100%;
+
+/// List box styles
+/// @access private
+/// @group list-box
+@mixin listbox {
+  .#{$prefix}--list-box__wrapper--inline {
+    display: inline-grid;
+    align-items: center;
+    grid-gap: to-rem(4px);
+    grid-template: auto auto / auto auto;
+
+    .#{$prefix}--label {
+      @include type-style('body-compact-01');
+    }
+
+    .#{$prefix}--label,
+    .#{$prefix}--form__helper-text,
+    .#{$prefix}--form-requirement {
+      margin: 0;
+    }
+
+    .#{$prefix}--form__helper-text {
+      max-width: none;
+    }
+
+    // ccs: helper text sits under the field too, like the message.
+    .#{$prefix}--form-requirement,
+    .#{$prefix}--form__helper-text {
+      grid-column: 2;
+    }
+  }
+
+  .#{$prefix}--list-box {
+    @include reset;
+
+    position: relative;
+    width: $list-box-width;
+    height: to-rem(40px);
+    max-height: to-rem(40px);
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    background-color: $field;
+    color: $text-primary;
+    cursor: pointer;
+    // ccs: only background-color (hover, expanded, inline) and
+    // border-bottom-color (expanded, disabled) animate. Height/border-width
+    // modifiers are layout and the invalid outline is a ring, so they snap;
+    // avoid `all` so the browser doesn't interpolate the rest of the
+    // animatable property set.
+    transition: background-color $duration--fast-01 motion(standard, productive),
+      border-bottom-color $duration--fast-01 motion(standard, productive);
+
+    &:hover {
+      // ccs: v11 hovers a field with field-hover, which differs from
+      // layer-hover in dark themes inside a Layer.
+      background-color: $field-hover;
+    }
+  }
+
+  .#{$prefix}--list-box--xl,
+  .#{$prefix}--list-box--lg {
+    height: to-rem(48px);
+    max-height: to-rem(48px);
+  }
+
+  .#{$prefix}--list-box--sm {
+    height: to-rem(32px);
+    max-height: to-rem(32px);
+  }
+
+  .#{$prefix}--list-box--expanded {
+    border-bottom-color: $border-subtle;
+  }
+
+  .#{$prefix}--list-box--expanded:hover {
+    background-color: $field;
+  }
+
+  .#{$prefix}--list-box .#{$prefix}--text-input {
+    min-width: 0;
+    height: 100%;
+  }
+
+  .#{$prefix}--list-box__invalid-icon {
+    position: absolute;
+    top: 50%;
+    fill: $support-error;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+
+  .#{$prefix}--list-box__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--list-box__invalid-icon--warning path[fill] {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--list-box[data-invalid] .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box.#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field {
+    padding-inline-end: carbon--mini-units(8);
+    border-bottom: 0;
+  }
+
+  // ccs: an inline field makes room for the warning icon too, as it does
+  // for the invalid one; it drew over the value.
+  .#{$prefix}--list-box[data-invalid].#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box.#{$prefix}--list-box--warning.#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__field {
+    padding-inline-end: carbon--mini-units(7);
+  }
+
+  .#{$prefix}--list-box--disabled:hover {
+    background-color: $field;
+  }
+
+  .#{$prefix}--list-box--disabled,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__field:focus {
+    border-bottom-color: transparent;
+    outline: none;
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__label,
+  .#{$prefix}--list-box--disabled.#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__label {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__menu-icon > svg,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__selection > svg {
+    fill: $icon-disabled;
+  }
+
+  .#{$prefix}--list-box--disabled,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__menu-icon {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__menu-item,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__menu-item:hover,
+  .#{$prefix}--list-box--disabled
+    .#{$prefix}--list-box__menu-item--highlighted {
+    color: $text-disabled;
+    text-decoration: none;
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__selection:hover {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--list-box--disabled.#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field {
+    padding-inline-end: $carbon--spacing-09;
+  }
+
+  .#{$prefix}--list-box--disabled.#{$prefix}--list-box[data-invalid].#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__field {
+    padding-inline-end: carbon--mini-units(4);
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline {
+    border-width: 0;
+    background-color: transparent;
+
+    &:hover {
+      background-color: $layer-hover;
+    }
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline.#{$prefix}--list-box--expanded {
+    border-bottom-width: 0;
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline.#{$prefix}--list-box--expanded
+    .#{$prefix}--list-box__field[aria-expanded='true'] {
+    border-width: 0;
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline.#{$prefix}--list-box--disabled:hover {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline.#{$prefix}--list-box--expanded:hover {
+    background-color: $field-02;
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__field {
+    padding-block: 0;
+    padding-inline: $carbon--spacing-03 carbon--mini-units(4);
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__menu-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-03);
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__invalid-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-07);
+  }
+
+  .#{$prefix}--list-box--inline .#{$prefix}--list-box__label {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--list-box--inline .#{$prefix}--list-box__field {
+    height: 100%;
+  }
+
+  .#{$prefix}--dropdown--inline .#{$prefix}--list-box__field {
+    max-width: to-rem(480px);
+  }
+
+  .#{$prefix}--dropdown--inline .#{$prefix}--list-box__menu {
+    min-width: to-rem(288px);
+    max-width: to-rem(480px);
+  }
+
+  .#{$prefix}--list-box__field {
+    @include button-reset($omit: (display, padding));
+
+    position: relative;
+    display: inline-flex;
+    overflow: hidden;
+    // Account for the border in `.bx--list-box`
+    height: calc(100% + 1px);
+    align-items: center;
+    padding-block: 0;
+    padding-inline: $carbon--spacing-05 $carbon--spacing-09;
+    outline: none;
+    text-overflow: ellipsis;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--list-box__field:focus {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--list-box__field[disabled] {
+    color: $text-disabled;
+    outline: none;
+  }
+
+  // ccs: v11. The text stops short of the clear button, 45px in.
+  .#{$prefix}--list-box__field .#{$prefix}--text-input {
+    padding-inline-end: to-rem(70px);
+  }
+
+  .#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input,
+  .#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input {
+    // to account for clear input button outline
+    padding-inline-end: to-rem(105px); // ccs: v11
+  }
+
+  .#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input
+    + .#{$prefix}--list-box__invalid-icon,
+  .#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input
+    + .#{$prefix}--list-box__invalid-icon {
+    // to account for clear input button outline
+    @include ccs-inset-inline($end: to-rem(82px)); // ccs: v11
+  }
+
+  .#{$prefix}--list-box__field .#{$prefix}--text-input--empty {
+    padding-inline-end: $carbon--spacing-09;
+  }
+
+  .#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input--empty,
+  .#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input--empty {
+    padding-inline-end: $carbon--spacing-10; // ccs: v11
+  }
+
+  .#{$prefix}--list-box[data-invalid]
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input--empty
+    + .#{$prefix}--list-box__invalid-icon,
+  .#{$prefix}--list-box--warning
+    .#{$prefix}--list-box__field
+    .#{$prefix}--text-input--empty
+    + .#{$prefix}--list-box__invalid-icon {
+    // to account for clear input button outline
+    @include ccs-inset-inline($end: to-rem(40px));
+  }
+
+  .#{$prefix}--list-box__label {
+    @include type-style('body-compact-01');
+
+    overflow: hidden;
+    color: $text-primary;
+    text-overflow: ellipsis;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--list-box__menu-icon {
+    @include button-reset($width: false, $omit: (display));
+
+    position: absolute;
+    display: flex;
+    width: to-rem(24px);
+    height: to-rem(24px);
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transition: transform $duration--fast-01 motion(standard, productive);
+    @include ccs-inset-inline($end: $carbon--spacing-04); // ccs: v11
+  }
+
+  .#{$prefix}--list-box__menu-icon > svg {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--list-box__menu-icon--open {
+    width: to-rem(24px);
+    justify-content: center;
+    transform: rotate(180deg);
+  }
+
+  .#{$prefix}--list-box__selection {
+    @include button-reset($width: false, $omit: (display));
+
+    position: absolute;
+    top: 50%;
+    /* to preserve .5rem space between icons according to spec top/transform used to center the combobox clear selection icon in IE11 */
+    display: flex;
+    width: to-rem(24px);
+    height: to-rem(24px);
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    transition: background-color $duration--fast-01 motion(standard, productive);
+    user-select: none;
+    @include ccs-inset-inline($end: to-rem(45px)); // ccs: v11
+
+    &:focus {
+      @include focus-outline('outline');
+
+      &:hover {
+        @include focus-outline('outline');
+      }
+    }
+  }
+
+  .#{$prefix}--list-box__selection > svg {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__selection:focus {
+    outline: none;
+  }
+
+  // Modifier for a selection to show that multiple selections have been made
+  .#{$prefix}--list-box__selection--multi {
+    @include type-style('label-01', $omit: (line-height));
+
+    position: static;
+    top: auto;
+    display: flex;
+    width: auto;
+    height: to-rem(24px);
+    align-items: center;
+    justify-content: space-between;
+    padding: to-rem(8px);
+    // Align with hover circle of X button
+    padding-inline-end: to-rem(2px);
+    margin-inline-end: to-rem(10px);
+    background-color: $background-inverse;
+    border-radius: to-rem(12px);
+    color: $text-inverse;
+    line-height: 0;
+    transform: none;
+  }
+
+  .#{$prefix}--list-box__selection--multi > svg {
+    width: to-rem(20px);
+    height: to-rem(20px);
+    padding: to-rem(2px);
+    margin-inline-start: to-rem(4px);
+    fill: $icon-inverse;
+
+    &:hover {
+      background-color: $button-secondary-hover;
+      border-radius: 50%;
+    }
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__selection--multi {
+    @include tag-theme($text-disabled, $field);
+
+    > svg {
+      fill: $field;
+
+      &:hover {
+        background-color: initial;
+      }
+    }
+  }
+
+  .#{$prefix}--list-box__selection--multi:hover {
+    outline: none;
+  }
+
+  .#{$prefix}--list-box__menu {
+    @include box-shadow();
+
+    position: absolute;
+    z-index: z('dropdown');
+    right: 0;
+    left: 0;
+    width: $list-box-width;
+    background-color: $layer;
+    overflow-y: auto;
+    transition: max-height $duration--fast-02 motion(standard, productive);
+
+    &:focus {
+      // remove default browser focus in firefox
+      @include focus-outline('border');
+    }
+  }
+
+  .#{$prefix}--list-box
+    .#{$prefix}--list-box__field[aria-expanded='false']
+    + .#{$prefix}--list-box__menu {
+    max-height: 0;
+  }
+
+  .#{$prefix}--list-box--expanded .#{$prefix}--list-box__menu {
+    // 40px item height * 5.5 items shown
+    max-height: to-rem(220px);
+  }
+
+  .#{$prefix}--list-box--expanded.#{$prefix}--list-box--xl
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--expanded.#{$prefix}--list-box--lg
+    .#{$prefix}--list-box__menu {
+    // 48px item height * 5.5 items shown
+    max-height: to-rem(264px);
+  }
+
+  .#{$prefix}--list-box--expanded.#{$prefix}--list-box--sm
+    .#{$prefix}--list-box__menu {
+    // 32px item height * 5.5 items shown
+    max-height: to-rem(176px);
+  }
+
+  .#{$prefix}--list-box__menu-item {
+    @include type-style('body-compact-01');
+
+    position: relative;
+    height: to-rem(40px);
+    color: $text-secondary;
+    cursor: pointer;
+    transition: background $duration--fast-01 motion(standard, productive);
+    user-select: none;
+
+    &:hover {
+      background-color: $layer-hover;
+    }
+
+    &:active {
+      background-color: $layer-selected;
+    }
+  }
+
+  .#{$prefix}--list-box--sm .#{$prefix}--list-box__menu-item {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--list-box--xl .#{$prefix}--list-box__menu-item,
+  .#{$prefix}--list-box--lg .#{$prefix}--list-box__menu-item {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__menu-item:hover {
+    background-color: transparent;
+  }
+
+  .#{$prefix}--list-box--disabled
+    .#{$prefix}--list-box__menu-item__option:hover {
+    border-top-color: $border-subtle;
+  }
+
+  .#{$prefix}--list-box__menu-item:first-of-type
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: transparent;
+  }
+
+  .#{$prefix}--list-box__menu-item:hover
+    .#{$prefix}--list-box__menu-item__option {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--list-box__menu-item:hover
+    + .#{$prefix}--list-box__menu-item
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: transparent;
+  }
+
+  .#{$prefix}--list-box--disabled
+    .#{$prefix}--list-box__menu-item:hover
+    + .#{$prefix}--list-box__menu-item
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: $border-subtle;
+  }
+
+  .#{$prefix}--list-box__menu-item__option {
+    @include focus-outline('reset');
+
+    display: block;
+    overflow: hidden;
+    height: to-rem(40px);
+    padding: to-rem(11px) 0;
+    padding-inline-end: $carbon--spacing-06;
+    border-top: 1px solid transparent;
+    border-top-color: $border-subtle;
+    border-bottom: 1px solid transparent;
+    margin: 0 $carbon--spacing-05;
+    color: $text-secondary;
+    font-weight: normal;
+    line-height: 1rem;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    transition: border-color $duration--fast-01 motion(standard, productive),
+      color $duration--fast-01 motion(standard, productive);
+    white-space: nowrap;
+
+    &:focus {
+      @include focus-outline('outline');
+
+      padding: to-rem(12px) to-rem(16px); // ccs: v11
+      border-color: transparent;
+      margin: 0;
+    }
+
+    &:hover {
+      border-color: transparent;
+      color: $text-primary;
+    }
+  }
+
+  .#{$prefix}--list-box--sm .#{$prefix}--list-box__menu-item__option {
+    height: to-rem(32px);
+    padding-top: to-rem(7px);
+    padding-bottom: to-rem(7px);
+  }
+
+  .#{$prefix}--list-box--xl .#{$prefix}--list-box__menu-item__option,
+  .#{$prefix}--list-box--lg .#{$prefix}--list-box__menu-item__option {
+    height: to-rem(48px);
+    padding-top: to-rem(15px);
+    padding-bottom: to-rem(15px);
+  }
+
+  .#{$prefix}--list-box--disabled
+    .#{$prefix}--list-box__menu-item:hover
+    .#{$prefix}--list-box__menu-item__option,
+  .#{$prefix}--list-box--disabled .#{$prefix}--list-box__menu-item__option {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--list-box__menu-item[disabled],
+  .#{$prefix}--list-box__menu-item[disabled] *,
+  .#{$prefix}--list-box__menu-item[disabled]
+    .#{$prefix}--list-box__menu-item__option,
+  .#{$prefix}--list-box__menu-item[disabled]:hover {
+    color: $text-disabled;
+    cursor: not-allowed;
+    outline: none;
+  }
+
+  .#{$prefix}--list-box__menu-item[disabled]:hover {
+    background-color: revert;
+  }
+
+  .#{$prefix}--list-box__menu-item[disabled]
+    .#{$prefix}--checkbox-label::before {
+    border-color: $icon-disabled;
+  }
+
+  .#{$prefix}--list-box__menu-item[disabled]
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: $border-subtle;
+  }
+
+  .#{$prefix}--list-box__menu-item[disabled]:hover
+    + .#{$prefix}--list-box__menu-item
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: $border-subtle;
+  }
+
+  .#{$prefix}--list-box.#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__menu-item__option {
+    margin: 0 $carbon--spacing-03;
+
+    &:focus {
+      padding-right: $carbon--spacing-03;
+      padding-left: $carbon--spacing-03;
+      margin: 0;
+    }
+  }
+
+  // ccs: v11 rings the highlighted option and leaves its background alone,
+  // so a selected option keeps its color under the ring.
+  .#{$prefix}--list-box__menu-item--highlighted {
+    @include focus-outline('outline');
+
+    color: $text-primary;
+  }
+
+  .#{$prefix}--list-box__menu-item--highlighted
+    .#{$prefix}--list-box__menu-item__option,
+  .#{$prefix}--list-box__menu-item--highlighted
+    + .#{$prefix}--list-box__menu-item
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: transparent;
+  }
+
+  .#{$prefix}--list-box__menu-item--highlighted
+    .#{$prefix}--list-box__menu-item__option {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--list-box__menu-item--active {
+    border-bottom-color: $layer-selected;
+    background-color: $layer-selected;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--list-box__menu-item--active:hover {
+    border-bottom-color: $layer-selected-hover;
+    background-color: $layer-selected-hover;
+  }
+
+  .#{$prefix}--list-box__menu-item--active
+    .#{$prefix}--list-box__menu-item__option {
+    color: $text-primary;
+  }
+
+  // Hide top border if previous list item is selected
+  .#{$prefix}--list-box__menu-item--active
+    + .#{$prefix}--list-box__menu-item
+    > .#{$prefix}--list-box__menu-item__option {
+    border-top-color: transparent;
+  }
+
+  .#{$prefix}--list-box__menu-item__selected-icon {
+    position: absolute;
+    top: 50%;
+    display: none;
+    fill: $icon-primary;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: to-rem(16px));
+  }
+
+  .#{$prefix}--list-box--inline
+    .#{$prefix}--list-box__menu-item__selected-icon {
+    @include ccs-inset-inline($end: to-rem(8px));
+  }
+
+  .#{$prefix}--list-box__menu-item--active
+    .#{$prefix}--list-box__menu-item__selected-icon {
+    display: block;
+  }
+
+  .#{$prefix}--list-box__menu-item .#{$prefix}--checkbox-label {
+    width: 100%;
+  }
+
+  .#{$prefix}--list-box__menu-item .#{$prefix}--checkbox-label-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .#{$prefix}--list-box--up .#{$prefix}--list-box__menu {
+    bottom: 2.5rem;
+  }
+
+  .#{$prefix}--list-box--up.#{$prefix}--dropdown--sm
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--up.#{$prefix}--list-box--sm
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--up
+    .#{$prefix}--list-box--sm
+    .#{$prefix}--list-box__menu {
+    bottom: 2rem;
+  }
+
+  .#{$prefix}--list-box--up.#{$prefix}--dropdown--xl
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--up.#{$prefix}--list-box--xl
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--up.#{$prefix}--list-box--lg
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--up
+    .#{$prefix}--list-box--lg
+    .#{$prefix}--list-box__menu {
+    bottom: 3rem;
+  }
+
+  // When handling input, we need to target nodes that specifically opt-in to
+  // the type text in order to make sure the text input is styled
+  // correctly.
+  .#{$prefix}--list-box input[role='combobox'],
+  .#{$prefix}--list-box input[type='text'] {
+    min-width: 0;
+    background-color: inherit;
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--list-box__field,
+  .#{$prefix}--list-box__menu,
+  .#{$prefix}--multi-select .#{$prefix}--tag--filter {
+    @include high-contrast-mode('outline');
+  }
+
+  // ccs: the highlighted option fills with `Highlight` instead; see
+  // `_list-box-highlight-ring.scss`.
+  .#{$prefix}--list-box__field:focus,
+  .#{$prefix}--multi-select .#{$prefix}--tag__close-icon:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  .#{$prefix}--list-box__menu-icon > svg,
+  .#{$prefix}--list-box__selection > svg,
+  .#{$prefix}--list-box__selection--multi > svg {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('list-box') {
+  @include listbox;
+}
+
+// carbon-components-svelte patch (formerly css/_list-box-menu-item.scss)
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Left/right icons for list box menu items (Dropdown, ComboBox).
+/// @access private
+/// @group components
+@mixin list-box-menu-item-icon {
+  .#{$prefix}--list-box__menu-item__icon {
+    display: flex;
+    align-items: center;
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  // Match the selected checkmark positioning.
+  .#{$prefix}--list-box__menu-item__icon--left,
+  .#{$prefix}--list-box__menu-item__icon--right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .#{$prefix}--list-box__menu-item__icon--left {
+    @include ccs-inset-inline($start: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--list-box__menu-item__icon--right {
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--list-box__menu-item__option--icon-left {
+    padding-inline-start: $carbon--spacing-06;
+  }
+
+  // ComboBox `filterMode="hide"` uses the `hidden` attribute. Be explicit in
+  // case a later display rule beats the UA stylesheet, same as DataTable rows.
+  .#{$prefix}--list-box__menu-item[hidden] {
+    display: none;
+  }
+}
+
+@include exports('list-box-menu-item-icon') {
+  @include list-box-menu-item-icon;
+}
+
+// carbon-components-svelte patch (formerly css/_list-box-xs.scss)
+// xs (24px) list-box heights for Dropdown, ComboBox, and MultiSelect.
+// carbon-components v10 stops at sm; backported from
+// https://github.com/carbon-design-system/carbon/pull/22439
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// 24px list-box size for Dropdown, ComboBox, and MultiSelect.
+/// Follows the same sm/lg override pattern in carbon-components v10.
+/// @access private
+/// @group components
+@mixin list-box-xs {
+  .#{$prefix}--list-box--xs {
+    block-size: to-rem(24px);
+    max-block-size: to-rem(24px);
+  }
+
+  .#{$prefix}--list-box--expanded.#{$prefix}--list-box--xs
+    .#{$prefix}--list-box__menu {
+    // 24px item height * 5.5 items shown
+    max-block-size: to-rem(132px);
+  }
+
+  .#{$prefix}--list-box--xs .#{$prefix}--list-box__menu-item,
+  .#{$prefix}--list-box--xs .#{$prefix}--list-box__menu-item__option {
+    block-size: to-rem(24px);
+  }
+
+  // 3px padding centers the 1rem line in 24px (same math as sm/lg).
+  .#{$prefix}--list-box--xs .#{$prefix}--list-box__menu-item__option {
+    padding-block: to-rem(3px);
+  }
+
+  .#{$prefix}--list-box--up.#{$prefix}--list-box--xs
+    .#{$prefix}--list-box__menu,
+  .#{$prefix}--list-box--up.#{$prefix}--dropdown--xs
+    .#{$prefix}--list-box__menu {
+    inset-block-end: to-rem(24px);
+  }
+}
+
+@include exports("list-box-xs") {
+  @include list-box-xs;
+}
+
+// carbon-components-svelte patch
+// Group headers for MultiSelect's grouped items. Carbon v10 has no grouped
+// list box, so this is new markup rather than a backport.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Non-selectable label above each group of list box options.
+/// @access private
+/// @group components
+@mixin list-box-menu-group-header {
+  // Spaced with padding, not margin: measured virtualization reads each row's
+  // border box, which leaves margins out. Groups sit at least twice as far
+  // apart as options, measured on the text: at 40px rows, 22px separates
+  // two labels in a group and 51px separates a group's last label from the
+  // next header. The padding grows with the row height.
+  .#{$prefix}--list-box__menu-group-header {
+    @include type-style("label-01");
+
+    padding: $carbon--spacing-08 $carbon--spacing-05 $carbon--spacing-03;
+    color: $text-secondary;
+    cursor: default;
+  }
+
+  .#{$prefix}--list-box--xs .#{$prefix}--list-box__menu-group-header {
+    padding-top: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--list-box--sm .#{$prefix}--list-box__menu-group-header {
+    padding-top: $carbon--spacing-06;
+  }
+
+  .#{$prefix}--list-box--lg .#{$prefix}--list-box__menu-group-header,
+  .#{$prefix}--list-box--xl .#{$prefix}--list-box__menu-group-header {
+    padding-top: $carbon--spacing-09;
+  }
+
+  // Nothing sits above the menu's first row. Ties the size rules above and
+  // wins on order.
+  .#{$prefix}--list-box__menu .#{$prefix}--list-box__menu-group-header--first {
+    padding-top: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--list-box--inline .#{$prefix}--list-box__menu-group-header {
+    padding-right: $carbon--spacing-03;
+    padding-left: $carbon--spacing-03;
+  }
+
+  // The header takes the divider's place above a group's first option.
+  .#{$prefix}--list-box__menu-group-header
+    + .#{$prefix}--list-box__menu-item
+    .#{$prefix}--list-box__menu-item__option {
+    border-top-color: transparent;
+  }
+}
+
+@include exports("list-box-menu-group-header") {
+  @include list-box-menu-group-header;
+}
+
+// carbon-components-svelte patch
+// v11 draws a hairline between the clear button and the chevron, and another
+// before the clear button while the field is invalid or warns.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Dividers beside a list box's clear button.
+/// @access private
+/// @group components
+@mixin list-box-selection-divider {
+  .#{$prefix}--list-box__selection::after,
+  .#{$prefix}--list-box[data-invalid] .#{$prefix}--list-box__selection::before,
+  .#{$prefix}--list-box--warning .#{$prefix}--list-box__selection::before {
+    position: absolute;
+    top: to-rem(4px);
+    width: 1px;
+    height: $carbon--spacing-05;
+    background-color: $border-subtle;
+    content: "";
+  }
+
+  // Midway to the chevron, 9px to the right.
+  .#{$prefix}--list-box__selection::after {
+    @include ccs-inset-inline($end: to-rem(-5px));
+  }
+
+  // Between the status icon and the clear button, where v11 puts it.
+  .#{$prefix}--list-box[data-invalid] .#{$prefix}--list-box__selection::before,
+  .#{$prefix}--list-box--warning .#{$prefix}--list-box__selection::before {
+    @include ccs-inset-inline($start: to-rem(-5px));
+  }
+
+  // An inline chevron sits 4px closer to the edge. The clear button follows
+  // it to keep the 9px gap.
+  .#{$prefix}--list-box--inline .#{$prefix}--list-box__selection {
+    @include ccs-inset-inline($end: to-rem(41px));
+  }
+}
+
+@include exports("list-box-selection-divider") {
+  @include list-box-selection-divider;
+}
+
+// carbon-components-svelte patch (list-box-forced-colors)
+// Each option carries a transparent bottom border that never shows. Forced
+// colors repaint it as `CanvasText`, so it sat on the next option's top
+// divider and every divider read twice as thick, with a stray line under
+// the last option. The bottom border goes, and the top divider stays.
+//
+// The field and the menu drew their edges with `high-contrast-mode`'s 1px
+// outline, which sits outside the box: around the field's 2px resting box,
+// and past the field's sides and over its focus ring for the menu. Both
+// draw the 2px inset box every other field draws. In ComboBox the input
+// draws it, and the field's outline would cover the input's focus ring.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// One divider between list box options, and one edge around the field and
+/// the menu, in forced-colors mode.
+/// @access private
+/// @group components
+@mixin list-box-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--list-box__menu-item__option {
+      border-bottom-style: none;
+    }
+
+    // Ties `.bx--dropdown .bx--list-box__field` in the dropdown styles.
+    .#{$prefix}--list-box__field,
+    .#{$prefix}--dropdown .#{$prefix}--list-box__field,
+    .#{$prefix}--list-box__menu {
+      @include focus-outline("reset");
+    }
+
+    .#{$prefix}--combo-box .#{$prefix}--list-box__field {
+      outline-style: none;
+    }
+  }
+}
+
+@include exports("list-box-forced-colors") {
+  @include list-box-forced-colors;
+}
+
+// carbon-components-svelte patch
+// ComboBox's and MultiSelect's typed text reads in its own direction, so in
+// RTL "3 / 4" keeps its order instead of showing as "4 / 3", as in
+// `.bx--text-input-wrapper .bx--text-input`. `unicode-bidi: plaintext` also
+// aligns the value to its own start, so keep it at the page's start.
+/// @access private
+/// @group components
+@mixin list-box-plaintext {
+  .#{$prefix}--list-box__field .#{$prefix}--text-input {
+    unicode-bidi: plaintext;
+    text-align: left;
+  }
+
+  [dir="rtl"] .#{$prefix}--list-box__field .#{$prefix}--text-input {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("list-box-plaintext") {
+  @include list-box-plaintext;
+}

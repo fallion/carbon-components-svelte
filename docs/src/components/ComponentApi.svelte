@@ -1,28 +1,84 @@
-<script>
-  export let component = {
+<script lang="ts">
+  type ComponentApiProp = {
+    name: string;
+    description?: string;
+    type?: string;
+    value?: string;
+    isRequired?: boolean;
+    reactive?: boolean;
+  };
+
+  type ComponentApiTypedef = {
+    ts?: string;
+  };
+
+  type ComponentApiSlot = {
+    default?: boolean;
+    name?: string | null;
+    slot_props?: string;
+  };
+
+  type ComponentApiEvent = {
+    type?: string;
+    name?: string;
+    detail?: string;
+    description?: string;
+  };
+
+  type ComponentApiRestProps = {
+    type: string;
+    name: string;
+  };
+
+  type ComponentApiData = {
+    moduleName: string;
+    filePath: string;
+    props: ComponentApiProp[];
+    slots: ComponentApiSlot[];
+    events: ComponentApiEvent[];
+    typedefs: ComponentApiTypedef[];
+    rest_props?: ComponentApiRestProps;
+  };
+
+  export let component: ComponentApiData = {
+    moduleName: "",
+    filePath: "",
     props: [],
     slots: [],
     events: [],
-    rest_props: undefined,
     typedefs: [],
+    rest_props: undefined,
   };
 
   import {
+    Box,
+    CodeSnippet,
+    ListItem,
     OutboundLink,
     StructuredList,
+    StructuredListBody,
+    StructuredListCell,
     StructuredListHead,
     StructuredListRow,
-    StructuredListCell,
-    StructuredListBody,
-    UnorderedList,
-    ListItem,
     Tag,
-    CodeSnippet,
+    UnorderedList,
   } from "carbon-components-svelte";
-  import InlineSnippet from "./InlineSnippet.svelte";
+  import { eagerContent } from "../router";
+  import CodeBlock from "./CodeBlock.svelte";
+
+  /**
+   * Reserved while the table is skipped off-screen. The guess moves nothing
+   * on screen: a skipped table is below the reader, or `$eagerContent`
+   * renders it from the start.
+   */
+  const PROP_ROW_HEIGHT = 180;
+  const SLOT_ROW_HEIGHT = 120;
+  const TABLE_HEAD_HEIGHT = 40;
+  const reserve = (rows: number, rowHeight: number) =>
+    `auto ${TABLE_HEAD_HEIGHT + rows * rowHeight}px`;
 
   const mdn_api = "https://developer.mozilla.org/en-US/docs/Web/API/";
-  const typeMap = {
+  const typeMap: Record<string, string> = {
     string: "string",
     boolean: "boolean",
     number: "number",
@@ -30,50 +86,113 @@
     Date: "JavaScript Date",
   };
 
+  const EXAMPLE_CODE_BLOCK_REGEX = /```svelte\s*\n([\s\S]*?)```/;
+
+  function parseDescription(description: string) {
+    if (!description) {
+      return { mainDescription: "", exampleCode: null };
+    }
+
+    const exampleIndex = description.indexOf("@example");
+    if (exampleIndex === -1) {
+      return { mainDescription: description, exampleCode: null };
+    }
+
+    const mainDescription = description.slice(0, exampleIndex).trim();
+    const exampleSection = description.slice(exampleIndex);
+
+    const codeBlockMatch = exampleSection.match(EXAMPLE_CODE_BLOCK_REGEX);
+    const exampleCode = codeBlockMatch ? codeBlockMatch[1].trim() : null;
+
+    return { mainDescription, exampleCode };
+  }
+
+  function formatDescriptionHtml(description: string) {
+    return description
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/`(.*?)`/g, "<code>$1</code>")
+      .replace(/https?:\/\/[^\s<]+/g, (url) => {
+        const trailing = url.match(/[.,;:!?)\]]+$/)?.[0] ?? "";
+        const href = url.slice(0, url.length - trailing.length);
+        return `<a class="bx--link" href="${href}" target="_blank" rel="noopener noreferrer">${href}</a>${trailing}`;
+      });
+  }
+
+  function codeBlockType(value: string | undefined | null) {
+    return (value ?? "").includes("\n") ? "multi" : "inline";
+  }
+
   $: source = `https://github.com/carbon-design-system/carbon-components-svelte/tree/master/${component.filePath}`;
   $: forwarded_events = component.events.filter(
-    (event) => event.type === "forwarded"
+    (event) => event.type === "forwarded",
   );
   $: dispatched_events = component.events.filter(
-    (event) => event.type === "dispatched"
+    (event) => event.type === "dispatched",
   );
 </script>
 
-<p style="margin-bottom: var(--cds-layout-02)">
+<Box tag="p" marginBottom={6}>
   Source code:
-  <OutboundLink size="lg" inline href="{source}">
+  <OutboundLink size="lg" inline href={source}>
     {component.filePath}
   </OutboundLink>
-</p>
+</Box>
 
-<h3 id="props">Props</h3>
+<h2 id="component-api-props" class="bx--type-heading-04">
+  Props
+  <a
+    class="heading-anchor"
+    href="#component-api-props"
+    aria-label="Copy link to this heading">#</a
+  >
+</h2>
 
 {#if component.props.length > 0}
-  <div class="overflow">
+  <div
+    class="overflow"
+    class:skip-offscreen={!$eagerContent}
+    style:contain-intrinsic-size={reserve(
+      component.props.length,
+      PROP_ROW_HEIGHT,
+    )}
+  >
     <StructuredList flush condensed>
       <StructuredListHead>
         <StructuredListRow head>
           <StructuredListCell head>Prop name</StructuredListCell>
           <StructuredListCell head>Type</StructuredListCell>
-          <StructuredListCell head noWrap>Default value</StructuredListCell>
           <StructuredListCell head>Description</StructuredListCell>
         </StructuredListRow>
       </StructuredListHead>
       <StructuredListBody>
         {#each component.props.sort((a, b) => {
-          if (a.reactive > b.reactive) return -1;
+          if (a.isRequired !== b.isRequired) {
+            return b.isRequired ? 1 : -1;
+          }
+
+          if (a.reactive !== b.reactive) {
+            return b.reactive ? 1 : -1;
+          }
+
+          return 0;
         }) as prop (prop.name)}
           <StructuredListRow>
             <StructuredListCell noWrap>
-              <InlineSnippet code="{prop.name}" />
+              <CodeSnippet code={prop.name} type="inline" portalTooltip />
               {#if prop.reactive}
-                <div
-                  style="white-space: nowrap; margin-top: var(--cds-spacing-03); margin-bottom: var(--cds-spacing-03)"
+                <Box
+                  marginTop={3}
+                  marginBottom={prop.isRequired ? 1 : 3}
+                  style="white-space: nowrap"
                 >
                   <Tag style="margin-left: 0" size="sm" type="cyan">
                     Reactive
                   </Tag>
-                </div>
+                </Box>
+              {/if}
+              {#if prop.isRequired}
+                <Tag size="sm" type="magenta">Required</Tag>
               {/if}
             </StructuredListCell>
             <StructuredListCell>
@@ -90,29 +209,68 @@
                       {type}
                     </OutboundLink>
                   {:else if type in typeMap}
-                    <code>{typeMap[type]}</code>
-                  {:else if type.startsWith("(")}
-                    <code>{type}</code>
+                    <div
+                      style="display: inline-flex; max-width: 220px; white-space: nowrap;"
+                    >
+                      <CodeBlock
+                        language="typescript"
+                        type="inline"
+                        code={typeMap[type] ?? type}
+                        portalTooltip
+                      />
+                    </div>
                   {:else}
-                    <InlineSnippet code="{type}" />
+                    <div
+                      style="display: inline-flex; max-width: 220px; word-break: break-word;"
+                    >
+                      <CodeBlock
+                        language="typescript"
+                        type="inline"
+                        code={type}
+                        portalTooltip
+                      />
+                    </div>
                   {/if}
                 </div>
               {/each}
             </StructuredListCell>
-            <StructuredListCell><code>{prop.value}</code></StructuredListCell>
             <StructuredListCell>
               {#if prop.description}
-                {#each prop.description.split("\n") as line}
+                {@const parsed = parseDescription(prop.description)}
+                {#if parsed.mainDescription}
                   <div class="description">
-                    {@html line
-                      .replace(/\</g, "&lt;")
-                      .replace(/\>/g, "&gt;")
-                      .replace(/`(.*?)`/g, "<code>$1</code>")}.
+                    {@html formatDescriptionHtml(parsed.mainDescription)}
                   </div>
-                {/each}
-              {:else}
-                <div class="description">No description available.</div>
+                {/if}
+                {#if parsed.exampleCode}
+                  <Box marginTop={6} marginBottom={3}>
+                    <strong>Example</strong>
+                  </Box>
+                  <Box marginBottom={6} maxWidth="85%">
+                    <CodeBlock
+                      language="typescript"
+                      type="multi"
+                      code={parsed.exampleCode}
+                      portalTooltip
+                    />
+                  </Box>
+                {/if}
               {/if}
+              <Box marginTop={6} marginBottom={3}>
+                <strong>Default value</strong>
+              </Box>
+              <Box marginBottom={5} maxWidth="85%">
+                {#if prop.value === undefined}
+                  <em>undefined</em>
+                {:else}
+                  <CodeBlock
+                    language="typescript"
+                    type={codeBlockType(prop.value)}
+                    code={prop.value ?? ""}
+                    portalTooltip
+                  />
+                {/if}
+              </Box>
             </StructuredListCell>
           </StructuredListRow>
         {/each}
@@ -123,54 +281,147 @@
   <p class="my-layout-01-03">No props.</p>
 {/if}
 
-<h3 id="typedefs">Typedefs</h3>
+<h2 id="component-api-typedefs" class="bx--type-heading-04">
+  Typedefs
+  <a
+    class="heading-anchor"
+    href="#component-api-typedefs"
+    aria-label="Copy link to this heading">#</a
+  >
+</h2>
 
 {#if component.typedefs.length > 0}
-  <CodeSnippet
-    style="margin-top: var(--cds-spacing-08)"
-    class="my-layout-01-03"
-    type="multi"
-    code="{component.typedefs.map((t) => t.ts).join(';\n\n')};"
-  />
+  <div class="my-layout-01-03">
+    <CodeBlock
+      language="typescript"
+      code={component.typedefs.map((t) => t.ts ?? "").join("\n")}
+    />
+  </div>
 {:else}
   <p class="my-layout-01-03">No typedefs.</p>
 {/if}
 
-<h3 id="slots">Slots</h3>
+<h2 id="component-api-slots" class="bx--type-heading-04">
+  Slots
+  <a
+    class="heading-anchor"
+    href="#component-api-slots"
+    aria-label="Copy link to this heading">#</a
+  >
+</h2>
 {#if component.slots.length > 0}
-  <UnorderedList class="my-layout-01-03">
-    {#each component.slots as slot (slot.name)}
-      <ListItem>{slot.default ? "default" : slot.name}</ListItem>
-    {/each}
-  </UnorderedList>
+  <div
+    class="overflow"
+    class:skip-offscreen={!$eagerContent}
+    style:contain-intrinsic-size={reserve(
+      component.slots.length,
+      SLOT_ROW_HEIGHT,
+    )}
+  >
+    <StructuredList flush condensed>
+      <StructuredListHead>
+        <StructuredListRow head>
+          <StructuredListCell head>Slot name</StructuredListCell>
+          <StructuredListCell head>Slot detail</StructuredListCell>
+        </StructuredListRow>
+      </StructuredListHead>
+      <StructuredListBody>
+        {#each component.slots as slot (slot.name ?? "default")}
+          <StructuredListRow>
+            <StructuredListCell>
+              <strong>{slot.default ? "default" : slot.name}</strong>
+            </StructuredListCell>
+            <StructuredListCell>
+              <CodeBlock
+                language="typescript"
+                type={codeBlockType(slot.slot_props)}
+                code={slot.slot_props ?? ""}
+                portalTooltip
+              />
+            </StructuredListCell>
+          </StructuredListRow>
+        {/each}
+      </StructuredListBody>
+    </StructuredList>
+  </div>
 {:else}
   <p class="my-layout-01-03">No slots.</p>
 {/if}
 
-<h3 id="forwarded-events">Forwarded events</h3>
+<h2 id="component-api-forwarded-events" class="bx--type-heading-04">
+  Forwarded events
+  <a
+    class="heading-anchor"
+    href="#component-api-forwarded-events"
+    aria-label="Copy link to this heading">#</a
+  >
+</h2>
 {#if forwarded_events.length > 0}
   <UnorderedList class="my-layout-01-03">
-    {#each forwarded_events as event (event.name)}
-      <ListItem>on:{event.name}</ListItem>
+    {#each forwarded_events as forwarded_event (forwarded_event.name)}
+      <ListItem>on:{forwarded_event.name}</ListItem>
     {/each}
   </UnorderedList>
 {:else}
   <p class="my-layout-01-03">No forwarded events.</p>
 {/if}
 
-<h3 id="dispatched-events">Dispatched events</h3>
+<h2 id="component-api-dispatched-events" class="bx--type-heading-04">
+  Dispatched events
+  <a
+    class="heading-anchor"
+    href="#component-api-dispatched-events"
+    aria-label="Copy link to this heading">#</a
+  >
+</h2>
 
 {#if dispatched_events.length > 0}
-  <UnorderedList class="my-layout-01-03">
-    {#each dispatched_events as event (event.name)}
-      <ListItem>on:{event.name}</ListItem>
-    {/each}
-  </UnorderedList>
+  {@const hasDescription = dispatched_events.find((el) => el.description)}
+  <div class="overflow">
+    <StructuredList flush condensed>
+      <StructuredListHead>
+        <StructuredListRow head>
+          <StructuredListCell head>Event name</StructuredListCell>
+          <StructuredListCell head>Event detail</StructuredListCell>
+          {#if hasDescription}
+            <StructuredListCell head>Description</StructuredListCell>
+          {/if}
+        </StructuredListRow>
+      </StructuredListHead>
+      <StructuredListBody>
+        {#each dispatched_events as dispatched_event (dispatched_event.name)}
+          <StructuredListRow>
+            <StructuredListCell>
+              <strong>on:{dispatched_event.name}</strong>
+            </StructuredListCell>
+            <StructuredListCell>
+              <CodeBlock
+                language="typescript"
+                type={codeBlockType(dispatched_event.detail)}
+                code={dispatched_event.detail ?? ""}
+                portalTooltip
+              />
+            </StructuredListCell>
+            <StructuredListCell>
+              {dispatched_event.description ?? ""}
+            </StructuredListCell>
+          </StructuredListRow>
+        {/each}
+      </StructuredListBody>
+    </StructuredList>
+  </div>
 {:else}
   <p class="my-layout-01-03">No dispatched events.</p>
 {/if}
 
-<h3 id="rest-props">$$restProps</h3>
+<h2 id="component-api-rest-props" class="bx--type-heading-04">
+  $$restProps
+  <a
+    class="heading-anchor"
+    href="#component-api-rest-props"
+    aria-label="Copy link to this heading">#</a
+  >
+</h2>
 
 <div class="my-layout-01-03">
   {#if component.rest_props}
@@ -181,13 +432,19 @@
     {#if component.rest_props.type === "Element"}
       <code>{component.rest_props.name}</code>
       element.
-    {:else}<code>{component.rest_props.name}</code> component.{/if}
-  {:else}This component does not spread <code>restProps</code>{/if}
+    {:else}
+      <code>{component.rest_props.name}</code>
+      component.
+    {/if}
+  {:else}
+    This component does not spread <code>restProps</code>
+  {/if}
 </div>
 
 <style>
   .description {
     margin-bottom: var(--cds-spacing-04);
+    width: 80%;
   }
 
   .cell {
@@ -199,19 +456,26 @@
 
   .overflow {
     overflow-x: auto;
+    max-width: 100%;
   }
 
-  :global(.my-layout-01-03),
+  /* The props table is a third of a long page's elements. Its tooltips are
+     portaled, so containment clips none. */
+  .skip-offscreen {
+    content-visibility: auto;
+  }
+
+  :global(.my-layout-01-03) {
+    margin-top: var(--cds-spacing-05);
+    margin-bottom: var(--cds-spacing-07);
+  }
+
   :global(.overflow .bx--structured-list) {
-    margin-top: var(--cds-layout-01);
-    margin-bottom: var(--cds-layout-04);
+    margin-top: var(--cds-spacing-05);
+    margin-bottom: var(--cds-spacing-09);
   }
 
   code {
     word-break: break-word;
-  }
-
-  :global(.cell .bx--snippet--inline code, .bx--snippet--single pre) {
-    white-space: pre-wrap !important;
   }
 </style>

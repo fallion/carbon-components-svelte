@@ -1,0 +1,102 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import MultiSelect from "carbon-components-svelte/MultiSelect/MultiSelect.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let items: ComponentProps<MultiSelect>["items"] = [];
+  export let selectedIds: ComponentProps<MultiSelect>["selectedIds"] = [];
+  export let value: ComponentProps<MultiSelect>["value"] = "";
+  export let filterable = false;
+  export let filterItem: ComponentProps<MultiSelect>["filterItem"] = undefined;
+  export let selectTextOnFocus: ComponentProps<MultiSelect>["selectTextOnFocus"] = false;
+  export let placeholder = "";
+  export let labelText = "";
+  export let hideLabel = false;
+  export let size: ComponentProps<MultiSelect>["size"] = undefined;
+  export let type: ComponentProps<MultiSelect>["type"] = "default";
+  export let invalid = false;
+  export let invalidText = "";
+  export let warn = false;
+  export let warnText = "";
+  export let disabled = false;
+  export let readonly = false;
+  export let readonlyText: ComponentProps<MultiSelect>["readonlyText"] =
+    undefined;
+  export let openOnClear: ComponentProps<MultiSelect>["openOnClear"] = false;
+  export let clearSelectionText: ComponentProps<MultiSelect>["clearSelectionText"] =
+    undefined;
+  export let selectionClearedText: ComponentProps<MultiSelect>["selectionClearedText"] =
+    undefined;
+  export let filterResultsText: ComponentProps<MultiSelect>["filterResultsText"] =
+    undefined;
+  export let selectionFeedback: ComponentProps<MultiSelect>["selectionFeedback"] =
+    "top-after-reopen";
+  export let maxSelectedItems: ComponentProps<MultiSelect>["maxSelectedItems"] =
+    undefined;
+  export let translateWithIdSelection: ComponentProps<MultiSelect>["translateWithIdSelection"] =
+    undefined;
+  export let itemToString: ComponentProps<MultiSelect>["itemToString"] = (
+    item,
+  ) => item.text;
+  export let itemToInput: ComponentProps<MultiSelect>["itemToInput"] =
+    undefined;
+  export let helperText: ComponentProps<MultiSelect>["helperText"] = "";
+  export let virtualize: ComponentProps<MultiSelect>["virtualize"] = undefined;
+  export let portalMenu: ComponentProps<MultiSelect>["portalMenu"] = false;
+  export let wrapOptions: ComponentProps<MultiSelect>["wrapOptions"] = false;
+  export let sortItem: ComponentProps<MultiSelect>["sortItem"] = undefined;
+  export let open: ComponentProps<MultiSelect>["open"] = undefined;
+  export let onSelect: (detail: unknown) => void = () => {};
+  export let onClear: (detail: unknown) => void = () => {};
+  export let ariaLabel: ComponentProps<MultiSelect>["aria-label"] = undefined;
+  export let sortedItems: ComponentProps<MultiSelect>["sortedItems"] = [];
+  export let fluid = false;
+  export let condensed = false;
+  export let id: ComponentProps<MultiSelect>["id"] = undefined;
+  export let direction: ComponentProps<MultiSelect>["direction"] = undefined;
+</script>
+
+<MultiSelect
+  {id}
+  aria-label={ariaLabel}
+  {items}
+  {selectedIds}
+  {value}
+  {filterable}
+  {filterItem}
+  {selectTextOnFocus}
+  {placeholder}
+  {labelText}
+  {hideLabel}
+  {size}
+  {type}
+  {invalid}
+  {invalidText}
+  {warn}
+  {warnText}
+  {disabled}
+  {readonly}
+  {readonlyText}
+  {openOnClear}
+  {clearSelectionText}
+  {selectionClearedText}
+  {filterResultsText}
+  {selectionFeedback}
+  {maxSelectedItems}
+  {translateWithIdSelection}
+  {itemToString}
+  {itemToInput}
+  {helperText}
+  {virtualize}
+  {portalMenu}
+  {wrapOptions}
+  {sortItem}
+  {open}
+  {fluid}
+  {condensed}
+  {direction}
+  bind:sortedItems
+  on:select={(e) => onSelect(e.detail)}
+  on:clear={(e) => onClear(e.detail)}
+/>

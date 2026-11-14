@@ -1,15 +1,119 @@
+<script context="module">
+  import { tick } from "svelte";
+  import { returnFocus } from "../utils/focus.js";
+
+  /**
+   * When a nav button becomes disabled as a result of its own click, the
+   * browser blurs it (moving focus to the body). Refocus the other button
+   * so keyboard/AT users don't lose their place, unless a `change` handler
+   * moved focus elsewhere in the meantime.
+   * @param {null | HTMLAnchorElement | HTMLButtonElement} clickedRef
+   * @param {null | HTMLAnchorElement | HTMLButtonElement} otherRef
+   */
+  async function refocusIfDisabled(clickedRef, otherRef) {
+    if (document.activeElement !== clickedRef) return;
+    await tick();
+    if (/** @type {HTMLButtonElement | null} */ (clickedRef)?.disabled)
+      returnFocus(otherRef, clickedRef);
+  }
+
+  /**
+   * Returns a subset of page numbers centered around the current page to prevent
+   * performance issues with large datasets. Creates a capped window of pages
+   * instead of potentially thousands, improving render speed and memory usage.
+   * @param {number} currentPage - The current page number.
+   * @param {number} totalPages - Total number of pages.
+   * @param {number} window - Maximum number of pages to render.
+   * @returns {number[]} Array of page numbers to display.
+   */
+  function getWindowedPages(currentPage, totalPages, window) {
+    const size = Math.min(window, totalPages);
+    const half = Math.floor(size / 2);
+    let start = Math.max(1, currentPage - half);
+    const end = Math.min(totalPages, start + size - 1);
+    start = Math.max(1, end - size + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
+
+  /**
+   * Filters page sizes to remove redundant options based on total items.
+   * Keeps all sizes up to and including the first one >= totalItems.
+   * @param {readonly number[]} sizes
+   * @param {number} total
+   * @returns {number[]} Filtered array of page sizes.
+   */
+  function getFilteredPageSizes(sizes, total) {
+    if (total <= 0) return sizes.slice(0, 1);
+    /** @type {number[]} */
+    const filtered = [];
+    for (const size of sizes) {
+      filtered.push(size);
+      if (size >= total) break;
+    }
+    return filtered.length ? filtered : sizes.slice(0, 1);
+  }
+</script>
+
 <script>
   /**
-   * @event {{ pageSize: number; page: number; }} update
-   * @event {{ page: number; }} click:button--previous
-   * @event {{ page: number; }} click:button--next
+   * Dispatched when the user changes the page or page size through any
+   * interaction. A page-size change may include both `page` and
+   * `pageSize` together, since the current page is recalculated to keep
+   * the same items in view.
+   * @event change
+   * @type {object}
+   * @property {number} [page]
+   * @property {number} [pageSize]
    */
 
-  /** Specify the current page index */
+  /**
+   * Dispatched when the user clicks the previous page button.
+   * @event click:button--previous
+   * @type {object}
+   * @property {number} page
+   */
+
+  /**
+   * Dispatched when the user clicks the next page button.
+   * @event click:button--next
+   * @type {object}
+   * @property {number} page
+   */
+
+  /**
+   * Dispatched reactively whenever the page or page size changes.
+   * @event update
+   * @type {object}
+   * @property {number} pageSize
+   * @property {number} page
+   */
+
+  /**
+   * Override the page-selection control.
+   * Falls back to the default page number `Select`, or a `NumberInput`
+   * when `pageInputType` is `"input"`, when unset.
+   * Use the bound `page` prop to navigate from within the slot.
+   * @slot {{ currentPage: number; totalPages: number; currentPageSize: number; selectLabelText: string; }} pageSelect
+   */
+
+  /**
+   * Specify the current page index.
+   * @bindable writable
+   */
   export let page = 1;
 
   /** Specify the total number of items */
   export let totalItems = 0;
+
+  /**
+   * If `totalItems` is a large number, it can affect the
+   * rendering performance of this component since its value
+   * is used to calculate the number of pages in the native
+   * select dropdown. This value creates a small window of
+   * pages rendered around the current page. By default,
+   * a maximum of 1000 page `<option>` elements are rendered.
+   */
+  export let pageWindow = 1000;
 
   /** Set to `true` to disable the pagination */
   export let disabled = false;
@@ -17,177 +121,410 @@
   /** Specify the forward button text */
   export let forwardText = "Next page";
 
+  /**
+   * Specify the tooltip position for the forward button.
+   * @type {"top" | "right" | "bottom" | "left"}
+   */
+  export let forwardTextTooltipPosition = "top";
+
   /** Specify the backward button text */
   export let backwardText = "Previous page";
+
+  /**
+   * Specify the tooltip position for the backward button.
+   * @type {"top" | "right" | "bottom" | "left"}
+   */
+  export let backwardTextTooltipPosition = "top";
 
   /** Specify the items per page text */
   export let itemsPerPageText = "Items per page:";
 
   /**
-   * Override the item text
+   * Override the item text.
    * @type {(min: number, max: number) => string}
    */
-  export let itemText = (min, max) => `${min}–${max} items`;
+  export let itemText = function itemText(min, max) {
+    return `${min.toLocaleString()}–${max.toLocaleString()} item${max === 1 ? "" : "s"}`;
+  };
 
   /**
-   * Override the item range text
+   * Override the item range text.
+   * If overridden, the custom function must handle `total <= 0` itself.
    * @type {(min: number, max: number, total: number) => string}
    */
-  export let itemRangeText = (min, max, total) =>
-    `${min}–${max} of ${total} items`;
+  export let itemRangeText = function itemRangeText(min, max, total) {
+    if (total <= 0) return "0 items";
+    return `${min.toLocaleString()}–${max.toLocaleString()} of ${total.toLocaleString()} item${max === 1 ? "" : "s"}`;
+  };
 
   /** Set to `true` to disable the page input */
   export let pageInputDisabled = false;
 
+  /**
+   * Specify how the page number is entered.
+   * Use `"input"` for large page counts so users can jump to pages
+   * outside the windowed select options from `pageWindow`.
+   * Has no effect when `pagesUnknown` is `true`, which shows no page control.
+   * @type {"select" | "input"}
+   */
+  export let pageInputType = "select";
+
   /** Set to `true` to disable the page size input */
   export let pageSizeInputDisabled = false;
 
-  /** Specify the number of items to display in a page */
+  /**
+   * Set to `true` for a compact prev/next control with page status text.
+   * Hides the page size and page selects. Suited to toolbars and cards.
+   */
+  export let simple = false;
+
+  /**
+   * Specify the number of items to display in a page.
+   * @bindable writable
+   */
   export let pageSize = 10;
 
   /**
-   * Specify the available page sizes
-   * @type {number[]}
+   * Specify the available page sizes.
+   * @type {ReadonlyArray<number>}
    */
   export let pageSizes = [10];
+
+  /**
+   * Set to `true` to dynamically filter page sizes based on total items.
+   * Page sizes larger than needed to display all items on a single page are hidden.
+   * @example
+   * <Pagination totalItems={9} pageSizes={[5, 10, 15]} dynamicPageSizes />
+   * <!-- renders [5, 10] -->
+   */
+  export let dynamicPageSizes = false;
 
   /** Set to `true` if the number of pages is unknown */
   export let pagesUnknown = false;
 
   /**
-   * Override the page text
-   * @type {(page: number) => string}
+   * Override the disabled state of the forward (next page) button.
+   * Intended for use with `pagesUnknown` (controlled), where the consumer
+   * knows when there is no more data to load.
+   * @type {boolean | undefined}
    */
-  export let pageText = (page) => `page ${page}`;
+  export let forwardButtonDisabled = undefined;
 
   /**
-   * Override the page range text
+   * Override the disabled state of the backward (previous page) button.
+   * Intended for use with `pagesUnknown` (controlled), where the consumer
+   * manages page bounds.
+   * @type {boolean | undefined}
+   */
+  export let backButtonDisabled = undefined;
+
+  /**
+   * Override the page text.
+   * @type {(page: number) => string}
+   */
+  export let pageText = function pageText(page) {
+    return `page ${page.toLocaleString()}`;
+  };
+
+  /**
+   * Override the page range text.
    * @type {(current: number, total: number) => string}
    */
-  export let pageRangeText = (current, total) =>
-    `of ${total} page${total === 1 ? "" : "s"}`;
+  export let pageRangeText = function pageRangeText(_current, total) {
+    return `of ${total.toLocaleString()} page${total === 1 ? "" : "s"}`;
+  };
+
+  /**
+   * Override the accessible label for the page number select.
+   * The default reads "Page number, of 1 page" or "Page number, of N pages".
+   * @type {(total: number) => string}
+   */
+  export let pageSelectLabelText = function pageSelectLabelText(total) {
+    return `Page number, of ${total} page${total === 1 ? "" : "s"}`;
+  };
 
   /** Set an id for the top-level element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
-  import { afterUpdate, createEventDispatcher } from "svelte";
-  import CaretLeft16 from "../icons/CaretLeft16.svelte";
-  import CaretRight16 from "../icons/CaretRight16.svelte";
+  /**
+   * Specify the size of the pagination.
+   * @type {"xs" | "sm" | "md" | "lg"}
+   */
+  export let size = "md";
+
+  import { createEventDispatcher } from "svelte";
   import Button from "../Button/Button.svelte";
+  import NumberInput from "../NumberInput/NumberInput.svelte";
   import Select from "../Select/Select.svelte";
   import SelectItem from "../Select/SelectItem.svelte";
+  import CaretLeft from "../icons/CaretLeft.svelte";
+  import CaretRight from "../icons/CaretRight.svelte";
+  import { clamp } from "../utils/numeric-format.js";
+  import { titleWhenTruncated } from "../utils/title-when-truncated.js";
+  import { uniqueId } from "../utils/unique-id.js";
 
   const dispatch = createEventDispatcher();
 
-  afterUpdate(() => {
-    if (page > totalPages) {
-      page = totalPages;
-    }
-  });
+  // Seeded by the first run of the `update` block below, after the initial
+  // clamp, so clamping an out-of-range initial page isn't reported as an
+  // update on mount (#2528).
+  /** @type {number | undefined} */
+  let prevPage;
+  /** @type {number | undefined} */
+  let prevPageSize;
+  /** @type {string | undefined} */
+  let prevPageSizesKey;
+  /** @type {null | HTMLAnchorElement | HTMLButtonElement} */
+  let backBtnRef = null;
+  /** @type {null | HTMLAnchorElement | HTMLButtonElement} */
+  let forwardBtnRef = null;
+  let pageInputKey = 0;
 
+  /**
+   * Clamp a page-number input value and dispatch `change` when it commits.
+   * @param {null | number} raw
+   */
+  function handlePageInputChange(raw) {
+    if (raw === null || Number.isNaN(raw)) return;
+    const next = clamp(Math.trunc(raw), 1, totalPages);
+    page = next;
+    // Remount when the committed value was clamped so the input display
+    // resets even if `page` did not change.
+    if (next !== raw) pageInputKey += 1;
+    dispatch("change", { page: next });
+  }
+
+  $: effectivePageSizes = dynamicPageSizes
+    ? getFilteredPageSizes(pageSizes, totalItems)
+    : pageSizes;
+  // After the available sizes change, if the current size is gone, use the
+  // first remaining size and reset to page 1. Skip the initial run so a
+  // bound pageSize that isn't in the default `pageSizes` stays put.
   $: {
-    if (typeof page !== "number") {
-      page = Number(page);
+    const nextPageSizesKey = effectivePageSizes.join(",");
+    if (
+      prevPageSizesKey !== undefined &&
+      nextPageSizesKey !== prevPageSizesKey &&
+      effectivePageSizes.length &&
+      !effectivePageSizes.includes(pageSize)
+    ) {
+      pageSize = effectivePageSizes[0];
+      page = 1;
     }
-
-    if (typeof pageSize !== "number") {
-      pageSize = Number(pageSize);
-    }
-
-    dispatch("update", { pageSize, page });
+    prevPageSizesKey = nextPageSizesKey;
   }
   $: totalPages = Math.max(Math.ceil(totalItems / pageSize), 1);
-  $: selectItems = Array.from({ length: totalPages }, (_, i) => i);
-  $: backButtonDisabled = disabled || page === 1;
-  $: forwardButtonDisabled = disabled || page === totalPages;
+  $: if (!pagesUnknown && page > totalPages) page = totalPages;
+  $: if (prevPage !== page || prevPageSize !== pageSize) {
+    if (prevPage !== undefined) dispatch("update", { pageSize, page });
+    prevPage = page;
+    prevPageSize = pageSize;
+  }
+  $: selectItems =
+    pageInputType === "input"
+      ? []
+      : getWindowedPages(page, totalPages, pageWindow);
+  // Digit count of the widest page number; the page input's CSS sizes
+  // to it so the width holds steady while the user types.
+  $: pageInputDigits = Number.isFinite(totalPages)
+    ? String(totalPages).length
+    : undefined;
+  $: internalBackButtonDisabled =
+    backButtonDisabled ?? (disabled || page === 1);
+  $: internalForwardButtonDisabled =
+    forwardButtonDisabled ??
+    (disabled || (!pagesUnknown && page === totalPages));
+  $: itemsCountText = pagesUnknown
+    ? itemText(pageSize * (page - 1) + 1, page * pageSize)
+    : itemRangeText(
+        Math.min(pageSize * (page - 1) + 1, totalItems),
+        Math.min(page * pageSize, totalItems),
+        totalItems,
+      );
 </script>
 
-<div id="{id}" class:bx--pagination="{true}" {...$$restProps}>
-  <div class:bx--pagination__left="{true}">
-    {#if !pageSizeInputDisabled}
-      <label
-        id="bx--pagination-select-{id}-count-label"
-        for="bx--pagination-select-{id}"
-        class:bx--pagination__text="{true}"
-      >
-        {itemsPerPageText}
-      </label>
-      <Select
-        id="bx--pagination-select-{id}"
-        class="bx--select__item-count"
-        hideLabel
-        noLabel
-        inline
-        bind:selected="{pageSize}"
-      >
-        {#each pageSizes as size, i (size)}
-          <SelectItem value="{size}" text="{size.toString()}" />
-        {/each}
-      </Select>
-    {/if}
-    <span class:bx--pagination__text="{!pageSizeInputDisabled}">
-      {#if pagesUnknown}
-        {itemText(pageSize * (page - 1) + 1, page * pageSize)}
-      {:else}
-        {itemRangeText(
-          Math.min(pageSize * (page - 1) + 1, totalItems),
-          Math.min(page * pageSize, totalItems),
-          totalItems
-        )}
+<div
+  {id}
+  class:bx--pagination={true}
+  class:bx--pagination--simple={simple}
+  class:bx--pagination--xs={size === "xs"}
+  class:bx--pagination--sm={size === "sm"}
+  class:bx--pagination--md={size === "md"}
+  class:bx--pagination--lg={size === "lg"}
+  {...$$restProps}
+>
+  {#if !simple}
+    <div class:bx--pagination__left={true}>
+      {#if !pageSizeInputDisabled}
+        <label
+          id="bx--pagination-select-{id}-sizes-label"
+          for="bx--pagination-select-{id}-sizes"
+          class:bx--pagination__text={true}
+        >
+          {itemsPerPageText}
+        </label>
+        <Select
+          id="bx--pagination-select-{id}-sizes"
+          class="bx--select__item-count"
+          hideLabel
+          noLabel
+          inline
+          disabled={pageSizeInputDisabled || disabled}
+          selected={pageSize}
+          on:update={(event) => {
+            const nextSize = Number(event.detail);
+            if (!nextSize) return;
+            const firstIndex = (page - 1) * pageSize;
+            const nextPage = pagesUnknown
+              ? page
+              : Math.floor(firstIndex / nextSize) + 1;
+            pageSize = nextSize;
+            page = nextPage;
+            dispatch("change", { pageSize: nextSize, page: nextPage });
+          }}
+        >
+          {#each effectivePageSizes as pageSizeOption (pageSizeOption)}
+            <SelectItem
+              value={pageSizeOption}
+              text={pageSizeOption.toString()}
+            />
+          {/each}
+        </Select>
       {/if}
-    </span>
-  </div>
-  <div class:bx--pagination__right="{true}">
-    {#if !pageInputDisabled}
-      <Select
-        id="bx--pagination-select-{id + 2}"
-        class="bx--select__page-number"
-        labelText="Page number, of {totalPages} pages"
-        inline
-        hideLabel
-        bind:selected="{page}"
+      <span
+        class:bx--pagination__text={!pageSizeInputDisabled}
+        class:bx--pagination__items-count={true}
+        use:titleWhenTruncated
       >
-        {#each selectItems as size, i (size)}
-          <SelectItem value="{size + 1}" text="{(size + 1).toString()}" />
-        {/each}
-      </Select>
-      <span class:bx--pagination__text="{true}">
+        {itemsCountText}
+      </span>
+    </div>
+  {/if}
+  <div class:bx--pagination__right={true}>
+    {#if simple}
+      <span class:bx--pagination__text={true}>
         {#if pagesUnknown}
           {pageText(page)}
-        {:else}{pageRangeText(page, totalPages)}{/if}
+        {:else}
+          {pageText(page)} {pageRangeText(page, totalPages)}
+        {/if}
+      </span>
+    {:else if pagesUnknown && !pageInputDisabled}
+      <!-- With unknown pages there is no page list to pick from. -->
+      <span class:bx--pagination__text={true}>
+        {pageText(page)}
+      </span>
+    {:else if !pageInputDisabled}
+      <slot
+        name="pageSelect"
+        currentPage={page}
+        {totalPages}
+        currentPageSize={pageSize}
+        selectLabelText={pageSelectLabelText(totalPages)}
+      >
+        {#if pageInputType === "input"}
+          {#key pageInputKey}
+            <NumberInput
+              id="bx--pagination-select-{id}-pages"
+              class="bx--pagination__page-number-input"
+              style={pageInputDigits
+                ? `--ccs-pagination-page-input-digits: ${pageInputDigits}`
+                : undefined}
+              labelText={pageSelectLabelText(totalPages)}
+              hideLabel
+              hideSteppers
+              disableWheel
+              {disabled}
+              min={1}
+              max={totalPages}
+              value={page}
+              on:change={(event) => handlePageInputChange(event.detail)}
+            />
+          {/key}
+        {:else}
+          <!-- Native <option>s instead of SelectItem: a SelectItem
+               registers a store subscriber per page (pageWindow, default
+               1000). Coerce on:update to Number — without SelectItem,
+               Select keeps option values as strings. -->
+          <Select
+            id="bx--pagination-select-{id}-pages"
+            class="bx--select__page-number"
+            labelText={pageSelectLabelText(totalPages)}
+            inline
+            hideLabel
+            disabled={pageInputDisabled || disabled}
+            selected={page}
+            on:update={(event) => {
+              const next = Number(event.detail);
+              page = next;
+              dispatch("change", { page: next });
+            }}
+          >
+            {#each selectItems as pageNumber (pageNumber)}
+              <!-- `selected` so server-rendered markup shows the page;
+                   Select sets the value only once mounted. -->
+              <option
+                class:bx--select-option={true}
+                value={pageNumber}
+                selected={pageNumber === page}
+              >
+                {pageNumber}
+              </option>
+            {/each}
+          </Select>
+        {/if}
+      </slot>
+      <span class:bx--pagination__text={true}>
+        {pageRangeText(page, totalPages)}
       </span>
     {/if}
-    <Button
-      hasIconOnly
-      kind="ghost"
-      tooltipAlignment="center"
-      tooltipPosition="top"
-      icon="{CaretLeft16}"
-      iconDescription="{backwardText}"
-      disabled="{backButtonDisabled}"
-      class="bx--pagination__button bx--pagination__button--backward {backButtonDisabled
-        ? 'bx--pagination__button--no-index'
-        : ''}"
-      on:click="{() => {
-        page--;
-        dispatch('click:button--previous', { page });
-      }}"
-    />
-    <Button
-      hasIconOnly
-      kind="ghost"
-      tooltipAlignment="end"
-      tooltipPosition="top"
-      icon="{CaretRight16}"
-      iconDescription="{forwardText}"
-      disabled="{forwardButtonDisabled}"
-      class="bx--pagination__button bx--pagination__button--forward {forwardButtonDisabled
-        ? 'bx--pagination__button--no-index'
-        : ''}"
-      on:click="{() => {
-        page++;
-        dispatch('click:button--next', { page });
-      }}"
-    />
+    <div class:bx--pagination__control-buttons={true}>
+      <Button
+        size="default"
+        bind:ref={backBtnRef}
+        kind="ghost"
+        tooltipAlignment="center"
+        tooltipPosition={backwardTextTooltipPosition}
+        portalTooltip
+        icon={CaretLeft}
+        iconDescription={backwardText}
+        disabled={internalBackButtonDisabled}
+        class="bx--pagination__button bx--pagination__button--backward {internalBackButtonDisabled
+          ? 'bx--pagination__button--no-index'
+          : ''}"
+        on:click={() => {
+          // `backButtonDisabled={false}` force-enables the button, but pages
+          // still start at 1.
+          if (page <= 1) return;
+          page--;
+          dispatch("click:button--previous", { page });
+          dispatch("change", { page });
+          refocusIfDisabled(backBtnRef, forwardBtnRef);
+        }}
+      />
+      <Button
+        size="default"
+        bind:ref={forwardBtnRef}
+        kind="ghost"
+        tooltipAlignment="end"
+        tooltipPosition={forwardTextTooltipPosition}
+        portalTooltip
+        icon={CaretRight}
+        iconDescription={forwardText}
+        disabled={internalForwardButtonDisabled}
+        class="bx--pagination__button bx--pagination__button--forward {internalForwardButtonDisabled
+          ? 'bx--pagination__button--no-index'
+          : ''}"
+        on:click={() => {
+          // `forwardButtonDisabled={false}` force-enables the button; only
+          // unknown pages may go past the last one.
+          if (!pagesUnknown && page >= totalPages) return;
+          page++;
+          dispatch("click:button--next", { page });
+          dispatch("change", { page });
+          refocusIfDisabled(forwardBtnRef, backBtnRef);
+        }}
+      />
+    </div>
   </div>
 </div>

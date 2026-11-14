@@ -1,0 +1,2363 @@
+---
+components: ["DataTable", "Pagination","Toolbar", "ToolbarContent", "ToolbarSearch", "ToolbarMenu", "ToolbarMenuItem", "ToolbarBatchActions", "ToolbarDensity", "ToolbarColumnVisibility", "DataTableSkeleton"]
+description: Data tables display structured data in rows and columns, with sorting, filtering, pagination, virtualization, and row selection and expansion.
+---
+
+<script>
+  import { DataTable, DataTableSkeleton, Pagination, Toolbar, ToolbarContent, ToolbarSearch, ToolbarMenu, ToolbarMenuItem, Button, Link, Text, Tooltip, OverflowMenu, OverflowMenuItem } from "carbon-components-svelte";
+  import Launch from "carbon-icons-svelte/lib/Launch.svelte";
+</script>
+
+## Basic
+
+Create a basic table using `headers` and `rows`. Match each header key with the corresponding row property. Every header needs a unique key and every row a unique id.
+
+<DataTable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+## Cells
+
+Customize cell rendering with `cell` and `cellHeader` slots.
+
+### Slotted
+
+Use the `cell` slot to customize cell content. Access row and cell data through `let:row` and `let:cell`. Use the `cellHeader` slot for header cells.
+
+<DataTable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+ <svelte:fragment slot="cellHeader" let:header>
+    {#if header.key === 'port'}
+      {header.value} (network)
+    {:else}
+      {header.value}
+    {/if}
+  </svelte:fragment>
+  <svelte:fragment slot="cell" let:row let:cell>
+    {#if cell.key === 'rule' && cell.value === 'Round robin'}
+      <Tooltip triggerText={cell.value}>
+        <p>
+          Distributes requests evenly across servers.
+          <Link icon={Launch} href="https://en.wikipedia.org/wiki/Round-robin_DNS" target="_blank">Read more on Wikipedia</Link>
+        </p>
+      </Tooltip>
+    {:else}
+      {cell.value}
+    {/if}
+  </svelte:fragment>
+</DataTable>
+
+### Row state
+
+The `cell` slot provides rowSelected and rowExpanded to conditionally render content based on row state.
+
+<FileSource src="/framed/DataTable/DataTableCustomCellRowState" />
+
+### Editable
+
+Use the `cell` slot to render form inputs that edit row values inline. Bind the input to the row field—for example `bind:value={row.qty}`—to update the rows array.
+
+The table rebuilds cells only when the rows array reference changes. After an in-place edit, call `refreshRow(id)` to update columns whose display reads other fields on the same row. Use `bind:this` to obtain a reference to the component instance.
+
+A column computed from other fields, such as a total, takes a `key` that isn't one of the row's, a `display` that computes its cells, and `sort: false`: it has no value of its own to sort by.
+
+<FileSource src="/framed/DataTable/DataTableEditableCells" />
+
+When you edit multiple painted rows in place, call `refreshCells()` once to rebuild derived columns for the visible window. Offscreen rows are computed when they scroll into view.
+
+<FileSource src="/framed/DataTable/DataTableEditableCellsRefreshCells" />
+
+### Menus and tooltips
+
+The table's content scrolls, so it cuts off anything that opens past its edges. A menu, tooltip, popover or calendar in a cell that the table would cut off opens in a portal instead, over the page. Set the component's `portalMenu` or `portalTooltip` to `false` to keep it in the table.
+
+<FileSource src="/framed/DataTable/DataTableCellOverlays" />
+
+## Title and description
+
+Add a title and description above the table.
+
+Without a visible title, set `aria-label` on DataTable to name the table for screen readers. It is set on the `<table>` element.
+
+### Props
+
+Add a title and description to provide context for the table data.
+
+<DataTable title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Slottable
+
+By default, the title renders as an `<h4>` and the description as a `<p>`.
+
+Use slots to customize the elements and styles. Destructure the original classes with `let:props`.
+
+<DataTable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+    <h1 slot="titleChildren" let:props {...props}>Load balancers</h1>
+    <Text slot="descriptionChildren" let:props {...props} tag="span" type="body-02">Your organization's active load balancers.</Text>
+</DataTable>
+
+## AI label
+
+Mark AI-generated content with `AILabel` in three slots. The `decorator` slot puts a label beside the title. The `headerDecorator` slot renders for each header with `let:header`, and a column with an active label shows the AI gradient in its header and every cell. The `rowDecorator` slot renders for each row with `let:row` in a narrow leading column, and a row with an active label shows the AI gradient.
+
+<FileSource src="/framed/DataTable/DataTableAILabel" />
+
+## Width
+
+Control the table and column widths.
+
+### Static
+
+Set `useStaticWidth` to `true` to render the table with an auto width instead of 100%.
+
+<DataTable useStaticWidth
+title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Custom columns
+
+Specify `width` or `minWidth` in `headers` to size a column. Unsized columns share the remaining space and grow to fit their content; a sized column stays at least that wide. This works with a [sticky header](#sticky-header).
+
+Set `fixedLayout` to `true` to take each header's `width` as the column's exact rendered size instead of a floor content can grow past. Unsized columns then share the remainder equally.
+
+<FileSource src="/framed/DataTable/DataTableHeaderWidth" />
+
+### Alignment
+
+Set `columnAlign` in `headers` to align a column's header and cells. Values are logical: `end` is the right edge in left-to-right text and the left edge in right-to-left text; the default, `start`, is the left edge. Sortable columns keep their sort affordance.
+
+<DataTable
+  sortable
+  headers={[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "cost", value: "Monthly cost", columnAlign: "end", display: (cost) => "$" + cost },
+  ]}
+  rows={[
+    { id: "a", name: "Load Balancer 3", protocol: "HTTP", port: 3000, cost: 1240 },
+    { id: "b", name: "Load Balancer 1", protocol: "HTTP", port: 443, cost: 865 },
+    { id: "c", name: "Load Balancer 2", protocol: "HTTP", port: 80, cost: 310 },
+  ]}
+/>
+
+### Horizontal scroll
+
+When a table's columns need more space than its container, the table becomes horizontally scrollable.
+
+<DataTable
+  headers={[
+    { key: "id", value: "ID" },
+    { key: "name", value: "Name" },
+    { key: "email", value: "Email" },
+    { key: "department", value: "Department" },
+    { key: "role", value: "Role" },
+    { key: "location", value: "Location" },
+    { key: "status", value: "Status" },
+    { key: "lastActive", value: "Last active" },
+  ]}
+  rows={[
+    { id: "1", name: "Aiko Tanaka", email: "aiko.tanaka@example.com", department: "Engineering", role: "Senior Software Engineer", location: "Tokyo, Japan", status: "Active", lastActive: "2 minutes ago" },
+    { id: "2", name: "Marcus Johnson", email: "marcus.johnson@example.com", department: "Product Management", role: "Principal Product Manager", location: "Austin, Texas", status: "Active", lastActive: "1 hour ago" },
+    { id: "3", name: "Fatima Al-Sayed", email: "fatima.alsayed@example.com", department: "Customer Success", role: "Customer Success Lead", location: "Dubai, UAE", status: "Away", lastActive: "Yesterday" },
+  ]}
+/>
+
+## Column visibility
+
+Control which columns render without editing the `headers` definition.
+
+### Hidden columns
+
+Set `columnHidden` to `true` on a header to skip that column in render while keeping it in `headers`. A single canonical header list keeps column order and definitions stable across toggles. Hidden columns are excluded from toolbar search, since a match the reader cannot see is a result they cannot explain. An active sort on a hidden column still applies, because hiding is presentational.
+
+<DataTable
+  headers={[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule", columnHidden: true },
+  ]}
+  rows={[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin",
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin",
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation",
+    },
+  ]}
+/>
+
+### Visibility menu
+
+Add `ToolbarColumnVisibility` to a `Toolbar` for a ready-made column picker. It edits a bound `headers` array directly, so `DataTable` reflects each choice: picking an item toggles `columnHidden` for that column and keeps the menu open. Press <DocKbd label="Escape" /> to close it, and the last visible column's item is disabled so a table never loses every column. Pass `toggleableKeys` to restrict the menu to a subset of columns; the rest are omitted and keep their current visibility.
+
+<FileSource src="/framed/DataTable/DataTableToolbarColumnVisibility" />
+
+### Persisting visibility
+
+`headers` can carry functions in `display` and `sort`, so persisting the array itself through `LocalStorage` would silently drop them on the next page load. `toColumnSettings` converts a header array into a small `{ order, hidden }` object instead, safe to serialize; `applyColumnSettings` converts it back onto the original header array, keeping the functions intact. Store the settings object, not the headers, and derive `headers` from it on every change.
+
+<FileSource src="/framed/DataTable/DataTableToolbarColumnVisibilityPersist" />
+
+## Sticky header
+
+Set `stickyHeader` to fix the header in place while the body scrolls.
+
+### Scrolling
+
+Set `stickyHeader` to `true` to fix the header in place. This adds a maximum height to force scrolling. If the table's content is also wider than its container, scrolling horizontally moves the header and body together, with a scrollbar on the table's container.
+
+<DataTable
+  stickyHeader
+  headers={[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" },
+  ]}
+  rows={Array.from({ length: 20 }).map((_, i) => ({
+    id: i,
+    name: "Load Balancer " + (i + 1),
+    protocol: "HTTP",
+    port: i % 3 ? (i % 2 ? 3000 : 80) : 443,
+    rule: i % 3 ? "Round robin" : "DNS delegation",
+  }))}
+/>
+
+### Empty column
+
+A header with `empty: true` shows no label, but body cells can still render content. Set its `value` to name the column for screen readers. The name stays visually hidden. Without a `value`, the header has no accessible name, and axe reports an empty table header. For row-actions overflow menus, also set `columnMenu: true` so the column stays narrow and the menu trigger stays centered. With stickyHeader enabled, the empty column stays aligned with its body cells.
+
+<DataTable
+  stickyHeader
+  headers={[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" },
+    { key: "overflow", empty: true, value: "Actions", columnMenu: true },
+  ]}
+  rows={Array.from({ length: 20 }).map((_, i) => ({
+    id: i,
+    name: "Load Balancer " + (i + 1),
+    protocol: "HTTP",
+    port: i % 3 ? (i % 2 ? 3000 : 80) : 443,
+    rule: i % 3 ? "Round robin" : "DNS delegation",
+  }))}
+>
+  <svelte:fragment slot="cell" let:cell>
+    {#if cell.key === "overflow"}
+      <OverflowMenu flipped>
+        <OverflowMenuItem text="Restart" />
+        <OverflowMenuItem text="API documentation" />
+        <OverflowMenuItem danger text="Stop" />
+      </OverflowMenu>
+    {:else}
+      {cell.value}
+    {/if}
+  </svelte:fragment>
+</DataTable>
+
+### Max height
+
+By default, stickyHeader caps the table height at 300px. Override the cap with `stickyHeaderMaxHeight`. Pass a number (interpreted as px) or a CSS length string such as `"24rem"`.
+
+<FileSource src="/framed/DataTable/StickyHeaderMaxHeight" />
+
+## Virtualization
+
+Set `virtualize` to render only the visible rows, improving performance for large datasets.
+
+### When to virtualize
+
+Every row a table renders costs time to mount, sort, and filter. Past a few hundred rows, set `virtualize` or `pageSize` so the table only renders the rows in view or on the current page. Virtualization stays opt-in because it changes the layout: the body gets a fixed height and the header sticks.
+
+Measured in Chromium on an Apple M2, with 1,000 rows and three columns (script, style, and layout):
+
+| Interaction | Every row rendered | `virtualize` |
+| --- | --- | --- |
+| Sort a column | about 30 ms | under 2 ms |
+| Search, narrowing to 111 rows | about 9 ms | under 2 ms |
+| Clear the search, remounting 889 rows | about 40 ms | under 2 ms |
+
+| Do | Why |
+| --- | --- |
+| Set `virtualize` or `pageSize` once a table can hold a few hundred rows. | A sort or a cleared search then touches only the rows in view, so it fits in a frame. |
+| Set `debounce` on `ToolbarSearch` when a large table renders every row. | Rows filter once typing pauses, so each keystroke paints right away. |
+| Set `deferFilter` on `ToolbarSearch` when clearing the search must paint at once. | The input and clear button update first, then the rows filter in the next task. Filtering becomes asynchronous. |
+| Keep cell slots light, such as text and icons, in tables that render every row. | Each row mounts its cells, so a widget in every cell multiplies the mount cost. |
+
+### Large datasets
+
+Virtualization renders only rows visible in the viewport, improving performance for large datasets. Set `virtualize` to `true` to enable. The header stays visible while scrolling—sticky positioning is applied automatically. Use `stickyHeader` when you need the full sticky-header layout. Container height defaults to 10 rows (itemHeight × maxVisibleRows). With `stickyHeader`, a numeric `stickyHeaderMaxHeight` drives the container height instead, so the virtual window matches the visible scroll area; a string value such as `"50vh"` does not.
+
+The example below shows 10,000 rows with a filterable toolbar; only visible rows are rendered in the DOM.
+
+<FileSource src="/framed/DataTable/VirtualizedDataTable" />
+
+Pass an object instead of `true` to customize behavior further. Besides the options below, `threshold` (default 100) sets the minimum row count before virtualization activates—smaller tables render normally—and `maxItems` caps how many rows are ever rendered, regardless of dataset size.
+
+When `stickyHeader` is `false`, bind `scrollContainerRef` to obtain the scrolling element and control its position programmatically, for example resetting scroll to the top after the row data changes.
+
+### With a sticky header
+
+Combine `virtualize` with `stickyHeader` and a numeric `stickyHeaderMaxHeight` to keep the virtual window sized to the visible scroll area.
+
+<FileSource src="/framed/DataTable/VirtualizedStickyHeader" />
+
+### Custom overscan
+
+Overscanning renders extra rows above and below the viewport for smoother scrolling. The default overscan is 3. Set `overscan` to control how many extra rows are rendered.
+
+<FileSource src="/framed/DataTable/VirtualizeOverscan" />
+
+### Custom row height
+
+By default, virtual row height matches the table size variant (48px medium, 24px compact, 32px short, 64px tall). Use `rowClass` for a custom row height via CSS, and set matching `itemHeight` for correct virtualization.
+
+<FileSource src="/framed/DataTable/VirtualizeRowHeight" />
+
+### Custom max visible rows
+
+By default, the table shows 10 rows in the viewport. Set `maxVisibleRows` to control how many rows are visible at once. Container height is itemHeight × maxVisibleRows, or use `containerHeight` for pixel-based control.
+
+<FileSource src="/framed/DataTable/VirtualizeMaxVisibleRows" />
+
+### Load more
+
+`scrollend` fires when the virtualized table body is scrolled near the bottom. Use it to append the next page of `rows`. The component does not fetch or mutate `rows` for you.
+
+This is a library load-more signal, not the browser's native `scrollend` (scroll stopped). It fires once per approach to the bottom, re-arming after the user scrolls away and when `rows` grows so another page can be requested.
+
+`scrollend` only fires when `virtualize` is enabled. `pageSize` tables paginate instead of scroll-appending, and there is no scroll listener at all when both are off.
+
+<FileSource src="/framed/DataTable/ScrollEndDataTable" />
+
+## Toolbar
+
+Add a Toolbar above the table for search, menus, and actions.
+
+### Search & actions
+
+Add a toolbar with search, menu, and actions above the table.
+
+<DataTable title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <Toolbar>
+    <ToolbarContent>
+      <ToolbarSearch />
+      <ToolbarMenu>
+        <ToolbarMenuItem primaryFocus>Restart all</ToolbarMenuItem>
+        <ToolbarMenuItem href="https://cloud.ibm.com/docs/loadbalancer-service">
+          API documentation
+        </ToolbarMenuItem>
+        <ToolbarMenuItem hasDivider danger>Stop all</ToolbarMenuItem>
+      </ToolbarMenu>
+      <Button>Create balancer</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+### Small
+
+Use `size="short"` for a more compact table. The toolbar inherits a matching size from the parent DataTable: short uses the small toolbar and compact uses the [extra small toolbar](#compact). Set `size` on the toolbar to override the inherited value (see [toolbar size override](#size-override)).
+
+<DataTable size="short" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <Toolbar>
+    <ToolbarContent>
+      <ToolbarSearch />
+      <ToolbarMenu>
+        <ToolbarMenuItem primaryFocus>Restart all</ToolbarMenuItem>
+        <ToolbarMenuItem href="https://cloud.ibm.com/docs/loadbalancer-service">API documentation</ToolbarMenuItem>
+        <ToolbarMenuItem hasDivider danger>Stop all</ToolbarMenuItem>
+      </ToolbarMenu>
+      <Button>Create balancer</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+### Small (button kinds)
+
+Buttons of every kind resize to match the small toolbar, not only `kind="primary"`.
+
+<DataTable size="short" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+  ]}"
+>
+  <Toolbar>
+    <ToolbarContent>
+      <Button kind="primary">Primary</Button>
+      <Button kind="secondary">Secondary</Button>
+      <Button kind="tertiary">Tertiary</Button>
+      <Button kind="danger">Danger</Button>
+      <Button kind="ghost">Ghost</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+### Small (large button)
+
+A `size="short"` toolbar grows to fit an explicit `size="lg"` or `size="xl"` `Button`, instead of clipping it down to the toolbar's height.
+
+<DataTable size="short" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+  ]}"
+>
+  <Toolbar>
+    <ToolbarContent>
+      <Button size="lg">Large</Button>
+      <Button size="xl">Extra large</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+### Size override
+
+Set `size` on the toolbar to override the size inherited from the DataTable. Here, `size="tall"` on the table pairs with `size="sm"` on the toolbar.
+
+<DataTable size="tall" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <Toolbar size="sm">
+    <ToolbarContent>
+      <ToolbarSearch />
+      <ToolbarMenu>
+        <ToolbarMenuItem primaryFocus>Restart all</ToolbarMenuItem>
+        <ToolbarMenuItem href="https://cloud.ibm.com/docs/loadbalancer-service">API documentation</ToolbarMenuItem>
+        <ToolbarMenuItem hasDivider danger>Stop all</ToolbarMenuItem>
+      </ToolbarMenu>
+      <Button>Create balancer</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+### Sticky
+
+Set `sticky` on `Toolbar` to keep it pinned while the page or its scroll container scrolls, so batch actions stay reachable on a long table. Set `stickyOffset` to the distance from the top edge while stuck; a number is treated as pixels and a string can be any CSS length. When a UI Shell `Header` is on the page, the offset defaults to the header's 48px height so the toolbar does not slide under it. Pass `stickyOffset={0}` to opt out.
+
+<FileSource src="/framed/DataTable/DataTableStickyToolbar" />
+
+### Compact
+
+Use `size="compact"` for the table. The toolbar inherits the extra small (xs) size to match the compact row height.
+
+<DataTable size="compact" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <Toolbar>
+    <ToolbarContent>
+      <ToolbarSearch />
+      <ToolbarMenu size="xs">
+        <ToolbarMenuItem primaryFocus>Restart all</ToolbarMenuItem>
+        <ToolbarMenuItem href="https://cloud.ibm.com/docs/loadbalancer-service">API documentation</ToolbarMenuItem>
+        <ToolbarMenuItem hasDivider danger>Stop all</ToolbarMenuItem>
+      </ToolbarMenu>
+      <Button>Create balancer</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+### Selectable rows
+
+Set `selectable` to `true` to enable selectable rows. Here, the toolbar is used standalone. For batch actions on selected rows, see [batch selection with toolbar](#actions-toolbar).
+
+<DataTable selectable size="short" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <Toolbar>
+    <ToolbarContent>
+      <ToolbarSearch persistent />
+      <Button>Action</Button>
+    </ToolbarContent>
+  </Toolbar>
+</DataTable>
+
+## Toolbar search with typeahead
+
+Compose [SearchMenu](/components/SearchMenu) in the toolbar for a search typeahead with suggestions. `SearchMenu` does not read the `DataTable` context, so bind to `value` and filter the rows in the consumer. Selecting a suggestion sets `value`. For built-in row filtering without a menu, use [ToolbarSearch](#filtering).
+
+<FileSource src="/framed/DataTable/DataTableSearchMenu" />
+
+## Export
+
+Serialize headers and rows to a CSV string with `toCsv`. It applies each column's `display` formatting and skips empty and hidden columns, so the export matches what the table renders. It returns a string instead of triggering a download; pass the result to [`downloadFile`](/components/Link#download-link) (or wire it into [`LinkDownload`](/components/Link#download-link)) when you want a file. Export the current view by passing the rows matching `filteredRowIds`; values a spreadsheet would read as formulas are prefixed with a single quote unless `escapeFormulas` is `false`.
+
+<FileSource src="/framed/DataTable/DataTableExport" />
+
+## Filtering
+
+Filter rows with `shouldFilterRows`.
+
+### Client-side
+
+Set `shouldFilterRows` to `true` to enable client-side filtering. The default filter compares cell values as strings.
+
+For pagination with filtering, bind to `filteredRowIds` and pass its length to the pagination totalItems.
+
+<FileSource src="/framed/DataTable/DataTableFilterable" />
+
+### Custom
+
+Pass a function to `shouldFilterRows` to implement custom filtering logic.
+
+<FileSource src="/framed/DataTable/DataTableFilterCustom" />
+
+### Debounced
+
+Set `debounce` on `ToolbarSearch` to the number of milliseconds to wait after typing stops before rows are filtered, which keeps large tables responsive. The `value` still updates on every keystroke, and clearing the search filters immediately. The default of `0` filters on every keystroke.
+
+<FileSource src="/framed/DataTable/DataTableFilterDebounce" />
+
+### Deferred
+
+Set `deferFilter` on `ToolbarSearch` to let the browser paint before rows are filtered. The `value` updates at once, so the input and the clear button respond right away, and the table re-renders in the task that follows. Unlike `debounce`, clearing is deferred too, and typing is never delayed by a timer.
+
+Filtering becomes asynchronous: `filteredRowIds` and the rows update shortly after `value`, not in the same update. Rapid changes coalesce, so only the latest value is filtered. Combine it with `debounce` to wait for typing to pause first, then yield before filtering. The first filter on mount stays synchronous.
+
+<FileSource src="/framed/DataTable/DataTableFilterDefer" />
+
+### Strategy
+
+By default (`filterMode="remove"`), filtering unmounts non-matching rows, resetting focus, draft inputs, and open menus. This keeps the DOM small for large tables.
+
+Set `filterMode` to `"hide"` to keep every row mounted and hide non-matching rows instead, preserving row state when cells hold inputs or other widgets. Type a note in the example, filter the row away, then clear the search—the note remains.
+
+Setting `filterMode` to `"hide"` has no effect when pageSize is set or virtualization is enabled. Selection, select all, and filteredRowIds still reflect matching rows only.
+
+<FileSource src="/framed/DataTable/DataTableFilterMode" />
+
+## Row styling
+
+Apply alternating colors or custom row classes.
+
+### Zebra
+
+Set `zebra` to `true` to add alternating row colors.
+
+<DataTable zebra
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Custom classes
+
+Use `rowClass` to apply custom CSS classes to rows. Pass a string for a static class, or a function that receives row, rowIndex, selected, and expanded and returns conditional classes. Try selecting and expanding rows to see the custom styles.
+
+<FileSource src="/framed/DataTable/DataTableRowClass" />
+
+### Custom cell classes
+
+Set `cellClass` to a string or a function that returns a class for each data cell. The function receives the row, cell, rowIndex, cellIndex, selected, and expanded. It does not apply to the select, expand, header, or footer cells.
+
+A hovered or selected row uses its own text color, as in Carbon, so a color set by `cellClass` shows only at rest.
+
+<FileSource src="/framed/DataTable/DataTableCellClass" />
+
+## Footer
+
+Use the `footerCell` slot to render a summary row aligned to the table columns. The slot receives each header, so it can decide what to render per column and leave the rest blank.
+
+Compute totals, averages, and counts yourself; the table does not aggregate. The footer renders once for the whole table rather than once per page, and it stays in place while virtualized rows scroll.
+
+<FileSource src="/framed/DataTable/DataTableFooter" />
+
+## Sizes
+
+Set `size` to control row height. The default is 48px.
+
+Carbon v11's row heights also work: `"xs"`, `"sm"`, `"md"` and `"xl"` render as compact, short, medium and tall, and `"lg"` is the 48px default.
+
+### Medium
+
+Set `size="medium"` for standard row height.
+
+<DataTable size="medium"
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Tall
+
+Set `size="tall"` for increased row height.
+
+<DataTable size="tall"
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Short
+
+Set `size="short"` for compact row height.
+
+<DataTable size="short"
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Compact
+
+Set `size="compact"` for minimal row height.
+
+<DataTable size="compact"
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Density toggle
+
+Compose `ToolbarDensity` in the toolbar for a menu that picks the row height. It binds `size`, so pass the same value to the `DataTable`, and the toolbar's own height follows the picked size. This is the recommended pattern for letting users control the table's row height themselves.
+
+Set `sizes` to offer a subset of the four row heights. Set `icon` to render a custom trigger icon in place of the default.
+
+<FileSource src="/framed/DataTable/DataTableDensity" />
+
+## Sorting
+
+Set `sortable` to enable column sorting.
+
+### Sortable columns
+
+Set `sortable` to `true` to enable column sorting. Disable sorting on specific columns by setting `sort: false` in the header object.
+
+When a sortable header is clicked, the table dispatches a cancelable `sort` event with `event.detail` shaped like `{ key, direction }`. The detail key is the header key (or null when unsorted); direction is `"none"`, `"ascending"`, or `"descending"`. Listen with `on:sort`.
+
+After `sortKey` or `sortDirection` changes, the table announces the result once from a visually hidden status region, for example "Sorted by Name, ascending". The sort it mounts with is not announced. Override the text with `sortStatusText`, which receives the header and the direction.
+
+<DataTable sortable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol", sort: false },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+  on:sort={(e) => console.log(e.detail.key, e.detail.direction)}
+/>
+
+### Per-column opt-in
+
+`sort` also works the other way: set `sort: true` on individual headers to opt them into sorting when the table itself is not `sortable`, rather than setting table-level `sortable` and disabling every other column with `sort: false`.
+
+In this incident table, row order reflects severity and should not be disturbed by sorting most columns, but "Last updated" still benefits from a sortable column to find the most (or least) recently touched incident.
+
+<DataTable
+  headers="{[
+    { key: 'id', value: 'Incident' },
+    { key: 'severity', value: 'Severity' },
+    { key: 'owner', value: 'Owner' },
+    { key: 'updated', value: 'Last updated', sort: true }
+  ]}"
+  rows="{[
+    { id: 'INC-142', severity: 'Critical', owner: 'Priya', updated: '2025-03-05' },
+    { id: 'INC-139', severity: 'High', owner: 'Marcus', updated: '2025-03-04' },
+    { id: 'INC-137', severity: 'High', owner: 'Priya', updated: '2025-03-02' },
+    { id: 'INC-128', severity: 'Medium', owner: 'Jae', updated: '2025-02-28' }
+  ]}"
+/>
+
+### Server-side
+
+When rows and sort order come from an API, the canonical order is usually defined on the server (collation, nullable fields, joined columns, security filters).
+
+Client-side sorting on the same payload can disagree with that behavior or waste work on large datasets. In those cases, call `preventDefault()` on the `sort` event so the table does not reorder rows or apply its own sort for that click. Use event.detail.key and event.detail.direction as your sort parameters (query string, GraphQL variables, RPC args), wait for the response, then assign the new rows. The sort indicators should match what the server applied: bind sortKey and sortDirection from the parent and set them after the response (as in the example), or pass them as one-way props if you do not need child-to-parent sync.
+
+The framed example uses setTimeout to simulate a network request; `preventDefault()` runs first, then simulated sorted rows replace rows and the bound sort props update the header.
+
+<FileSource src="/framed/DataTable/DataTableSortPreventDefault" />
+
+### Sort always
+
+Sortable columns support three directions: none (unsorted, original row order), ascending, and descending. Clicking a column header cycles through them in order.
+
+By default, a third click on a sorted column unsorts it (none restores the original row order).
+
+Set `sortAlways` to `true` to skip the unsorted state so the column always remains sorted. The first click sorts ascending; subsequent clicks alternate ascending and descending (no unsorted state).
+
+<DataTable sortable sortAlways
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+/>
+
+### Per-column sort always
+
+Use `sortAlways` on individual headers to control which columns allow unsorting. In this transaction log, the Date column always stays sorted (chronological order is required for audit trails), while Amount and Status can be unsorted.
+
+<DataTable sortable title="Recent transactions"
+  headers="{[
+    { key: 'date', value: 'Date', sortAlways: true },
+    { key: 'description', value: 'Description' },
+    { key: 'amount', value: 'Amount' },
+    { key: 'status', value: 'Status', sortAlways: false }
+  ]}"
+  rows="{[
+    { id: '1', date: '2025-03-05', description: 'Cloud hosting', amount: 149.00, status: 'Paid' },
+    { id: '2', date: '2025-03-04', description: 'Domain renewal', amount: 12.99, status: 'Paid' },
+    { id: '3', date: '2025-03-03', description: 'API subscription', amount: 49.00, status: 'Pending' },
+    { id: '4', date: '2025-03-02', description: 'SSL certificate', amount: 0, status: 'Paid' },
+    { id: '5', date: '2025-03-01', description: 'Backup storage', amount: 24.50, status: 'Failed' }
+  ]}"
+/>
+
+### Custom display and sort
+
+Use display and sort functions in headers to customize cell rendering and sorting.
+
+<DataTable sortable title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "cost", value: "Cost", display: (cost) => cost + " €" },
+    {
+      key: "expireDate",
+      value: "Expire date",
+      display: (date) => new Date(date).toLocaleString(),
+      sort: (a, b) => new Date(a) - new Date(b),
+    },
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      cost: 100,
+      expireDate: "2020-10-21",
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      cost: 200,
+      expireDate: "2020-09-10",
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      cost: 150,
+      expireDate: "2020-11-24",
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      cost: 250,
+      expireDate: "2020-12-01",
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      cost: 550,
+      expireDate: "2021-03-21",
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      cost: 400,
+      expireDate: "2020-11-14",
+    },
+  ]}"
+/>
+
+### Top-level sort
+
+Define a default comparator for all sortable columns with top-level `sort`. Per-header sort functions take precedence. The comparator receives `(a, b, { key, ascending, row_a, row_b })`, enabling key-aware and row-level sorting logic.
+
+<FileSource src="/framed/DataTable/DataTableSortProp" />
+
+### Nested values
+
+Access nested object properties using dot notation in the header key.
+
+<DataTable sortable title="Load balancers" description="Your organization's active load balancers."
+           headers="{[
+    { key: "name", value: "Name" },
+    { key: "network.protocol", value: "Protocol" },
+    { key: "network.port", value: "Port" },
+    { key: "cost", value: "Cost", display: (cost) => cost + " €" },
+    {
+      key: "expireDate",
+      value: "Expire date",
+      display: (date) => new Date(date).toLocaleString(),
+      sort: (a, b) => new Date(a) - new Date(b),
+    },
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      network: {
+        protocol: "HTTP",
+        port: 3000,
+      },
+      cost: 100,
+      expireDate: "2020-10-21",
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      network: {
+        protocol: "HTTP",
+        port: 443,
+      },
+      cost: 200,
+      expireDate: "2020-09-10",
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      network: {
+        protocol: "HTTP",
+        port: 80,
+      },
+      cost: 150,
+      expireDate: "2020-11-24",
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      network: {
+        protocol: "HTTP",
+        port: 3000,
+      },
+      cost: 250,
+      expireDate: "2020-12-01",
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      network: {
+        protocol: "HTTP",
+        port: 443,
+      },
+      cost: 550,
+      expireDate: "2021-03-21",
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      network: {
+        protocol: "HTTP",
+        port: 80,
+      },
+      cost: 400,
+      expireDate: "2020-11-14",
+    },
+  ]}"
+/>
+
+### Programmatic
+
+Control sorting programmatically with `sortKey` and `sortDirection`. Set sortKey to a valid header key and sortDirection to "none", "ascending", or "descending".
+
+<FileSource src="/framed/DataTable/DataTableProgrammaticSorting" />
+
+## Pagination
+
+Combine the table with Pagination.
+
+### Page bindings
+
+Bind pageSize and page on Pagination and pass them to the data table.
+
+<FileSource src="/framed/DataTable/DataTablePagination" />
+
+### Matching size
+
+Match Pagination size to DataTable size for consistent heights. Pair a short table with small (sm) pagination.
+
+<DataTable size="short" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    { id: "a", name: "Load Balancer 3", protocol: "HTTP", port: 3000, rule: "Round robin" },
+    { id: "b", name: "Load Balancer 1", protocol: "HTTP", port: 443, rule: "Round robin" },
+    { id: "c", name: "Load Balancer 2", protocol: "HTTP", port: 80, rule: "DNS delegation" },
+  ]}"
+/>
+<Pagination size="sm" totalItems={3} pageSizes={[10, 15, 20]} />
+
+Pair a tall table with large (lg) pagination.
+
+<DataTable size="tall" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    { id: "a", name: "Load Balancer 3", protocol: "HTTP", port: 3000, rule: "Round robin" },
+    { id: "b", name: "Load Balancer 1", protocol: "HTTP", port: 443, rule: "Round robin" },
+    { id: "c", name: "Load Balancer 2", protocol: "HTTP", port: 80, rule: "DNS delegation" },
+  ]}"
+/>
+<Pagination size="lg" totalItems={3} pageSizes={[10, 15, 20]} />
+
+Pair a compact table with extra small (xs) pagination.
+
+<DataTable size="compact" title="Load balancers" description="Your organization's active load balancers."
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    { id: "a", name: "Load Balancer 3", protocol: "HTTP", port: 3000, rule: "Round robin" },
+    { id: "b", name: "Load Balancer 1", protocol: "HTTP", port: 443, rule: "Round robin" },
+    { id: "c", name: "Load Balancer 2", protocol: "HTTP", port: 80, rule: "DNS delegation" },
+  ]}"
+/>
+<Pagination size="xs" totalItems={3} pageSizes={[10, 15, 20]} />
+
+## Empty column (overflow menu)
+
+Set `empty: true` in a header to create an empty column—for overflow menus without a header label. Its `value` stays visually hidden and names the column for screen readers.
+
+<FileSource src="/framed/DataTable/DataTableAppendColumns" />
+
+## Highlighted row
+
+Pass row ids in `highlightedRowIds` to keep a row visually highlighted. Bind each overflow menu open state to track which row is open. Highlighted rows use the `bx--data-table--highlighted-row` class, styled with the same theme tokens as row hover. This is purely cosmetic — no `aria-*` attribute is added, so it isn't announced to screen readers. For a selection state that's also exposed to assistive technology, see [Selectable rows](#selectable-rows).
+
+<FileSource src="/framed/DataTable/DataTableHighlightedRow" />
+
+## Selection
+
+Enable row selection with checkboxes or radios, with optional batch actions.
+
+### Checkbox
+
+Set `selectable` to `true` for multi-select. Bind selectedRowIds to track selections. Use inputName to customize checkbox names. Hold <DocKbd label="Shift" /> while clicking a checkbox to select every row between it and the last row clicked.
+
+<FileSource src="/framed/DataTable/SelectableDataTable" />
+
+### Batch
+
+Set `batchSelection` to `true` to add a checkbox for selecting all rows. The checkbox shows an indeterminate state when some rows are selected.
+
+<FileSource src="/framed/DataTable/DataTableBatchSelection" />
+
+### Batch (initial rows)
+
+Use `selectedRowIds` to specify initially selected rows.
+
+<FileSource src="/framed/DataTable/DataTableBatchSelectionInitial" />
+
+### Actions toolbar
+
+Add a toolbar for batch actions when rows are selected. Override the "N items selected" label with `formatTotalSelected` on `ToolbarBatchActions`.
+
+<FileSource src="/framed/DataTable/DataTableBatchSelectionToolbar" />
+
+### Controlled toolbar
+
+Control the batch actions toolbar with `active`. Prevent default cancel behavior with `on:cancel`.
+
+<FileSource src="/framed/DataTable/DataTableBatchSelectionToolbarControlled" />
+
+### Radio
+
+Set `radio` to `true` for single-row selection. Bind selectedRowIds to track the selected row. Use inputName to customize radio button names.
+
+<FileSource src="/framed/DataTable/RadioSelectableDataTable" />
+
+### Radio with batch actions
+
+Combine `radio` with `batchSelection` to show batch actions for the selected row. The table keeps single-row selection and has no select-all checkbox, and `ToolbarBatchActions` reads the selection from the table. Cancel clears the selection.
+
+<FileSource src="/framed/DataTable/DataTableRadioBatchActions" />
+
+### Clearing the selection
+
+Set `selectedRowIds` to an empty array to clear a radio selection programmatically, for example from a "Clear selection" button. Set `allowDeselect` to `true` so clicking the already-selected row also clears it.
+
+<FileSource src="/framed/DataTable/DataTableRadioClearSelection" />
+
+### Non-selectable
+
+Use `nonSelectableRowIds` to prevent selection of specific rows.
+
+<FileSource src="/framed/DataTable/DataTableNonSelectableRows" />
+
+## Expansion
+
+Set `expandable` to reveal additional content per row.
+
+### Expandable rows
+
+Set `expandable` to `true` to make rows expandable. Use `expandedRow` to customize expanded content.
+
+<DataTable expandable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    <pre>{JSON.stringify(row, null, 2)}</pre>
+  </svelte:fragment>
+</DataTable>
+
+### Nested tables
+
+Render a `DataTable` inside `expandedRow` to show related rows. Its container gets a distinct background so it reads as nested content instead of more rows of the parent table.
+
+<FileSource src="/framed/DataTable/DataTableExpandableNestedTable" />
+
+### Custom widths
+
+Setting `width` on a header keeps the expand column at its usual size.
+
+<DataTable expandable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port", width: "72px" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    <pre>{JSON.stringify(row, null, 2)}</pre>
+  </svelte:fragment>
+</DataTable>
+
+### Custom icon
+
+Use the `expandIcon` slot to customize the expand/collapse icon. The slot receives expanded (whether the row is expanded), row (the row data, or undefined for the header expand-all button), and props (with aria-hidden and class to spread onto your icon).
+
+<FileSource src="/framed/DataTable/DataTableExpandIcon" />
+
+### Non-expandable
+
+Use `nonExpandableRowIds` to prevent expansion of specific rows.
+
+<FileSource src="/framed/DataTable/DataTableNonExpandableRows" />
+
+### Zebra
+
+Combine expandable rows with zebra striping.
+
+<FileSource src="/framed/DataTable/DataTableExpandableZebra" />
+
+### Compact
+
+Set `size="compact"` for expandable rows with minimal height.
+
+<DataTable size="compact" expandable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    <pre>{JSON.stringify(row, null, 2)}</pre>
+  </svelte:fragment>
+</DataTable>
+
+### Short
+
+Set `size="short"` for expandable rows with compact height.
+
+<DataTable size="short" expandable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    <pre>{JSON.stringify(row, null, 2)}</pre>
+  </svelte:fragment>
+</DataTable>
+
+### Tall
+
+Set `size="tall"` for expandable rows with increased height.
+
+<DataTable size="tall" expandable
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    <pre>{JSON.stringify(row, null, 2)}</pre>
+  </svelte:fragment>
+</DataTable>
+
+### Batch
+
+Set `batchExpansion` to `true` to expand and collapse all rows at once.
+
+<DataTable batchExpansion
+  headers="{[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+    { key: "rule", value: "Rule" }
+  ]}"
+  rows="{[
+    {
+      id: "a",
+      name: "Load Balancer 3",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "b",
+      name: "Load Balancer 1",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "c",
+      name: "Load Balancer 2",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+    {
+      id: "d",
+      name: "Load Balancer 6",
+      protocol: "HTTP",
+      port: 3000,
+      rule: "Round robin"
+    },
+    {
+      id: "e",
+      name: "Load Balancer 4",
+      protocol: "HTTP",
+      port: 443,
+      rule: "Round robin"
+    },
+    {
+      id: "f",
+      name: "Load Balancer 5",
+      protocol: "HTTP",
+      port: 80,
+      rule: "DNS delegation"
+    },
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    <pre>{JSON.stringify(row, null, 2)}</pre>
+  </svelte:fragment>
+</DataTable>
+
+### With selection
+
+Combine `batchExpansion` and `batchSelection` for expandable, selectable tables.
+
+<FileSource src="/framed/DataTable/DataTableExpandableSelectable" />
+
+### With radio selection
+
+Combine `batchExpansion` and `radio` for expandable tables with single-row selection.
+
+<FileSource src="/framed/DataTable/DataTableExpandableRadioSelectable" />
+
+## Translations
+
+Replace the names of the expand and select controls with `translateWithId`. Sort button names use `tableHeaderTranslateWithId`.
+
+<DataTable
+  expandable
+  batchExpansion
+  selectable
+  batchSelection
+  translateWithId={(id) => ({
+    expandAll: "Expandir todas las filas",
+    collapseAll: "Contraer todas las filas",
+    expandRow: "Expandir fila",
+    collapseRow: "Contraer fila",
+    expandColumn: "Expandir filas",
+    selectAll: "Seleccionar todas las filas",
+    selectRow: "Seleccionar fila",
+  })[id]}
+  headers="{[
+    { key: "name", value: "Nombre" },
+    { key: "port", value: "Puerto" }
+  ]}"
+  rows="{[
+    { id: "a", name: "Balanceador 3", port: 3000 },
+    { id: "b", name: "Balanceador 1", port: 443 }
+  ]}"
+>
+  <svelte:fragment slot="expandedRow" let:row>
+    Puerto {row.port}
+  </svelte:fragment>
+</DataTable>
+
+## Events
+
+Listen for clicks and hovers on headers, rows, and cells—for example, to open a detail view when a row is clicked. For the sortable header's cancelable `sort` event, see [Sorting](#sortable-columns).
+
+### Row and cell clicks
+
+`click:row` fires when a row is clicked and `click:cell` fires for the specific cell, with `event.detail.target`/`currentTarget` identifying what was clicked. `click:header` fires for header cells. A generic `click` event also fires alongside each of these, with whichever of `header`, `row`, or `cell` applies to that click.
+
+<DataTable
+  headers={[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+  ]}
+  rows={[
+    { id: "a", name: "Load Balancer 3", protocol: "HTTP", port: 3000 },
+    { id: "b", name: "Load Balancer 1", protocol: "HTTP", port: 443 },
+    { id: "c", name: "Load Balancer 2", protocol: "HTTP", port: 80 },
+  ]}
+  on:click:row={(e) => console.log("click:row", e.detail.row)}
+  on:click:cell={(e) => console.log("click:cell", e.detail.cell)}
+  on:click:header={(e) => console.log("click:header", e.detail.header)}
+/>
+
+### Row hover
+
+`mouseenter:row` and `mouseleave:row` fire when the pointer enters or leaves a row, with the row data as `event.detail`.
+
+<DataTable
+  headers={[
+    { key: "name", value: "Name" },
+    { key: "protocol", value: "Protocol" },
+    { key: "port", value: "Port" },
+  ]}
+  rows={[
+    { id: "a", name: "Load Balancer 3", protocol: "HTTP", port: 3000 },
+    { id: "b", name: "Load Balancer 1", protocol: "HTTP", port: 443 },
+    { id: "c", name: "Load Balancer 2", protocol: "HTTP", port: 80 },
+  ]}
+  on:mouseenter:row={(e) => console.log("mouseenter:row", e.detail)}
+  on:mouseleave:row={(e) => console.log("mouseleave:row", e.detail)}
+/>
+
+## Skeleton
+
+Show a loading state with `DataTableSkeleton`.
+
+### Loading state
+
+Use the data table skeleton to show a loading state.
+
+<DataTableSkeleton />
+
+### Headers and rows
+
+Specify headers and row count for the skeleton.
+
+<DataTableSkeleton headers={["Name", "Protocol", "Port", "Rule"]} rows={10} />
+
+### Object headers
+
+Pass header objects to customize the skeleton.
+
+<DataTableSkeleton headers={[{ value: "Name" }, {value: "Protocol"}, {value:"Port"}, { value: "Rule"}]} rows={10} />
+
+### Empty header
+
+Add an empty header column with `empty: true`. As in `DataTable`, its `value` stays visually hidden.
+
+<DataTableSkeleton headers={[{ value: "Name" }, {value: "Protocol"}, {value:"Port"}, { value: "Rule"}, { empty: true, value: "Actions" }]} rows={10} />
+
+### No header or toolbar
+
+Hide the header and toolbar in the skeleton.
+
+<DataTableSkeleton showHeader={false} showToolbar={false} />
+
+### Medium
+
+Set `size="medium"` to explicitly match the default `DataTable` row height.
+
+<DataTableSkeleton showHeader={false} showToolbar={false} size="medium" />
+
+### Tall
+
+Set `size="tall"` for a taller skeleton.
+
+<DataTableSkeleton showHeader={false} showToolbar={false} size="tall" />
+
+### Short
+
+Set `size="short"` for a shorter skeleton.
+
+<DataTableSkeleton showHeader={false} showToolbar={false} size="short" />
+
+### Compact
+
+Set `size="compact"` for a minimal skeleton.
+
+<DataTableSkeleton showHeader={false} showToolbar={false} size="compact" />

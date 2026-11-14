@@ -1,0 +1,79 @@
+---
+components: ["Heading", "Section"]
+description: Heading and Section automatically manage semantic heading hierarchy, adjusting each heading's level to its nesting depth for accessible documents.
+---
+
+<script>
+  import { Heading, Section } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+A top-level heading inside a section renders as an h1 element, a semantic starting point for your document structure.
+
+<Section>
+  <Heading>Admin console</Heading>
+</Section>
+
+## Standalone heading
+
+A `Heading` used without a `Section` ancestor also defaults to h1. Wrap headings in `Section` when you need automatic level management as content nests.
+
+<Heading>Incident report</Heading>
+
+## Heading levels
+
+`Heading` reads its semantic level (h1–h6) from the nearest `Section` context. Levels advance automatically as sections nest, and can be given a custom starting point.
+
+### Nested sections
+
+As you nest sections, heading levels automatically increment to maintain proper hierarchy. Each nested section increases the heading level by one (h1 → h2 → h3, and so on). Heading levels cap at h6 to ensure valid HTML structure, even when nested deeper than six levels.
+
+<Section>
+  <Heading>Admin console</Heading>
+  <Section>
+    <Heading>User management</Heading>
+    <Section>
+      <Heading>Permissions</Heading>
+      <Section>
+        <Heading>Role assignments</Heading>
+        <Section>
+          <Heading>Audit trail</Heading>
+          <Section>
+            <Heading>Session details</Heading>
+            <Section>
+              <Heading>Capped at h6</Heading>
+            </Section>
+          </Section>
+        </Section>
+      </Section>
+    </Section>
+  </Section>
+</Section>
+
+### Custom starting level
+
+Set a custom starting heading level with `level` on the section. Child sections continue to increment from this level.
+
+<Section level={5}>
+  <Heading>Audit trail</Heading>
+  <Section>
+    <Heading>Session details</Heading>
+  </Section>
+</Section>
+
+## Visual size
+
+Semantic heading level comes from `Section` context, so every level renders at the same browser default size. Set `type` to a Carbon type token to control the visual size independently of the semantic level, the same tokens `Text` uses.
+
+<Section level={2}>
+  <Heading type="heading-03">Account settings</Heading>
+</Section>
+
+## Custom section element
+
+The section renders a semantic section element by default. Set `tag` to render a different element (such as div, article, or aside) while keeping automatic heading level management.
+
+<Section tag="div">
+  <Heading>Admin console</Heading>
+</Section>

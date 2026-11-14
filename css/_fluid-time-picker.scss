@@ -1,0 +1,378 @@
+// Fluid TimePicker (v11 port). v10 has no fluid variant.
+// https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/fluid-time-picker/_fluid-time-picker.scss
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./fluid-shared";
+
+/// Fluid time picker (Carbon React FluidTimePicker)
+/// @access private
+/// @group components
+@mixin fluid-time-picker {
+  // Standalone fluid usage sits inside a sized container (e.g. a form column).
+  // React omits the outer `form-item`; stretch to the parent like the skeleton.
+  .#{$prefix}--time-picker__form-item--fluid {
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--time-picker--fluid {
+    background: $field;
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--time-picker--fluid .#{$prefix}--time-picker--fluid__wrapper {
+    display: flex;
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--time-picker--fluid__wrapper > * {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    align-self: stretch;
+  }
+
+  .#{$prefix}--time-picker--fluid__wrapper > *:nth-child(1),
+  .#{$prefix}--time-picker--fluid__wrapper > *:nth-child(2) {
+    flex-basis: 25%;
+  }
+
+  // With exactly two selects the input and first select share half and
+  // the second takes the rest; with any other count every part takes
+  // half. Counted here rather than by the picker, which only knows how
+  // many selects it has once they register in the browser, so server
+  // markup lays out the same as the hydrated picker.
+  .#{$prefix}--time-picker--fluid__wrapper > *:last-child:not(:only-child),
+  .#{$prefix}--time-picker--fluid__wrapper > *:first-child:nth-last-child(-n + 2),
+  .#{$prefix}--time-picker--fluid__wrapper
+    > *:first-child:nth-last-child(-n + 2)
+    ~ *,
+  .#{$prefix}--time-picker--fluid__wrapper > *:first-child:nth-last-child(n + 4),
+  .#{$prefix}--time-picker--fluid__wrapper
+    > *:first-child:nth-last-child(n + 4)
+    ~ * {
+    flex-basis: 50%;
+  }
+
+  .#{$prefix}--time-picker--fluid__wrapper > .#{$prefix}--form-item,
+  .#{$prefix}--time-picker--fluid__wrapper > .#{$prefix}--time-picker__input {
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input-wrapper,
+  .#{$prefix}--time-picker--fluid .#{$prefix}--select--fluid .#{$prefix}--select {
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input-wrapper {
+    position: relative;
+    background: $field;
+    block-size: to-rem(64px);
+    transition:
+      background-color $duration--fast-01 motion(standard, productive),
+      outline $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--label {
+    @include fluid-label;
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--label.#{$prefix}--label--slotted {
+    @include fluid-label-slotted;
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input__field-outer-wrapper,
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input__field-wrapper {
+    inline-size: 100%;
+  }
+
+  // v10 fixes `.bx--time-picker__input-field` at 4.875rem; stretch for fluid cells.
+  // Use a fixed 64px block-size (not min) so code-02 line-height cannot exceed
+  // the fluid select cell height.
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input,
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input-field {
+    display: block;
+    width: 100%;
+    height: to-rem(64px);
+    max-height: to-rem(64px);
+    max-inline-size: 100%;
+    padding: to-rem(32px) $carbon--spacing-05 to-rem(13px);
+    outline: none;
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--text-input__field-wrapper {
+    display: block;
+  }
+
+  .#{$prefix}--time-picker--fluid__wrapper
+    > *:nth-child(2):not(:last-child)
+    .#{$prefix}--select-input__wrapper::before,
+  .#{$prefix}--time-picker--fluid__wrapper
+    > *:last-child
+    .#{$prefix}--select-input__wrapper::before {
+    position: absolute;
+    display: block;
+    background-color: $border-strong;
+    block-size: calc(100% - 1px);
+    content: "";
+    inline-size: 1px;
+    opacity: 1;
+    transition: opacity $duration--fast-01 motion(standard, productive);
+  }
+
+  // The root class matches the divider rule above, and source order wins.
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker--fluid__wrapper
+    .#{$prefix}--select--readonly
+    .#{$prefix}--select-input__wrapper::before {
+    background-color: $layer-accent;
+  }
+
+  // The divider at each select's inline start. v11 also sets an `::after`
+  // at the end, but nothing gives it content.
+  .#{$prefix}--time-picker--fluid__wrapper
+    .#{$prefix}--select-input__wrapper::before {
+    @include ccs-inset-inline($start: 0);
+  }
+
+  .#{$prefix}--time-picker--fluid__wrapper .#{$prefix}--select-input__wrapper {
+    position: relative;
+  }
+
+  .#{$prefix}--time-picker--fluid--disabled
+    .#{$prefix}--time-picker--fluid__wrapper
+    .#{$prefix}--select--disabled
+    .#{$prefix}--select-input__wrapper::before {
+    background: $button-disabled;
+  }
+
+  .#{$prefix}--time-picker--fluid .#{$prefix}--form-requirement {
+    @include fluid-requirement-padding;
+
+    background: $field;
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid {
+    @include focus-outline("invalid");
+
+    position: relative;
+  }
+
+  // Segment backgrounds must be transparent so the parent invalid outline
+  // (inset via focus-outline) is visible around the full field, not just the
+  // footer. Specificity must beat the cell + fluid-select background rules.
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input-wrapper,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--time-picker__input-field,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--select--fluid
+    .#{$prefix}--select,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--select--fluid
+    .#{$prefix}--select-input,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--form-requirement,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input-wrapper,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker__input-field,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--select--fluid
+    .#{$prefix}--select,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--select--fluid
+    .#{$prefix}--select-input,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--form-requirement {
+    background: transparent;
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--select-input {
+    border-block-start: 2px solid transparent;
+    padding-block-start: to-rem(30px);
+  }
+
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--select--fluid:last-of-type
+    .#{$prefix}--select-input {
+    border-inline-end: 2px solid transparent;
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    // Readonly selects keep their divider. `:nth-last-child(n + 2)` stands in
+    // for `:not(:last-child)` to keep the chain at two `:not()`s.
+    .#{$prefix}--time-picker--fluid:not(.#{$prefix}--time-picker--fluid--disabled)
+      .#{$prefix}--time-picker--fluid__wrapper
+      > *:nth-child(2):nth-last-child(n + 2):hover
+      .#{$prefix}--select:not(.#{$prefix}--select--readonly)
+      .#{$prefix}--select-input__wrapper::before,
+    .#{$prefix}--time-picker--fluid:not(.#{$prefix}--time-picker--fluid--disabled)
+      .#{$prefix}--time-picker--fluid__wrapper
+      > *:nth-child(2):nth-last-child(n + 2):hover
+      ~ *
+      .#{$prefix}--select:not(.#{$prefix}--select--readonly)
+      .#{$prefix}--select-input__wrapper::before,
+    .#{$prefix}--time-picker--fluid:not(.#{$prefix}--time-picker--fluid--disabled)
+      .#{$prefix}--time-picker--fluid__wrapper
+      > *:last-child:hover
+      .#{$prefix}--select:not(.#{$prefix}--select--readonly)
+      .#{$prefix}--select-input__wrapper::before {
+      opacity: 0;
+    }
+
+    .#{$prefix}--time-picker--fluid--invalid
+      .#{$prefix}--select-input:hover:not([disabled]) {
+      background: $layer-hover;
+    }
+
+    .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--select-input:hover {
+      border-block-start: 2px solid $support-error;
+    }
+
+    .#{$prefix}--time-picker--fluid--invalid
+      .#{$prefix}--select--fluid:last-of-type
+      .#{$prefix}--select-input:hover {
+      border-inline-end: 2px solid $support-error;
+    }
+  }
+
+  .#{$prefix}--time-picker--fluid--warning {
+    position: relative;
+  }
+
+  .#{$prefix}--time-picker--fluid .#{$prefix}--time-picker__icon {
+    display: none;
+  }
+
+  // Status icon pinned to the first line of the message. Upstream's fluid
+  // override also omits pointer-events here (unlike the mixin), so this
+  // can't take fluid-status-icon().
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--time-picker__icon,
+  .#{$prefix}--time-picker--fluid--warning .#{$prefix}--time-picker__icon {
+    position: absolute;
+    display: block;
+    inset-block-start: to-rem(72px);
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--time-picker__icon {
+    fill: $support-error;
+  }
+
+  .#{$prefix}--time-picker--fluid--warning .#{$prefix}--time-picker__icon {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker__icon
+    path:first-of-type {
+    fill: $carbon--black-100;
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--form-requirement,
+  .#{$prefix}--time-picker--fluid--warning .#{$prefix}--form-requirement {
+    @include fluid-requirement;
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--form-requirement {
+    color: $text-error;
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--time-picker--fluid__wrapper
+    > *:nth-child(2):not(:last-child)
+    .#{$prefix}--select-input__wrapper::before,
+  .#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--time-picker--fluid__wrapper
+    > *:last-child
+    .#{$prefix}--select-input__wrapper::before,
+  .#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker--fluid__wrapper
+    > *:nth-child(2):not(:last-child)
+    .#{$prefix}--select-input__wrapper::before,
+  .#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker--fluid__wrapper
+    > *:last-child
+    .#{$prefix}--select-input__wrapper::before {
+    block-size: calc(100% - to-rem(16px));
+    inset-block-start: 8px;
+  }
+
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--text-input,
+  .#{$prefix}--time-picker--fluid--warning .#{$prefix}--text-input,
+  .#{$prefix}--time-picker--fluid--invalid .#{$prefix}--select-input,
+  .#{$prefix}--time-picker--fluid--warning .#{$prefix}--select-input {
+    border-block-end: 1px solid transparent;
+  }
+
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--invalid
+    .#{$prefix}--time-picker__divider,
+  .#{$prefix}--time-picker--fluid.#{$prefix}--time-picker--fluid--warning
+    .#{$prefix}--time-picker__divider {
+    @include fluid-divider-frame;
+
+    inline-size: calc(100% - to-rem(32px));
+  }
+
+  // The focused cell draws focus in every state, inside the composite
+  // field's invalid or warning outline, as a fluid range DatePicker's cells
+  // do; without it, a field in either state showed no focus at all.
+  .#{$prefix}--time-picker--fluid
+    .#{$prefix}--time-picker__input
+    .#{$prefix}--text-input__field-wrapper:focus-within {
+    @include focus-outline("outline");
+  }
+
+  .#{$prefix}--time-picker--fluid--skeleton {
+    display: flex;
+    block-size: to-rem(64px);
+    inline-size: 100%;
+  }
+
+  .#{$prefix}--time-picker--fluid--skeleton > * {
+    block-size: 100%;
+    inline-size: auto;
+  }
+
+  .#{$prefix}--time-picker--fluid--skeleton > *:nth-child(1),
+  .#{$prefix}--time-picker--fluid--skeleton > *:nth-child(2) {
+    inline-size: 25%;
+  }
+
+  .#{$prefix}--time-picker--fluid--skeleton > *:last-child,
+  .#{$prefix}--time-picker--fluid--skeleton.#{$prefix}--time-picker--equal-width
+    > *:first-child {
+    inline-size: 50%;
+  }
+}
+
+@include exports("fluid-time-picker") {
+  @include fluid-time-picker;
+}

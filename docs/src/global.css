@@ -1,0 +1,665 @@
+html {
+  scrollbar-gutter: stable;
+}
+
+.prose > pre,
+.code-override .bx--snippet {
+  max-width: none;
+}
+
+.prose > pre {
+  padding: var(--cds-spacing-05);
+  margin: var(--cds-spacing-07) calc(-1 * var(--cds-spacing-05));
+  overflow: auto;
+  background-color: var(--cds-layer-01);
+  color: var(--cds-text-primary);
+}
+
+@media (max-width: 672px) {
+  .prose > pre {
+    margin-inline: 0;
+  }
+}
+
+.code-override {
+  border: 1px solid var(--cds-border-subtle-01);
+}
+
+.code-override .bx--copy-btn,
+.code-override .bx--snippet,
+.code-override button.bx--btn.bx--snippet-btn--expand {
+  background-color: var(--cds-layer-01);
+  color: var(--cds-text-primary);
+}
+
+.code-override .bx--copy-btn:hover,
+.code-override button.bx--btn.bx--snippet-btn--expand:hover {
+  background-color: var(--cds-layer-hover-01);
+}
+
+.code-override .bx--snippet__icon {
+  fill: var(--cds-icon-primary);
+}
+
+.prose > pre,
+.code-override .bx--snippet-container pre {
+  font-size: var(--cds-code-01-font-size);
+  line-height: var(--cds-code-01-line-height);
+  letter-spacing: var(--cds-code-01-letter-spacing);
+  cursor: text;
+}
+
+.fix-overflow {
+  min-width: 0;
+}
+
+/**
+ * Carbon's syntax tokens leave strings in the text color; the docs color
+ * them magenta. Module paths take the string color too: Carbon's
+ * special-string is the module keyword's purple in dark themes, so
+ * `from "pkg"` read as one color. Selectors match syntax-tokens.css, so
+ * these win by order.
+ */
+:root,
+:root[theme="white"],
+:root[theme="g10"] {
+  --cds-syntax-string: #9f1853; /* magenta 70 */
+  --cds-syntax-attribute-value: #9f1853;
+  --cds-syntax-special-string: var(--cds-syntax-string);
+}
+
+:root[theme="g90"],
+:root[theme="g100"] {
+  --cds-syntax-string: #ff7eb6; /* magenta 40 */
+  --cds-syntax-attribute-value: #ff7eb6;
+  --cds-syntax-special-string: var(--cds-syntax-string);
+}
+
+/* g80's snippet background is lighter: magenta 40 is 3.3:1 there. */
+:root[theme="g80"] {
+  --cds-syntax-string: #ffafd2; /* magenta 30 */
+  --cds-syntax-attribute-value: #ffafd2;
+  --cds-syntax-special-string: var(--cds-syntax-string);
+}
+
+/**
+ * Carbon gives `const`, `let`, and `function` the same cyan as the name
+ * they declare, so `const max` read as one word. They take the purple of
+ * the other keywords. Comments share the number green; they take the
+ * muted angle-bracket gray, so they step back from the code. Each color
+ * keeps 4.5:1 on the snippet in every theme.
+ */
+:root,
+:root[theme] {
+  --cds-syntax-definition-keyword: var(--cds-syntax-control-keyword);
+  --cds-syntax-comment: var(--cds-syntax-angle-bracket);
+}
+
+.override-tabs a.bx--tabs__nav-link,
+.override-tabs a.bx--tabs__nav-link:focus,
+.override-tabs a.bx--tabs__nav-link:active {
+  width: auto !important;
+}
+
+/* Above SideNav, level with the Header. */
+[aria-label="Navigation"] {
+  z-index: 10000;
+}
+
+[aria-label="Navigation"] .bx--skip-to-content:focus {
+  z-index: calc(10000 + 1);
+}
+
+[aria-label="Navigation"] ~ [data-components] {
+  z-index: calc(8000 + 1);
+}
+
+@media (max-width: 65.98rem) {
+  [aria-label="Navigation"] ~ [data-components] {
+    z-index: 1;
+  }
+}
+
+.prose > p > .bx--link {
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.prose .toc {
+  margin-bottom: var(--cds-spacing-05);
+}
+
+.table {
+  position: sticky;
+  top: 3rem;
+  align-self: flex-start;
+  padding-left: var(--cds-spacing-03);
+  padding-right: 0;
+  padding-bottom: var(--cds-spacing-05);
+}
+
+.scrollbar-hover,
+.code-override .bx--snippet--multi .bx--snippet-container {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scrollbar-hover:hover,
+.code-override .bx--snippet--multi .bx--snippet-container:hover {
+  scrollbar-color: var(--cds-border-subtle) transparent;
+}
+
+.scrollbar-hover::-webkit-scrollbar,
+.code-override .bx--snippet--multi .bx--snippet-container::-webkit-scrollbar {
+  width: 0.375rem;
+  height: 0.375rem;
+}
+
+.scrollbar-hover::-webkit-scrollbar-track,
+.code-override
+  .bx--snippet--multi
+  .bx--snippet-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-hover::-webkit-scrollbar-thumb,
+.code-override
+  .bx--snippet--multi
+  .bx--snippet-container::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+}
+
+.scrollbar-hover:hover::-webkit-scrollbar-thumb,
+.code-override
+  .bx--snippet--multi
+  .bx--snippet-container:hover::-webkit-scrollbar-thumb {
+  background-color: var(--cds-border-subtle);
+}
+
+.docs-sidenav .bx--scroll-gradient__scroll-element {
+  /* ScrollGradient paints `layer` by default, which differs from the nav. */
+  background-color: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cds-border-subtle) transparent;
+}
+
+.docs-sidenav .bx--scroll-gradient__scroll-element::-webkit-scrollbar {
+  width: 0.375rem;
+  height: 0.375rem;
+}
+
+.docs-sidenav .bx--scroll-gradient__scroll-element::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.docs-sidenav .bx--scroll-gradient__scroll-element::-webkit-scrollbar-thumb {
+  background-color: var(--cds-border-subtle);
+  border-radius: 999px;
+}
+
+.table__scroll {
+  overflow-y: auto;
+  padding-top: var(--cds-spacing-06);
+  padding-bottom: var(--cds-spacing-07);
+  padding-left: var(--cds-spacing-02);
+  padding-right: var(--cds-spacing-05);
+  margin-right: calc(-1 * var(--cds-spacing-07));
+  margin-left: var(--cds-spacing-03);
+}
+
+[data-components],
+.component-body {
+  position: relative;
+  display: flex;
+}
+
+[data-components] .bx--grid,
+.component-body .bx--grid {
+  width: 100%;
+}
+
+.component-body .table {
+  margin-top: calc(-1 * var(--cds-spacing-08));
+}
+
+.hero .bx--link {
+  font-size: inherit;
+}
+
+@media (max-width: 65.98rem) {
+  .table {
+    display: none;
+  }
+}
+
+.preview-viewer > .bx--aspect-ratio {
+  outline: 1px solid var(--cds-interactive);
+}
+
+[data-component="Popover"]
+  .preview-viewer
+  > div:not(.bx--stack, .bx--layer__with-background),
+[data-component="Stack"]
+  .preview-viewer
+  .bx--stack:not(:has(> .bx--divider))
+  > * {
+  padding: var(--cds-spacing-01) var(--cds-spacing-02);
+  outline: 1px solid var(--cds-interactive);
+}
+
+[data-component="Popover"]
+  .preview-viewer
+  > div:not(.bx--stack, .bx--layer__with-background),
+[data-component="Popover"] .preview-viewer > .bx--stack > div,
+[data-component="Popover"]
+  .preview-viewer
+  > .bx--layer__with-background
+  > *
+  > div {
+  position: relative;
+  padding: var(--cds-spacing-01) var(--cds-spacing-02);
+  outline: 1px solid var(--cds-interactive);
+}
+
+[data-component="Popover"] .preview-viewer .bx--popover-contents {
+  padding: var(--cds-spacing-03);
+}
+
+#select-theme {
+  width: auto;
+}
+
+.code-01 {
+  font-size: var(--cds-code-01-font-size);
+  font-weight: var(--cds-code-01-font-weight);
+  letter-spacing: var(--cds-code-01-letter-spacing);
+  line-height: var(--cds-code-01-line-height);
+}
+
+.bx--col > h1 {
+  margin-bottom: var(--cds-spacing-05);
+}
+
+.big-paragraph {
+  font-size: var(--cds-fluid-heading-03-font-size);
+  font-weight: var(--cds-fluid-heading-03-font-weight);
+  letter-spacing: var(--cds-fluid-heading-03-letter-spacing);
+  line-height: var(--cds-fluid-heading-03-line-height);
+  margin-top: var(--cds-spacing-07);
+  margin-bottom: var(--cds-spacing-12);
+}
+
+.big-link,
+.bx--col > .big-paragraph > code {
+  font-size: var(--cds-fluid-heading-03-font-size);
+  font-weight: var(--cds-fluid-heading-03-font-weight);
+  letter-spacing: var(--cds-fluid-heading-03-letter-spacing);
+  line-height: var(--cds-fluid-heading-03-line-height);
+}
+
+.prose > p:not(.prose-section-intro) {
+  font-size: var(--cds-body-02-font-size);
+  font-weight: var(--cds-body-02-font-weight);
+  letter-spacing: var(--cds-body-02-letter-spacing);
+  line-height: var(--cds-body-02-line-height);
+  color: var(--cds-text-primary);
+  max-width: 54ch;
+  text-wrap: pretty;
+}
+
+.prose > p.prose-section-intro {
+  font-size: var(--cds-heading-03-font-size);
+  font-weight: var(--cds-heading-03-font-weight);
+  letter-spacing: var(--cds-heading-03-letter-spacing);
+  line-height: var(--cds-heading-03-line-height);
+  color: var(--cds-text-primary);
+  max-width: 54ch;
+  margin-bottom: var(--cds-spacing-06);
+}
+
+.prose > ul,
+.prose > ol {
+  max-width: 54ch;
+}
+
+.prose > p:not(.prose-section-intro):has(+ ul),
+.prose > p:not(.prose-section-intro):has(+ ol) {
+  margin-bottom: var(--cds-spacing-05);
+}
+
+.prose > p:has(+ .preview) {
+  margin-bottom: var(--cds-spacing-06);
+}
+
+.bx--col > p > code.bx--type-code-01,
+.bx--col > ul > li > code.bx--type-code-01,
+.bx--col > ol > li > code.bx--type-code-01 {
+  padding: 0 var(--cds-spacing-02);
+  background-color: var(--cds-layer-01);
+  border-radius: 4px;
+}
+
+.prose kbd.bx--type-code-01 {
+  display: inline-block;
+  padding: var(--cds-spacing-01) var(--cds-spacing-02);
+  background-color: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle-01);
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 var(--cds-border-subtle-01);
+}
+
+/* Match table cell line metrics; prose kbd padding is taller than label-01. */
+.prose > table kbd.bx--type-code-01 {
+  display: inline;
+  padding: 0 var(--cds-spacing-02);
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  font-family: var(--cds-code-01-font-family);
+  vertical-align: baseline;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.prose > table {
+  width: 100%;
+  max-width: 96ch;
+  border-collapse: collapse;
+  margin-bottom: var(--cds-spacing-06);
+}
+
+.prose > table:has(+ .preview) {
+  margin-bottom: var(--cds-spacing-09);
+}
+
+.prose > table th,
+.prose > table td {
+  padding: var(--cds-spacing-03) var(--cds-spacing-04);
+  text-align: left;
+  vertical-align: top;
+  border: 1px solid var(--cds-border-subtle-01);
+}
+
+.prose > table th.bx--type-label-01 {
+  background-color: var(--cds-layer-01);
+}
+
+.prose > table tbody tr:nth-child(even) td.bx--type-label-01 {
+  background-color: var(--cds-background);
+}
+
+.prose > table td code.bx--type-code-01,
+.prose > table th code.bx--type-code-01 {
+  padding: 0 var(--cds-spacing-02);
+  background-color: var(--cds-layer-01);
+  border-radius: 4px;
+}
+
+/* bx--link uses body-compact-01; inherit label-01 metrics from the cell. */
+.prose > table td .bx--link,
+.prose > table th .bx--link {
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  font-weight: inherit;
+  text-decoration: underline;
+}
+
+[class*="bx--col"] > h2.bx--type-heading-04,
+.bx--tab-content > h2.bx--type-heading-04 {
+  padding-top: var(--cds-spacing-07);
+  margin-bottom: var(--cds-spacing-05);
+}
+
+[class*="bx--col"] > h3.bx--type-heading-03,
+.bx--tab-content > h3.bx--type-heading-03 {
+  padding-top: var(--cds-spacing-06);
+  margin-bottom: var(--cds-spacing-05);
+}
+
+.bx--col > h4 {
+  font-size: var(--cds-heading-02-font-size);
+  font-weight: var(--cds-heading-02-font-weight);
+  letter-spacing: var(--cds-heading-02-letter-spacing);
+  line-height: var(--cds-heading-02-line-height);
+  padding-top: var(--cds-spacing-09);
+  margin-bottom: var(--cds-spacing-05);
+}
+
+.bx--col > h2.bx--type-heading-04,
+.bx--tab-content > h2.bx--type-heading-04,
+.bx--col > h3.bx--type-heading-03,
+.bx--tab-content > h3.bx--type-heading-03,
+.bx--col > h4 {
+  scroll-margin-top: 3rem;
+}
+
+.heading-anchor {
+  margin-left: var(--cds-spacing-03);
+  color: var(--cds-text-placeholder);
+  text-decoration: none;
+  font-weight: 400;
+  opacity: 0;
+}
+
+h2:hover .heading-anchor,
+h3:hover .heading-anchor,
+.heading-anchor:focus {
+  opacity: 1;
+}
+
+.heading-anchor:focus {
+  outline: 1px var(--cds-focus-outline-style, solid) var(--cds-focus);
+}
+
+@media (hover: none) {
+  .heading-anchor {
+    opacity: 1;
+  }
+}
+
+.bx--col > p,
+.bx--col > ul,
+.bx--col > ol {
+  margin-bottom: var(--cds-spacing-06);
+}
+
+.cell .bx--snippet--inline code,
+.cell .bx--snippet--single pre,
+.bx--snippet--inline code {
+  white-space: pre-wrap !important;
+}
+
+.band {
+  margin-inline: calc(-1 * var(--cds-spacing-07));
+  padding-inline: var(--cds-spacing-07);
+}
+
+.hero {
+  margin-top: calc(-1 * var(--cds-spacing-07));
+  margin-bottom: var(--cds-spacing-08);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.hero--component {
+  margin-top: var(--cds-spacing-07);
+  padding-top: var(--cds-spacing-08);
+  padding-bottom: var(--cds-spacing-08);
+  min-height: calc(var(--cds-spacing-13) + var(--cds-spacing-08));
+}
+
+[data-components] .hero.band {
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.breakout {
+  margin-inline: calc(-1 * var(--cds-spacing-07));
+}
+
+.example-band {
+  padding-block: var(--cds-spacing-07);
+}
+
+/* Content padding plus grid gutters inset content 3rem on mobile. Cut it
+   to 1rem. Scoped to doc page shells so framed grid examples keep their
+   gutters. */
+@media (max-width: 41.98rem) {
+  .bx--content {
+    padding-inline: var(--cds-spacing-05);
+  }
+
+  .overview-page .bx--grid,
+  .quick-start-page .bx--grid,
+  .component-body .bx--grid {
+    padding-inline: 0;
+  }
+
+  .overview-page .bx--row,
+  .quick-start-page .bx--row,
+  .component-body .bx--row {
+    margin-inline: 0;
+  }
+
+  .overview-page [class*="bx--col"],
+  .quick-start-page [class*="bx--col"],
+  .component-body [class*="bx--col"] {
+    padding-inline: 0;
+  }
+
+  .band {
+    margin-inline: calc(-1 * var(--cds-spacing-05));
+    padding-inline: var(--cds-spacing-05);
+  }
+
+  .breakout {
+    margin-inline: calc(-1 * var(--cds-spacing-05));
+  }
+}
+
+.section {
+  margin-top: var(--cds-spacing-12);
+}
+
+.hero + .section {
+  margin-top: var(--cds-spacing-08);
+}
+
+.section .bx--row:first-child.step-row,
+.section .bx--row:first-child.example-row,
+.section .bx--row:first-child.principle-row {
+  margin-top: 0;
+}
+
+@media (max-width: 41.98rem) {
+  .section {
+    margin-top: var(--cds-spacing-09);
+  }
+
+  .hero + .section {
+    margin-top: var(--cds-spacing-07);
+  }
+}
+
+@media (max-width: 65.98rem) {
+  .step-row .code-col,
+  .example-row .code-col {
+    margin-top: var(--cds-spacing-06);
+  }
+}
+
+.section--foundation {
+  margin-top: var(--cds-spacing-13);
+}
+
+.section--foundation .principle-row {
+  margin-top: var(--cds-spacing-09);
+}
+
+.section--metrics {
+  margin-top: var(--cds-spacing-09);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cds-spacing-07) var(--cds-spacing-09);
+}
+
+@media (max-width: 65.98rem) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 41.98rem) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section--ecosystem .ecosystem-row {
+  margin-top: var(--cds-spacing-05);
+}
+
+.example-row {
+  margin-top: var(--cds-spacing-07);
+}
+
+.doc-section-header {
+  margin-bottom: var(--cds-spacing-09);
+}
+
+.doc-section-header + .example-row {
+  margin-top: 0;
+}
+
+.doc-section-header + .principle-row {
+  margin-top: 0;
+}
+
+.step-row {
+  margin-top: var(--cds-spacing-09);
+}
+
+.principle-row {
+  margin-top: var(--cds-spacing-09);
+}
+
+.code-col {
+  min-width: 0;
+}
+
+.benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cds-spacing-07) var(--cds-spacing-09);
+}
+
+@media (max-width: 41.98rem) {
+  .benefit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.benefit-icon,
+.principle-icon {
+  fill: var(--cds-interactive);
+}
+
+.footer-cta {
+  margin-top: var(--cds-spacing-12);
+  padding-top: var(--cds-spacing-09);
+  padding-bottom: var(--cds-spacing-07);
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.overview-page {
+  overflow-x: clip;
+}
+
+/* Code under tabs sits close to the tab line. */
+.bx--tab-content.doc-code-tab {
+  padding-block: var(--cds-spacing-03) 0;
+}

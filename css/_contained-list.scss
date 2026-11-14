@@ -1,0 +1,328 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Contained List styles
+/// @access private
+/// @group components
+@mixin contained-list {
+  .#{$prefix}--contained-list .#{$prefix}--tag {
+    height: to-rem(24px); // 24px equivalent to md size
+  }
+
+  .#{$prefix}--contained-list > ul {
+    padding: 0;
+    margin: 0;
+  }
+
+  .#{$prefix}--contained-list__header {
+    position: sticky;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    top: 0;
+    padding-left: $carbon--spacing-05;
+    padding-right: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--contained-list__label {
+    width: 100%;
+  }
+
+  .#{$prefix}--contained-list .#{$prefix}--search {
+    position: sticky;
+    z-index: 1;
+
+    &.#{$prefix}--search--expandable .#{$prefix}--search-input {
+      background-color: $field;
+    }
+  }
+
+  .#{$prefix}--contained-list--disclosed .#{$prefix}--search {
+    top: to-rem(32px); // Fixed header height for disclosed variant
+  }
+
+  .#{$prefix}--contained-list--on-page .#{$prefix}--search {
+    top: to-rem(48px); // Default md size header height
+  }
+
+  .#{$prefix}--contained-list--on-page.#{$prefix}--contained-list--sm
+    .#{$prefix}--search {
+    top: to-rem(32px); // sm size header height
+  }
+
+  .#{$prefix}--contained-list--on-page.#{$prefix}--contained-list--lg
+    .#{$prefix}--search {
+    top: to-rem(64px); // lg size header height
+  }
+
+  .#{$prefix}--contained-list--on-page.#{$prefix}--contained-list--xl
+    .#{$prefix}--search {
+    top: to-rem(72px); // xl size header height
+  }
+
+  .#{$prefix}--contained-list .#{$prefix}--search .#{$prefix}--search-input {
+    background-color: $background;
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--contained-list
+    .#{$prefix}--search
+    .#{$prefix}--search-close::before {
+    display: none;
+  }
+
+  .#{$prefix}--contained-list .#{$prefix}--search .#{$prefix}--search-close {
+    border-inline-end: 2px solid transparent;
+    outline: none;
+
+    &:focus {
+      @include focus-outline("outline");
+    }
+  }
+
+  .#{$prefix}--contained-list--on-page + .#{$prefix}--contained-list--on-page {
+    margin-top: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--contained-list--on-page .#{$prefix}--contained-list__header {
+    @include type-style("heading-compact-01");
+
+    background-color: $layer-background;
+    height: to-rem(48px);
+    border-bottom: 1px solid $border-subtle;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--contained-list--on-page.#{$prefix}--contained-list--sm
+    .#{$prefix}--contained-list__header {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--contained-list--on-page.#{$prefix}--contained-list--lg
+    .#{$prefix}--contained-list__header {
+    height: to-rem(64px);
+  }
+
+  .#{$prefix}--contained-list--on-page.#{$prefix}--contained-list--xl
+    .#{$prefix}--contained-list__header {
+    height: to-rem(72px);
+  }
+
+  .#{$prefix}--contained-list--disclosed .#{$prefix}--contained-list__header {
+    @include type-style("label-01");
+
+    background-color: $layer;
+    height: to-rem(32px);
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--contained-list-item {
+    position: relative;
+    display: list-item;
+    list-style: none;
+  }
+
+  .#{$prefix}--contained-list-item:not(:first-of-type) {
+    margin-top: -1px;
+  }
+
+  .#{$prefix}--contained-list-item__content {
+    box-sizing: border-box;
+  }
+
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content {
+    @include button-reset($omit: (padding));
+
+    text-align: left;
+    text-decoration: none;
+    transition: background-color $duration--moderate-01;
+  }
+
+  .#{$prefix}--contained-list-item__content,
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content {
+    @include type-style("body-compact-01");
+
+    // Vertical padding centers body-short-01 in the row height
+    padding: to-rem(14px) $carbon--spacing-05;
+    color: $text-primary;
+    min-height: to-rem(48px); // md size default
+  }
+
+  .#{$prefix}--contained-list--sm
+    .#{$prefix}--contained-list-item__content,
+  .#{$prefix}--contained-list--sm
+    .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content {
+    min-height: to-rem(32px); // 32px
+    padding-top: to-rem(6px); // (32px - 20px) / 2 = 6px
+    padding-bottom: to-rem(6px);
+  }
+
+  .#{$prefix}--contained-list--lg
+    .#{$prefix}--contained-list-item__content,
+  .#{$prefix}--contained-list--lg
+    .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content {
+    min-height: to-rem(64px); // 64px
+    padding-top: to-rem(22px); // (64px - 20px) / 2 = 22px
+    padding-bottom: to-rem(22px);
+  }
+
+  .#{$prefix}--contained-list--xl
+    .#{$prefix}--contained-list-item__content,
+  .#{$prefix}--contained-list--xl
+    .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content {
+    min-height: to-rem(72px); // 72px
+    padding-top: to-rem(26px); // (72px - 20px) / 2 = 26px
+    padding-bottom: to-rem(26px);
+  }
+
+  .#{$prefix}--contained-list-item:not(:last-of-type)::before {
+    position: absolute;
+    background-color: $layer-accent;
+    height: 1px;
+    content: "";
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .#{$prefix}--contained-list--inset-rulers
+    .#{$prefix}--contained-list-item:not(:last-of-type)::before {
+    left: $carbon--spacing-05;
+    right: $carbon--spacing-05;
+  }
+
+  // Hover only where a pointer can hover, so a tap does not leave it stuck.
+  @media (any-hover: hover) {
+    .#{$prefix}--contained-list
+      .#{$prefix}--search
+      .#{$prefix}--search-input
+      ~ .#{$prefix}--search-close:hover {
+      border-bottom: 1px solid transparent;
+    }
+
+    .#{$prefix}--contained-list
+      .#{$prefix}--search
+      .#{$prefix}--search-input:focus
+      ~ .#{$prefix}--search-close:hover {
+      border: 2px solid $focus;
+      border-inline-start: 0;
+      // The base rule clears this fill, and the `::before` that replaces it
+      // is hidden here.
+      background-color: $field-hover;
+      outline: none;
+    }
+
+    .#{$prefix}--contained-list-item--clickable
+      .#{$prefix}--contained-list-item__content:not(:disabled):not([aria-disabled="true"]):hover {
+      background-color: $layer-hover;
+    }
+
+    .#{$prefix}--contained-list-item--selected
+      .#{$prefix}--contained-list-item__content:not(:disabled):not([aria-disabled="true"]):hover {
+      background-color: $layer-selected-hover;
+    }
+
+    @media (forced-colors: active) {
+      .#{$prefix}--contained-list-item--selected
+        .#{$prefix}--contained-list-item__content:not(:disabled):not([aria-disabled="true"]):hover {
+        background-color: Highlight;
+        color: HighlightText;
+        forced-color-adjust: none;
+      }
+    }
+  }
+
+  // The selected item of a master list, whose details show beside it: a
+  // selected fill and a bar on its leading edge.
+  .#{$prefix}--contained-list-item--selected
+    .#{$prefix}--contained-list-item__content {
+    background-color: $layer-selected;
+    box-shadow: inset 3px 0 0 $interactive;
+  }
+
+  // Forced colors drop the fill and the bar, so mark the item with the
+  // system highlight instead, as ToggleButtonGroup does for a pressed button.
+  @media (forced-colors: active) {
+    .#{$prefix}--contained-list-item--selected
+      .#{$prefix}--contained-list-item__content {
+      background-color: Highlight;
+      color: HighlightText;
+      // Keep the browser from drawing its text backplate (Canvas) behind
+      // HighlightText, which hides the label.
+      forced-color-adjust: none;
+    }
+  }
+
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content:not(:disabled):not([aria-disabled="true"]):active {
+    background-color: $layer-active;
+  }
+
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content:disabled,
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content[aria-disabled="true"] {
+    color: $text-disabled;
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content:focus {
+    outline: none;
+  }
+
+  .#{$prefix}--contained-list-item--clickable
+    .#{$prefix}--contained-list-item__content:focus::after {
+    @include focus-outline("outline");
+
+    position: absolute;
+    content: "";
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .#{$prefix}--contained-list-item--with-action
+    .#{$prefix}--contained-list-item__content {
+    padding-right: $carbon--spacing-10;
+  }
+
+  .#{$prefix}--contained-list__action,
+  .#{$prefix}--contained-list-item__action {
+    position: absolute;
+    display: flex;
+    justify-content: flex-end;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+
+  .#{$prefix}--contained-list__action > *,
+  .#{$prefix}--contained-list-item__action > * {
+    pointer-events: all;
+  }
+
+  .#{$prefix}--contained-list-item--with-icon
+    .#{$prefix}--contained-list-item__content {
+    display: grid;
+    column-gap: $carbon--spacing-04;
+    grid-template-columns: to-rem(16px) 1fr;
+  }
+
+  .#{$prefix}--contained-list-item__icon {
+    display: inline-flex;
+    padding-top: $carbon--spacing-01;
+  }
+}
+
+@include exports("contained-list") {
+  @include contained-list;
+}

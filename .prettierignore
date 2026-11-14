@@ -1,9 +1,0 @@
-/coverage
-/lib
-/css
-/**/__sapper__
-/**/.routify
-/**/dist
-/**/client
-/**/build
-*.svx

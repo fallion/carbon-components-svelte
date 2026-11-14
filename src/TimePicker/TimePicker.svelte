@@ -1,21 +1,20 @@
 <script>
   /**
-   * Specify the size of the input
-   * @type {"sm" | "xl"}
+   * Specify the size of the input.
+   * Inherits the parent `Form` size when unset.
+   * Also accepts Carbon v11's `"md"` (the 40px default, which overrides a
+   * `Form` size) and `"lg"` (`"xl"`).
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
    */
   export let size = undefined;
 
   /**
-   * Specify the input value
+   * Specify the input value.
+   * Follows the field's value after the owning form resets, on every Svelte version.
    * @type {string}
+   * @bindable writable
    */
   export let value = "";
-
-  /**
-   * Specify the input type
-   * @type {string}
-   */
-  export let type = "text";
 
   /** Specify the input placeholder text */
   export let placeholder = "hh:mm";
@@ -26,16 +25,19 @@
   /** Specify the `maxlength` input attribute */
   export let maxlength = 5;
 
-  /** Set to `true` to enable the light variant */
-  export let light = false;
-
   /** Set to `true` to disable the input */
   export let disabled = false;
+
+  /** Set to `true` to mark the input as read-only */
+  export let readonly = false;
 
   /** Specify the label text */
   export let labelText = "";
 
-  /** Set to `true` to visually hide the label text */
+  /**
+   * Set to `true` to visually hide the label text. In the fluid variant,
+   * the `TimePickerSelect` labels are hidden too.
+   */
   export let hideLabel = false;
 
   /** Set to `true` to indicate an invalid state */
@@ -44,78 +46,332 @@
   /** Specify the invalid state text */
   export let invalidText = "";
 
+  /** Set to `true` to indicate a warning state */
+  export let warn = false;
+
+  /** Specify the warning state text */
+  export let warnText = "";
+
+  /** Specify the helper text */
+  export let helperText = "";
+
   /** Set an id for the input element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
   /**
-   * Specify a name attribute for the input
-   * @type {string}
+   * Specify a name attribute for the input.
+   * @type {string | undefined}
    */
   export let name = undefined;
 
-  /** Obtain a reference to the input HTML element */
+  /**
+   * Obtain a reference to the input HTML element.
+   * @bindable readonly
+   * @type {null | HTMLInputElement}
+   */
   export let ref = null;
+
+  /**
+   * Set to `true` to use the fluid variant.
+   * Inherited from the parent `FluidForm` context,
+   * so it does not need to be set when used inside `FluidForm`.
+   */
+  export let fluid = false;
+
+  /** Set to `true` to select the input's text when it receives focus */
+  export let selectTextOnFocus = false;
+
+  import { getContext, setContext, tick } from "svelte";
+  import { readonly as readOnly, writable } from "svelte/store";
+  import Stack from "../Stack/Stack.svelte";
+  import {
+    FORM_CONTEXT_KEY,
+    FORM_SIZE_CONTEXT_KEY,
+  } from "../constants/context-keys.js";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { formReset } from "../utils/form-reset.js";
+  import { preserveFocusSelection } from "../utils/preserve-focus-selection.js";
+  import { normalizeFieldSize } from "../utils/size-aliases.js";
+  import { titleWhenTruncated } from "../utils/title-when-truncated.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
+
+  const formContext = getContext(FORM_CONTEXT_KEY);
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = normalizeFieldSize(size ?? $formSize);
+  const groupReadonly = writable(readonly);
+  const groupDisabled = writable(disabled);
+  // Fluid selects show their own labels; hiding the picker's hides theirs.
+  const groupHideLabel = writable(hideLabel);
+
+  const timePickerContext = {
+    isFluid: false,
+    readonly: readOnly(groupReadonly),
+    disabled: readOnly(groupDisabled),
+    hideLabel: readOnly(groupHideLabel),
+  };
+
+  setContext("carbon:TimePicker", timePickerContext);
+
+  function handleFocus() {
+    if (selectTextOnFocus && !effectiveDisabled) {
+      tick().then(() => ref?.select());
+    }
+  }
+
+  // A form reset restores the field without an input event. Svelte 5 syncs
+  // `bind:value` back on its own; Svelte 3 and 4 do not, so read the field.
+  function handleFormReset() {
+    if (ref) value = ref.value;
+  }
+
+  $: ({ helperId, errorId, warnId } = buildFieldIds(id));
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
+  }));
+  $: isFluid = fluid || !!formContext?.isFluid;
+  $: timePickerContext.isFluid = isFluid;
+  $: groupReadonly.set(readonly);
+  $: groupDisabled.set(effectiveDisabled);
+  $: groupHideLabel.set(hideLabel);
+  $: fluidErrorText = showInvalid ? invalidText : showWarn ? warnText : "";
 </script>
 
 <!-- svelte-ignore a11y-mouse-events-have-key-events -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
-  class:bx--form-item="{true}"
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  class:bx--form-item={true}
+  class:bx--form-item--fit={!isFluid}
+  class:bx--time-picker__form-item--fluid={isFluid}
   on:click
   on:mouseover
   on:mouseenter
   on:mouseleave
 >
-  <div
-    class:bx--time-picker="{true}"
-    class:bx--time-picker--light="{light}"
-    class:bx--time-picker--invalid="{invalid}"
-    class:bx--time-picker--sm="{size === 'sm'}"
-    class:bx--time-picker--xl="{size === 'xl'}"
-    class:bx--select--light="{light}"
-  >
-    <div class:bx--time-picker__input="{true}">
-      {#if labelText || $$slots.labelText}
-        <label
-          for="{id}"
-          class:bx--label="{true}"
-          class:bx--visually-hidden="{hideLabel}"
-          class:bx--label--disabled="{disabled}"
+  {#if isFluid}
+    <div
+      class:bx--time-picker--fluid={true}
+      class:bx--time-picker--fluid--disabled={effectiveDisabled}
+      class:bx--time-picker--fluid--invalid={showInvalid}
+      class:bx--time-picker--fluid--warning={showWarn}
+      class:bx--time-picker--readonly={readonly}
+    >
+      <div class:bx--time-picker--fluid__wrapper={true}>
+        <div class:bx--time-picker__input={true}>
+          <div
+            class:bx--form-item={true}
+            class:bx--text-input-wrapper={true}
+            class:bx--text-input--fluid={true}
+            class:bx--text-input-wrapper--readonly={readonly}
+          >
+            {#if labelText || $$slots.labelChildren}
+              <label
+                for={id}
+                class:bx--label={true}
+                class:bx--visually-hidden={hideLabel}
+                class:bx--label--disabled={effectiveDisabled}
+                class:bx--label--readonly={readonly}
+                class:bx--label--slotted={$$slots.labelChildren}
+                use:titleWhenTruncated={{ enabled: !$$slots.labelChildren }}
+              >
+                <slot name="labelChildren">{labelText}</slot>
+              </label>
+            {/if}
+            <div class:bx--text-input__field-outer-wrapper={true}>
+              <div class:bx--text-input__field-wrapper={true}>
+                <input
+                  bind:this={ref}
+                  use:preserveFocusSelection={selectTextOnFocus &&
+                    !effectiveDisabled}
+                  use:formReset={handleFormReset}
+                  bind:value
+                  type="text"
+                  aria-invalid={showInvalid ? "true" : undefined}
+                  aria-errormessage={showInvalid && invalidText
+                    ? errorId
+                    : undefined}
+                  {pattern}
+                  {placeholder}
+                  {maxlength}
+                  {id}
+                  {name}
+                  disabled={effectiveDisabled}
+                  readonly={readonly || undefined}
+                  {...$$restProps}
+                  aria-describedby={joinDescribedBy(
+                    resolveStatusDescribedBy({
+                      showInvalid,
+                      showWarn,
+                      invalidText,
+                      warnText,
+                      errorId,
+                      warnId,
+                      includeErrorId: false,
+                    }),
+                    $$restProps["aria-describedby"],
+                  )}
+                  class:bx--time-picker__input-field={true}
+                  class:bx--text-input={true}
+                  on:change
+                  on:input
+                  on:keydown
+                  on:keyup
+                  on:focus
+                  on:focus={handleFocus}
+                  on:blur
+                  on:paste
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <slot />
+      </div>
+      {#if showInvalid || showWarn}
+        <hr class:bx--time-picker__divider={true} />
+        <div
+          id={showInvalid ? errorId : warnId}
+          role={showInvalid ? "alert" : undefined}
+          class:bx--form-requirement={true}
         >
-          <slot name="labelText">
-            {labelText}
-          </slot>
-        </label>
+          {fluidErrorText}
+        </div>
       {/if}
-      <input
-        bind:this="{ref}"
-        data-invalid="{invalid || undefined}"
-        pattern="{pattern}"
-        placeholder="{placeholder}"
-        maxlength="{maxlength}"
-        id="{id}"
-        name="{name}"
-        type="{type}"
-        value="{value}"
-        disabled="{disabled}"
-        {...$$restProps}
-        class:bx--time-picker__input-field="{true}"
-        class:bx--text-input="{true}"
-        class:bx--text-input--light="{light}"
-        class:bx--text-input--invalid="{invalid}"
-        on:change
-        on:input
-        on:input="{({ target }) => {
-          value = target.value;
-        }}"
-        on:keydown
-        on:keyup
-        on:focus
-        on:blur
-      />
+      {#if showInvalid}
+        <WarningFilled
+          class="bx--time-picker__icon bx--time-picker__icon--invalid"
+        />
+      {:else if showWarn}
+        <WarningAltFilled
+          class="bx--time-picker__icon bx--time-picker__icon--warn"
+        />
+      {/if}
     </div>
-    <slot />
-  </div>
-  {#if invalid}
-    <div class:bx--form-requirement="{true}">{invalidText}</div>
+  {:else}
+    <div
+      class:bx--time-picker={true}
+      class:bx--time-picker--invalid={showInvalid}
+      class:bx--time-picker--warn={showWarn}
+      class:bx--time-picker--readonly={readonly}
+      class:bx--time-picker--xs={effectiveSize === "xs"}
+      class:bx--time-picker--sm={effectiveSize === "sm"}
+      class:bx--time-picker--xl={effectiveSize === "xl"}
+    >
+      <div class:bx--time-picker__input={true}>
+        {#if labelText || $$slots.labelChildren}
+          <label
+            for={id}
+            class:bx--label={true}
+            class:bx--visually-hidden={hideLabel}
+            class:bx--label--disabled={effectiveDisabled}
+            class:bx--label--readonly={readonly}
+          >
+            <slot name="labelChildren">{labelText}</slot>
+          </label>
+        {/if}
+        <!-- Wraps so the selects move to a second row in a narrow container. -->
+        <Stack orientation="horizontal" gap={0} wrap="wrap">
+          <div
+            data-invalid={showInvalid || undefined}
+            data-warn={showWarn || undefined}
+            class:bx--text-input__field-wrapper={true}
+            class:bx--text-input__field-wrapper--warning={showWarn}
+            style:width="auto"
+          >
+            {#if showInvalid}
+              <WarningFilled class="bx--text-input__invalid-icon" />
+            {:else if showWarn}
+              <WarningAltFilled
+                class="bx--text-input__invalid-icon bx--text-input__invalid-icon--warning"
+              />
+            {/if}
+            <input
+              bind:this={ref}
+              use:preserveFocusSelection={selectTextOnFocus &&
+                !effectiveDisabled}
+              use:formReset={handleFormReset}
+              bind:value
+              type="text"
+              data-invalid={showInvalid || undefined}
+              aria-invalid={showInvalid ? "true" : undefined}
+              aria-errormessage={showInvalid && invalidText
+                ? errorId
+                : undefined}
+              {pattern}
+              {placeholder}
+              {maxlength}
+              {id}
+              {name}
+              disabled={effectiveDisabled}
+              readonly={readonly || undefined}
+              {...$$restProps}
+              aria-describedby={joinDescribedBy(
+                resolveStatusDescribedBy({
+                  showInvalid,
+                  showWarn,
+                  invalidText,
+                  warnText,
+                  helperText,
+                  errorId,
+                  warnId,
+                  helperId,
+                  includeErrorId: false,
+                }),
+                $$restProps["aria-describedby"],
+              )}
+              class:bx--time-picker__input-field={true}
+              class:bx--text-input={true}
+              class:bx--text-input--invalid={showInvalid}
+              class:bx--text-input--warning={showWarn}
+              on:change
+              on:input
+              on:keydown
+              on:keyup
+              on:focus
+              on:focus={handleFocus}
+              on:blur
+              on:paste
+            />
+          </div>
+          <slot />
+        </Stack>
+      </div>
+    </div>
+    {#if showInvalid}
+      {#if invalidText}
+        <div id={errorId} class:bx--form-requirement={true} role="alert">
+          {invalidText}
+        </div>
+      {/if}
+    {:else if showWarn}
+      {#if warnText}
+        <div id={warnId} class:bx--form-requirement={true}>{warnText}</div>
+      {/if}
+    {:else if helperText}
+      <div
+        id={helperId}
+        class:bx--form__helper-text={true}
+        class:bx--form__helper-text--disabled={effectiveDisabled}
+      >
+        {helperText}
+      </div>
+    {/if}
   {/if}
 </div>

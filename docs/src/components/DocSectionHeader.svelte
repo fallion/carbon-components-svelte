@@ -1,0 +1,37 @@
+<script lang="ts">
+  import { Column, Row, Stack, Text } from "carbon-components-svelte";
+  import type { CarbonIconProps } from "carbon-icons-svelte";
+  import type { Component } from "svelte";
+  import DocEyebrow from "./DocEyebrow.svelte";
+
+  export let eyebrow = "";
+  export let icon: Component<CarbonIconProps> | undefined = undefined;
+  export let title = "";
+  export let description = "";
+  export let titleType: "heading-05" | "heading-06" = "heading-05";
+  export let gap: 4 | 6 = 4;
+  export let maxWidth = "54ch";
+  export let wide = false;
+  export let balance = false;
+</script>
+
+<Row class="doc-section-header">
+  <Column lg={wide ? 10 : 8} xlg={wide ? 8 : undefined}>
+    <Stack {gap}>
+      {#if eyebrow}
+        <DocEyebrow {eyebrow} {icon} />
+      {/if}
+      <Text tag="h2" type={titleType} color="primary" {balance}>
+        {title}
+      </Text>
+      {#if $$slots.description}
+        <slot name="description" />
+      {:else if description}
+        <Text type="body-02" color="secondary" {maxWidth}>
+          {description}
+        </Text>
+      {/if}
+      <slot />
+    </Stack>
+  </Column>
+</Row>

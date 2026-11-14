@@ -1,0 +1,74 @@
+<script>
+  /** @extendProps {"./Link.svelte"} LinkProps */
+
+  /**
+   * @event download
+   * @event download:error
+   * @type {object}
+   * @property {unknown} error
+   */
+
+  /**
+   * Specify the content to download.
+   * @type {string | Blob | undefined}
+   */
+  export let data = undefined;
+
+  /** Specify the downloaded file name. */
+  export let filename = "download";
+
+  /**
+   * Specify the MIME type used to build the `Blob` when `data` is a string.
+   * @type {string | undefined}
+   */
+  export let type = undefined;
+
+  /** Set to `true` to disable the link. */
+  export let disabled = false;
+
+  /**
+   * Override the default download behavior (creates an object URL for
+   * `data` and clicks a temporary anchor). It gets `data`, `filename` and
+   * `type` as set, so `data` and `type` may be `undefined`.
+   * @type {(data: string | Blob | undefined, filename: string, type: string | undefined) => void | Promise<void>}
+   */
+  export let download = downloadFile;
+
+  import { createEventDispatcher } from "svelte";
+  import { downloadFile } from "../utils/download-file.js";
+  import Link from "./Link.svelte";
+
+  const dispatch = createEventDispatcher();
+
+  /** @param {MouseEvent} event */
+  async function handleClick(event) {
+    event.preventDefault();
+    if (disabled) return;
+
+    try {
+      if (download === downloadFile ? data !== undefined : true) {
+        await download(data, filename, type);
+        dispatch("download");
+      }
+    } catch (error) {
+      dispatch("download:error", { error });
+    }
+  }
+</script>
+
+<Link
+  href="#"
+  {disabled}
+  {...$$restProps}
+  on:click
+  on:click={handleClick}
+  on:mouseover
+  on:mouseenter
+  on:mouseleave
+  on:focus
+  on:blur
+  on:keydown
+  on:keyup
+>
+  <slot />
+</Link>

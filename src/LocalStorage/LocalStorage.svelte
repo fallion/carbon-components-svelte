@@ -1,71 +1,73 @@
 <script>
   /**
-   * @event {any} save
-   * @event {{ prevValue: any; value: any; }} update
+   * @template [T=any]
+   * @event {null} save
+   * @event update - Fires when the stored value changes, either from a bound value update or when localStorage is modified from another tab or window. Set `sync` to `"off"` to ignore updates from other tabs.
+   * @property {T} prevValue
+   * @property {T} value
+   * @event {{ error: unknown }} error - Fires when a write to localStorage fails (e.g. quota exceeded or access denied).
    */
 
   /**
-   * Specify the local storage key
+   * Specify the local storage key.
    */
   export let key = "local-storage-key";
 
   /**
-   * Provide a value to persist
-   * @type {any}
+   * Provide a value to persist.
+   * @type {T}
+   * @bindable writable
    */
-  export let value = "";
+  export let value = /** @type {T} */ ("");
 
   /**
-   * Remove the persisted key value from the browser's local storage
+   * `"off"` ignores storage events from other tabs or windows on the same
+   * origin. `"on"` (default) keeps the previous behavior.
+   * @type {"on" | "off"}
+   */
+  export let sync = "on";
+
+  /**
+   * Remove the persisted key value from the browser's local storage.
+   * Also resets the bound `value` to `undefined` and dispatches `update`.
    * @type {() => void}
+   * @example
+   * ```svelte
+   * <LocalStorage bind:this={storage} key="my-key" bind:value={data} />
+   * <button on:click={() => storage.clearItem()}>Clear Item</button>
+   * ```
    */
   export function clearItem() {
-    localStorage.removeItem(key);
+    binding.clearItem();
   }
 
   /**
-   * Clear all key values from the browser's local storage
+   * Clear all key values from the browser's local storage.
+   * Also resets the bound `value` to `undefined` and dispatches `update`.
    * @type {() => void}
+   * @example
+   * ```svelte
+   * <LocalStorage bind:this={storage} key="my-key" bind:value={data} />
+   * <button on:click={() => storage.clearAll()}>Clear All Storage</button>
+   * ```
    */
   export function clearAll() {
-    localStorage.clear();
+    binding.clearAll();
   }
 
-  import { onMount, afterUpdate, createEventDispatcher } from "svelte";
+  import StorageBinding from "./StorageBinding.svelte";
 
-  const dispatch = createEventDispatcher();
-
-  let prevValue = value;
-
-  function setItem() {
-    if (typeof value === "object") {
-      localStorage.setItem(key, JSON.stringify(value));
-    } else {
-      localStorage.setItem(key, value);
-    }
-  }
-
-  onMount(() => {
-    const item = localStorage.getItem(key);
-
-    if (item != null) {
-      try {
-        value = JSON.parse(item);
-      } catch (e) {
-        value = item;
-      }
-    } else {
-      setItem(value);
-      dispatch("save");
-    }
-  });
-
-  afterUpdate(() => {
-    if (prevValue !== value) {
-      setItem(value);
-      dispatch("update", { prevValue, value });
-    }
-
-    prevValue = value;
-  });
+  /** @type {StorageBinding} */
+  let binding;
 </script>
+
+<StorageBinding
+  bind:this={binding}
+  storageType="localStorage"
+  {key}
+  bind:value
+  {sync}
+  on:save
+  on:update
+  on:error
+/>

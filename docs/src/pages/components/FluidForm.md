@@ -1,0 +1,356 @@
+---
+description: Fluid forms provide a full-width form layout that adapts to their container, with supported input components rendered in the fluid variant.
+---
+
+<script>
+  import {
+    Box,
+    ComboBox,
+    CopyInput,
+    DatePicker,
+    DatePickerInput,
+    Dropdown,
+    FluidDatePickerSkeleton,
+    FluidForm,
+    FluidSelectSkeleton,
+    FluidTextInputSkeleton,
+    MultiSelect,
+    NumberInput,
+    PinCodeInput,
+    TextInput,
+    PasswordInput,
+    Search,
+    TextArea,
+    Select,
+    SelectItem,
+    TimePicker,
+    TimePickerSelect,
+  } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a fluid-width form layout using the fluid form component. This example
+shows an application registration form with required fields. Supported inputs include text inputs, copy inputs, text areas, number inputs, search inputs, pin code inputs, selects, dropdowns, combo boxes, multi-selects, date pickers, and time pickers. Note that inline input variants cannot be used within a fluid form.
+
+<FluidForm>
+  <TextInput
+    name="name"
+    labelText="Application name"
+    placeholder="customer-portal"
+    required
+  />
+  <PasswordInput
+    name="password"
+    required
+    type="password"
+    labelText="Admin password"
+    placeholder="Enter admin password..."
+  />
+  <Select name="region" labelText="Deployment region">
+    <SelectItem value="us-east" text="US East (Washington DC)" />
+    <SelectItem value="us-south" text="US South (Dallas)" />
+    <SelectItem value="eu-de" text="EU Germany (Frankfurt)" />
+  </Select>
+  <NumberInput name="instances" labelText="Instance count" value={2} min={1} max={10} />
+  <Dropdown
+    name="channel"
+    labelText="Notification channel"
+    selectedId="email"
+    items="{[
+      { id: 'email', text: 'Email' },
+      { id: 'slack', text: 'Slack' },
+      { id: 'pagerduty', text: 'PagerDuty' },
+    ]}"
+  />
+  <ComboBox
+    name="contact"
+    labelText="Primary contact"
+    placeholder="Select contact method"
+    selectedId="email"
+    items="{[
+      { id: 'email', text: 'Email' },
+      { id: 'slack', text: 'Slack' },
+      { id: 'pagerduty', text: 'PagerDuty' },
+    ]}"
+  />
+  <MultiSelect
+    name="notify"
+    labelText="Notification methods"
+    label="Select notification methods..."
+    selectedIds="{['email', 'slack']}"
+    items="{[
+      { id: 'email', text: 'Email' },
+      { id: 'slack', text: 'Slack' },
+      { id: 'pagerduty', text: 'PagerDuty' },
+    ]}"
+  />
+  <TextArea
+    name="description"
+    labelText="Description"
+    placeholder="Customer-facing web portal for account management and billing."
+  />
+  <CopyInput
+    labelText="API key"
+    value="a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  />
+  <DatePicker datePickerType="single">
+    <DatePickerInput name="launch" labelText="Go-live date" placeholder="mm/dd/yyyy" />
+  </DatePicker>
+  <TimePicker name="window" labelText="Maintenance window" placeholder="hh:mm">
+    <TimePickerSelect name="period" labelText="Clock" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect name="timezone" labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</FluidForm>
+
+## Supported inputs
+
+Fluid inputs can be used standalone outside a fluid form, custom inputs can
+opt into the same fluid behavior, and each supported input ships a dedicated
+skeleton for loading states.
+
+### Standalone
+
+Fluid inputs do not require a fluid form. Set `fluid` on a supported component to use the fluid variant standalone.
+
+<Select fluid labelText="Deployment region" helperText="Helper text is not displayed in the fluid variant">
+  <SelectItem value="us-east" text="US East (Washington DC)" />
+  <SelectItem value="us-south" text="US South (Dallas)" />
+  <SelectItem value="eu-de" text="EU Germany (Frankfurt)" />
+</Select>
+
+<Dropdown
+  fluid
+  labelText="Notification channel"
+  selectedId="email"
+  helperText="Helper text is not displayed in the fluid variant"
+  items="{[
+    { id: 'email', text: 'Email' },
+    { id: 'slack', text: 'Slack' },
+    { id: 'pagerduty', text: 'PagerDuty' },
+  ]}"
+/>
+
+<ComboBox
+  fluid
+  labelText="Primary contact"
+  placeholder="Select contact method"
+  selectedId="email"
+  helperText="Helper text is not displayed in the fluid variant"
+  items="{[
+    { id: 'email', text: 'Email' },
+    { id: 'slack', text: 'Slack' },
+    { id: 'pagerduty', text: 'PagerDuty' },
+  ]}"
+/>
+
+<MultiSelect
+  fluid
+  labelText="Notification methods"
+  label="Select notification methods..."
+  selectedIds="{['email']}"
+  helperText="Helper text is not displayed in the fluid variant"
+  items="{[
+    { id: 'email', text: 'Email' },
+    { id: 'slack', text: 'Slack' },
+    { id: 'pagerduty', text: 'PagerDuty' },
+  ]}"
+/>
+
+<Search fluid labelText="Search catalog" placeholder="Search services..." />
+
+<TextArea
+  fluid
+  labelText="Description"
+  placeholder="Customer-facing web portal for account management and billing."
+  helperText="Helper text is not displayed in the fluid variant"
+/>
+
+<CopyInput fluid labelText="API key" value="a1b2c3d4-e5f6-7890-abcd-ef1234567890" />
+
+<NumberInput fluid labelText="Clusters" value={0} />
+
+<PinCodeInput fluid labelText="Verification code" />
+
+Fluid time pickers use percentage-based columns (25% / 25% / 50% with two
+selects, 50% / 50% with one). Set a parent width so those ratios resolve as
+intended.
+
+<Box width="350px">
+  <TimePicker fluid labelText="Maintenance window" placeholder="hh:mm">
+    <TimePickerSelect labelText="Clock" value="am">
+      <SelectItem value="am" text="AM" />
+      <SelectItem value="pm" text="PM" />
+    </TimePickerSelect>
+    <TimePickerSelect labelText="Timezone" value="et">
+      <SelectItem value="et" text="Eastern Time (ET)" />
+      <SelectItem value="pt" text="Pacific Time (PT)" />
+    </TimePickerSelect>
+  </TimePicker>
+</Box>
+
+### Custom fluid-aware inputs
+
+FluidForm publishes context under the key `"carbon:Form"` so custom inputs
+can opt into the fluid variant automatically, the same way built-in inputs
+like `TextInput` and `NumberInput` do. Read `isFluid` from the context to
+adapt a custom component's rendering when it is placed inside a fluid form.
+
+```svelte
+<script>
+  import { getContext } from "svelte";
+
+  const formContext = getContext("carbon:Form");
+
+  $: isFluid = !!formContext?.isFluid;
+</script>
+```
+
+### Loading skeletons
+
+Each fluid input ships a dedicated skeleton component for loading states:
+`FluidTextInputSkeleton`, `FluidNumberInputSkeleton`, `FluidSearchSkeleton`,
+`FluidTextAreaSkeleton`, `FluidSelectSkeleton`, `FluidDropdownSkeleton`,
+`FluidComboBoxSkeleton`, `FluidMultiSelectSkeleton`, `FluidDatePickerSkeleton`,
+`FluidTimePickerSkeleton`, `FluidCopyInputSkeleton`, and
+`FluidPinCodeInputSkeleton`. Compose them to mirror a fluid form while data
+loads.
+
+<FluidTextInputSkeleton />
+<FluidSelectSkeleton />
+<FluidDatePickerSkeleton />
+
+## Invalid
+
+Handle form validation and display error states with `invalid` and `invalidText` on form inputs.
+
+<FileSource src="/framed/FluidForm/FluidFormInvalid" />
+
+## Inside a modal
+
+Place a fluid form inside a [modal](/components/Modal#full-width) to keep inputs flush with the modal edges. Set `fullWidth` on the modal to remove body padding so the form spans edge to edge.
+
+<FileSource src="/framed/FluidForm/FluidFormModal" />
+
+## Submission
+
+Fluid inputs submit exactly like their default variants: give each field a
+`name`, and read the values with `request.formData()` in a SvelteKit form
+action. See [Form](/components/Form#submitted-values) for what each component
+submits and [Form](/components/Form#form-actions) for a complete action.
+
+### Server-side validation
+
+This example stands in for a form action in the browser. Fluid inputs do not
+show `helperText`, so put formatting hints in the `labelText` or `placeholder`
+and let the server's message appear through `invalidText`. The actions sit
+below the fluid form in a full-width
+[ActionSet](/components/ActionSet) and target it with `form`, the way a
+modal footer would.
+
+<FileSource src="/framed/FluidForm/FluidFormServerValidation" />
+
+`Dropdown` keeps its selection through a reset. To clear it after a
+successful submission, reset its bound value in `on:reset`, as `region` is
+here.
+
+### SvelteKit enhance
+
+Set `actions` to apply SvelteKit's `enhance` (or any other action) to the
+underlying form element. See [Form](/components/Form#sveltekit-enhance) for
+usage details.
+
+```svelte
+<script>
+  import { enhance } from "$app/forms";
+  import { FluidForm, TextInput, Button } from "carbon-components-svelte";
+</script>
+
+<FluidForm method="POST" action="?/save" actions={[enhance]}>
+  <TextInput name="name" labelText="Name" />
+  <Button type="submit">Save</Button>
+</FluidForm>
+```
+
+A complete fluid form action, returning the submitted values and the errors
+on failure:
+
+```svelte
+<!-- src/routes/apps/new/+page.svelte -->
+<script>
+  import { enhance } from "$app/forms";
+  import {
+    Button,
+    Dropdown,
+    FluidForm,
+    TextInput,
+  } from "carbon-components-svelte";
+
+  export let form;
+
+  $: values = form?.values ?? {};
+  $: errors = form?.errors ?? {};
+</script>
+
+<FluidForm method="POST" novalidate actions={[enhance]}>
+  <TextInput
+    name="name"
+    labelText="Application name (lowercase, dashes)"
+    value={values.name ?? ""}
+    invalid={!!errors.name}
+    invalidText={errors.name}
+  />
+  <Dropdown
+    name="region"
+    labelText="Deployment region"
+    selectedId={values.region || undefined}
+    items={[
+      { id: "us-east", text: "US East (Washington DC)" },
+      { id: "eu-de", text: "EU Germany (Frankfurt)" },
+    ]}
+    invalid={!!errors.region}
+    invalidText={errors.region}
+  />
+  <Button type="submit">Create application</Button>
+</FluidForm>
+```
+
+```js
+// src/routes/apps/new/+page.server.js
+import { fail } from "@sveltejs/kit";
+
+export const actions = {
+  default: async ({ request }) => {
+    const data = await request.formData();
+    const name = String(data.get("name") ?? "").trim();
+    const region = String(data.get("region") ?? "");
+
+    const errors = {};
+    if (!/^[a-z][a-z0-9-]{2,}$/.test(name)) errors.name = "Use 3 or more lowercase letters, numbers, or dashes.";
+    if (region === "") errors.region = "Choose a deployment region.";
+
+    if (Object.keys(errors).length > 0) {
+      return fail(400, { values: { name, region }, errors });
+    }
+
+    // Create the application here.
+    return { created: name };
+  },
+};
+```
+
+## Best practices
+
+| Do | Why |
+| --- | --- |
+| Follow the [Form best practices](/components/Form#best-practices) | Name every field, validate on the server, and return the submitted values with the errors. |
+| Put hints in the label or placeholder | Fluid inputs hide `helperText`, so guidance placed there never reaches the user. |
+| Show one clear `invalidText` per field | The fluid variant renders it inside the field's border, next to the value it describes. |
+| Mirror the loaded form with the fluid skeletons | The layout does not shift when the initial values arrive. |
+| Inside a modal, give the form an `id` and set the modal's `formId` | The modal's primary button then submits the form (see [Modal](/components/Modal#with-form-submission)). |

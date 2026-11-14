@@ -1,0 +1,168 @@
+---
+description: Tooltip definitions show an inline tooltip for a defined term on hover or focus, for adding context without clutter.
+---
+
+<script>
+  import { Text, TooltipDefinition, TooltipGroup } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Display a basic definition tooltip with the default bottom-center alignment.
+
+<TooltipDefinition tooltipText="Single sign-on: one login for all connected applications.">
+  SSO
+</TooltipDefinition>
+
+Focus or hover the term to show the tooltip. Press <DocKbd label="Enter" /> or <DocKbd label="Space" /> to toggle it. The term sets `aria-expanded` to match. The tooltip stays open while the pointer moves onto it, so its text can be read or selected. Press <DocKbd label="Escape" /> to hide it without moving the pointer or focus.
+
+## In body text
+
+Place the term in running text. It takes the font of the text around it.
+
+<Text type="body-01">
+  Every workspace signs in through
+  <TooltipDefinition tooltipText="Single sign-on: one login for all connected applications.">single sign-on</TooltipDefinition>
+  and loses access when an account leaves the directory.
+</Text>
+
+## Placement
+
+Position the tooltip with direction and alignment.
+
+### Directions
+
+By default, the tooltip is positioned to the bottom.
+
+Position the tooltip with `direction`.
+
+<TooltipDefinition direction="top" tooltipText="Top">
+Top
+</TooltipDefinition>
+<TooltipDefinition direction="bottom" tooltipText="Bottom">
+Bottom
+</TooltipDefinition>
+
+### Alignment
+
+By default, the tooltip is aligned to the center.
+
+Align the tooltip content with `align`.
+
+<TooltipDefinition align="start" tooltipText="Start">
+Start
+</TooltipDefinition>
+<TooltipDefinition align="center" tooltipText="Center">
+Center
+</TooltipDefinition>
+<TooltipDefinition align="end" tooltipText="End">
+End
+</TooltipDefinition>
+
+## Open behavior
+
+Control how and when the tooltip opens.
+
+### Click to open
+
+Open the tooltip on click instead of hover with `clickToOpen`.
+
+<TooltipDefinition clickToOpen tooltipText="Single sign-on: one login for all connected applications.">
+  SSO
+</TooltipDefinition>
+
+### Open by default
+
+Open the tooltip by default with `open`.
+
+<TooltipDefinition open tooltipText="Single sign-on: one login for all connected applications.">
+  SSO
+</TooltipDefinition>
+
+## Reactive example
+
+Control tooltip state programmatically with `bind:open`.
+
+<FileSource src="/framed/TooltipDefinition/TooltipDefinitionReactive" />
+
+## Dispatched events
+
+The component dispatches `open` and `close` events.
+
+<FileSource src="/framed/TooltipDefinition/TooltipDefinitionEvents" />
+
+## Custom delay
+
+Customize hover delays with `enterDelayMs` and `leaveDelayMs`. Defaults are 100ms and 300ms.
+
+<TooltipDefinition tooltipText="Slow to appear" enterDelayMs={500} leaveDelayMs={500}>
+  SSO
+</TooltipDefinition>
+
+## Tooltip group
+
+Wrap a passage with several defined terms in a [TooltipGroup](/components/TooltipGroup). Once one definition is open, moving to the next term shows its definition right away, with no enter delay or fade-in. Inside a group, `enterDelayMs` and `leaveDelayMs` default to the group's delays.
+
+<TooltipGroup>
+  <Text tag="div" type="body-01">
+    Sign in with
+    <TooltipDefinition tooltipText="Single sign-on: one login for all connected applications.">SSO</TooltipDefinition>
+    or
+    <TooltipDefinition tooltipText="Multi-factor authentication: a second check after your password.">MFA</TooltipDefinition>
+    to reach the
+    <TooltipDefinition tooltipText="Identity and access management: who can use which resources.">IAM</TooltipDefinition>
+    console.
+  </Text>
+</TooltipGroup>
+
+## Custom tooltip slot
+
+Use the `tooltip` slot to customize tooltip content with additional styling or structure.
+
+<TooltipDefinition>
+  SSO
+  <Text slot="tooltip" tag="span" type="inherit" weight="semibold">
+    Single sign-on: one login for all connected applications.
+  </Text>
+</TooltipDefinition>
+
+## Portal
+
+A tooltip that a container would cut off, such as a box with `overflow: hidden`, a scroll area or a [DataTable](/components/DataTable), opens in a portal. Inside a Modal, the tooltip always opens in a portal.
+
+Set `portalTooltip` to `true` to always render the tooltip in a portal, or to `false` to keep it in place. Alignment matches the in-place tooltip. A portalled tooltip leaves its container in the DOM, so CSS that targets the tooltip as a descendant of the container does not match it.
+
+<TooltipDefinition portalTooltip tooltipText="Single sign-on: one login for all connected applications.">
+  SSO
+</TooltipDefinition>
+
+### Directions
+
+Definition tooltips support top and bottom directions only. With portalling, direction behaves the same as the default CSS path.
+
+<TooltipDefinition portalTooltip direction="top" tooltipText="Top">
+  Top
+</TooltipDefinition>
+<TooltipDefinition portalTooltip direction="bottom" tooltipText="Bottom">
+  Bottom
+</TooltipDefinition>
+
+### Alignment
+
+Portalled tooltips use the same alignment options as the default path: horizontal placement along the anchor for top and bottom directions.
+
+<TooltipDefinition portalTooltip align="start" tooltipText="Start">
+  Start
+</TooltipDefinition>
+<TooltipDefinition portalTooltip align="center" tooltipText="Center">
+  Center
+</TooltipDefinition>
+<TooltipDefinition portalTooltip align="end" tooltipText="End">
+  End
+</TooltipDefinition>
+
+## Inside a modal
+
+When a tooltip definition is used inside a [Modal](/components/Modal), it is automatically portalled so it is not clipped by the modal overflow or z-index stacking. Set `portalTooltip` to override this behavior.
+
+<FileSource src="/framed/TooltipDefinition/TooltipDefinitionModal" />

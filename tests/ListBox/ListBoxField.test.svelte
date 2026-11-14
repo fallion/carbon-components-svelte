@@ -1,0 +1,45 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import ListBoxField from "carbon-components-svelte/ListBox/ListBoxField.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let disabled: ComponentProps<ListBoxField>["disabled"] = false;
+  export let readonly: ComponentProps<ListBoxField>["readonly"] = false;
+  export let role: ComponentProps<ListBoxField>["role"] = "combobox";
+  export let tabindex: ComponentProps<ListBoxField>["tabindex"] = "-1";
+  export let id: ComponentProps<ListBoxField>["id"] = undefined;
+  export let ref: ComponentProps<ListBoxField>["ref"] = null;
+  export let slotContent = "";
+  export let onclick: ((event: MouseEvent) => void) | undefined = undefined;
+  export let onmouseover: ((event: MouseEvent) => void) | undefined = undefined;
+  export let onmouseenter: ((event: MouseEvent) => void) | undefined =
+    undefined;
+  export let onmouseleave: ((event: MouseEvent) => void) | undefined =
+    undefined;
+  export let onkeydown: ((event: KeyboardEvent) => void) | undefined =
+    undefined;
+  export let onfocus: ((event: FocusEvent) => void) | undefined = undefined;
+  export let onblur: ((event: FocusEvent) => void) | undefined = undefined;
+</script>
+
+<ListBoxField
+  {disabled}
+  {readonly}
+  {role}
+  {tabindex}
+  {id}
+  bind:ref
+  on:click={(e) => onclick?.(e)}
+  on:mouseover={(e) => onmouseover?.(e)}
+  on:mouseenter={(e) => onmouseenter?.(e)}
+  on:mouseleave={(e) => onmouseleave?.(e)}
+  on:keydown={(e) => onkeydown?.(e)}
+  on:focus={(e) => onfocus?.(e)}
+  on:blur={(e) => onblur?.(e)}
+  {...$$restProps}
+>
+  {#if slotContent}
+    {slotContent}
+  {/if}
+</ListBoxField>

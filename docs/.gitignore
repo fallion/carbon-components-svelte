@@ -1,3 +1,9 @@
 /node_modules
 /dist
+/public/sitemap.xml
+/public/components/
+/public/llms.txt
+/public/llms-full.txt
 /.routify
+src/SEARCH_INDEX.json
+src/COMPONENT_MD_SIZES.json

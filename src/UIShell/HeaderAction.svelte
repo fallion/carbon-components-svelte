@@ -1,0 +1,255 @@
+<script>
+  /** @template {import("../utils/icon-component.js").IconComponent} [Icon=any] */
+
+  /**
+   * @event open
+   * @type {object}
+   * @property {"toggle"} trigger
+   */
+
+  /**
+   * @event close
+   * @type {object}
+   * @property {"outside-click" | "toggle" | "escape-key" | "select"} trigger
+   */
+
+  /**
+   * Set to `true` to open the panel.
+   * @bindable writable
+   */
+  export let isOpen = false;
+
+  /**
+   * Specify the icon to render when the action panel is closed.
+   * @type {Icon}
+   */
+  export let icon = /** @type {Icon} */ (Switcher);
+
+  /**
+   * Specify the icon to render when the action panel is open.
+   * @type {Icon}
+   */
+  export let closeIcon = /** @type {Icon} */ (Close);
+
+  /**
+   * Specify the text displayed next to the icon.
+   * Alternatively, use the named slot "textChildren".
+   * @type {string | undefined}
+   * @example
+   * ```svelte
+   * <HeaderAction>
+   *   <div slot="textChildren">Custom Text</div>
+   * </HeaderAction>
+   * ```
+   */
+  export let text = undefined;
+
+  /**
+   * Specify an icon tooltip. The tooltip will not be displayed
+   * if either the `text` prop or a named slot="textChildren" is used.
+   * @type {string | undefined}
+   */
+  export let iconDescription = undefined;
+
+  /**
+   * Set the alignment of the tooltip relative to the icon.
+   * Only applies when `iconDescription` is provided.
+   * @type {"start" | "center" | "end"}
+   */
+  export let tooltipAlignment = "center";
+
+  /**
+   * Obtain a reference to the button HTML element.
+   * @bindable readonly
+   * @type {null | HTMLButtonElement}
+   */
+  export let ref = null;
+
+  /**
+   * Customize the panel transition (e.g., `transition:slide`).
+   * The panel does not animate by default; provide slide
+   * params (e.g., `{ duration: 200 }`) to enable the transition.
+   * @type {false | import("svelte/transition").SlideParams}
+   */
+  export let transition = false;
+
+  /** Set to `true` to prevent the panel from closing when clicking outside */
+  export let preventCloseOnClickOutside = false;
+
+  /** Set an id for the trigger button element. Also used to label the panel. */
+  export let id = uniqueId();
+
+  import { createEventDispatcher, onMount, setContext } from "svelte";
+  import { slide } from "svelte/transition";
+  import Close from "../icons/Close.svelte";
+  import Switcher from "../icons/Switcher.svelte";
+  import { createAnchoredTooltip } from "../utils/anchored-tooltip.js";
+  import { dismiss } from "../utils/dismiss.js";
+  import { focusQuietly, returnFocusOnClose } from "../utils/focus.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { isOutsideClick } from "../utils/is-outside-click.js";
+  import { noop } from "../utils/noop.js";
+  import { getTooltipGroup } from "../utils/tooltip-group.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  const dispatch = createEventDispatcher();
+
+  /** @type {null | HTMLDivElement} */
+  let refPanel = null;
+
+  $: hasIconOnly = iconDescription && !(text || $$slots.textChildren);
+
+  // Only one tooltip shows at a time: hovering one header action while
+  // another is focused hides the focused one's tooltip (mirrors Button).
+  // Escape hides it until the next hover or focus. While the panel is open,
+  // the key goes on, so one press also closes the panel, even with the
+  // pointer still on the trigger.
+  const tooltip = createAnchoredTooltip({
+    group: getTooltipGroup(),
+    enabled: () => !!hasIconOnly,
+    passEscape: () => isOpen,
+    dismissOnClick: false,
+    enterDelayMs: () => 0,
+  });
+  const {
+    open: tooltipOpen,
+    hidden: tooltipHidden,
+    instant: tooltipInstant,
+  } = tooltip;
+
+  let detachTooltip = noop;
+
+  $: {
+    detachTooltip();
+    detachTooltip = ref ? tooltip.attach(ref) : noop;
+  }
+
+  $: if (!hasIconOnly) tooltip.hide();
+
+  onMount(() => {
+    return () => {
+      detachTooltip();
+      tooltip.destroy();
+    };
+  });
+
+  $: buttonClass = [
+    hasIconOnly && "bx--btn",
+    hasIconOnly && "bx--tooltip__trigger bx--tooltip--a11y",
+    hasIconOnly && "bx--btn--icon-only--bottom",
+    hasIconOnly && `bx--tooltip--align-${tooltipAlignment}`,
+    hasIconOnly && $tooltipHidden && "bx--tooltip--hidden",
+    // Holds the tooltip through the leave delay after the pointer leaves.
+    hasIconOnly && $tooltipOpen && "bx--tooltip--visible",
+    hasIconOnly && $tooltipInstant && "bx--tooltip--instant",
+    $$restProps.class,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  /** @param {Event} event */
+  function handleOutsideClick(event) {
+    if (
+      isOpen &&
+      !preventCloseOnClickOutside &&
+      isOutsideClick(event, [ref, refPanel])
+    ) {
+      isOpen = false;
+      dispatch("close", { trigger: "outside-click" });
+    }
+  }
+
+  /** @param {Event} event */
+  function handleKeydown(event) {
+    if (isOpen && /** @type {KeyboardEvent} */ (event).key === "Escape") {
+      // Escape that cancels an IME composition is not a close.
+      if (isImeComposition(/** @type {KeyboardEvent} */ (event))) return;
+      isOpen = false;
+      dispatch("close", { trigger: "escape-key" });
+      if (ref) focusQuietly(ref);
+    }
+  }
+
+  // Called by `HeaderPanelLink` once its click handlers have run.
+  /** @type {() => void} */
+  function select() {
+    if (!isOpen) return;
+    isOpen = false;
+    dispatch("close", { trigger: "select" });
+  }
+
+  setContext("carbon:HeaderAction", { select });
+
+  // Closing unmounts the panel, so focus inside it (e.g. on an item whose
+  // handler set `isOpen` to false) would fall to <body>.
+  const syncFocusReturn = returnFocusOnClose(
+    () => ref,
+    () => refPanel,
+  );
+  $: syncFocusReturn(isOpen);
+</script>
+
+<button
+  bind:this={ref}
+  use:dismiss={{
+    enabled: isOpen,
+    listeners: [
+      { type: "click", handler: handleOutsideClick },
+      { type: "keydown", handler: handleKeydown },
+    ],
+  }}
+  type="button"
+  aria-expanded={isOpen ? "true" : "false"}
+  aria-controls={isOpen ? `${id}-panel` : undefined}
+  {id}
+  class:bx--header__action={true}
+  class:bx--header__action--active={isOpen}
+  class:bx--header__action--text={text}
+  {...$$restProps}
+  class={buttonClass}
+  on:click
+  on:click={() => {
+    isOpen = !isOpen;
+    dispatch(isOpen ? "open" : "close", { trigger: "toggle" });
+  }}
+>
+  {#if hasIconOnly}
+    <span class:bx--assistive-text={true}>{iconDescription}</span>
+  {/if}
+  {#if isOpen}
+    <slot name="closeIcon">
+      <svelte:component this={closeIcon} size={20} />
+    </slot>
+  {:else}
+    <slot name="icon"><svelte:component this={icon} size={20} /></slot>
+  {/if}
+  <slot name="textChildren">
+    {#if text}
+      <span class:bx--header__action-text={true}>{text}</span>
+    {/if}
+  </slot>
+</button>
+{#if isOpen && transition}
+  <div
+    bind:this={refPanel}
+    id="{id}-panel"
+    role="region"
+    aria-labelledby={id}
+    class:bx--header-panel={true}
+    class:bx--header-panel--expanded={true}
+    transition:slide|local={transition}
+  >
+    <slot />
+  </div>
+{:else if isOpen}
+  <div
+    bind:this={refPanel}
+    id="{id}-panel"
+    role="region"
+    aria-labelledby={id}
+    class:bx--header-panel={true}
+    class:bx--header-panel--expanded={true}
+  >
+    <slot />
+  </div>
+{/if}

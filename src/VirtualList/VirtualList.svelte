@@ -1,0 +1,418 @@
+<script>
+  /**
+   * @template {Record<string, unknown>} [Item=Record<string, unknown>]
+   */
+
+  /**
+   * @restProps {div}
+   * @slot {{ item: Item; index: number; }}
+   */
+
+  /**
+   * Dispatched when the list is scrolled near the bottom (load-more signal).
+   * Not the browser's native `scrollend` (scroll stopped).
+   * @event {{ scrollTop: number; scrollHeight: number; clientHeight: number }} scrollend
+   */
+
+  /**
+   * Specify the items to render.
+   * A browser scrolls only so far, about 17.9 million pixels in Firefox and
+   * 33.5 million in Chrome and Safari. A longer list ends at the last item
+   * that fits, so page or filter a list that large.
+   * @type {ReadonlyArray<Item>}
+   */
+  export let items = [];
+
+  /**
+   * Specify the height of each item in pixels.
+   * When `measured` is `true`, this is only the estimate for items not yet measured.
+   */
+  export let itemHeight = 40;
+
+  /**
+   * Specify the height of the scrollable viewport in pixels.
+   * When `scrollElement` is set, match this to that element's visible height.
+   */
+  export let containerHeight = 300;
+
+  /** Specify the number of items to render above and below the viewport */
+  export let overscan = 3;
+
+  /**
+   * Specify the minimum number of items before windowing activates.
+   * Below it, every item renders.
+   */
+  export let threshold = 0;
+
+  /**
+   * Set to `true` to measure each rendered item with `ResizeObserver`
+   * instead of assuming every item is `itemHeight` tall.
+   */
+  export let measured = false;
+
+  /** @type {(_item: unknown, index: number) => number} */
+  function defaultGetKey(_item, index) {
+    return index;
+  }
+
+  /**
+   * Specify the key for each item.
+   * Defaults to the item's index, which is only stable when items are appended.
+   * @type {(item: Item, index: number) => string | number}
+   */
+  export let getKey = defaultGetKey;
+
+  /**
+   * Set to `true` to keep the rendered items in view during very fast
+   * scrolling, such as a scrollbar drag, instead of showing blank space until
+   * new items render.
+   * The items then follow the scroll a frame behind, and pause while the main
+   * thread is busy.
+   * Ignored when `scrollElement` is set.
+   */
+  export let optimizeFastScroll = false;
+
+  /**
+   * Specify an ancestor element that scrolls the list, such as the
+   * `scrollElementRef` of a `ScrollGradient`.
+   * When set, the list does not scroll itself.
+   * @type {null | HTMLElement}
+   */
+  export let scrollElement = null;
+
+  /**
+   * Specify a tag to render items straight into the parent element,
+   * such as the list of a `ContainedList`, without a container of their own.
+   * Two elements of this tag above and below the items hold the scroll height,
+   * so use one the parent accepts as a child, like `"li"` inside a list.
+   * Requires `scrollElement`. Each item must render exactly one element.
+   * Rest props have no element to land on, so they are dropped.
+   * @type {undefined | keyof HTMLElementTagNameMap}
+   */
+  export let spacerTag = undefined;
+
+  /**
+   * Obtain a reference to the list container element.
+   * `null` when `spacerTag` is set.
+   * @type {null | HTMLDivElement}
+   * @bindable readonly
+   */
+  export let ref = null;
+
+  import { afterUpdate, createEventDispatcher, onMount, tick } from "svelte";
+  import {
+    createHeightMeasurer,
+    VIRTUAL_INDEX_ATTRIBUTE,
+  } from "../utils/height-measurer.js";
+  import { createScrollEndTracker } from "../utils/is-scroll-near-end.js";
+  import { getMaxScrollHeight } from "../utils/max-scroll-height.js";
+  import { noop } from "../utils/noop.js";
+  import { syncPinnedWindow } from "../utils/virtual-window.js";
+  import {
+    getMeasuredScrollCorrection,
+    virtualize,
+  } from "../utils/virtualize.js";
+  import VirtualWindow from "./VirtualWindow.svelte";
+
+  const dispatch = createEventDispatcher();
+  const scrollEndTracker = createScrollEndTracker();
+  // A scroll area can be only so tall: Firefox lays out about 17.9 million
+  // pixels and drops a taller one, so the list would stop scrolling.
+  const maxHeight = getMaxScrollHeight();
+
+  let scrollTop = 0;
+  /** How far, and which way, the last scroll moved. */
+  let scrollDelta = 0;
+  /** @type {number[]} */
+  let heights = [];
+  let detachScrollElement = noop;
+  /** @type {null | HTMLElement} */
+  let startSpacer = null;
+  /** @type {null | HTMLElement} */
+  let endSpacer = null;
+
+  /**
+   * Roles that take `aria-posinset` and `aria-setsize`, so assistive
+   * technology announces an item's place in the full list, not the window.
+   */
+  const POSITIONED_ITEM = "li, [role=listitem], [role=option], [role=article]";
+
+  /**
+   * Keep the rows the reader is looking at where they are when measuring
+   * moves the rows above them: a row measured taller than its estimate pushes
+   * every row below it down, so the scroll position moves by as much.
+   *
+   * @param {number[]} nextHeights
+   * @param {number[]} previousHeights
+   */
+  function handleMeasure(nextHeights, previousHeights) {
+    heights = nextHeights;
+
+    const target = scrollElement ?? ref;
+    if (!target) return;
+
+    const correction = getMeasuredScrollCorrection({
+      scrollTop: readScrollTop(target),
+      itemCount: items.length,
+      itemHeight,
+      containerHeight,
+      heights: nextHeights,
+      previousHeights,
+    });
+    if (correction === 0) return;
+
+    target.scrollTop = Math.max(0, target.scrollTop + correction);
+    // A position written here is not the reader moving, so it sets no lead.
+    scrollDelta = 0;
+    scrollTop = readScrollTop(target);
+    syncPinnedWindow(target, target.scrollTop);
+  }
+
+  // Rows in a parent list sit straight in its flow, where a margin such as
+  // ContainedList's 1px overlap changes how far each row advances. Read once:
+  // the measurer is created with the component.
+  const heightMeasurer = createHeightMeasurer({
+    onMeasure: handleMeasure,
+    includeMargins: Boolean(spacerTag),
+  });
+
+  /** @type {ReadonlyArray<Item>} */
+  let knownItems = items;
+
+  /**
+   * Forget the measured heights when `items` holds other items than the ones
+   * they describe. Heights are indexed by item, so they stay right when items
+   * are appended (load-more), but not when the list is replaced.
+   * @param {ReadonlyArray<Item>} next
+   */
+  function noteItems(next) {
+    const prev = knownItems;
+    knownItems = next;
+    if (next === prev) return;
+    if (next.length >= prev.length && prev.every((item, i) => next[i] === item))
+      return;
+    heightMeasurer.clear();
+  }
+
+  $: if (measured) noteItems(items);
+  // Unmeasured, the list reads no heights. Drop any it kept, and follow
+  // `items` without comparing. Holding the old list keeps it alive: a log
+  // that drops its oldest lines would keep every item of its first array.
+  // Kept heights would outlive a list replaced while unmeasured, and apply
+  // to the new items once `measured` is set again. `clear` is cheap when
+  // there are none.
+  $: if (!measured) {
+    knownItems = items;
+    heightMeasurer.clear();
+  }
+
+  $: scrollEndTracker.noteItemCount(items.length);
+
+  $: virtualData = virtualize({
+    items,
+    itemHeight,
+    containerHeight,
+    scrollTop,
+    overscan,
+    threshold,
+    measured,
+    heights: measured ? heights : undefined,
+    scrollDelta,
+    maxHeight,
+  });
+
+  $: pinned = optimizeFastScroll && !scrollElement && virtualData.isVirtualized;
+
+  /**
+   * How far the list's top has scrolled past the top of its scroller.
+   *
+   * @param {HTMLElement} target The element that scrolls the list.
+   * @returns {number}
+   */
+  function readScrollTop(target) {
+    // An outer scroller can hold content above the list, so measure how far
+    // the list's top has scrolled past the scroller's inner top edge.
+    const listTop = spacerTag ? startSpacer : ref;
+    return target === listTop || !listTop
+      ? target.scrollTop
+      : target.getBoundingClientRect().top +
+          target.clientTop -
+          listTop.getBoundingClientRect().top;
+  }
+
+  /** @param {HTMLElement} target The element that scrolls the list. */
+  function syncScrollTop(target) {
+    const nextScrollTop = readScrollTop(target);
+    scrollDelta = nextScrollTop - scrollTop;
+    scrollTop = nextScrollTop;
+  }
+
+  /** @param {Event} event */
+  function handleScroll(event) {
+    const target = /** @type {HTMLElement} */ (event.currentTarget);
+
+    syncScrollTop(target);
+
+    const detail = scrollEndTracker.observe({
+      scrollTop: target.scrollTop,
+      scrollHeight: target.scrollHeight,
+      clientHeight: target.clientHeight,
+      itemCount: items.length,
+    });
+    if (detail) dispatch("scrollend", detail);
+  }
+
+  /** @param {null | HTMLElement} element */
+  function attachScrollElement(element) {
+    detachScrollElement();
+    detachScrollElement = noop;
+    if (!element) return;
+
+    element.addEventListener("scroll", handleScroll, { passive: true });
+    detachScrollElement = () => {
+      element.removeEventListener("scroll", handleScroll);
+    };
+
+    // The scroller may already be scrolled, which fires no event to catch up
+    // with. Wait for the list to render, since its position is what counts.
+    tick().then(() => {
+      if (scrollElement === element) syncScrollTop(element);
+    });
+  }
+
+  $: attachScrollElement(scrollElement);
+
+  /**
+   * The elements after the start spacer, one per rendered item. Without a
+   * container, they are the only handle on the rows.
+   * @returns {Element[]} The rows, or none if they do not match the window.
+   */
+  function getSpacedRows() {
+    /** @type {Element[]} */
+    const rows = [];
+    let node = startSpacer?.nextElementSibling;
+    while (
+      node &&
+      node !== endSpacer &&
+      rows.length < virtualData.visibleItems.length
+    ) {
+      rows.push(node);
+      node = node.nextElementSibling;
+    }
+    if (rows.length !== virtualData.visibleItems.length) return [];
+    // The end spacer, when rendered, must follow the last row directly.
+    if (endSpacer && node !== endSpacer) return [];
+    return rows;
+  }
+
+  /**
+   * @param {Element} element
+   * @param {string} name
+   * @param {string} value
+   */
+  function setAttributeIfChanged(element, name, value) {
+    if (element.getAttribute(name) !== value) {
+      element.setAttribute(name, value);
+    }
+  }
+
+  /**
+   * Stamp each spaced row with its index in `items`. The rows belong to the
+   * slot, so they cannot carry these through markup as wrapped rows do.
+   * @returns {Element[]} The rows, or none if they do not match the window.
+   */
+  function stampSpacedRows() {
+    const rows = getSpacedRows();
+    const setsize = String(items.length);
+
+    // Most updates leave the window in place, so skip writes that would not
+    // change anything.
+    rows.forEach((row, offset) => {
+      const index = virtualData.startIndex + offset;
+      if (measured) {
+        setAttributeIfChanged(row, VIRTUAL_INDEX_ATTRIBUTE, String(index));
+      }
+      if (row.matches(POSITIONED_ITEM)) {
+        setAttributeIfChanged(row, "aria-posinset", String(index + 1));
+        setAttributeIfChanged(row, "aria-setsize", setsize);
+      }
+    });
+
+    return rows;
+  }
+
+  // The measurer observes the rows in the committed DOM, so it syncs after
+  // every update that can move the window, as `menu-window.js` does.
+  afterUpdate(() => {
+    if (spacerTag) {
+      // Under Svelte 5, `afterUpdate` can run before the each block below
+      // patches the rows, so wait for the flush to finish.
+      tick().then(() => {
+        if (!startSpacer?.isConnected) return;
+        const rows = stampSpacedRows();
+        heightMeasurer.sync(measured ? rows : null);
+      });
+      return;
+    }
+
+    heightMeasurer.sync(measured ? ref : null);
+  });
+
+  onMount(() => {
+    return () => {
+      detachScrollElement();
+      heightMeasurer.disconnect();
+    };
+  });
+</script>
+
+{#if spacerTag}
+  <!-- A block spacer is not a list item: no marker, no counter step. -->
+  <svelte:element
+    this={spacerTag}
+    bind:this={startSpacer}
+    aria-hidden="true"
+    style:display={spacerTag === "li" ? "block" : undefined}
+    style:height="{virtualData.offsetY}px"
+  />
+  {#each virtualData.visibleItems as item, index (getKey(item, virtualData.startIndex + index))}
+    <slot {item} index={virtualData.startIndex + index} />
+  {/each}
+  <!-- Rendered only when items follow the window, so the true last item
+    still matches `:last-of-type`, as list styles such as separators expect. -->
+  {#if virtualData.totalHeight > virtualData.endOffsetY}
+    <svelte:element
+      this={spacerTag}
+      bind:this={endSpacer}
+      aria-hidden="true"
+      style:display={spacerTag === "li" ? "block" : undefined}
+      style:height="{virtualData.totalHeight - virtualData.endOffsetY}px"
+    />
+  {/if}
+{:else}
+  <div
+    bind:this={ref}
+    class:bx--virtual-list={true}
+    {...$$restProps}
+    style:height={scrollElement ? undefined : `${containerHeight}px`}
+    on:scroll={handleScroll}
+  >
+    <VirtualWindow
+      totalHeight={virtualData.totalHeight}
+      offsetY={virtualData.offsetY}
+      {scrollTop}
+      {pinned}
+      {measured}
+    >
+      {#each virtualData.visibleItems as item, index (getKey(item, virtualData.startIndex + index))}
+        <div
+          data-virtual-index={measured
+            ? virtualData.startIndex + index
+            : undefined}
+        >
+          <slot {item} index={virtualData.startIndex + index} />
+        </div>
+      {/each}
+    </VirtualWindow>
+  </div>
+{/if}

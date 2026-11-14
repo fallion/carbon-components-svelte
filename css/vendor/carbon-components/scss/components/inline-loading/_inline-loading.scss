@@ -1,0 +1,116 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../loading/loading';
+@import 'keyframes';
+
+/// Inline loading styles
+/// @access private
+/// @group inline-loading
+@mixin inline-loading {
+  .#{$prefix}--inline-loading {
+    display: flex;
+    width: 100%;
+    min-height: 2rem;
+    align-items: center;
+  }
+
+  .#{$prefix}--inline-loading__text {
+    // ccs: match v11 `label-02` (14px), which has the same values as `body-short-01`.
+    @include type-style('body-compact-01');
+
+    color: $text-secondary;
+  }
+
+  // ccs: `size="sm"` fits a line of small text: label-sized text and no
+  // minimum height, which kept a status line 32px tall.
+  .#{$prefix}--inline-loading.#{$prefix}--inline-loading--sm {
+    min-height: 0;
+  }
+
+  .#{$prefix}--inline-loading--sm .#{$prefix}--inline-loading__text {
+    @include type-style('label-01');
+  }
+
+  // ccs: v11 `inline-loading--btn`. No minimum height inside a button, so
+  // a modal footer button that aligns on the baseline keeps the status on
+  // the label's line.
+  .#{$prefix}--btn .#{$prefix}--inline-loading--btn {
+    min-height: 0;
+  }
+
+  .#{$prefix}--inline-loading__animation {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // ccs: the gap to the text, on the text's side in RTL too.
+    margin-inline-end: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--inline-loading__checkmark-container {
+    fill: $support-success;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  // ccs: the check on the `finished` disc. Carbon 10.58 strokes a bare
+  // polyline in `$interactive-04`; this one sits on the `$support-success`
+  // disc, in the color the glyph's cutout shows.
+  .#{$prefix}--inline-loading__checkmark {
+    fill: none;
+    stroke: $icon-inverse;
+    stroke-width: 2.25;
+  }
+
+  // ccs: forced colors keep the disc's author fill, as they did the icon's,
+  // so the check stays the color of the page behind it.
+  @media (forced-colors: active) {
+    .#{$prefix}--inline-loading__checkmark {
+      stroke: Canvas;
+    }
+  }
+
+  // ccs: Carbon's 250ms literal becomes the nearest token. The check draws
+  // on only after the status changes, and not at all under reduced motion,
+  // where the whole check shows at once.
+  @media (prefers-reduced-motion: no-preference) {
+    .#{$prefix}--inline-loading__checkmark--draw {
+      animation: stroke $duration--moderate-02 motion(entrance, productive)
+        forwards;
+      // The length of the check, 17.5 in a 32 unit box.
+      stroke-dasharray: 18;
+      stroke-dashoffset: 18;
+    }
+  }
+
+  .#{$prefix}--inline-loading--error {
+    width: to-rem(16px);
+    height: to-rem(16px);
+    fill: $support-error;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  // ccs: hidden while `delay` waits, as `.bx--loading--delayed` is in
+  // loading.
+  .#{$prefix}--inline-loading--delayed {
+    animation-name: loading-delay;
+  }
+}
+
+@include exports('inline-loading') {
+  @include inline-loading;
+}

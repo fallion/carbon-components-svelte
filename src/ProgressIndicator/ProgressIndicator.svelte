@@ -1,6 +1,24 @@
 <script>
-  /** Specify the current step index */
+  /**
+   * @restProps {ul}
+   */
+
+  /**
+   * Specify the current step index.
+   * Ignored when `selectedId` is set.
+   * @bindable writable
+   */
   export let currentIndex = 0;
+
+  /**
+   * Specify the current step by id.
+   * When set, takes precedence over `currentIndex` and stays on the same
+   * logical step as steps are added or removed. Pair with a stable `id` on
+   * each `ProgressStep`.
+   * @bindable writable
+   * @type {string | undefined}
+   */
+  export let selectedId = undefined;
 
   /** Set to `true` to use the vertical variant */
   export let vertical = false;
@@ -11,61 +29,256 @@
   /** Set to `true` to prevent `currentIndex` from updating */
   export let preventChangeOnClick = false;
 
-  import { createEventDispatcher, setContext } from "svelte";
-  import { writable, derived } from "svelte/store";
+  /**
+   * Specify the assistive text appended to a complete or invalid step's name.
+   * @type {(status: "complete" | "invalid") => string}
+   */
+  export let statusText = function statusText(status) {
+    return status;
+  };
+
+  import {
+    afterUpdate,
+    createEventDispatcher,
+    onMount,
+    setContext,
+  } from "svelte";
+  import { derived, writable } from "svelte/store";
+  import { batchStoreUpdates } from "../utils/batch-store-updates.js";
+  import { hasModifierKey } from "../utils/has-modifier-key.js";
+  import { keyBy } from "../utils/key-by.js";
+  import {
+    getLayoutDirection,
+    resolveLayoutDirection,
+  } from "../utils/layout-direction.js";
+  import { observeDomOrder } from "../utils/observe-dom-order.js";
+  import { resolveIdSelection } from "../utils/resolve-id-selection.js";
+  import { rovingFocus } from "../utils/roving-focus.js";
+  import { syncDomOrder } from "../utils/sync-dom-order.js";
 
   const dispatch = createEventDispatcher();
+  const layoutDirection = getLayoutDirection();
+  /**
+   * @type {import("svelte/store").Writable<ReadonlyArray<{ id: string; complete: boolean; disabled: boolean; index: number; current: boolean }>>}
+   */
   const steps = writable([]);
-  const stepsById = derived(steps, ($) =>
-    $.reduce((a, c) => ({ ...a, [c.id]: c }), {})
+  /**
+   * @type {import("svelte/store").Readable<Record<string, { id: string; complete: boolean; disabled: boolean; index: number; current: boolean }>>}
+   */
+  const stepsById = derived(steps, (steps) => keyBy(steps));
+  const sharedPreventChangeOnClick = writable(preventChangeOnClick);
+
+  /** @type {null | HTMLUListElement} */
+  let listRef = null;
+
+  /**
+   * @type {import("svelte/store").Readable<boolean>}
+   */
+  const preventChangeOnClickReadable = {
+    subscribe: sharedPreventChangeOnClick.subscribe,
+  };
+
+  // Batch child registration. Dedup and patch against `_` (this batch's
+  // accumulator), not `$stepsById`. The derived store is the last flushed
+  // value, so a same-batch id looks unregistered if you check it there.
+  const batchedStepsUpdate = batchStoreUpdates(steps);
+
+  // A step added after mount (e.g. by an `{#if}`) registers last, wherever
+  // it renders. Set inside the batched update so afterUpdate sorts it into
+  // DOM order once it has flushed.
+  let needsDomSync = false;
+
+  /**
+   * @type {(step: { id: string; complete: boolean; disabled: boolean }) => void}
+   */
+  function add(step) {
+    batchedStepsUpdate((_) => {
+      const index = _.findIndex((_step) => _step.id === step.id);
+      if (index !== -1) {
+        return _.map((_step, i) =>
+          i === index ? { ..._step, ...step } : _step,
+        );
+      }
+
+      needsDomSync = true;
+      return [
+        ..._,
+        {
+          ...step,
+          index: _.length,
+          current: _.length === currentIndex,
+          complete: step.complete,
+        },
+      ];
+    });
+  }
+
+  /**
+   * @type {(id: string) => void}
+   */
+  function remove(id) {
+    batchedStepsUpdate((_) =>
+      _.filter((step) => step.id !== id).map((step, i) => ({
+        ...step,
+        index: i,
+      })),
+    );
+  }
+
+  /**
+   * @type {(index: number) => void}
+   */
+  function change(index) {
+    if (preventChangeOnClick) return;
+
+    if (selectedId === undefined) {
+      currentIndex = index;
+    } else {
+      const step = $steps[index];
+      if (!step) return;
+      selectedId = step.id;
+    }
+
+    /** @event {number} change */
+    dispatch("change", index);
+  }
+
+  /**
+   * The `selectedId` last resolved. A new one may name a step that registers
+   * in the same update, so it is not replaced by a fallback until then.
+   * @type {string | undefined}
+   */
+  let syncedId;
+
+  /**
+   * Resolve `currentIndex` from `selectedId` when set. If the selected id was
+   * removed, keep the same index (next step) or clamp, and re-anchor
+   * `selectedId` to whatever step that resolves to.
+   * @type {() => void}
+   */
+  function syncSelection() {
+    const idChanged = selectedId !== syncedId;
+    syncedId = selectedId;
+    if (selectedId === undefined) return;
+
+    const resolved = resolveIdSelection({
+      items: $steps,
+      selectedId,
+      currentIndex,
+      idChanged,
+    });
+    if (!resolved) return;
+    currentIndex = resolved.index;
+    selectedId = syncedId = resolved.id;
+  }
+
+  /**
+   * Sort the registry into DOM order, so a step's index is its position.
+   * @type {() => void}
+   */
+  function syncOrder() {
+    steps.update((_) =>
+      syncDomOrder({
+        root: /** @type {HTMLUListElement} */ (listRef),
+        selector: ".bx--progress-step",
+        items: _,
+      }),
+    );
+  }
+
+  onMount(() =>
+    // A keyed reorder moves steps without re-registering them.
+    observeDomOrder(/** @type {HTMLUListElement} */ (listRef), {
+      selector: ".bx--progress-step",
+      getItems: () => $steps,
+      onReorder: syncOrder,
+    }),
   );
 
-  setContext("ProgressIndicator", {
-    steps,
-    stepsById,
-    add: (step) => {
-      steps.update((_) => {
-        if (step.id in $stepsById) {
-          return _.map((_step) => {
-            if (_step.id === step.id) return { ..._step, ...step };
-            return _step;
-          });
-        }
-
-        return [
-          ..._,
-          {
-            ...step,
-            index: _.length,
-            current: _.length === currentIndex,
-            complete: step.complete,
-          },
-        ];
-      });
-    },
-    change: (index) => {
-      if (preventChangeOnClick) return;
-      currentIndex = index;
-
-      /** @event {number} change */
-      dispatch("change", index);
-    },
+  afterUpdate(() => {
+    if (needsDomSync && listRef) {
+      needsDomSync = false;
+      syncOrder();
+    }
   });
 
-  $: steps.update((_) =>
-    _.map((step, i) => ({
-      ...step,
-      current: i === currentIndex,
-    }))
-  );
+  // Steps register through a batched store update, which a server render
+  // finishes before. These let a step work out whether it's current as it
+  // initializes: its index in render order, against `currentIndex` (or its
+  // id against `selectedId`), as they stand at that moment.
+  let initialized = 0;
+  /** @type {{ claimIndex: () => number; currentIndex: number; selectedId: string | undefined }} */
+  const initial = {
+    claimIndex: () => initialized++,
+    currentIndex,
+    selectedId,
+  };
+
+  const statusTextStore = writable(statusText);
+  $: statusTextStore.set(statusText);
+
+  setContext("carbon:ProgressIndicator", {
+    steps,
+    stepsById,
+    preventChangeOnClick: preventChangeOnClickReadable,
+    statusText: statusTextStore,
+    add,
+    remove,
+    change,
+    initial,
+  });
+
+  // Combined into one statement (rather than a separate syncSelection()
+  // block feeding this one) so the flag recompute always runs in the same
+  // pass right after syncSelection(), using the just-resolved currentIndex.
+  // Svelte skips re-invalidating `currentIndex` when syncSelection() (called
+  // from a different reactive statement) reassigns it to the same numeric
+  // value, which would otherwise leave stale `current` flags on removal.
+  // This also makes the recompute run on every steps add/remove (via
+  // `$stepsById`), not just when currentIndex itself changes.
+  $: {
+    if (selectedId !== undefined && $stepsById) {
+      syncSelection();
+    }
+    steps.update((_) =>
+      _.map((step, i) => ({
+        ...step,
+        current: i === currentIndex,
+      })),
+    );
+  }
+  $: sharedPreventChangeOnClick.set(preventChangeOnClick);
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <ul
-  class:bx--progress="{true}"
-  class:bx--progress--vertical="{vertical}"
-  class:bx--progress--space-equal="{spaceEqually && !vertical}"
+  bind:this={listRef}
+  class:bx--progress={true}
+  class:bx--progress--vertical={vertical}
+  class:bx--progress--space-equal={spaceEqually && !vertical}
   {...$$restProps}
+  use:rovingFocus={{
+    selector: ".bx--progress-step-button",
+    rtl: () => resolveLayoutDirection($layoutDirection, listRef) === "rtl",
+    orientation: vertical ? "vertical" : "horizontal",
+    skipDisabled: true,
+    focusOnMove: false,
+    getActiveIndex: () => {
+      if (!listRef) return -1;
+      const items = /** @type {(Element | null)[]} */ (
+        Array.from(listRef.querySelectorAll(".bx--progress-step-button"))
+      );
+      return items.indexOf(document.activeElement);
+    },
+    onMove: (index, event) => {
+      // Leave Alt/Ctrl/Meta+Arrow (Back, scroll) to the browser.
+      if (hasModifierKey(event)) return;
+      // Arrow keys would otherwise also scroll the page.
+      event.preventDefault();
+      /** @type {HTMLElement | undefined} */ (
+        listRef?.querySelectorAll(".bx--progress-step-button")[index]
+      )?.focus();
+    },
+  }}
   on:click
   on:mouseover
   on:mouseenter

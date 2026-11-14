@@ -1,0 +1,457 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/tooltip';
+@import '../form/form';
+
+/// Text input styles
+/// @access private
+/// @group text-input
+@mixin text-input {
+  .#{$prefix}--text-input {
+    @include reset;
+    @include type-style('body-compact-01');
+    @include focus-outline('reset');
+
+    width: 100%;
+    height: to-rem(40px);
+    padding: 0 $carbon--spacing-05;
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    background-color: $field;
+    color: $text-primary;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    &:focus,
+    &:active {
+      @include focus-outline('outline');
+    }
+
+    &-wrapper svg[hidden] {
+      display: none;
+    }
+  }
+
+  .#{$prefix}--text-input--xl {
+    height: to-rem(48px);
+  }
+
+  .#{$prefix}--text-input--sm {
+    height: to-rem(32px);
+  }
+
+  .#{$prefix}--password-input {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-input--sm.#{$prefix}--password-input {
+    padding-inline-end: $carbon--spacing-07;
+  }
+
+  .#{$prefix}--text-input::placeholder {
+    @include placeholder-colors;
+  }
+
+  .#{$prefix}--text-input__field-wrapper {
+    position: relative;
+    display: flex;
+    width: 100%;
+  }
+
+  .#{$prefix}--text-input__invalid-icon,
+  .#{$prefix}--text-input__readonly-icon {
+    position: absolute;
+    // top/transform used to center invalid icon in IE11
+    top: 50%;
+    transform: translateY(-50%);
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--text-input__invalid-icon {
+    fill: $support-error;
+  }
+
+  .#{$prefix}--text-input__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--text-input__invalid-icon--warning path:first-of-type {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger {
+    @include focus-outline('reset');
+
+    position: absolute;
+    display: flex;
+    width: to-rem(40px);
+    height: 100%;
+    min-height: auto;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    @include ccs-inset-inline($end: 0);
+  }
+
+  .#{$prefix}--text-input--sm
+    + .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger {
+    width: to-rem(32px);
+  }
+
+  .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger
+    svg {
+    fill: $icon-secondary;
+    transition: fill $duration--fast-01 motion(standard, productive);
+
+    // Windows, Firefox HCM Fix
+    @media screen and (prefers-contrast) {
+      // `ButtonText` is a CSS2 system color to help improve colors in HCM
+      fill: ButtonText;
+    }
+  }
+
+  .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger:focus {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger:focus
+    svg {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--text-input--invalid,
+  .#{$prefix}--text-input--warning,
+  .#{$prefix}--text-input-wrapper--readonly .#{$prefix}--text-input {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-input--invalid.#{$prefix}--password-input {
+    padding-inline-end: to-rem(64px);
+  }
+
+  .#{$prefix}--text-input--invalid +
+    .#{$prefix}--text-input--password__visibility__toggle {
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--password-input-wrapper .#{$prefix}--text-input__invalid-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+
+  .#{$prefix}--text-input:disabled
+    + .#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger svg {
+    cursor: not-allowed;
+    fill: $icon-disabled;
+  }
+
+  // ccs: grouped any-hover rules for the visibility-toggle icon into one
+  // block (order-safe: the disabled variant's selector is strictly more
+  // specific than the plain hover rule, so precedence is spec-, not
+  // order-, determined)
+  @media (any-hover: hover) {
+    .#{$prefix}--btn.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger:hover
+      svg {
+      fill: $icon-primary;
+    }
+
+    .#{$prefix}--text-input:disabled
+      + .#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger
+      svg:hover {
+      fill: $icon-disabled;
+    }
+  }
+
+  .#{$prefix}--text-input:disabled {
+    @include focus-outline('reset');
+
+    border-bottom: 1px solid transparent;
+    background-color: $field;
+
+    color: $text-disabled;
+    cursor: not-allowed;
+    // Needed to fix disabled text in Safari #6673
+    -webkit-text-fill-color: $text-disabled;
+  }
+
+  .#{$prefix}--text-input:disabled::placeholder {
+    color: $text-disabled;
+    opacity: 1;
+  }
+
+  .#{$prefix}--text-input--invalid {
+    @include focus-outline('invalid');
+
+    box-shadow: none;
+
+    .#{$prefix}--text-input--password__visibility__toggle {
+      @include ccs-inset-inline($end: $carbon--spacing-08);
+    }
+  }
+
+  .#{$prefix}--skeleton.#{$prefix}--text-input {
+    @include skeleton;
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--text-input-wrapper {
+    position: relative;
+    background: $field;
+    transition: background-color $duration--fast-01 motion(standard, productive),
+      outline $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--label {
+    position: absolute;
+    z-index: 1;
+    top: to-rem(13px);
+    margin: 0;
+    @include ccs-inset-inline($start: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--form__helper-text {
+    display: none;
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--text-input {
+    min-height: to-rem(64px);
+    padding: to-rem(32px) $carbon--spacing-05 to-rem(13px);
+  }
+
+  .#{$prefix}--text-input__divider,
+  .#{$prefix}--form--fluid .#{$prefix}--text-input__divider {
+    display: none;
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--text-input--invalid {
+    border-bottom: none;
+  }
+
+  .#{$prefix}--form--fluid
+    .#{$prefix}--text-input--invalid
+    + .#{$prefix}--text-input__divider {
+    display: block;
+    border-style: solid;
+    border-color: $border-subtle;
+    border-bottom: none;
+    margin: 0 1rem;
+  }
+
+  .#{$prefix}--form--fluid .#{$prefix}--text-input__invalid-icon {
+    top: to-rem(80px);
+  }
+
+  .#{$prefix}--form--fluid
+    .#{$prefix}--text-input__field-wrapper[data-invalid]
+    > .#{$prefix}--text-input--invalid {
+    @include focus-outline('reset');
+  }
+
+  .#{$prefix}--form--fluid
+    .#{$prefix}--text-input__field-wrapper[data-invalid]:not(:focus) {
+    @include focus-outline('invalid');
+  }
+
+  .#{$prefix}--form--fluid
+    .#{$prefix}--text-input__field-wrapper[data-invalid]
+    > .#{$prefix}--text-input--invalid:focus {
+    @include focus-outline('outline');
+  }
+
+
+  .#{$prefix}--text-input-wrapper.#{$prefix}--text-input-wrapper--inline {
+    flex-flow: row wrap;
+  }
+
+  .#{$prefix}--text-input-wrapper .#{$prefix}--label--inline {
+    flex: 1;
+    margin: to-rem(13px) 0 0 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .#{$prefix}--text-input-wrapper .#{$prefix}--label--inline--sm {
+    margin-top: to-rem(9px);
+  }
+
+  .#{$prefix}--text-input-wrapper .#{$prefix}--label--inline--xl {
+    margin-top: to-rem(17px);
+  }
+
+  .#{$prefix}--text-input__label-helper-wrapper {
+    max-width: to-rem(128px);
+    flex: 2;
+    flex-direction: column;
+    margin-inline-end: to-rem(24px);
+    overflow-wrap: break-word;
+  }
+
+  .#{$prefix}--text-input-wrapper .#{$prefix}--form__helper-text--inline {
+    margin-top: to-rem(2px);
+  }
+
+  .#{$prefix}--text-input__field-outer-wrapper {
+    display: flex;
+    width: 100%;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .#{$prefix}--text-input__field-outer-wrapper--inline {
+    flex: 8;
+    flex-direction: column;
+  }
+
+
+  .#{$prefix}--form--fluid .#{$prefix}--text-input-wrapper--readonly,
+  .#{$prefix}--text-input-wrapper--readonly .#{$prefix}--text-input {
+    background: transparent;
+    // ccs: match v11's subtle read-only bottom border, as TextArea and Select do
+    border-bottom-color: $border-subtle;
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--btn.#{$prefix}--btn--icon-only.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger svg {
+    @include high-contrast-mode('icon-fill');
+  }
+
+  // Windows HCM fix
+  @media (any-hover: hover) {
+    .#{$prefix}--btn.#{$prefix}--btn--icon-only.#{$prefix}--text-input--password__visibility__toggle.#{$prefix}--tooltip__trigger:hover
+      svg {
+      @include high-contrast-mode('icon-fill');
+    }
+  }
+}
+
+@include exports('text-input') {
+  @include text-input;
+}
+
+// carbon-components-svelte patch (formerly css/_text-input.scss)
+// Extends the v10 text input with the extra-small (`xs`) size added in
+// newer Carbon (React `size="xs"`, 24px height). v10 only ships sm/md/lg.
+
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Extra-small text input (Carbon React size="xs")
+/// @access private
+/// @group components
+@mixin text-input-xs {
+  .#{$prefix}--text-input--xs {
+    height: to-rem(24px);
+  }
+
+  // Vertically center the inline label against the 24px field
+  // (v10 uses 9px for sm/32px, 13px for md/40px — 4px per 8px step).
+  .#{$prefix}--text-input-wrapper .#{$prefix}--label--inline--xs {
+    margin-top: to-rem(5px);
+  }
+}
+
+@include exports("text-input-xs") {
+  @include text-input-xs;
+}
+
+/// Character counter (Carbon React `enableCounter`/`maxCount`). v10 ships no
+/// `.bx--text-input__label-wrapper` at all (unlike `.bx--text-area__label-wrapper`,
+/// which v10 already flexes label/counter apart) - add it here so the label
+/// and counter split across the row the same way TextArea's already does.
+/// The counter itself reuses `.bx--label`'s own `label-01` type style; no
+/// dedicated counter rule is needed.
+/// @access private
+/// @group components
+@mixin text-input-counter {
+  .#{$prefix}--text-input__label-wrapper {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@include exports("text-input-counter") {
+  @include text-input-counter;
+}
+
+/// Reposition PasswordInput's read-only icon (`EditOff`) the same way the
+/// invalid icon is already repositioned above, so it clears the 40px
+/// visibility-toggle button instead of sitting underneath it.
+/// @access private
+/// @group components
+@mixin password-input-readonly-icon {
+  .#{$prefix}--password-input-wrapper .#{$prefix}--text-input__readonly-icon {
+    @include ccs-inset-inline($end: $carbon--spacing-08);
+  }
+}
+
+@include exports("password-input-readonly-icon") {
+  @include password-input-readonly-icon;
+}
+
+// carbon-components-svelte patch
+// Carbon's form item is `flex: 1 1 auto`, so an inline TextInput or
+// PasswordInput stretched across any flex row. Keep it at its content
+// width; it can still shrink. Double class beats the base `.bx--form-item`,
+// which emits after patches.
+//
+// The label column is `flex: 2` (or `1`) with a zero basis, so a content-
+// sized row gave it a share too narrow for its text and the label broke
+// mid-word. Sizing the label to its text makes that its minimum, up to the
+// column's own max-width.
+
+/// Inline text input form item
+/// @access private
+/// @group components
+@mixin text-input-inline-form-item {
+  .#{$prefix}--form-item.#{$prefix}--text-input-wrapper--inline {
+    flex: 0 1 auto;
+  }
+
+  .#{$prefix}--text-input-wrapper--inline .#{$prefix}--label--inline {
+    width: max-content;
+    max-width: 100%;
+  }
+}
+
+@include exports("text-input-inline-form-item") {
+  @include text-input-inline-form-item;
+}
+
+// Typed text reads in its own direction, so in RTL "3 / 4" keeps its order
+// instead of showing as "4 / 3". `dir="auto"` would do the same, but it also
+// turns the field's padding to the value's direction and puts the text under
+// the icons. `unicode-bidi: plaintext` also aligns each value to its own
+// start, so keep it at the page's start. Scoped to the wrapper that
+// TextInput, PasswordInput, CopyInput and TimePicker render, so the centered
+// Slider and PinCodeInput fields keep their alignment.
+/// @access private
+/// @group components
+@mixin text-input-plaintext {
+  .#{$prefix}--text-input-wrapper .#{$prefix}--text-input {
+    unicode-bidi: plaintext;
+    text-align: left;
+  }
+
+  [dir="rtl"] .#{$prefix}--text-input-wrapper .#{$prefix}--text-input {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("text-input-plaintext") {
+  @include text-input-plaintext;
+}

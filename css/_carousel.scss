@@ -1,0 +1,98 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/typography";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Carousel drives `src/utils/carousel.js`'s `initCarousel`, which toggles
+/// the native `hidden` attribute on each view, so this partial owns only the
+/// viewport/controls layout and the prev/next buttons' chrome.
+/// @access private
+/// @group components
+@mixin carousel {
+  .#{$prefix}--carousel {
+    display: flex;
+    flex-direction: column;
+    row-gap: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--carousel__viewport {
+    position: relative;
+    overflow: hidden;
+  }
+
+  // Before mount with `useMaxHeight`, every slide shares one cell and the
+  // inactive ones are invisible, so the viewport starts as tall as the
+  // tallest slide, the height `initCarousel` then gives it.
+  .#{$prefix}--carousel__viewport--stacked {
+    display: grid;
+    // A `1fr` track with a zero minimum, so a wide image or long word
+    // can't widen the cell past the viewport.
+    grid-template-columns: minmax(0, 1fr);
+
+    > * {
+      grid-area: 1 / 1;
+    }
+  }
+
+  .#{$prefix}--carousel__item--stacked {
+    visibility: hidden;
+  }
+
+  .#{$prefix}--carousel__controls {
+    display: flex;
+    justify-content: flex-end;
+    column-gap: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--carousel__counter {
+    @include type-style("body-compact-01");
+
+    align-self: center;
+    margin-inline-end: $carbon--spacing-03;
+    color: $text-secondary;
+    font-variant-numeric: tabular-nums;
+    // The counter reads in the direction of its own text. Inheriting `rtl`,
+    // the digits of English "1 of 3" ran apart from the words: "of 3 1".
+    unicode-bidi: plaintext;
+  }
+
+  .#{$prefix}--carousel__button {
+    display: flex;
+    width: $carbon--spacing-08;
+    height: $carbon--spacing-08;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid $border-subtle;
+    margin: 0;
+    background: transparent;
+    color: $icon-primary;
+    cursor: pointer;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    // Previous and next point to the inline start and end.
+    svg {
+      fill: currentColor;
+      @include ccs-mirror-rtl;
+    }
+
+    &:focus {
+      @include focus-outline("outline");
+    }
+
+    &:disabled {
+      color: $icon-disabled;
+      cursor: not-allowed;
+    }
+
+    @media (any-hover: hover) {
+      &:hover:not(:disabled) {
+        background-color: $layer-hover;
+      }
+    }
+  }
+}
+
+@include exports("carousel") {
+  @include carousel;
+}

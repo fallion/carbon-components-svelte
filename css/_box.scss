@@ -1,0 +1,340 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/layer";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "./fill-tokens";
+@import "./spacing-scale";
+
+/// Box utility classes for fill, inset, and border tokens.
+/// @access private
+/// @group components
+@mixin box {
+  @each $name, $value in ccs-fill-tokens() {
+    .#{$prefix}--box-fill-#{$name} {
+      background-color: $value;
+    }
+  }
+
+  $border-tokens: (
+    subtle: $border-subtle,
+    strong: $border-strong,
+    interactive: $border-interactive,
+    disabled: $border-disabled,
+  );
+
+  @each $name, $value in $border-tokens {
+    .#{$prefix}--box-border-#{$name} {
+      border: 1px solid $value;
+    }
+  }
+
+  .#{$prefix}--box-border-style-dashed {
+    border-style: dashed;
+  }
+
+  $border-sides: top, right, bottom, left;
+
+  @each $side in $border-sides {
+    .#{$prefix}--box-border-side-#{$side} {
+      @each $other in $border-sides {
+        @if $other != $side {
+          border-#{$other}-width: 0;
+        }
+      }
+    }
+  }
+
+  .#{$prefix}--box-shadow {
+    @include layer("raised");
+  }
+
+  @each $step, $size in $ccs-spacing-scale {
+    .#{$prefix}--box-p-#{$step} {
+      padding: $size;
+    }
+
+    .#{$prefix}--box-px-#{$step} {
+      padding-inline: $size;
+    }
+
+    .#{$prefix}--box-py-#{$step} {
+      padding-block: $size;
+    }
+
+    .#{$prefix}--box-m-#{$step} {
+      margin: $size;
+    }
+
+    .#{$prefix}--box-mx-#{$step} {
+      margin-inline: $size;
+    }
+
+    .#{$prefix}--box-my-#{$step} {
+      margin-block: $size;
+    }
+
+    .#{$prefix}--box-gap-#{$step} {
+      gap: $size;
+    }
+  }
+
+  // After the all-sides and axis rules so a single side wins at equal
+  // specificity, whatever the steps.
+  @each $step, $size in $ccs-spacing-scale {
+    .#{$prefix}--box-pt-#{$step} {
+      padding-top: $size;
+    }
+
+    .#{$prefix}--box-pr-#{$step} {
+      padding-right: $size;
+    }
+
+    .#{$prefix}--box-pb-#{$step} {
+      padding-bottom: $size;
+    }
+
+    .#{$prefix}--box-pl-#{$step} {
+      padding-left: $size;
+    }
+
+    .#{$prefix}--box-ps-#{$step} {
+      padding-inline-start: $size;
+    }
+
+    .#{$prefix}--box-pe-#{$step} {
+      padding-inline-end: $size;
+    }
+
+    .#{$prefix}--box-mt-#{$step} {
+      margin-top: $size;
+    }
+
+    .#{$prefix}--box-mr-#{$step} {
+      margin-right: $size;
+    }
+
+    .#{$prefix}--box-mb-#{$step} {
+      margin-bottom: $size;
+    }
+
+    .#{$prefix}--box-ml-#{$step} {
+      margin-left: $size;
+    }
+
+    .#{$prefix}--box-ms-#{$step} {
+      margin-inline-start: $size;
+    }
+
+    .#{$prefix}--box-me-#{$step} {
+      margin-inline-end: $size;
+    }
+  }
+
+  .#{$prefix}--box-full-width {
+    width: 100%;
+  }
+
+  @each $step, $size in $ccs-spacing-scale {
+    .#{$prefix}--box-height-#{$step} {
+      height: $size;
+    }
+
+    .#{$prefix}--box-min-height-#{$step} {
+      min-height: $size;
+    }
+
+    .#{$prefix}--box-max-height-#{$step} {
+      max-height: $size;
+    }
+
+    .#{$prefix}--box-top-#{$step} {
+      top: $size;
+    }
+
+    .#{$prefix}--box-bottom-#{$step} {
+      bottom: $size;
+    }
+
+    .#{$prefix}--box-left-#{$step} {
+      left: $size;
+    }
+
+    .#{$prefix}--box-right-#{$step} {
+      right: $size;
+    }
+  }
+
+  .#{$prefix}--box-top-0 {
+    top: 0;
+  }
+
+  .#{$prefix}--box-bottom-0 {
+    bottom: 0;
+  }
+
+  .#{$prefix}--box-left-0 {
+    left: 0;
+  }
+
+  .#{$prefix}--box-right-0 {
+    right: 0;
+  }
+
+  // 100vh first as a fallback for browsers without dvh support; 100dvh
+  // overrides it and tracks mobile browser chrome, so no scroll clipping.
+  .#{$prefix}--box-height-viewport {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .#{$prefix}--box-min-height-viewport {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .#{$prefix}--box-position-relative {
+    position: relative;
+  }
+
+  .#{$prefix}--box-position-absolute {
+    position: absolute;
+  }
+
+  .#{$prefix}--box-position-sticky {
+    position: sticky;
+  }
+
+  .#{$prefix}--box-display-block {
+    display: block;
+  }
+
+  .#{$prefix}--box-display-inline-block {
+    display: inline-block;
+  }
+
+  .#{$prefix}--box-display-flex {
+    display: flex;
+  }
+
+  .#{$prefix}--box-display-inline-flex {
+    display: inline-flex;
+  }
+
+  .#{$prefix}--box-display-grid {
+    display: grid;
+  }
+
+  .#{$prefix}--box-display-none {
+    display: none;
+  }
+
+  .#{$prefix}--box-direction-row {
+    flex-direction: row;
+  }
+
+  .#{$prefix}--box-direction-column {
+    flex-direction: column;
+  }
+
+  $align-values: (
+    start: flex-start,
+    center: center,
+    end: flex-end,
+    stretch: stretch,
+    baseline: baseline,
+  );
+
+  @each $name, $value in $align-values {
+    .#{$prefix}--box-align-#{$name} {
+      align-items: $value;
+    }
+  }
+
+  $justify-values: (
+    start: flex-start,
+    center: center,
+    end: flex-end,
+    space-between: space-between,
+    space-around: space-around,
+    space-evenly: space-evenly,
+  );
+
+  @each $name, $value in $justify-values {
+    .#{$prefix}--box-justify-#{$name} {
+      justify-content: $value;
+    }
+  }
+
+  $wrap-values: nowrap, wrap, wrap-reverse;
+
+  @each $value in $wrap-values {
+    .#{$prefix}--box-wrap-#{$value} {
+      flex-wrap: $value;
+    }
+  }
+
+  @each $name, $value in $align-values {
+    .#{$prefix}--box-align-self-#{$name} {
+      align-self: $value;
+    }
+  }
+
+  .#{$prefix}--box-grow {
+    flex-grow: 1;
+  }
+
+  // After the `display` rules so hiding wins at equal specificity. Nothing is
+  // below `sm` or above `max`, so those two classes are never emitted.
+  $hide-breakpoints: sm, md, lg, xlg, max;
+
+  @each $bp in $hide-breakpoints {
+    @if $bp != nth($hide-breakpoints, 1) {
+      .#{$prefix}--box-hide-below-#{$bp} {
+        @include carbon--breakpoint-down($bp) {
+          display: none;
+        }
+      }
+    }
+
+    $next: carbon--breakpoint-next($bp);
+    @if $next != null {
+      .#{$prefix}--box-hide-above-#{$bp} {
+        @include carbon--breakpoint-up($next) {
+          display: none;
+        }
+      }
+    }
+  }
+
+  .#{$prefix}--box-overflow-visible {
+    overflow: visible;
+  }
+
+  .#{$prefix}--box-overflow-hidden {
+    overflow: hidden;
+  }
+
+  .#{$prefix}--box-overflow-auto {
+    overflow: auto;
+  }
+
+  .#{$prefix}--box-overflow-scroll {
+    overflow: scroll;
+  }
+
+  // After the `overflow` rules so a per-axis class wins at equal specificity.
+  $overflow-values: visible, hidden, auto, scroll;
+
+  @each $value in $overflow-values {
+    .#{$prefix}--box-overflow-x-#{$value} {
+      overflow-x: $value;
+    }
+
+    .#{$prefix}--box-overflow-y-#{$value} {
+      overflow-y: $value;
+    }
+  }
+}
+
+@include exports("box") {
+  @include box;
+}

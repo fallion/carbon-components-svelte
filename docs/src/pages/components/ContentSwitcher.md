@@ -1,0 +1,302 @@
+---
+components: ["ContentSwitcher", "Switch", "SwitchPanel", "ContentSwitcherSkeleton"]
+description: Content switchers let users switch between views or sections of content, organizing related content into distinct categories.
+---
+
+<script>
+  import { Box, ContentSwitcher, ContentSwitcherSkeleton, Switch, SwitchPanel, Stack } from "carbon-components-svelte";
+  import Bullhorn from "carbon-icons-svelte/lib/Bullhorn.svelte";
+  import Analytics from "carbon-icons-svelte/lib/Analytics.svelte";
+  import TableOfContents from "carbon-icons-svelte/lib/TableOfContents.svelte";
+  import Dashboard from "carbon-icons-svelte/lib/Dashboard.svelte";
+  import List from "carbon-icons-svelte/lib/List.svelte";
+  import Checkmark from "carbon-icons-svelte/lib/Checkmark.svelte";
+</script>
+
+## Basic
+
+Create a content switcher with switch components. Each switch needs a text label via `text`.
+
+<ContentSwitcher>
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+</ContentSwitcher>
+
+## Switching views
+
+Pass one `SwitchPanel` per switch to the `content` slot. Panels pair with switches by position. The component shows the panel for the selected switch and sets `role="tabpanel"`, `aria-labelledby`, and each switch's `aria-controls`. Name the switcher with `aria-label`.
+
+Set `lazy` to mount a panel's content the first time its switch is selected, or `unmountOnHide` to unmount it when the switch is deselected.
+
+<ContentSwitcher aria-label="News feed">
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+  <Switch text="Recommended" />
+  <Box slot="content" paddingY={5}>
+    <SwitchPanel>Headlines from the last 24 hours.</SwitchPanel>
+    <SwitchPanel>Stories with the most reads this week.</SwitchPanel>
+    <SwitchPanel>Picked from your reading history.</SwitchPanel>
+  </Box>
+</ContentSwitcher>
+
+## Selection
+
+Control which switch is selected by index, by a stable id, or by changing how arrow keys move the selection.
+
+### Initial selected index
+
+Set `selectedIndex` to pre-select a switch when the content switcher loads.
+
+<ContentSwitcher selectedIndex={1}>
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+  <Switch text="Recommended" />
+</ContentSwitcher>
+
+### Selected by id
+
+For dynamic switch sets, bind `selectedId` and give each `Switch` a stable
+`id`. Selection stays on the same logical switch when switches before it are
+added or removed. When set, `selectedId` takes precedence over
+`selectedIndex`.
+
+<FileSource src="/framed/ContentSwitcher/ContentSwitcherSelectedId" />
+
+### Query string
+
+Keep the selected switch in the URL so it survives a reload and can be shared.
+`queryParam` returns a store mirrored to a query parameter; bind `selectedId` to
+it. Use `parse` to reject unknown ids so they fall back to `defaultValue`;
+selecting `defaultValue` removes the parameter. In an app with a router, pass
+the router's navigation API as `replace`.
+
+<FileSource src="/framed/ContentSwitcher/ContentSwitcherQueryString" />
+
+### Manual selection mode
+
+By default, the content switcher changes the selection when the user moves focus with the arrow keys.
+
+Set `selectionMode` to `"manual"` so that arrow keys only move focus without changing the selection. The user must press <DocKbd label="Enter" /> or <DocKbd label="Space" /> to select a switch.
+
+<ContentSwitcher selectionMode="manual">
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+  <Switch text="Recommended" />
+</ContentSwitcher>
+
+### Reactive
+
+Programmatically control the content switcher with the `bind:selectedIndex`
+directive, updating the selected index based on user interactions or application
+state.
+
+<FileSource src="/framed/ContentSwitcher/ContentSwitcherReactive" />
+
+## Events
+
+Listen for content switcher selection changes.
+
+### Change
+
+Listen for `on:change` to know when the selected switch index changes, whether from a click, keyboard navigation, or a `selectedIndex`/`selectedId` update. `event.detail` is the new selected index. The index and the selected switch can change independently when switches are added, removed, or reordered, so use `bind:selectedId` to track which switch is selected.
+
+<ContentSwitcher on:change={(e) => console.log(e.detail)}>
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+  <Switch text="Recommended" />
+</ContentSwitcher>
+
+## Conditional switches
+
+Switches can be conditionally rendered using Svelte's `{#if}` blocks. The component automatically maintains correct indices even when switches are dynamically added or removed.
+
+<FileSource src="/framed/ContentSwitcher/ContentSwitcherConditional" />
+
+## Custom switch slot
+
+Override the default slot in the switch to customize how each option displays. An icon placed before the text is centered on it, and long text still truncates with an ellipsis.
+
+<ContentSwitcher>
+  <Switch><Bullhorn /> Latest news</Switch>
+  <Switch><Analytics /> Trending</Switch>
+</ContentSwitcher>
+
+### Selected state
+
+The default slot exposes `selected`, so custom content can change with the selection.
+
+<ContentSwitcher>
+  <Switch text="Latest news" let:selected>
+    {#if selected}<Checkmark />{/if} Latest news
+  </Switch>
+  <Switch text="Trending" let:selected>
+    {#if selected}<Checkmark />{/if} Trending
+  </Switch>
+</ContentSwitcher>
+
+## Icon-only
+
+Set `icon` on every switch for compact, icon-only controls. The switcher becomes icon-only when all switches include an icon, once they register. Set `iconOnly` on the switcher to fit them from the first render, so server-rendered markup does not span its container until hydration. Use `text` for the accessible label and tooltip. Press <DocKbd label="Escape" /> to hide the tooltip without moving the pointer or focus. It shows again on the next hover or focus.
+
+<ContentSwitcher>
+  <Switch icon={TableOfContents} text="Table of contents" />
+  <Switch icon={Dashboard} text="Dashboard" />
+  <Switch icon={List} text="List" />
+</ContentSwitcher>
+
+### Tooltip alignment
+
+Pass `tooltipAlignment` to individual icon-only switches to adjust tooltip alignment.
+
+<ContentSwitcher>
+  <Switch icon={TableOfContents} text="Table of contents" tooltipAlignment="start" />
+  <Switch icon={Dashboard} text="Dashboard" />
+  <Switch icon={List} text="List" tooltipAlignment="end" />
+</ContentSwitcher>
+
+### Tooltip behavior
+
+Within a content switcher, only one switch's tooltip stays open at a time — hovering or focusing a new switch closes the previous one immediately.
+
+Moving the pointer directly from one icon-only switch to a neighbor whose tooltip is already open skips the usual enter delay, so the tooltip swaps in immediately instead of waiting again. Hover across the icon-only switches in the examples above to feel this.
+
+## Low contrast
+
+Set `lowContrast` for the low contrast variant. The selected switch uses a light surface instead of the default inverse (dark) background, reducing the contrast between the switcher and surrounding content.
+
+<ContentSwitcher lowContrast>
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+  <Switch text="Recommended" />
+</ContentSwitcher>
+
+### Disabled switches
+
+Combine low contrast with disabled switches.
+
+<ContentSwitcher lowContrast>
+  <Switch text="Latest news" />
+  <Switch text="Trending" />
+  <Switch disabled text="Recommended" />
+</ContentSwitcher>
+
+### Sizes
+
+The low contrast variant supports all sizes. Set `size` to `"sm"`, `"xl"`, or leave it unset for the default size.
+
+<Stack gap={6}>
+  <ContentSwitcher size="sm" lowContrast>
+    <Switch text="Latest news" />
+    <Switch text="Trending" />
+    <Switch text="Recommended" />
+  </ContentSwitcher>
+  <ContentSwitcher lowContrast>
+    <Switch text="Latest news" />
+    <Switch text="Trending" />
+    <Switch text="Recommended" />
+  </ContentSwitcher>
+  <ContentSwitcher size="xl" lowContrast>
+    <Switch text="Latest news" />
+    <Switch text="Trending" />
+    <Switch text="Recommended" />
+  </ContentSwitcher>
+</Stack>
+
+### Icon-only
+
+Combine low contrast with icon-only switches.
+
+<ContentSwitcher lowContrast>
+  <Switch icon={TableOfContents} text="Table of contents" />
+  <Switch icon={Dashboard} text="Dashboard" />
+  <Switch icon={List} text="List" />
+</ContentSwitcher>
+
+### Icon-only (tooltip alignment)
+
+Pass `tooltipAlignment` to individual icon-only switches to adjust tooltip alignment.
+
+<ContentSwitcher lowContrast>
+  <Switch icon={TableOfContents} text="Table of contents" tooltipAlignment="start" />
+  <Switch icon={Dashboard} text="Dashboard" />
+  <Switch icon={List} text="List" tooltipAlignment="end" />
+</ContentSwitcher>
+
+### Icon-only (sizes)
+
+The low contrast, icon-only variant supports all sizes. Set `size` to `"sm"`, `"xl"`, or leave it unset for the default size.
+
+<Stack gap={6}>
+  <ContentSwitcher size="sm" lowContrast>
+    <Switch icon={TableOfContents} text="Table of contents" />
+    <Switch icon={Dashboard} text="Dashboard" />
+    <Switch icon={List} text="List" />
+  </ContentSwitcher>
+  <ContentSwitcher lowContrast>
+    <Switch icon={TableOfContents} text="Table of contents" />
+    <Switch icon={Dashboard} text="Dashboard" />
+    <Switch icon={List} text="List" />
+  </ContentSwitcher>
+  <ContentSwitcher size="xl" lowContrast>
+    <Switch icon={TableOfContents} text="Table of contents" />
+    <Switch icon={Dashboard} text="Dashboard" />
+    <Switch icon={List} text="List" />
+  </ContentSwitcher>
+</Stack>
+
+## Sizes
+
+Set `size` to control height. The default is `md`.
+
+### Extra-large
+
+Set `size` to `"xl"` for an extra-large content switcher.
+
+<ContentSwitcher size="xl">
+  <Switch text="All" />
+  <Switch text="Archived" />
+</ContentSwitcher>
+
+### Small
+
+Set `size` to `"sm"` for a small content switcher.
+
+<ContentSwitcher size="sm">
+  <Switch text="All" />
+  <Switch text="Archived" />
+</ContentSwitcher>
+
+## Auto width
+
+By default, switches split the width evenly, so a long label truncates while a short one leaves empty space. Set `autoWidth` to size each switch to its label. The switcher shrinks to fit its switches, and only truncates labels when its container is too narrow.
+
+<Stack gap={5}>
+  <ContentSwitcher>
+    <Switch text="All" />
+    <Switch text="Recently updated by teammates" />
+    <Switch text="Archived" />
+  </ContentSwitcher>
+  <ContentSwitcher autoWidth>
+    <Switch text="All" />
+    <Switch text="Recently updated by teammates" />
+    <Switch text="Archived" />
+  </ContentSwitcher>
+</Stack>
+
+## Disabled
+
+Disable individual switches with `disabled`.
+
+<ContentSwitcher>
+  <Switch disabled text="All" />
+  <Switch disabled text="Archived" />
+</ContentSwitcher>
+
+## Skeleton
+
+Show a loading state with `ContentSwitcherSkeleton`. Match the switcher's `count` and `size` so the swap doesn't move the content below.
+
+<Stack gap={5}>
+  <ContentSwitcherSkeleton />
+  <ContentSwitcherSkeleton count={2} size="sm" />
+</Stack>

@@ -1,0 +1,180 @@
+---
+description: Expandable tiles show a summary and reveal more content on demand, ideal for progressive disclosure.
+---
+
+<script>
+  import { AILabel, Box, Button, ExpandableTile, Layer, OutboundLink, Stack } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create an expandable tile that shows and hides content. The component uses a
+[resize observer](https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver)
+to determine the height of the above-the-fold content.
+
+By default, the tile is collapsed. Use the above and below slots to define content that appears before and after expansion.
+
+<ExpandableTile>
+  <svelte:fragment slot="above">
+    <div>
+      Payments API
+    </div>
+    <br />
+    <br />
+    <div>
+      Operational — 99.98% uptime over the last 30 days
+    </div>
+  </svelte:fragment>
+  <svelte:fragment slot="below">No open incidents. Last deployment: 2 hours ago.</svelte:fragment>
+</ExpandableTile>
+
+## Expanded state
+
+Control whether the tile is expanded, either reactively or by default.
+
+### Reactive (two-way binding)
+
+Bind to `expanded` to control and read the tile state outside the component.
+Grow the above-the-fold content while collapsed to see the resize observer remeasure
+and update the tile height.
+
+<FileSource src="/framed/ExpandableTile/ExpandableTileReactive" />
+
+### Reacting to toggles
+
+Listen for `toggle` to react when a user expands or collapses the tile. The
+event's `detail.expanded` is the next state, and setting `expanded` from code
+does not dispatch it. Call `preventDefault()` to keep the current state, for
+example to gate the details behind an acknowledgment.
+
+<FileSource src="/framed/ExpandableTile/ExpandableTileToggle" />
+
+### Expanded by default
+
+Display the tile expanded by default with `expanded`.
+
+<ExpandableTile expanded>
+  <svelte:fragment slot="above">Payments API — Operational, 99.98% uptime over the last 30 days</svelte:fragment>
+  <svelte:fragment slot="below">No open incidents. Last deployment: 2 hours ago.</svelte:fragment>
+</ExpandableTile>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the tile's content as AI-generated. The tile shows the AI surface, and the label sits in the top-right corner at the `"xs"` size.
+
+<ExpandableTile>
+  <Box slot="above" height="8rem">Incident summary</Box>
+  <div slot="below">The primary database failed over after a storage node stopped responding.</div>
+  <AILabel slot="decorator">
+    <p>Written from the incident timeline and the database logs.</p>
+  </AILabel>
+</ExpandableTile>
+
+### Rounded corners
+
+Set `rounded` to `true` to round the corners of a tile with a decorator. Carbon reserves rounded tiles for AI content, so a tile without a decorator stays square.
+
+<ExpandableTile rounded>
+  <svelte:fragment slot="above">Incident summary</svelte:fragment>
+  <svelte:fragment slot="below">The primary database failed over after a storage node stopped responding.</svelte:fragment>
+  <AILabel slot="decorator">
+    <p>Written from the incident timeline and the database logs.</p>
+  </AILabel>
+</ExpandableTile>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <ExpandableTile>
+      <svelte:fragment slot="above">Payments API — Operational, 99.98% uptime over the last 30 days</svelte:fragment>
+      <svelte:fragment slot="below">No open incidents. Last deployment: 2 hours ago.</svelte:fragment>
+    </ExpandableTile>
+  </Box>
+</Layer>
+
+## Content height
+
+Control how the tile measures and displays its collapsed height.
+
+### CSS dimensions
+
+Wrap the slotted content in a [Box](/components/Box) with a fixed `height` to
+control the exact dimensions of the visible and hidden content.
+
+<ExpandableTile>
+  <Box slot="above" height="10rem">Payments API — Operational, 99.98% uptime over the last 30 days</Box>
+  <Box slot="below" height="10rem">No open incidents. Last deployment: 2 hours ago.</Box>
+</ExpandableTile>
+
+### Manual height override
+
+By default, the tile measures the above-the-fold content's height and its own
+padding automatically with a resize observer. Set `tileMaxHeight` and
+`tilePadding` (in pixels) to override the measured values—for example, to fix
+the collapsed height ahead of time instead of relying on the observer.
+
+<ExpandableTile tileMaxHeight={64} tilePadding={32}>
+  <svelte:fragment slot="above">Payments API — Operational, 99.98% uptime over the last 30 days</svelte:fragment>
+  <svelte:fragment slot="below">No open incidents. Last deployment: 2 hours ago.</svelte:fragment>
+</ExpandableTile>
+
+## Labels
+
+Customize the chevron's visible label text and the tile's accessible tooltip text.
+
+### Chevron label
+
+Customize expand/collapse button labels with `tileExpandedLabel` and `tileCollapsedLabel`.
+
+<ExpandableTile tileExpandedLabel="View less" tileCollapsedLabel="View more">
+  <svelte:fragment slot="above">Payments API — Operational, 99.98% uptime over the last 30 days</svelte:fragment>
+  <svelte:fragment slot="below">No open incidents. Last deployment: 2 hours ago.</svelte:fragment>
+</ExpandableTile>
+
+### Accessible text
+
+Customize the text that describes the expand/collapse control with
+`tileCollapsedIconText` and `tileExpandedIconText`. By default it renders as
+the tile's `title`: a tooltip and accessible description, while the tile's
+content is its accessible name. With interactive content, it names the chevron
+button when no chevron label is set; otherwise the visible label names the
+button and this text describes it.
+
+<ExpandableTile
+  tileCollapsedIconText="Show more details"
+  tileExpandedIconText="Show fewer details"
+>
+  <svelte:fragment slot="above">Payments API — Operational, 99.98% uptime over the last 30 days</svelte:fragment>
+  <svelte:fragment slot="below">No open incidents. Last deployment: 2 hours ago.</svelte:fragment>
+</ExpandableTile>
+
+## Interactive content
+
+By default, the tile uses a button element to toggle expand/collapse.
+
+A button cannot hold links, buttons, or inputs, so a tile with interactive content renders a div instead, and the chevron becomes a button. The tile looks for such content once it mounts, and again as content arrives. Set `hasInteractiveContent` to `true` to render the div from the start, or `false` to keep the button without looking.
+
+Only the chevron button toggles the tile. Press <DocKbd label="Tab" /> to move
+through the tile's links and buttons to the chevron, then
+press <DocKbd label="Enter" /> or <DocKbd label="Space" /> to expand or collapse it.
+
+| Do | Why |
+| --- | --- |
+| Set `hasInteractiveContent` when you know a slot holds links, buttons, or inputs | The server renders the button, since it cannot look. The switch after mount recreates the slotted content and resets any state inside it. |
+| Give the chevron a visible label with `tileCollapsedLabel` and `tileExpandedLabel` | The chevron is the only toggle. A label makes it an obvious target and names it for voice control. |
+| Keep `hasInteractiveContent` fixed for the tile's lifetime | Changing it swaps the root element, which recreates the slotted content and resets any state inside it. |
+
+<ExpandableTile hasInteractiveContent tileExpandedLabel="View less" tileCollapsedLabel="View more">
+  <Stack slot="above" gap={4} inline>
+    <OutboundLink href="https://svelte.carbondesignsystem.com/">
+      View documentation
+    </OutboundLink>
+    <Button on:click={() => console.log("Alert acknowledged")}>
+      Acknowledge alert
+    </Button>
+  </Stack>
+  <Box slot="below" paddingTop={4}>Escalated to the on-call engineer at 2:14 AM UTC.</Box>
+</ExpandableTile>

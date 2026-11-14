@@ -1,11 +1,27 @@
 <script>
+  /**
+   * Set the size of the skeleton to match the field it stands in for.
+   * Inherits the parent `Form` size when unset.
+   * Also accepts Carbon v11's `"md"` (the 40px default, which overrides a
+   * `Form` size) and `"lg"` (`"xl"`).
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
+   */
+  export let size = undefined;
+
   /** Set to `true` to hide the label text */
   export let hideLabel = false;
+
+  import { getContext } from "svelte";
+  import { FORM_SIZE_CONTEXT_KEY } from "../constants/context-keys.js";
+  import { normalizeFieldSize } from "../utils/size-aliases.js";
+
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = normalizeFieldSize(size ?? $formSize);
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <div
-  class:bx--form-item="{true}"
+  class:bx--form-item={true}
   {...$$restProps}
   on:click
   on:mouseover
@@ -13,9 +29,15 @@
   on:mouseleave
 >
   {#if !hideLabel}
-    <span class:bx--label="{true}" class:bx--skeleton="{true}"></span>
+    <span class:bx--label={true} class:bx--skeleton={true}></span>
   {/if}
-  <div class:bx--select="{true}" class:bx--skeleton="{true}">
-    <div class:bx--select-input="{true}"></div>
+  <div
+    class:bx--select={true}
+    class:bx--skeleton={true}
+    class:bx--select--xs={effectiveSize === "xs"}
+    class:bx--select--sm={effectiveSize === "sm"}
+    class:bx--select--xl={effectiveSize === "xl"}
+  >
+    <div class:bx--select-input={true}></div>
   </div>
 </div>

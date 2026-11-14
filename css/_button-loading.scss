@@ -1,0 +1,108 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/functions";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Button `loading` prop (absent from v10; new pattern for this library).
+/// Positions the nested `Loading` spinner in the same footprint
+/// `.bx--btn__icon` already occupies, and recolors its stroke to match the
+/// button's `currentColor` icon fill.
+/// @access private
+/// @group components
+@mixin button-loading {
+  .#{$prefix}--btn__loading {
+    position: absolute;
+    flex-shrink: 0;
+    @include ccs-inset-inline($end: to-rem(16px));
+  }
+
+  .#{$prefix}--btn--icon-only .#{$prefix}--btn__loading {
+    position: static;
+  }
+
+  .#{$prefix}--btn--ghost .#{$prefix}--btn__loading,
+  .#{$prefix}--btn--danger-ghost .#{$prefix}--btn__loading {
+    position: static;
+    line-height: 0;
+    margin-inline-start: $carbon--spacing-03;
+  }
+
+  // A ghost button without an icon has no icon room for the spinner to
+  // replace. The spinner sits centered over the label instead, which stays in
+  // flow, hidden, so the button keeps its width. `-webkit-text-fill-color`
+  // hides the text but leaves `color`, which the spinner's stroke and the
+  // disabled look read, and keeps the label in the accessibility tree.
+  // Centered with auto margins: the spinner's own animation owns `transform`.
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--spinner-over-label,
+  .#{$prefix}--btn--danger-ghost.#{$prefix}--btn--spinner-over-label {
+    -webkit-text-fill-color: transparent;
+
+    .#{$prefix}--btn__loading {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      @include ccs-inset-inline(0, 0);
+    }
+  }
+
+  // Forced colors paint the label whatever its fill, so hiding it leaves it
+  // under the spinner. Put the spinner back after the label, as on a ghost
+  // button with an icon, and let the button grow.
+  @media (forced-colors: active) {
+    .#{$prefix}--btn--ghost.#{$prefix}--btn--spinner-over-label,
+    .#{$prefix}--btn--danger-ghost.#{$prefix}--btn--spinner-over-label {
+      .#{$prefix}--btn__loading {
+        position: static;
+        margin: 0;
+        margin-inline-start: $carbon--spacing-03;
+      }
+    }
+  }
+
+  .#{$prefix}--btn--icon-only.#{$prefix}--btn--ghost .#{$prefix}--btn__loading,
+  .#{$prefix}--btn--icon-only.#{$prefix}--btn--danger-ghost .#{$prefix}--btn__loading {
+    margin-inline-start: 0;
+  }
+
+  .#{$prefix}--btn .#{$prefix}--btn__loading .#{$prefix}--loading__stroke {
+    stroke: currentColor;
+  }
+
+  // Ghost icon-only buttons render their icon in $icon-primary/$icon-disabled (see
+  // the .bx--btn--ghost.bx--btn--icon-only `color` rules in
+  // components/button/_button.scss) — mirror that for the spinner stroke.
+  // The `.bx--btn--disabled` loading state does not get $icon-disabled `color`,
+  // so the stroke rule below is still needed for it.
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only .#{$prefix}--btn__loading .#{$prefix}--loading__stroke {
+    stroke: $icon-primary;
+  }
+
+  // `loading` alone never sets the native `disabled` attribute (see
+  // Button.svelte), so this also has to key off the `.bx--btn--disabled`
+  // class the component still applies for the visual treatment.
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only[disabled] .#{$prefix}--btn__loading .#{$prefix}--loading__stroke,
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only.#{$prefix}--btn--disabled .#{$prefix}--btn__loading .#{$prefix}--loading__stroke {
+    stroke: $icon-disabled;
+  }
+
+  // Every kind's disabled styling (components/button/_mixins.scss and the
+  // per-kind blocks in _button.scss) zeroes out the focus ring for
+  // `.bx--btn--disabled:focus`, on the assumption that a disabled button can
+  // never actually receive focus. `loading` breaks that assumption — it
+  // applies the same class without the native `disabled` attribute, so the
+  // button stays focusable — meaning `:focus` here can only ever match a
+  // loading button, never a truly disabled one. Restore the same ring an
+  // enabled button gets. Matches `.bx--btn.bx--btn--disabled:focus` (not the
+  // bare class) so this ties the per-kind overrides on specificity and wins
+  // on source order instead of silently losing to them.
+  .#{$prefix}--btn.#{$prefix}--btn--disabled:focus {
+    border-color: $focus;
+    box-shadow: inset 0 0 0 $button-outline-width $focus,
+      inset 0 0 0 $button-border-width $background;
+  }
+}
+
+@include exports("button-loading") {
+  @include button-loading;
+}

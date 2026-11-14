@@ -1,0 +1,71 @@
+<script lang="ts">
+  import Button from "carbon-components-svelte/Button/Button.svelte";
+  import type { TreeNode } from "carbon-components-svelte/TreeView/TreeView.svelte";
+  import TreeView from "carbon-components-svelte/TreeView/TreeView.svelte";
+  import { toHierarchy } from "carbon-components-svelte/utils/to-hierarchy";
+  import Analytics from "carbon-icons-svelte/lib/Analytics.svelte";
+
+  type HierarchyNode = TreeNode<number> & { pid?: number };
+  let treeview: TreeView<HierarchyNode>;
+  let activeId: number | undefined;
+  let selectedIds: number[] = [];
+  let expandedIds: number[] = [];
+  const nodes = toHierarchy<HierarchyNode, "pid">(
+    [
+      { id: 0, text: "AI / Machine learning", icon: Analytics },
+      { id: 1, text: "Analytics" },
+      { id: 2, text: "IBM Analytics Engine", pid: 1 },
+      { id: 3, text: "Apache Spark", pid: 2 },
+      { id: 4, text: "Hadoop", pid: 2 },
+      { id: 5, text: "IBM Cloud SQL Query", pid: 1 },
+      { id: 6, text: "IBM Db2 Warehouse on Cloud", pid: 1 },
+      { id: 7, text: "Blockchain" },
+      { id: 8, text: "IBM Blockchain Platform", pid: 7 },
+      { id: 9, text: "Databases" },
+      { id: 10, text: "IBM Cloud Databases for Elasticsearch", pid: 9 },
+      { id: 11, text: "IBM Cloud Databases for Enterprise DB", pid: 9 },
+      { id: 12, text: "IBM Cloud Databases for MongoDB", pid: 9 },
+      { id: 13, text: "IBM Cloud Databases for PostgreSQL", pid: 9 },
+      { id: 14, text: "Integration", disabled: true },
+      { id: 15, text: "IBM API Connect", disabled: true, pid: 14 },
+    ],
+    (node) => node.pid,
+  );
+</script>
+
+<TreeView
+  bind:this={treeview}
+  size="compact"
+  labelText="Cloud Products"
+  {nodes}
+  bind:activeId
+  bind:selectedIds
+  bind:expandedIds
+  let:node
+>
+  {node.text}
+</TreeView>
+
+<Button on:click={() => treeview.expandNodes()}>
+  Expand nodes (no filter)
+</Button>
+<Button on:click={treeview.expandAll}>Expand all</Button>
+<Button on:click={treeview.collapseAll}>Collapse all</Button>
+<Button
+  on:click={() => {
+    treeview.expandNodes((node) => {
+      return /^IBM/.test(node.text);
+    });
+  }}
+>
+  Expand some nodes
+</Button>
+<Button
+  on:click={() => {
+    treeview.collapseNodes((node) => {
+      return /^IBM/.test(node.text);
+    });
+  }}
+>
+  Collapse some nodes
+</Button>

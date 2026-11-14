@@ -1,29 +1,42 @@
 <script>
   /**
-   * @deprecated this prop will be removed in the next major release
-   * Set to `true` to use the small variant
+   * Specify the size of the search input.
+   * Inherits the parent `Form` size when unset, otherwise `"lg"` (40px),
+   * as in Carbon v11. Also accepts Carbon v11's `"md"` (`"lg"`, 40px).
+   * Carbon v11's 48px `lg` is `"xl"` here.
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
+   * @default "lg"
    */
-  export let small = false;
+  export let size = undefined;
 
   /**
-   * Specify the size of the search input
-   * @type {"sm" | "lg" | "xl"}
+   * Set to `true` to hide the label text.
+   * @deprecated has no effect -- Search's label is always visually
+   * hidden, so the skeleton draws no label.
    */
-  export let size = "xl";
+  // svelte-ignore unused-export-let
+  export let hideLabel = false;
+
+  import { getContext } from "svelte";
+  import { FORM_SIZE_CONTEXT_KEY } from "../constants/context-keys.js";
+  import { normalizeSearchSize } from "../utils/size-aliases.js";
+
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = normalizeSearchSize(size ?? $formSize ?? "lg");
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <div
-  class:bx--skeleton="{true}"
-  class:bx--search--sm="{size === 'sm' || small}"
-  class:bx--search--lg="{size === 'lg'}"
-  class:bx--search--xl="{size === 'xl'}"
+  class:bx--skeleton={true}
+  class:bx--search--xs={effectiveSize === "xs"}
+  class:bx--search--sm={effectiveSize === "sm"}
+  class:bx--search--lg={effectiveSize === "lg"}
+  class:bx--search--xl={effectiveSize === "xl"}
   {...$$restProps}
   on:click
   on:mouseover
   on:mouseenter
   on:mouseleave
 >
-  <span class:bx--label="{true}"></span>
-  <div class:bx--search-input="{true}"></div>
+  <div class:bx--search-input={true}></div>
 </div>

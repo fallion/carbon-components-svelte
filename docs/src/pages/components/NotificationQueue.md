@@ -1,0 +1,107 @@
+---
+components: ["NotificationQueue"]
+description: Notification queues provide an imperative API for managing toast notifications — handling positioning, deduplication, and overflow from anywhere in your app.
+---
+
+<script>
+  import { NotificationQueue } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Use `bind:this` to get a queue reference, then call `add()` to show notifications. The queue uses underlying [ToastNotification](ToastNotification) components, manages positioning, and removes notifications when they time out or are closed.
+
+While the pointer or focus is in the queue, every toast's timer pauses, so
+users can finish reading. Each timer then resumes with the time it had
+left.
+
+The toasts also stay in place while the pointer is in the queue. A closed
+toast leaves an empty space, so the next close button does not slide under
+the pointer. A new toast appears at the end away from the screen edge, and
+a full queue drops its oldest toast only when the pointer and focus leave.
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueBasic" />
+
+## Positioning
+
+Configure where the queue and its notifications render on screen.
+
+### Screen position
+
+Configure queue position with the `position` prop. Supported values are `top-left`, `top-center`, `top-right` (default), `bottom-left`, `bottom-center`, and `bottom-right`.
+
+The top-right position assumes usage of the [UIShell](/components/UIShell) component. Use left or center placements when a side panel would otherwise cover toasts. Customize placement with [offset props](#custom-offsets).
+
+<FileSource src="/framed/NotificationQueue/NotificationQueuePosition" />
+
+### Custom offsets
+
+Customize queue placement with `offsetTop`, `offsetBottom`, `offsetLeft`, and `offsetRight`. Useful for positioning notifications below headers or adjusting spacing.
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueOffsets" />
+
+### Z-index
+
+Specify the stacking order of the queue with `zIndex`. Defaults to `9000`, matching the z-index used by [Modal](/components/Modal), so notifications render above dialog content by default.
+
+```svelte
+<NotificationQueue zIndex={2000} />
+```
+
+Lower the value if the queue should render behind other fixed UI instead.
+
+## Managing notifications
+
+The queue tracks notifications by id, so `add`, `update`, `remove`, and the `maxNotifications` limit all key off the same identifier.
+
+Since each queued notification renders as a [ToastNotification](/components/ToastNotification), `add` also accepts that component's `pauseOnHover`, `role`, `fullWidth`, `statusIconDescription`, and `actionable` props.
+
+### Deduplication
+
+By default, id is optional; a unique id is generated for each notification. The queue [keys](https://svelte.dev/docs/svelte/each#Keyed-each-blocks) notifications by id for performance.
+
+Notifications are deduplicated by id. Adding a notification with an id that already exists in the queue is ignored. To change an existing notification in place, use [update](#update).
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueDeduplication" />
+
+### Update
+
+Use `update(id, patch)` to change an existing notification in place. The patch merges into the matching notification, useful for reflecting progress (for example, transitioning a loading toast to success without removing and re-adding it).
+
+`update` returns true if a notification with the given id was found, false otherwise.
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueUpdate" />
+
+### Max notifications
+
+By default, the queue displays a maximum of 3 notifications. When the limit is exceeded, the oldest notification is removed automatically. While the pointer or focus is in the queue, the removal waits until both leave.
+
+Customize the limit with `maxNotifications`.
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueMax" />
+
+### Remove and clear
+
+Use `remove(id)` to programmatically remove a specific notification, or `clear()` to remove all notifications at once.
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueRemove" />
+
+## Actions
+
+Pass `action` to add one action, such as an undo or a retry, with a label and an `onClick` handler. Set `href` to render the action as a link. The toast closes after the handler runs. Call `event.preventDefault()` in the handler to keep it open, for example to show progress with [update](#update).
+
+A toast with an action does not time out, since a timer could remove it before a keyboard or screen reader user reaches it. It stays until the user acts or closes it, or the app removes it. When the queue is full, toasts without an action are removed first.
+
+The toast does not take focus when it opens, so focus stays where the user is working. The queue is a landmark named "Notifications" (set `labelText` to rename it). Press <DocKbd label="F6" /> to move focus to the newest toast, and <DocKbd label="F6" /> or <DocKbd label="Shift" />+<DocKbd label="F6" /> to return.
+
+Set `actionable` to `true` only when the toast answers something the user just did and needs a response. The toast then becomes an `alertdialog` and takes focus, as in [ToastNotification](/components/ToastNotification#actionable).
+
+<FileSource src="/framed/NotificationQueue/NotificationQueueActions" />
+
+## Persistent
+
+Create persistent notifications that do not auto-dismiss by omitting timeout and hiding the close button with `hideCloseButton`.
+
+These notifications remain visible until programmatically removed.
+
+<FileSource src="/framed/NotificationQueue/NotificationQueuePersistent" />

@@ -1,0 +1,49 @@
+---
+description: Skeleton placeholders indicate that content is loading, with support for custom sizing.
+---
+
+<script>
+  import { SkeletonPlaceholder } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic skeleton placeholder with default styling.
+
+<SkeletonPlaceholder />
+
+## Custom size
+
+Set both width and height with `size`.
+
+<SkeletonPlaceholder size="8rem" />
+
+### Number value
+
+Number values default to pixels.
+
+<SkeletonPlaceholder size={128} />
+
+## Custom width and height
+
+Use `width` and `height` for different dimensions.
+
+<SkeletonPlaceholder width="20rem" height="10rem" />
+
+### Number values
+
+Number values default to pixels.
+
+<SkeletonPlaceholder width={320} height={160} />
+
+### Override a single dimension
+
+`width` and `height` each take precedence over `size` independently, so you can set `size` as a base and override just one dimension.
+
+<SkeletonPlaceholder size="4rem" height="10rem" />
+
+## AI
+
+Set `ai` to `true` for content that AI is generating, such as an image or a chart. The placeholder turns blue, and a gradient sweeps across it. The sweep stops when the user prefers reduced motion.
+
+<SkeletonPlaceholder ai />

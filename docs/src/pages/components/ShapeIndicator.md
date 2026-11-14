@@ -1,0 +1,54 @@
+---
+components: ["ShapeIndicator"]
+description: Shape indicator pairs a status shape with a label to communicate the state of an item, such as a severity level, in a more compact form than IconIndicator.
+---
+
+<script>
+  import { Stack, ShapeIndicator } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a shape indicator with `kind` and `label`. For a version that pairs a status icon with more visual weight instead of a shape, see [IconIndicator](/components/IconIndicator).
+
+<ShapeIndicator kind="stable" label="Stable" />
+
+## Kinds
+
+Set `kind` to match the status being communicated.
+
+Each kind reads a Carbon v11 `status-*` theme token, such as `status-orange` for `medium`, so it follows the theme. In light themes, the `medium`, `low` and `cautious` shapes have a darker edge.
+
+<Stack gap={3}>
+  <ShapeIndicator kind="failed" label="Failed" />
+  <ShapeIndicator kind="critical" label="Critical" />
+  <ShapeIndicator kind="high" label="High" />
+  <ShapeIndicator kind="medium" label="Medium" />
+  <ShapeIndicator kind="low" label="Low" />
+  <ShapeIndicator kind="cautious" label="Cautious" />
+  <ShapeIndicator kind="undefined" label="Undefined" />
+  <ShapeIndicator kind="stable" label="Stable" />
+  <ShapeIndicator kind="informative" label="Informative" />
+  <ShapeIndicator kind="incomplete" label="Incomplete" />
+  <ShapeIndicator kind="draft" label="Draft" />
+</Stack>
+
+## Sizes
+
+Set `textSize` to control the label text size.
+
+### 12px (default)
+
+<ShapeIndicator kind="stable" label="Stable" />
+
+### 14px
+
+<ShapeIndicator kind="stable" label="Stable" textSize={14} />
+
+## Custom label
+
+Use the `labelChildren` slot for custom label content instead of `label`.
+
+<ShapeIndicator kind="stable" label="Stable">
+  <strong slot="labelChildren">Custom label</strong>
+</ShapeIndicator>

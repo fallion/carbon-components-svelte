@@ -1,7 +1,14 @@
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
+<script>
+  import { getContext } from "svelte";
+  import { readable } from "svelte/store";
+
+  const ctx = getContext("carbon:StructuredListWrapper");
+  const selection = ctx?.selection ?? readable(false);
+</script>
+
 <div
-  role="rowgroup"
-  class:bx--structured-list-thead="{true}"
+  role={$selection ? undefined : "rowgroup"}
+  class:bx--structured-list-thead={true}
   {...$$restProps}
   on:click
   on:mouseover

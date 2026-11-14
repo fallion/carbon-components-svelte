@@ -1,0 +1,339 @@
+// @ts-check
+// Shared value/label logic for Slider and RangeSlider.
+
+import { resolveLayoutDirection } from "./inline-direction.js";
+
+/**
+ * Resolve the `aria-valuetext` for a numeric slider value. A value sitting
+ * on a labeled mark announces the mark's label, after the formatted value
+ * when `formatValue` is set and yields different text.
+ *
+ * @param {number} numericValue
+ * @param {((value: number) => string) | undefined} formatValue
+ * @param {ReadonlyMap<number, string>} [markLabels] - label by mark value
+ * @returns {string | undefined}
+ */
+export function getValueText(numericValue, formatValue, markLabels) {
+  const text = formatValue ? formatValue(numericValue) : undefined;
+  const label = markLabels?.get(numericValue);
+  if (!label || label === text) return text;
+  return text ? `${text}, ${label}` : label;
+}
+
+/**
+ * Resolve a range label (min/max), preferring an explicit `label`, then
+ * `formatValue`, then falling back to the raw numeric value.
+ *
+ * @param {string} label
+ * @param {number} numericValue
+ * @param {((value: number) => string) | undefined} formatValue
+ * @returns {string | number}
+ */
+export function formatRangeLabel(label, numericValue, formatValue) {
+  if (label) return label;
+  if (formatValue) return formatValue(numericValue);
+  return label || numericValue;
+}
+
+/**
+ * Read the horizontal client coordinate from a mouse or touch event.
+ * Returns `null` for a touch event with no active touch point (for example
+ * a `touchend` whose `touches` list is already empty).
+ *
+ * @param {MouseEvent | TouchEvent} event
+ * @returns {number | null}
+ */
+function getClientX(event) {
+  if ("touches" in event) return event.touches[0]?.clientX ?? null;
+  return event.clientX;
+}
+
+/**
+ * Read the vertical client coordinate from a mouse or touch event.
+ * Returns `null` for a touch event with no active touch point.
+ *
+ * @param {MouseEvent | TouchEvent} event
+ * @returns {number | null}
+ */
+function getClientY(event) {
+  if ("touches" in event) return event.touches[0]?.clientY ?? null;
+  return event.clientY;
+}
+
+/**
+ * Compute the slider value for a horizontal client position within a
+ * track, snapped to `step` and clamped to `[min, max]`.
+ *
+ * @param {Object} options
+ * @param {number} options.clientX
+ * @param {number} options.left - track's `getBoundingClientRect().left`
+ * @param {number} options.width - track's `getBoundingClientRect().width`
+ * @param {number} options.min
+ * @param {number} options.max
+ * @param {number} options.step
+ * @returns {number}
+ */
+function valueFromTrackPosition({ clientX, left, width, min, max, step }) {
+  return snapToStep(min + (max - min) * ((clientX - left) / width), {
+    min,
+    max,
+    step,
+  });
+}
+
+/**
+ * Count the decimal places in a number's shortest string form, including
+ * exponent notation (`1e-7` has 7).
+ *
+ * @param {number} value
+ * @returns {number}
+ */
+function decimalPlaces(value) {
+  if (!Number.isFinite(value)) return 0;
+  const [mantissa, exponent = "0"] = String(value).split("e");
+  const fraction = mantissa.split(".")[1]?.length ?? 0;
+  return Math.max(0, fraction - Number(exponent));
+}
+
+/**
+ * Snap `value` to the nearest `min + n * step` and clamp it to `[min, max]`.
+ * The result is rounded to the decimal precision of `step` and `min`, so
+ * `step: 0.1` yields `0.3`, not `0.30000000000000004`. A non-positive
+ * `step` only clamps.
+ *
+ * @param {number} value
+ * @param {Object} options
+ * @param {number} options.min
+ * @param {number} options.max
+ * @param {number} options.step
+ * @returns {number}
+ */
+export function snapToStep(value, { min, max, step }) {
+  let next = value;
+  if (step > 0) {
+    const precision = Math.max(decimalPlaces(step), decimalPlaces(min));
+    next = Number(
+      (min + Math.round((value - min) / step) * step).toFixed(precision),
+    );
+  }
+  if (next <= min) return min;
+  if (next >= max) return max;
+  return next;
+}
+
+/**
+ * Shift `[lower, upper]` by `delta` without changing its width, stopping
+ * against `min` or `max`. Results are rounded to the decimal precision of
+ * `step`, `min`, and the bounds, so the addition leaks no float noise.
+ *
+ * @param {number} lower
+ * @param {number} upper
+ * @param {number} delta
+ * @param {Object} options
+ * @param {number} options.min
+ * @param {number} options.max
+ * @param {number} options.step
+ * @returns {{ lower: number; upper: number }}
+ */
+export function shiftRange(lower, upper, delta, { min, max, step }) {
+  const shift = Math.min(max - upper, Math.max(min - lower, delta));
+  const precision = Math.max(
+    decimalPlaces(step),
+    decimalPlaces(min),
+    decimalPlaces(lower),
+    decimalPlaces(upper),
+  );
+  return {
+    lower: Number((lower + shift).toFixed(precision)),
+    upper: Number((upper + shift).toFixed(precision)),
+  };
+}
+
+/**
+ * Resolve the range painted by dragging from `anchor` to `point`, in either
+ * direction. A range narrower than `minGap` grows in the drag direction,
+ * then back from `max` or `min` when it runs out of room.
+ *
+ * @param {number} anchor
+ * @param {number} point
+ * @param {Object} options
+ * @param {number} options.min
+ * @param {number} options.max
+ * @param {number} options.minGap
+ * @returns {{ lower: number; upper: number }}
+ */
+export function brushRange(anchor, point, { min, max, minGap }) {
+  let lower = Math.min(anchor, point);
+  let upper = Math.max(anchor, point);
+  if (upper - lower >= minGap) return { lower, upper };
+  const precision = Math.max(
+    decimalPlaces(anchor),
+    decimalPlaces(point),
+    decimalPlaces(minGap),
+  );
+  /** @type {(value: number) => number} */
+  const round = (value) => Number(value.toFixed(precision));
+  if (point >= anchor) {
+    upper = Math.min(max, round(lower + minGap));
+    lower = Math.max(min, round(upper - minGap));
+  } else {
+    lower = Math.max(min, round(upper - minGap));
+    upper = Math.min(max, round(lower + minGap));
+  }
+  return { lower, upper };
+}
+
+/**
+ * Read the client coordinate along the slider axis from a mouse or touch
+ * event. Returns `null` for a touch event with no active touch point.
+ *
+ * @param {MouseEvent | TouchEvent} event
+ * @param {"horizontal" | "vertical"} orientation
+ * @returns {number | null}
+ */
+export function getPointerPosition(event, orientation) {
+  return orientation === "vertical" ? getClientY(event) : getClientX(event);
+}
+
+/**
+ * Whether values increase leftward along a track: a horizontal track in
+ * RTL, as `resolveLayoutDirection` reads it: the track's nearest `dir`,
+ * then the nearest `LayoutDirection`, then the computed direction. Before
+ * mount, without a `LayoutDirection`, the track counts as LTR, so nothing
+ * reads the document on the server.
+ *
+ * @param {"horizontal" | "vertical"} orientation
+ * @param {"ltr" | "rtl" | undefined} contextDirection - From `getLayoutDirection`.
+ * @param {Element | null} track
+ * @returns {boolean}
+ */
+export function isTrackRtl(orientation, contextDirection, track) {
+  return (
+    orientation !== "vertical" &&
+    !!(contextDirection || track) &&
+    resolveLayoutDirection(contextDirection, track) === "rtl"
+  );
+}
+
+/**
+ * The sign a horizontal track's styles mirror its parts by, for the
+ * track's `--ccs-slider-sign`: `-1` in RTL. `--ccs-inline-sign` from the
+ * nearest `dir` attribute decides, so markup rendered on the server sits
+ * right for any `dir` before the script runs. Without a `dir` attribute,
+ * such as for a `direction` set in CSS, `rtl` as the script read it does.
+ *
+ * @param {boolean} rtl
+ * @returns {string}
+ */
+export function trackSign(rtl) {
+  return `var(--ccs-inline-sign, ${rtl ? -1 : 1})`;
+}
+
+/**
+ * CSS `left` for the point `percent` of the way along a horizontal track
+ * from its inline start. Where `--ccs-slider-sign` is `-1`, the point
+ * mirrors across the middle of the track.
+ *
+ * @param {number} percent
+ * @returns {string}
+ */
+export function trackLeft(percent) {
+  return `calc(50% + (${percent}% - 50%) * var(--ccs-slider-sign, 1))`;
+}
+
+/**
+ * A transform that mirrors a box as wide as the track, with its transform
+ * origin on the left, across the middle of the track where
+ * `--ccs-slider-sign` is `-1`. Put it before the box's own transform.
+ */
+export const TRACK_MIRROR =
+  "translate(calc(50% - 50% * var(--ccs-slider-sign, 1)), 0) scaleX(var(--ccs-slider-sign, 1))";
+
+/**
+ * Resolve a track rect into its start and signed length along the slider
+ * axis. Values increase upward when vertical, so the start is the bottom
+ * edge and the length is negative. In RTL, values increase leftward, so
+ * the start is the right edge.
+ *
+ * @param {Pick<DOMRect, "left" | "right" | "width" | "bottom" | "height">} rect
+ * @param {"horizontal" | "vertical"} orientation
+ * @param {boolean} [rtl]
+ * @returns {{ start: number; length: number }}
+ */
+export function getTrackAxis(rect, orientation, rtl = false) {
+  if (orientation === "vertical") {
+    return { start: rect.bottom, length: -rect.height };
+  }
+  return rtl
+    ? { start: rect.right, length: -rect.width }
+    : { start: rect.left, length: rect.width };
+}
+
+/**
+ * Compute the slider value for a pointer event on a track, snapped to
+ * `step` and clamped to `[min, max]`. `offset` is subtracted from the
+ * pointer position, for keeping a grabbed handle under the pointer.
+ * Returns `null` for a touch event with no active touch point.
+ *
+ * @param {MouseEvent | TouchEvent} event
+ * @param {Pick<DOMRect, "left" | "right" | "width" | "bottom" | "height">} rect
+ * @param {Object} options
+ * @param {"horizontal" | "vertical"} options.orientation
+ * @param {number} options.min
+ * @param {number} options.max
+ * @param {number} options.step
+ * @param {number} [options.offset]
+ * @param {boolean} [options.rtl] - Values increase leftward.
+ * @returns {number | null}
+ */
+export function valueFromPointer(
+  event,
+  rect,
+  { orientation, min, max, step, offset = 0, rtl = false },
+) {
+  const point = getPointerPosition(event, orientation);
+  if (point == null) return null;
+  const { start, length } = getTrackAxis(rect, orientation, rtl);
+  // valueFromTrackPosition is axis-agnostic: a negative `width` (vertical)
+  // flips the interpolation so the bottom edge is `min`.
+  return valueFromTrackPosition({
+    clientX: point - offset,
+    left: start,
+    width: length,
+    min,
+    max,
+    step,
+  });
+}
+
+/**
+ * Characters in the integer part of `value`, counting a minus sign.
+ *
+ * @param {number} value
+ * @returns {number}
+ */
+function integerChars(value) {
+  return String(Math.trunc(Math.abs(value))).length + (value < 0 ? 1 : 0);
+}
+
+/**
+ * Width for the slider's text input when its longest value has more than
+ * three characters, which the fixed 4rem input clips. Counts the integer
+ * digits of `min` and `max`, a minus sign, and the decimals `step` allows.
+ * Returns `undefined` to keep the stylesheet's width.
+ *
+ * @param {number} min
+ * @param {number} max
+ * @param {number} step
+ * @returns {string | undefined}
+ */
+export function getTextInputWidth(min, max, step) {
+  const decimals = step.toString().split(".")[1]?.length || 0;
+  const chars =
+    Math.max(integerChars(min), integerChars(max)) +
+    (decimals ? decimals + 1 : 0);
+  if (chars <= 3) return undefined;
+  // Half a character of slack covers the type style's letter spacing; the
+  // 2rem is the input's horizontal padding.
+  return `calc(${chars + 0.5}ch + 2rem)`;
+}

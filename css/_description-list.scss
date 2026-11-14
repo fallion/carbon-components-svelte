@@ -1,0 +1,91 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "carbon-components/scss/globals/scss/typography";
+@import "./spacing-scale";
+
+/// DescriptionList renders real dl/dt/dd term-value pairs. Gap uses the same
+/// $ccs-spacing-scale Box and Stack key their own spacing props to. dt/dd
+/// type classes (bx--type-label-01/body-short-01) are set directly in the
+/// component markup, matching how ModalHeader hardcodes its own type class.
+/// @access private
+/// @group components
+@mixin description-list {
+  .#{$prefix}--description-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .#{$prefix}--description-list--columns {
+    display: grid;
+  }
+
+  @each $step, $size in $ccs-spacing-scale {
+    .#{$prefix}--description-list-gap-#{$step} {
+      gap: $size;
+    }
+  }
+
+  .#{$prefix}--description-list-item dt,
+  .#{$prefix}--description-list-item dd {
+    margin: 0;
+  }
+
+  .#{$prefix}--description-list-item dt {
+    color: $text-secondary;
+  }
+
+  .#{$prefix}--description-list-item dd {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--description-list--horizontal .#{$prefix}--description-list-item {
+    display: flex;
+    align-items: baseline;
+    column-gap: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--description-list--horizontal .#{$prefix}--description-list-item dt {
+    flex: 0 0 auto;
+    min-width: 30%;
+  }
+
+  // Summary: a term that wraps, and its detail held to the right edge in
+  // tabular figures so amounts line up down the list.
+  .#{$prefix}--description-list--summary .#{$prefix}--description-list-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    column-gap: $carbon--spacing-05;
+  }
+
+  .#{$prefix}--description-list--summary .#{$prefix}--description-list-item dt {
+    min-width: 0;
+  }
+
+  // The detail keeps at least its longest word, so an amount never breaks,
+  // but longer text wraps instead of overflowing a narrow container.
+  .#{$prefix}--description-list--summary .#{$prefix}--description-list-item dd {
+    flex: 0 1 auto;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+
+  .#{$prefix}--description-list-item--divider,
+  .#{$prefix}--description-list-item--total {
+    padding-top: $carbon--spacing-04;
+    border-top: 1px solid $border-subtle;
+  }
+
+  .#{$prefix}--description-list-item--total dt {
+    color: $text-primary;
+  }
+
+  .#{$prefix}--description-list-item.#{$prefix}--description-list-item--total dd {
+    @include type-style("heading-03");
+  }
+}
+
+@include exports("description-list") {
+  @include description-list;
+}

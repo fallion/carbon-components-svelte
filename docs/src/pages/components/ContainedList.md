@@ -1,0 +1,207 @@
+---
+components: ["ContainedList", "ContainedListItem"]
+description: Contained lists display items within a labeled container, with support for multiple sizes, icons, actions, interactive items, links, and search.
+---
+
+<script>
+  import { Box, Button, Search, ContainedList, ContainedListItem, Text } from "carbon-components-svelte";
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+  import Close from "carbon-icons-svelte/lib/Close.svelte";
+
+  let job = "Unit tests";
+</script>
+
+## Basic
+
+Display a basic contained list with a header label and list items. The default size is medium.
+
+<ContainedList labelText="Team members">
+  <ContainedListItem>Jane Cooper</ContainedListItem>
+  <ContainedListItem>Devon Lane</ContainedListItem>
+  <ContainedListItem>Esther Howard</ContainedListItem>
+</ContainedList>
+
+## Custom label
+
+Use the `labelChildren` slot for custom label content instead of plain label text.
+
+<ContainedList>
+  <Text slot="labelChildren" tag="span" type="inherit" weight="regular">Team members</Text>
+  <ContainedListItem>Jane Cooper</ContainedListItem>
+  <ContainedListItem>Devon Lane</ContainedListItem>
+  <ContainedListItem>Esther Howard</ContainedListItem>
+</ContainedList>
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<ContainedList labelText="Team members" hideLabel>
+  <ContainedListItem>Jane Cooper</ContainedListItem>
+  <ContainedListItem>Devon Lane</ContainedListItem>
+  <ContainedListItem>Esther Howard</ContainedListItem>
+</ContainedList>
+
+## Sizes
+
+The default size is medium. See variants below for compact and larger layouts.
+
+### Small
+
+Use the small size variant for more compact list items with reduced padding and height.
+
+<ContainedList labelText="API keys" size="sm">
+  <ContainedListItem>Production key</ContainedListItem>
+  <ContainedListItem>Staging key</ContainedListItem>
+  <ContainedListItem>CI/CD key</ContainedListItem>
+</ContainedList>
+
+### Large
+
+Use the large size variant for larger list items with increased padding and height.
+
+<ContainedList labelText="API keys" size="lg">
+  <ContainedListItem>Production key</ContainedListItem>
+  <ContainedListItem>Staging key</ContainedListItem>
+  <ContainedListItem>CI/CD key</ContainedListItem>
+</ContainedList>
+
+### Extra-large
+
+Use the extra-large size variant for the largest list items with maximum padding and height.
+
+<ContainedList labelText="API keys" size="xl">
+  <ContainedListItem>Production key</ContainedListItem>
+  <ContainedListItem>Staging key</ContainedListItem>
+  <ContainedListItem>CI/CD key</ContainedListItem>
+</ContainedList>
+
+## Inset rulers
+
+Set `inset` to inset divider lines from the edges for a more refined appearance.
+
+<ContainedList labelText="Connected integrations" inset>
+  <ContainedListItem>Slack</ContainedListItem>
+  <ContainedListItem>GitHub</ContainedListItem>
+  <ContainedListItem>PagerDuty</ContainedListItem>
+</ContainedList>
+
+## Disclosed
+
+Set `kind` to `"disclosed"` for a compact header that sticks while scrolling. In long lists, the header stays visible at the top of the container.
+
+<Box height="200px" overflowY="auto">
+  <ContainedList labelText="Audit log — Today" kind="disclosed">
+    {#each ["User jane.cooper@acme.com signed in", "API key rotated for billing-service", "Role updated: admin granted to devon.lane", "Webhook endpoint added", "Deployment to production completed", "Password reset requested"] as entry}
+      <ContainedListItem>{entry}</ContainedListItem>
+    {/each}
+  </ContainedList>
+  <ContainedList labelText="Audit log — Yesterday" kind="disclosed">
+    {#each ["User esther.howard@acme.com signed in", "API key revoked for legacy-service", "Role updated: viewer granted to marcus.chen", "Webhook endpoint removed", "Deployment to staging completed", "Two-factor authentication enabled"] as entry}
+      <ContainedListItem>{entry}</ContainedListItem>
+    {/each}
+  </ContainedList>
+</Box>
+
+## Icons
+
+Add icons using the `icon` prop. Icons appear to the left of each item.
+
+<ContainedList labelText="Quick actions">
+  <ContainedListItem icon={Add}>Invite team member</ContainedListItem>
+  <ContainedListItem icon={Add}>Connect integration</ContainedListItem>
+  <ContainedListItem icon={Add}>Generate API key</ContainedListItem>
+</ContainedList>
+
+## Search
+
+Add a search input to filter list items.
+
+### Expandable
+
+Use the `action` slot on the list to add an expandable search control in the header. Set `size` to `"xl"` so the search fills the 48px header.
+
+<ContainedList labelText="Team members">
+  <Search slot="action" expandable size="xl" />
+  <ContainedListItem>Jane Cooper</ContainedListItem>
+  <ContainedListItem>Devon Lane</ContainedListItem>
+  <ContainedListItem>Esther Howard</ContainedListItem>
+</ContainedList>
+
+### Persistent
+
+Place the search as a direct child (not in the action slot) for a persistent filter below the title. The input is styled for list headers and works with sticky headers.
+
+<FileSource src="/framed/ContainedList/PersistentSearch" />
+
+## Clickable items
+
+Make items respond to interaction with `interactive` for in-page actions or `href` for navigation. Both produce a clickable item; add trailing controls to either with the `action` slot.
+
+### Interactive
+
+Set `interactive` on a list item to render it as a clickable button with keyboard support. Combine with `disabled` to prevent interaction.
+
+<ContainedList labelText="Notifications">
+  <ContainedListItem interactive on:click={() => console.log('click')}>
+    Deployment to production succeeded
+  </ContainedListItem>
+  <ContainedListItem interactive disabled>New comment on PR #482</ContainedListItem>
+  <ContainedListItem interactive>Build #1042 failed</ContainedListItem>
+</ContainedList>
+
+### With actions
+
+Use the `action` slot on an item for trailing controls such as buttons or icons. Actions sit on the trailing edge and do not block the item click target.
+
+<ContainedList labelText="Notifications">
+  <ContainedListItem interactive on:click={() => console.log('click')}>
+    Deployment to production succeeded
+    <Button
+      slot="action"
+      kind="ghost"
+      iconDescription="Dismiss"
+      icon={Close}
+      on:click={() => console.log('click close')}
+    />
+  </ContainedListItem>
+  <ContainedListItem interactive disabled>New comment on PR #482</ContainedListItem>
+  <ContainedListItem interactive>
+    Build #1042 failed
+  </ContainedListItem>
+</ContainedList>
+
+### Link items
+
+Set `href` to render a list item as an anchor with clickable styles. Prefer this for navigation so links support middle-click and SEO. `href` takes precedence over `interactive`. Pass `target` and `rel` through rest props on the item.
+
+<ContainedList labelText="Related resources">
+  <ContainedListItem href="https://carbondesignsystem.com/">
+    Carbon Design System
+  </ContainedListItem>
+  <ContainedListItem href="https://svelte.dev/">Svelte</ContainedListItem>
+  <ContainedListItem
+    href="https://github.com/carbon-design-system/carbon-components-svelte"
+    target="_blank"
+  >
+    carbon-components-svelte
+  </ContainedListItem>
+</ContainedList>
+
+### Selected item
+
+Set `selected` on the interactive or link item whose details show beside the list, such as the chosen job in a pipeline. It gets a selected fill, a bar on its leading edge, and `aria-current`.
+
+<ContainedList labelText="Jobs">
+  {#each ["Lint", "Unit tests", "Build", "Deploy"] as name (name)}
+    <ContainedListItem interactive selected={job === name} on:click={() => (job = name)}>
+      {name}
+    </ContainedListItem>
+  {/each}
+</ContainedList>
+
+## Virtualization
+
+Render thousands of items with [VirtualList](/components/VirtualList). Set `spacerTag` to `"li"` so it renders only the items in view, straight into the list. Each item overlaps the one above by 1px, so set `itemHeight` to the item height less 1px. Set `measured` if items can wrap. Wrap the `ContainedList` in a [ScrollGradient](/components/ScrollGradient) and pass its `scrollElementRef` as `scrollElement`.
+
+<FileSource src="/framed/VirtualList/VirtualListContainedList" />

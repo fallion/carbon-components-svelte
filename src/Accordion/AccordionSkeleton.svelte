@@ -3,32 +3,42 @@
   export let count = 4;
 
   /**
-   * Specify alignment of accordion item chevron icon
+   * Specify alignment of accordion item chevron icon.
    * @type {"start" | "end"}
    */
   export let align = "end";
 
   /**
-   * Specify the size of the accordion
-   * @type {"sm" | "xl"}
+   * Specify the size of the accordion.
+   * Also accepts Carbon v11's `"md"` (the 40px default) and `"lg"` (`"xl"`).
+   * @type {"sm" | "md" | "lg" | "xl" | undefined}
    */
   export let size = undefined;
+
+  /**
+   * Set to `true` to remove the gutter around the accordion, aligning it flush with its container.
+   * Has no effect when `align` is `"start"`.
+   */
+  export let flush = false;
 
   /** Set to `false` to close the first accordion item */
   export let open = true;
 
-  import ChevronRight16 from "../icons/ChevronRight16.svelte";
   import SkeletonText from "../SkeletonText/SkeletonText.svelte";
+  import ChevronRight from "../icons/ChevronRight.svelte";
+  import { normalizeFieldSize } from "../utils/size-aliases.js";
+
+  $: effectiveSize = normalizeFieldSize(size);
 </script>
 
-<!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <ul
-  class:bx--skeleton="{true}"
-  class:bx--accordion="{true}"
-  class:bx--accordion--start="{align === 'start'}"
-  class:bx--accordion--end="{align === 'end'}"
-  class:bx--accordion--sm="{size === 'sm'}"
-  class:bx--accordion--xl="{size === 'xl'}"
+  class:bx--skeleton={true}
+  class:bx--accordion={true}
+  class:bx--accordion--start={align === "start"}
+  class:bx--accordion--end={align === "end"}
+  class:bx--accordion--sm={effectiveSize === "sm"}
+  class:bx--accordion--xl={effectiveSize === "xl"}
+  class:bx--accordion--flush={flush && align !== "start"}
   {...$$restProps}
   on:click
   on:mouseover
@@ -37,14 +47,14 @@
 >
   {#if open}
     <li
-      class:bx--accordion__item="{true}"
-      class:bx--accordion__item--active="{true}"
+      class:bx--accordion__item={true}
+      class:bx--accordion__item--active={true}
     >
-      <span class:bx--accordion__heading="{true}">
-        <ChevronRight16 class="bx--accordion__arrow" />
+      <span class:bx--accordion__heading={true}>
+        <ChevronRight class="bx--accordion__arrow" />
         <SkeletonText class="bx--accordion__title" />
       </span>
-      <div class="bx--accordion__content">
+      <div class:bx--accordion__content={true}>
         <SkeletonText width="90%" />
         <SkeletonText width="80%" />
         <SkeletonText width="95%" />
@@ -52,9 +62,9 @@
     </li>
   {/if}
   {#each Array.from({ length: open ? count - 1 : count }, (_, i) => i) as item (item)}
-    <li class="bx--accordion__item">
-      <span class="bx--accordion__heading">
-        <ChevronRight16 class="bx--accordion__arrow" />
+    <li class:bx--accordion__item={true}>
+      <span class:bx--accordion__heading={true}>
+        <ChevronRight class="bx--accordion__arrow" />
         <SkeletonText class="bx--accordion__title" />
       </span>
     </li>

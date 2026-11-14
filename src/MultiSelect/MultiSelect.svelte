@@ -1,56 +1,168 @@
+<script context="module">
+  import { sameArrayItems, sameItemSet } from "../utils/array-set-ops.js";
+
+  /**
+   * Index `entries` by id, bucketing same-id entries in order so duplicate
+   * ids pair up positionally (first old duplicate reused for the first new
+   * occurrence) instead of one id silently overwriting another.
+   * @param {ReadonlyArray<{ id: any }>} entries
+   * @returns {Map<any, any[]>}
+   */
+  function indexById(entries) {
+    const map = new Map();
+    for (const entry of entries) {
+      const bucket = map.get(entry.id);
+      if (bucket) bucket.push(entry);
+      else map.set(entry.id, [entry]);
+    }
+    return map;
+  }
+
+  /**
+   * Value-compare two `selectedIds` arrays, ignoring order: `sort()` only
+   * ever tests membership via a `Set`, so a reordered-but-otherwise-equal
+   * array produces the same result and shouldn't trigger a re-sort.
+   * @param {ReadonlyArray<any>} a
+   * @param {ReadonlyArray<any>} b
+   * @returns {boolean}
+   */
+  function sameSelectedIds(a, b) {
+    return sameItemSet(a, new Set(b));
+  }
+</script>
+
 <script>
   /**
-   * @typedef {string} MultiSelectItemId
-   * @typedef {string} MultiSelectItemText
-   * @typedef {{ id: MultiSelectItemId; text: MultiSelectItemText; }} MultiSelectItem
-   * @event {{ selectedIds: string[]; selected: MultiSelectItem[]; unselected: MultiSelectItem[]; }} select
-   * @event {any} clear
+   * @template {MultiSelectItem<any>} [Item=MultiSelectItem<any>]
+   */
+
+  /** @typedef {string} MultiSelectItemText */
+
+  /**
+   * @template [Id=any]
+   * @typedef {object} MultiSelectItem
+   * @property {Id} id
+   * @property {MultiSelectItemText} text
+   * @property {boolean} [disabled] - Whether the item is disabled
+   * @property {boolean} [isSelectAll] - Whether this item acts as a "select all" toggle
+   * @property {string} [group] - Group label. Items sharing a label render together under a non-selectable header, groups in order of first appearance and `sortItem` sorting within each group.
    */
 
   /**
-   * Set the multiselect items
-   * @type {MultiSelectItem[]}
+   * @event select
+   * @type {object}
+   * @property {Item["id"][]} selectedIds
+   * @property {Item[]} selected
+   * @property {Item[]} unselected
+   * @event {KeyboardEvent | MouseEvent} clear
+   * @event {FocusEvent | CustomEvent<FocusEvent>} blur
+   * @event {{ trigger: "click" | "keydown" | "input" | "programmatic" }} open
+   * @event {{ trigger: "escape-key" | "outside-click" }} close
+   * @event {{ scrollTop: number; scrollHeight: number; clientHeight: number }} scrollend
+   * @slot {{ item: Item; index: number; selected: boolean; highlighted: boolean; }}
+   * @slot {{ group: string; items: ReadonlyArray<Item & { checked: boolean }>; }} group
+   * @slot {{ item: Item; index: number; props: { filter: boolean; disabled: boolean; value: Item["id"]; title: string; maxWidth: string; }; }} tag
+   * @slot {{ value: string; }} empty
+   * @restProps {input | button}
+   */
+
+  /**
+   * Set the multiselect items.
+   * @type {ReadonlyArray<Item>}
    */
   export let items = [];
 
   /**
-   * Override the display of a multiselect item
-   * @type {(item: MultiSelectItem) => string}
+   * Override the display of a multiselect item.
+   * @type {(item: Item) => string | Item["id"]}
    */
-  export let itemToString = (item) => item.text || item.id;
+  export let itemToString = function itemToString(item) {
+    return item.text ?? item.id;
+  };
 
   /**
-   * Set the selected ids
-   * @type {MultiSelectItemId[]}
+   * Override `name`/`value` for the hidden inputs that mirror the current
+   * selection for native form submission, and `title`/`labelText` for the
+   * visible option checkbox. `name`/`value` do not reach the option
+   * checkbox itself -- it is decorative and excluded from form
+   * participation, even while the menu is open.
+   * @type {(item: Item) => { name?: string; labelText?: string; title?: string; value?: string }}
+   */
+  export let itemToInput = function itemToInput(_item) {
+    return {};
+  };
+
+  /**
+   * Set the selected ids.
+   * @type {ReadonlyArray<Item["id"]>}
+   * @bindable writable
    */
   export let selectedIds = [];
 
-  /** Specify the multiselect value */
+  /**
+   * Specify the multiselect value.
+   * @bindable writable
+   */
   export let value = "";
 
   /**
-   * Set the size of the combobox
-   * @type {"sm" | "lg" | "xl"}
+   * Set the size of the multiselect.
+   * Inherits the parent `Form` size when unset.
+   * Also accepts Carbon v11's `"md"` (the 40px default, which overrides a
+   * `Form` size). `"lg"` and `"xl"` are both 48px.
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
    */
   export let size = undefined;
 
   /**
-   * Specify the type of multiselect
+   * Specify the type of multiselect.
    * @type {"default" | "inline"}
    */
   export let type = "default";
 
   /**
-   * Specify the direction of the multiselect dropdown menu
+   * Specify the direction of the multiselect dropdown menu.
    * @type {"bottom" | "top"}
    */
   export let direction = "bottom";
 
   /**
-   * Specify the selection feedback after selecting items
+   * Specify the selection feedback after selecting items.
    * @type {"top" | "fixed" | "top-after-reopen"}
    */
   export let selectionFeedback = "top-after-reopen";
+
+  /**
+   * Cap how many items can be selected at once.
+   * Unset or a non-positive value means unlimited.
+   * When set, select-all is unavailable and unchecked items disable once the cap is reached.
+   * @type {number | undefined}
+   */
+  export let maxSelectedItems = undefined;
+
+  /**
+   * How the field shows the selection. `"count"` shows only the count tag
+   * in the field. `"tags"` also lists each selected item as a dismissible
+   * tag below the field, so the selection stays visible while the menu is
+   * closed.
+   * @type {"count" | "tags"}
+   */
+  export let selectionDisplay = "count";
+
+  /**
+   * With `selectionDisplay="tags"`, `"wrap"` shows every selected tag on as
+   * many rows as needed, and `"collapse"` keeps one row and collapses the
+   * rest into a "+N" button. The button opens the hidden tags in a popover,
+   * where they can still be removed.
+   * @type {"wrap" | "collapse"}
+   */
+  export let tagOverflow = "wrap";
+
+  /**
+   * With `selectionDisplay="tags"`, the accessible name prefix of each
+   * tag's remove button.
+   */
+  export let removeTagText = "Remove";
 
   /** Set to `true` to disable the dropdown */
   export let disabled = false;
@@ -59,18 +171,41 @@
   export let filterable = false;
 
   /**
-   * Override the filtering logic
-   * The default filtering is an exact string comparison
-   * @type {(item: MultiSelectItem, value: string) => string}
+   * Override the filtering logic.
+   * The default matches items whose `text` contains the typed value,
+   * ignoring case and leading or trailing whitespace.
+   * @type {(item: Item, value: string) => boolean}
    */
-  export let filterItem = (item, value) =>
-    item.text.toLowerCase().includes(value.trim().toLowerCase());
+  export let filterItem = function filterItem(item, value) {
+    return item.text.toLowerCase().includes(value.trim().toLowerCase());
+  };
 
-  /** Set to `true` to open the dropdown */
+  /**
+   * Set to `true` to select all text in the filter input when it receives
+   * focus (e.g. on tab or click). Only applies when `filterable` is `true`.
+   */
+  export let selectTextOnFocus = false;
+
+  /**
+   * Set to `true` to open the dropdown.
+   * @bindable writable
+   */
   export let open = false;
 
-  /** Set to `true` to enable the light variant */
-  export let light = false;
+  /**
+   * Set to `true` to use the fluid variant.
+   * Inherited from the parent `FluidForm` context,
+   * so it does not need to be set when used inside `FluidForm`.
+   * Cannot be combined with the inline variant.
+   */
+  export let fluid = false;
+
+  /**
+   * Set to `true` to render condensed menu items in the fluid variant.
+   * Menu items use the default height instead of the taller fluid height.
+   * Only applies when the fluid variant is active.
+   */
+  export let condensed = false;
 
   /** Specify the locale */
   export let locale = "en";
@@ -79,21 +214,31 @@
   export let placeholder = "";
 
   /**
-   * Override the sorting logic
-   * The default sorting compare the item text value
-   * @type {((a: MultiSelectItem, b: MultiSelectItem) => MultiSelectItem) | (() => void)}
+   * Override the sorting logic.
+   * The default sorting compare the item text value.
+   * Set to `false` to skip sorting and keep the original `items` order.
+   * @type {((a: Item, b: Item) => number) | (() => void) | false}
    */
-  export let sortItem = (a, b) =>
-    a.text.localeCompare(b.text, locale, { numeric: true });
+  export let sortItem = function sortItem(a, b) {
+    return getSortCollator().compare(a.text, b.text);
+  };
 
   /**
-   * Override the default translation ids
-   * @type {(id: any) => string}
+   * Override the chevron icon label based on the open state.
+   * Defaults to "Open menu" when closed and "Close menu" when open.
+   * @type {((id: import("../ListBox/ListBoxMenuIcon.svelte").ListBoxMenuIconTranslationId) => string) | undefined}
    */
   export let translateWithId = undefined;
 
-  /** Specify the title text */
-  export let titleText = "";
+  /**
+   * Override the label of the clear button when the input has a selection.
+   * Defaults to "Clear selected item" and "Clear all items" if more than one item is selected.
+   * @type {((id: import("../ListBox/ListBoxSelection.svelte").ListBoxSelectionTranslationId) => string) | undefined}
+   */
+  export let translateWithIdSelection = undefined;
+
+  /** Specify the label text */
+  export let labelText = "";
 
   /** Set to `true` to pass the item to `itemToString` in the checkbox */
   export let useTitleInItem = false;
@@ -104,7 +249,7 @@
   /** Specify the invalid state text */
   export let invalidText = "";
 
-  /** Set to `true` to indicate an warning state */
+  /** Set to `true` to indicate a warning state */
   export let warn = false;
 
   /** Specify the warning state text */
@@ -120,36 +265,224 @@
   export let hideLabel = false;
 
   /** Set an id for the list box component */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
+
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
 
   /**
-   * Specify a name attribute for the select
-   * @type {string}
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
+
+  /**
+   * Specify the assistive text describing options disabled by `maxSelectedItems`.
+   * Announced so screen reader users learn why an option refuses selection,
+   * not just that it is disabled.
+   */
+  export let maxSelectedText = "Maximum items selected";
+
+  /**
+   * Specify the assistive text advertising the keyboard shortcut that clears
+   * the selection. Appended to the field's visually-hidden description
+   * whenever there is a selection to clear.
+   */
+  export let clearSelectionText =
+    "To clear the selection, press Delete or Backspace";
+
+  /**
+   * Specify the assistive text for how many items are selected. Part of the
+   * field's visually-hidden description, and of `readonlyText` when read-only.
+   * @type {(count: number) => string}
+   */
+  export let selectionCountText = function selectionCountText(count) {
+    return `${count} selected`;
+  };
+
+  /**
+   * Specify the assistive text announced through the status live region when
+   * the selection is cleared via the keyboard or the clear button.
+   */
+  export let selectionClearedText = "All items cleared";
+
+  /**
+   * Set to `true` to reopen the dropdown menu after clearing the selection.
+   * This allows users to immediately see all available items after clearing.
+   */
+  export let openOnClear = false;
+
+  /**
+   * Build the assistive message announced through the status live region when
+   * typing in the filterable variant changes how many options match.
+   * The count excludes any "select all" item.
+   * @type {(count: number) => string}
+   */
+  export let filterResultsText = function filterResultsText(count) {
+    return count === 0
+      ? "No results"
+      : `${count} result${count === 1 ? "" : "s"} available`;
+  };
+
+  /**
+   * Specify the message shown in the open menu when no items match the
+   * filter, or, without `filterable`, when `items` is empty.
+   * Defaults to "No results" when `filterable` is `true` and "No options"
+   * otherwise. Pass a function to build it from the typed value.
+   * Set to `""` to show no message. When filterable, `filterResultsText`
+   * still announces the result count; otherwise the status live region
+   * announces this message, also when the `empty` slot replaces it.
+   * @type {undefined | string | ((value: string) => string)}
+   */
+  export let emptyText = undefined;
+
+  /**
+   * Default group name for the hidden inputs that mirror the current
+   * selection for native form submission (`FormData`). Used per item
+   * unless `itemToInput` returns its own `name`. Each input's value
+   * defaults to the item `id` unless `itemToInput` returns a `value`.
+   * Not applied to the
+   * filterable text input, which is a query box, not the form value.
+   * Omitted from submission when the multi-select is disabled.
+   * @type {string | undefined}
    */
   export let name = undefined;
 
-  /** Obtain a reference to the input HTML element */
+  /**
+   * Set to `true` to require at least one selection. A wrapping `<form>`
+   * blocks submission while no enabled item is selected, and the field
+   * shows its invalid state with `requiredInvalidText` instead of the
+   * browser's error bubble.
+   */
+  export let required = false;
+
+  /**
+   * Specify the invalid state text shown when a required multi-select
+   * blocks submission. Cleared once an item is selected. `invalid` and
+   * `invalidText` take precedence.
+   */
+  export let requiredInvalidText = "Select at least one item";
+
+  /**
+   * Obtain a reference to the input HTML element.
+   * @bindable readonly
+   * @type {null | HTMLInputElement}
+   */
   export let inputRef = null;
 
-  /** Obtain a reference to the outer div element */
+  /**
+   * Obtain a reference to the outer div element.
+   * @bindable readonly
+   * @type {null | HTMLDivElement}
+   */
   export let multiSelectRef = null;
 
   /**
-   * Obtain a reference to the field box element
-   * @type {null | HTMLDivElement}
+   * Obtain a reference to the field box element.
+   * @type {null | HTMLButtonElement}
+   * @bindable readonly
    */
   export let fieldRef = null;
 
   /**
-   * Obtain a reference to the selection element
+   * Obtain a reference to the selection element.
    * @type {null | HTMLDivElement}
+   * @bindable readonly
    */
   export let selectionRef = null;
 
-  import { afterUpdate, createEventDispatcher, setContext } from "svelte";
-  import WarningFilled16 from "../icons/WarningFilled16.svelte";
-  import WarningAltFilled16 from "../icons/WarningAltFilled16.svelte";
-  import Checkbox from "../Checkbox/Checkbox.svelte";
+  /**
+   * Id of the highlighted ListBoxMenuItem.
+   * @type {null | Item["id"]}
+   * @bindable readonly
+   */
+  export let highlightedId = null;
+
+  /**
+   * The post-sort, post-selection-feedback list of items rendered by the dropdown.
+   * Bind to read the resolved order without recomputing it from `items`, `selectedIds`, and `sortItem`.
+   * @type {ReadonlyArray<Item & { checked: boolean }>}
+   * @bindable readonly
+   */
+  export let sortedItems = [];
+
+  /**
+   * Enable virtualization for large lists. Virtualization renders only the items currently visible in the viewport, improving performance for large lists.
+   *
+   * By default, virtualization is automatically enabled for lists with more than 100 items.
+   *
+   * Set `virtualize={false}` to explicitly disable virtualization, even for large lists.
+   *
+   * Set `virtualize={true}` to explicitly enable virtualization with default settings.
+   *
+   * Provide an object to customize virtualization behavior:
+   * - `itemHeight` (default: size-based, or 64px for fluid unless `condensed`): Height of each item in pixels. Override when custom slots change row height. Under `wrapOptions`, heights are measured from the rendered options and this serves as the starting estimate for ones not yet measured.
+   * - `containerHeight` (default: 300): The maximum height in pixels of the dropdown container.
+   * - `overscan` (default: 3): The number of extra items to render above and below the viewport for smoother scrolling. Higher values may cause more flickering during very fast scrolling.
+   * - `threshold` (default: 100): The minimum number of items required before virtualization activates. Lists with fewer items will render all items normally without virtualization.
+   * - `maxItems` (default: undefined): The maximum number of items to render. When undefined, all visible items are rendered.
+   * - `optimizeFastScroll` (default: false): Keep the rendered options in view during very fast scrolling, such as a scrollbar drag, instead of showing blank space until new options render. The options then follow the scroll a frame behind, and pause while the main thread is busy.
+   * @type {undefined | boolean | { itemHeight?: number, containerHeight?: number, overscan?: number, threshold?: number, maxItems?: number, optimizeFastScroll?: boolean }}
+   */
+  export let virtualize = undefined;
+
+  /**
+   * Set to `true` to show a loading row after the options while the menu is
+   * open, such as while fetching more items on `scrollend`. Marks the menu
+   * `aria-busy` and hides the empty state; the options stay interactive.
+   */
+  export let loading = false;
+
+  /** Specify the text of the loading row */
+  export let loadingText = "Loading...";
+
+  /**
+   * Wait this many milliseconds after `loading` turns `true` before showing
+   * the loading row. Once shown, it stays for at least 500 ms, so fast work
+   * shows nothing and slow work never flashes. The menu sets `aria-busy` and
+   * holds back the empty state as soon as `loading` is `true`.
+   * Set to `0` to show it at once.
+   */
+  export let loadingDelay = 0;
+
+  /**
+   * Set to `true` to let an option's label wrap onto as many lines as it needs
+   * instead of being truncated with an ellipsis.
+   * @type {boolean}
+   */
+  export let wrapOptions = false;
+
+  /**
+   * Set to `true` to always render the menu in a portal, or `false` to
+   * keep it in place. Left unset, the menu moves to a portal inside a
+   * Modal, or when a box around it (`overflow` other than `visible`)
+   * would cut it off.
+   * @type {boolean | undefined}
+   */
+  export let portalMenu = undefined;
+
+  /**
+   * Obtain a reference to the list HTML element.
+   * @type {null | HTMLDivElement}
+   * @bindable readonly
+   */
+  export let listRef = null;
+
+  import {
+    afterUpdate,
+    createEventDispatcher,
+    getContext,
+    onMount,
+    setContext,
+    tick,
+  } from "svelte";
+  import { writable } from "svelte/store";
+  import Decorator from "../AILabel/Decorator.svelte";
+  import InlineLoading from "../InlineLoading/InlineLoading.svelte";
+  import HighlightSlot from "../ListBox/HighlightSlot.svelte";
+  import ListBoxMenuGroup from "../ListBox/ListBoxMenuGroup.svelte";
+  import ListBoxMenuStatus from "../ListBox/ListBoxMenuStatus.svelte";
+  import ListBoxRequiredInput from "../ListBox/ListBoxRequiredInput.svelte";
   import {
     ListBox,
     ListBoxField,
@@ -157,359 +490,1945 @@
     ListBoxMenuIcon,
     ListBoxMenuItem,
     ListBoxSelection,
-  } from "../ListBox";
+  } from "../ListBox/index.js";
+  import {
+    MENU_PAGE_STEP,
+    shouldVirtualizeMenu,
+  } from "../ListBox/list-box-utils.js";
+  import {
+    createGroupRows,
+    hoistWithinGroups,
+    orderByGroup,
+    splitGroupRuns,
+  } from "../ListBox/menu-groups.js";
+  import {
+    applyPostClearOptions,
+    createMenuCloseHandler,
+    createMenuOpenHandler,
+    createStatusAnnouncer,
+  } from "../ListBox/menu-status.js";
+  import {
+    createMenuWindow,
+    scheduleHighlightScroll,
+  } from "../ListBox/menu-window.js";
+  import Tag from "../Tag/Tag.svelte";
+  import TagSet from "../TagSet/TagSet.svelte";
+  import VirtualWindow from "../VirtualList/VirtualWindow.svelte";
+  import {
+    FORM_CONTEXT_KEY,
+    FORM_SIZE_CONTEXT_KEY,
+    MODAL_CONTEXT_KEY,
+  } from "../constants/context-keys.js";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import { clampIndex } from "../utils/clamp-index.js";
+  import { debounce } from "../utils/debounce.js";
+  import { deepEqual } from "../utils/deep-equal.js";
+  import { createLoadingIndicator } from "../utils/delayed-loading.js";
+  import { dismiss } from "../utils/dismiss.js";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { clippedBy } from "../utils/fit-align.js";
+  import { formReset } from "../utils/form-reset.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { isOutsideClick } from "../utils/is-outside-click.js";
+  import { createScrollEndTracker } from "../utils/is-scroll-near-end.js";
+  import { menuSide } from "../utils/menu-placement.js";
+  import { moveIndex } from "../utils/move-index.js";
+  import { overflowTitle } from "../utils/overflow-title.js";
+  import { preserveFocusSelection } from "../utils/preserve-focus-selection.js";
+  import { rangeSlice } from "../utils/range-slice.js";
+  import { titleWhenTruncated } from "../utils/title-when-truncated.js";
+  import {
+    createTypeaheadBuffer,
+    isTypeaheadKey,
+    typeaheadIndex,
+  } from "../utils/typeahead.js";
+  import { uniqueId } from "../utils/unique-id.js";
+  import { resetVirtualScrollOnClose } from "../utils/virtualize.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
 
   const dispatch = createEventDispatcher();
+  const scrollEndTracker = createScrollEndTracker();
+  const formContext = getContext(FORM_CONTEXT_KEY);
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = size ?? $formSize;
 
-  let inputValue = "";
-  let initialSorted = false;
+  /**
+   * Starts active for a filled slot, so the server renders the AI surface.
+   * `Decorator` clears it when no `AILabel` claims the slot.
+   * @type {import("svelte/store").Writable<undefined | "active" | "revert">}
+   */
+  const aiLabelState = writable($$slots.decorator ? "active" : undefined);
+  const insideModal = getContext(MODAL_CONTEXT_KEY);
+
+  // Set for one open when the in-place menu turns out to be cut off by a
+  // box around it (a scrolling panel, an `overflow: hidden` card): the menu
+  // moves to a portal instead. Only when `portalMenu` is left unset.
+  let portalWhenClipped = false;
+  $: if (!open) portalWhenClipped = false;
+
+  $: effectivePortalMenu =
+    portalMenu === undefined ? !!insideModal || portalWhenClipped : portalMenu;
+
+  // In place, the menu opens on `direction`'s side unless it doesn't fit
+  // there and the other side has more room; a portalled menu flips itself.
+  // Measured once per open, after the menu renders and before it paints.
+  /** @type {"top" | "bottom" | null} */
+  let measuredSide = null;
+  $: placement = measuredSide ?? direction;
+  $: if (open && !effectivePortalMenu) {
+    void direction;
+    tick().then(placeMenu);
+  } else {
+    measuredSide = null;
+  }
+
+  async function placeMenu() {
+    if (!(open && listRef && fieldRef)) return;
+    const mayPortal = portalMenu === undefined;
+    if (mayPortal && clippedBy(listRef)) {
+      portalWhenClipped = true;
+      return;
+    }
+    const side = menuSide(fieldRef, listRef, direction);
+    if (side === placement) return;
+    measuredSide = side;
+    await tick();
+    if (mayPortal && open && listRef && clippedBy(listRef)) {
+      portalWhenClipped = true;
+    }
+  }
+
+  /** @type {string | undefined} */
+  let sortCollatorLocale;
+  /** @type {Intl.Collator | undefined} */
+  let sortCollator;
+  function getSortCollator() {
+    if (!sortCollator || sortCollatorLocale !== locale) {
+      sortCollatorLocale = locale;
+      sortCollator = new Intl.Collator(locale, { numeric: true });
+    }
+    return sortCollator;
+  }
+
+  let fieldFocused = false;
+  /** Set when a required, empty multi-select blocked form submission. */
+  let requiredError = false;
   let highlightedIndex = -1;
+  let highlightOrigin = /** @type {"keyboard" | null} */ (null);
+  /** Row index (see `toRowIndex`) last scrolled into view. */
+  let prevHighlightedIndex = -1;
   let prevChecked = [];
+  let initialRender = true;
+  let listScrollTop = 0;
+  let prevOpen = false;
+  // A copy, not the prop reference: `sameSelectedIds` value-compares against
+  // this, and a live reference would silently track any in-place mutation a
+  // consumer made to the array it previously handed over.
+  let prevSelectedIds = selectedIds.slice();
+  /** Anchor item id for shift+click range selection; cleared when selection is reset entirely. */
+  /** @type {Item["id"] | null} */
+  let prevSelectedItemId = null;
+  /** Wrapper of the selected-item tags, for focus tracking. */
+  /** @type {null | HTMLDivElement} */
+  let selectedTagsRef = null;
+  /** Text content of the visually-hidden status live region. */
+  let statusText = "";
+  /** Accumulated characters for first-character typeahead in the non-filterable field. */
+  // Rows are items or group headers, told apart by the row index in the
+  // template, so the window's row type is `any`.
+  /** @type {import("../ListBox/menu-window.js").MenuWindowState<any>} */
+  let menuState;
 
-  setContext("MultiSelect", {
-    declareRef: ({ key, ref }) => {
-      switch (key) {
-        case "field":
-          fieldRef = ref;
-          break;
-        case "selection":
-          selectionRef = ref;
-          break;
-      }
+  /** @type {import("../ListBox/menu-window.js").MenuWindow<any>} */
+  const menuWindow = createMenuWindow({
+    getContainer: () => listRef,
+    onScrollTop: (scrollTop) => {
+      listScrollTop = scrollTop;
+    },
+    onState: (state) => {
+      menuState = state;
     },
   });
 
-  function change(direction) {
-    let index = highlightedIndex + direction;
+  const typeahead = createTypeaheadBuffer();
+  const buildGroupRows = createGroupRows();
 
-    if (index < 0) {
-      index = items.length - 1;
-    } else if (index >= items.length) {
-      index = 0;
+  // `openMenu(trigger)` opens a closed menu and records the cause, which
+  // `syncOpenEvent` reports in `open` once the menu has rendered.
+  const { openMenu, sync: syncOpenEvent } = createMenuOpenHandler({
+    getOpen: () => open,
+    setOpen: (v) => (open = v),
+    dispatch,
+  });
+
+  /**
+   * @type {(data: { key: "field" | "selection"; ref: HTMLDivElement | HTMLButtonElement }) => void}
+   */
+  function declareRef({ key, ref }) {
+    switch (key) {
+      case "field":
+        fieldRef = /** @type {HTMLButtonElement} */ (ref);
+        break;
+      case "selection":
+        selectionRef = /** @type {HTMLDivElement} */ (ref);
+        break;
+    }
+  }
+
+  /**
+   * Clears a ref when the child that declared it unmounts, unless another
+   * child has declared a newer one for the same key since.
+   * @type {(data: { key: "field" | "selection"; ref: HTMLDivElement | HTMLButtonElement }) => void}
+   */
+  function releaseRef({ key, ref }) {
+    if (key === "field" && fieldRef === ref) fieldRef = null;
+    if (key === "selection" && selectionRef === ref) selectionRef = null;
+  }
+
+  setContext("carbon:MultiSelect", {
+    declareRef,
+    releaseRef,
+  });
+
+  /**
+   * Whether an item should be treated as disabled for selection and keyboard nav.
+   * Checked items stay enabled at the cap so they can be cleared.
+   * @param {Item & { checked?: boolean }} item
+   */
+  function isItemDisabled(item) {
+    if (item.disabled) return true;
+    if (hasMaxSelectedItems && item.isSelectAll) return true;
+    if (isAtSelectionCap && !item.checked) return true;
+    return false;
+  }
+
+  /**
+   * @param {MouseEvent} event
+   * @param {Item & { checked?: boolean }} item
+   * @param {number} index Index into `itemsToUse`.
+   * @param {boolean} itemDisabled
+   */
+  function handleOptionClick(event, item, index, itemDisabled) {
+    if (itemDisabled) {
+      event.stopPropagation();
+      return;
+    }
+    // Label default synthesizes a second click; without this,
+    // selectItem runs twice and the toggle nets to no change.
+    event.preventDefault();
+    const usedRange =
+      event.shiftKey &&
+      prevSelectedItemId !== null &&
+      !item.isSelectAll &&
+      selectItemRange(index, !item.checked);
+    if (!usedRange) {
+      selectItem(item);
+    }
+    prevSelectedItemId = item.id;
+  }
+
+  /**
+   * Select the item keyboard-highlighted at `index` (into `itemsToUse`), or
+   * with `shiftKey` select the range from the anchor to it, matching
+   * shift+click (`handleOptionClick`). Ignored unless the highlight came
+   * from the keyboard.
+   * @param {number} index
+   * @param {boolean} shiftKey
+   */
+  function selectHighlightedItem(index, shiftKey) {
+    if (highlightOrigin !== "keyboard" || index < 0) return;
+    const item = itemsToUse[index];
+    if (!item) return;
+    const usedRange =
+      shiftKey &&
+      prevSelectedItemId !== null &&
+      !item.isSelectAll &&
+      selectItemRange(index, !item.checked);
+    if (!usedRange) selectItem(item);
+    prevSelectedItemId = item.id;
+  }
+
+  /** @param {number} step */
+  function change(step) {
+    // Disabled options stay in the keyboard navigation sequence (APG:
+    // "Focusability of disabled controls") so assistive-tech users can
+    // discover them; selectItem and the option click handlers refuse the
+    // actual selection.
+    //
+    // `filteredItems` is gated on `open` and recomputes reactively, so it can
+    // still be stale/empty here immediately after synchronously flipping
+    // `open` to `true` in the same keydown handler (before the reactive
+    // statement re-runs). Fall back to `sortedItems` in that case, matching
+    // ComboBox's `filteredItems?.length ? filteredItems : items` guard.
+    const navigableItems = filteredItems.length ? filteredItems : sortedItems;
+    highlightedIndex = moveIndex(highlightedIndex, step, navigableItems.length);
+    highlightOrigin = "keyboard";
+  }
+
+  /**
+   * Move the highlight a page of options (PageUp/PageDown), stopping at the
+   * ends instead of wrapping.
+   * @param {1 | -1} direction
+   */
+  function changePage(direction) {
+    const navigableItems = filteredItems.length ? filteredItems : sortedItems;
+    highlightedIndex = clampIndex(
+      highlightedIndex,
+      direction * MENU_PAGE_STEP,
+      navigableItems.length,
+    );
+    highlightOrigin = "keyboard";
+  }
+
+  /**
+   * Move the (keyboard) highlight to the next enabled item whose text starts
+   * with the accumulating typed characters, wrapping once. Only wired for
+   * the non-filterable field, since the filterable text input filters as
+   * you type. Matches Dropdown's `typeaheadSearch`: it moves the highlight,
+   * it never selects.
+   * @param {string} character
+   */
+  function typeaheadSearch(character) {
+    if (itemsToUse.length === 0) return;
+
+    const query = typeahead.push(character);
+
+    highlightedIndex = typeaheadIndex({
+      items: itemsToUse,
+      query,
+      itemToString,
+      index: highlightedIndex,
+    });
+    highlightOrigin = "keyboard";
+  }
+
+  /**
+   * Sync the isSelectAll pseudo-item's checked state to whether every selectable item is
+   * checked. Mutates `sortedItems` in place; callers reassign it afterward.
+   */
+  function syncSelectAllItem() {
+    if (!hasSelectAll) return;
+
+    // Recomputed fresh from `sortedItems`/`value` (plain reads) rather than
+    // the `$:`-derived `selectAllScope`/`selectableItems`, which haven't
+    // picked up the mutation callers make to `sortedItems` just before
+    // calling this (reactive statements only re-run on the next tick).
+    const scope =
+      filterable && open
+        ? sortedItems.filter(
+            (sortedItem) =>
+              sortedItem.isSelectAll || filterItem(sortedItem, value),
+          )
+        : sortedItems;
+    const selectable = scope.filter(
+      (sortedItem) => !sortedItem.disabled && !sortedItem.isSelectAll,
+    );
+    const newSelectableChecked = selectable.filter(
+      (sortedItem) => sortedItem.checked,
+    ).length;
+    const newAllSelected =
+      selectable.length > 0 && newSelectableChecked === selectable.length;
+    const selectAllIndex = sortedItems.findIndex(
+      (sortedItem) => sortedItem.isSelectAll,
+    );
+    if (
+      selectAllIndex !== -1 &&
+      sortedItems[selectAllIndex].checked !== newAllSelected
+    ) {
+      /** @type {Array<Item & { checked: boolean }>} */ (sortedItems)[
+        selectAllIndex
+      ] = {
+        ...sortedItems[selectAllIndex],
+        checked: newAllSelected,
+      };
+    }
+  }
+
+  /**
+   * Mirror an external `selectedIds` change onto the checked state in place,
+   * without reordering, for the modes that defer re-sorting.
+   */
+  function syncCheckedFromSelectedIds() {
+    const ids = new Set(selectedIds);
+    sortedItems = sortedItems.map((entry) =>
+      entry.isSelectAll || entry.checked === ids.has(entry.id)
+        ? entry
+        : { ...entry, checked: ids.has(entry.id) },
+    );
+    syncSelectAllItem();
+    prevChecked = sortedItems.filter((item) => item.checked);
+  }
+
+  /** Apply `selectionFeedback: "top"` bookkeeping after a checked-state change. */
+  function applyTopSelectionFeedback() {
+    if (selectionFeedback !== "top") return;
+
+    selectedIds = sortedItems
+      .filter((sortedItem) => sortedItem.checked && !sortedItem.isSelectAll)
+      .map((sortedItem) => sortedItem.id);
+    prevSelectedIds = selectedIds.slice();
+    sortedItems = sort();
+  }
+
+  /**
+   * Set every non-disabled item within `selectAllScope` to `checked`
+   * (including the isSelectAll pseudo-item, if present, so its own checkbox
+   * follows along without a separate `syncSelectAllItem()` call). Shared by
+   * the isSelectAll pseudo-item's toggle and Ctrl+A.
+   * @param {boolean} checked
+   */
+  function setSelectAllScopeChecked(checked) {
+    sortedItems = sortedItems.map((sortedItem) =>
+      !selectAllScopeIds.has(sortedItem.id) ||
+      sortedItem.disabled ||
+      sortedItem.checked === checked
+        ? sortedItem
+        : { ...sortedItem, checked },
+    );
+  }
+
+  /**
+   * Deselect the item behind a closed tag. Updates `selectedIds` along with
+   * the checked state, as `clear()` does: with the menu closed,
+   * `top-after-reopen` re-sorts from `selectedIds`, which would otherwise
+   * restore the check. `afterUpdate` then reports the change as `select`.
+   * @param {{ detail: { tag: { value?: string | number } } }} event
+   */
+  function handleTagClose({ detail }) {
+    if (effectiveDisabled || readonly) return;
+    const id = detail.tag.value;
+    const entry = sortedItems.find((item) => item.id === id);
+    if (!entry?.checked || entry.disabled) return;
+
+    const hadFocus = selectedTagsRef?.contains(document.activeElement);
+    selectedIds = selectedIds.filter((selectedId) => selectedId !== id);
+    prevSelectedIds = selectedIds.slice();
+    sortedItems = sortedItems.map((item) =>
+      item.id === id ? { ...item, checked: false } : item,
+    );
+    syncSelectAllItem();
+
+    // With no tag left to take focus, hand it back to the field. `TagSet`
+    // moves focus to a neighbouring tag otherwise.
+    if (hadFocus && selectedIds.length === 0) {
+      tick().then(() => (filterable ? inputRef : fieldRef)?.focus());
+    }
+  }
+
+  /**
+   * Handle selection of an item, including isSelectAll logic.
+   * @param {Item & { checked?: boolean }} item
+   */
+  function selectItem(item) {
+    // Read-only allows opening and navigating the menu to review values, but
+    // never changing them. Guarding here covers every path (click, Enter,
+    // label click, select-all) so callers don't each need a readonly check.
+    if (readonly || isItemDisabled(item)) return;
+
+    if (item.isSelectAll) {
+      setSelectAllScopeChecked(!allSelected);
+    } else {
+      const itemIndex = sortedItems.indexOf(
+        /** @type {Item & { checked: boolean }} */ (item),
+      );
+      if (itemIndex !== -1) {
+        /** @type {Array<Item & { checked: boolean }>} */ (sortedItems)[
+          itemIndex
+        ] = { ...item, checked: !item.checked };
+      }
+
+      syncSelectAllItem();
+      sortedItems = [...sortedItems];
     }
 
-    highlightedIndex = index;
+    applyTopSelectionFeedback();
+  }
+
+  /**
+   * Select or deselect every selectable item currently in scope (filtered
+   * when `filterable` and `open`), toggling to the opposite of `allSelected`.
+   * Same semantics as clicking the isSelectAll pseudo-item, whether or not
+   * `items` declares one. Bound to Ctrl+A in
+   * the non-filterable field; the filterable text input intentionally never
+   * calls this so native text selection (Ctrl+A on the input) keeps working.
+   */
+  function selectAllViaKeyboard() {
+    if (readonly || hasMaxSelectedItems || selectableItems.length === 0) {
+      return;
+    }
+    setSelectAllScopeChecked(!allSelected);
+    applyTopSelectionFeedback();
+  }
+
+  /**
+   * Apply `checked` to every selectable item between the anchor item and `targetIndex`
+   * (inclusive), where `targetIndex` is a position in `itemsToUse`. Returns `false` if the
+   * anchor item is no longer present (for example, filtered out), so the caller can fall
+   * back to a single toggle.
+   * @type {(targetIndex: number, checked: boolean) => boolean}
+   */
+  function selectItemRange(targetIndex, checked) {
+    if (readonly) return false;
+
+    const anchorIndex = itemsToUse.findIndex(
+      (item) => item.id === prevSelectedItemId,
+    );
+    const eligible = rangeSlice(
+      itemsToUse,
+      anchorIndex,
+      targetIndex,
+      (item) => !item.isSelectAll && !isItemDisabled(item),
+    );
+    if (eligible === null) return false;
+
+    let changed = eligible.filter((item) => item.checked !== checked);
+    if (checked && hasMaxSelectedItems) {
+      // Fill from the anchor toward the target, stopping at the cap.
+      if (anchorIndex > targetIndex) changed.reverse();
+      changed = changed.slice(
+        0,
+        Math.max(0, /** @type {number} */ (maxSelectedItems) - selectionCount),
+      );
+    }
+    const rangeIds = new Set(changed.map((item) => item.id));
+
+    sortedItems = sortedItems.map((sortedItem) =>
+      rangeIds.has(sortedItem.id) && sortedItem.checked !== checked
+        ? { ...sortedItem, checked }
+        : sortedItem,
+    );
+
+    syncSelectAllItem();
+    applyTopSelectionFeedback();
+
+    return true;
+  }
+
+  const announceStatus = createStatusAnnouncer((text) => (statusText = text));
+
+  /**
+   * Clear the multiselect selection programmatically.
+   * By default, focuses the multiselect after clearing. Set `options.focus` to `false` to prevent focusing.
+   * Set `options.open` to `true` to open the dropdown menu after clearing.
+   * @type {(options?: { focus?: boolean; open?: boolean; }) => Promise<void>}
+   * @example
+   * ```svelte
+   * <MultiSelect bind:this={multiSelect} items={items} />
+   * <button on:click={() => multiSelect.clear()}>Clear</button>
+   * ```
+   */
+  export async function clear(options = {}) {
+    if (readonly || selectionCount === 0) return;
+    selectedIds = [];
+    prevSelectedIds = [];
+    prevSelectedItemId = null;
+    sortedItems = sortedItems.map((item) => ({ ...item, checked: false }));
+    announceStatus(selectionClearedText);
+    await applyPostClearOptions(
+      options,
+      (v) => (open = v),
+      () => (filterable ? inputRef : fieldRef),
+    );
+  }
+
+  /**
+   * Clear the selection from the keyboard, dispatching `clear` with the
+   * keyboard event like the clear button does.
+   * @param {KeyboardEvent} event
+   */
+  function clearFromKeyboard(event) {
+    if (readonly || selectionCount === 0) return;
+    dispatch("clear", event);
+    clear({ open: openOnClear });
+  }
+
+  /** Filter result count last announced; null when the menu is closed so reopening announces again. */
+  /** @type {number | null} */
+  let announcedFilterCount = null;
+
+  const announceFilterResults = debounce(
+    /** @param {number} count */ (count) => {
+      if (count === announcedFilterCount) return;
+      announcedFilterCount = count;
+      announceStatus(filterResultsText(count));
+    },
+    800,
+  );
+
+  onMount(() => {
+    return () => {
+      announceFilterResults.cancel();
+      typeahead.clear();
+      menuWindow.destroy();
+      loadingIndicator.cancel();
+    };
+  });
+
+  // `loading` takes effect at once for `aria-busy` and the empty state. Only
+  // the indicator waits for `loadingDelay`; with no delay it follows `loading`
+  // exactly.
+  let showLoading = loading;
+  const loadingIndicator = createLoadingIndicator((shown) => {
+    showLoading = shown;
+  });
+  $: loadingIndicator(loading, loadingDelay);
+
+  afterUpdate(() => {
+    syncOpenEvent();
+    // Compare by length, not by IDs. This is intentional: `on:select`
+    // should only fire in response to UI interaction (toggle/clear),
+    // not programmatic `selectedIds` changes. A length check is sufficient
+    // because `selectItem` only ever toggles one item at a time, so user-
+    // driven changes always alter the count.
+    if (checked.length !== prevChecked.length) {
+      prevChecked = checked;
+      const nextSelectedIds = checked
+        .filter((item) => !item.isSelectAll)
+        .map((item) => item.id);
+      // Skip a write that changes nothing, as on mount. In Svelte 5, once a
+      // component writes a prop it keeps that value over the parent's later
+      // in-place edits, such as a spliced `$state` array.
+      if (!sameArrayItems(nextSelectedIds, selectedIds)) {
+        selectedIds = nextSelectedIds;
+      }
+      prevSelectedIds = selectedIds.slice();
+      if (!initialRender) {
+        dispatch("select", {
+          selectedIds,
+          selected: checked.filter((item) => !item.isSelectAll),
+          unselected: unchecked.filter((item) => !item.isSelectAll),
+        });
+      }
+    }
+    initialRender = false;
+
+    if (!open) {
+      highlightedIndex = -1;
+      highlightOrigin = null;
+      prevHighlightedIndex = -1;
+      typeahead.clear();
+      if (prevOpen && filterable) {
+        value = "";
+      }
+    }
+
+    // Scroll to highlighted item when it changes via keyboard navigation.
+    // Only scroll if the item is outside the visible viewport.
+    prevHighlightedIndex = scheduleHighlightScroll({
+      open,
+      shouldVirtualize,
+      highlightedIndex: toRowIndex(highlightedIndex),
+      prevHighlightedIndex,
+      listRef,
+      menuWindow,
+    });
+
+    // Scroll to first selected item when menu opens with virtualization
+    const wasJustOpened = open && !prevOpen;
+    if (wasJustOpened && shouldVirtualize && listRef) {
+      tick().then(() => {
+        if (!listRef) return;
+        // Against `itemsToUse`, the rendered list, which sorting and filtering
+        // can order differently from `items`.
+        const selectedIndex =
+          selectedIds && selectedIds.length > 0
+            ? itemsToUse.findIndex((item) => item.id === selectedIds[0])
+            : -1;
+        const row = toRowIndex(selectedIndex);
+        // Keep the group header in view above the first option of a group.
+        menuWindow.scrollIntoView(
+          groupRows?.itemIndexByRow[row - 1] === -1 ? row - 1 : row,
+          "top",
+        );
+      });
+    }
+    // Read before `prevOpen` catches up with `open` below.
+    const justClosed = !open && prevOpen;
+    prevOpen = open;
+
+    menuWindow.sync();
+
+    // Reset scroll position when menu closes
+    if (justClosed && shouldVirtualize) {
+      listScrollTop = resetVirtualScrollOnClose();
+      if (listRef) {
+        listRef.scrollTop = listScrollTop;
+      }
+    }
+    if (!open) {
+      scrollEndTracker.reset();
+      menuWindow.reset();
+    }
+  });
+
+  /**
+   * Row position of the option at `index` in `itemsToUse`. Group headers are
+   * rows too, so the two differ once items are grouped.
+   * @param {number} index
+   * @returns {number}
+   */
+  function toRowIndex(index) {
+    return groupRows && index >= 0 ? groupRows.rowIndexByItem[index] : index;
+  }
+
+  /**
+   * @param {Event} event
+   */
+  function handleMenuScroll(event) {
+    const target = /** @type {HTMLElement} */ (event.target);
+    listScrollTop = target.scrollTop;
+    menuWindow.noteScroll(target.scrollTop);
+    const detail = scrollEndTracker.observe({
+      scrollTop: target.scrollTop,
+      scrollHeight: target.scrollHeight,
+      clientHeight: target.clientHeight,
+      itemCount: itemsToUse.length,
+    });
+    if (detail) {
+      dispatch("scrollend", detail);
+    }
+  }
+
+  /**
+   * Alphabetical order depends only on `items` and `sortItem`, never on
+   * `selectedIds`, so it's cached across `sort()` calls that only change
+   * selection (a toggle, an external `selectedIds` change, a close with
+   * `top-after-reopen`). Keyed on `items` reference: `sort()` only runs for
+   * a genuinely different `items` value (see `isAlreadySorted`), so a
+   * reference change here always means the order needs recomputing.
+   *
+   * `sortItem` is intentionally NOT part of the cache key: like today, a new
+   * `sortItem` function does nothing until some other change forces a
+   * re-sort (define it outside the markup, as with `filterItem`/date rules
+   * elsewhere in this library).
+   */
+  /** @type {typeof items | undefined} */
+  let baseOrderItems;
+  /** @type {Array<{ item: Item; snapshot: Item }>} */
+  let baseOrderPairs;
+  function getBaseOrderPairs() {
+    if (baseOrderItems === items) return baseOrderPairs;
+
+    const regularItems = items.filter((item) => !item.isSelectAll);
+    const regularSnapshots = prevItemsSnapshot.filter(
+      (item) => !item.isSelectAll,
+    );
+    const pairs = regularItems.map((item, index) => ({
+      item,
+      snapshot: regularSnapshots[index],
+    }));
+
+    baseOrderItems = items;
+    baseOrderPairs = orderByGroup(
+      pairs,
+      (pair) => pair.item.group,
+      sortItem === false
+        ? undefined
+        : (a, b) => /** @type {number} */ (sortItem(a.item, b.item)),
+    );
+    return baseOrderPairs;
   }
 
   function sort() {
-    return [
-      ...(checked.length > 1 ? checked.sort(sortItem) : checked),
-      ...unchecked.sort(sortItem),
-    ];
+    const selectedIdsSet = new Set(selectedIds);
+
+    const regularItems = items.filter((item) => !item.isSelectAll);
+    const selectAllItems = items.filter((item) => item.isSelectAll);
+    const selectAllSnapshots = prevItemsSnapshot.filter(
+      (item) => item.isSelectAll,
+    );
+    const enabledRegularItems = regularItems.filter((item) => !item.disabled);
+    const allChecked =
+      enabledRegularItems.length > 0 &&
+      enabledRegularItems.every((item) => selectedIdsSet.has(item.id));
+
+    // Reuse the previous entry object for `item` when nothing about it
+    // changed, so a keyed `{#each}` block sees the same reference and skips
+    // re-evaluating that option. `snapshot` is the value `item` had the last
+    // time `sortedItems` was rebuilt (positionally paired via `items`'s
+    // filtered order, not by id, so it also catches an in-place mutation
+    // handed back under the same id).
+    const prevById = indexById(sortedItems);
+    /**
+     * @param {Item} item
+     * @param {Item | undefined} snapshot
+     * @param {boolean} checked
+     * @returns {Item & { checked: boolean }}
+     */
+    const reuseOrBuildEntry = (item, snapshot, checked) => {
+      const bucket = prevById.get(item.id);
+      const prev = bucket?.[0];
+      if (
+        prev &&
+        prev.checked === checked &&
+        snapshot !== undefined &&
+        deepEqual(snapshot, item)
+      ) {
+        bucket.shift();
+        return prev;
+      }
+      return { ...item, checked };
+    };
+
+    const selectAllEntries = selectAllItems.map((item, index) =>
+      reuseOrBuildEntry(item, selectAllSnapshots[index], allChecked),
+    );
+
+    const entries = getBaseOrderPairs().map(({ item, snapshot }) =>
+      reuseOrBuildEntry(item, snapshot, selectedIdsSet.has(item.id)),
+    );
+
+    if (
+      selectionFeedback === "top" ||
+      selectionFeedback === "top-after-reopen"
+    ) {
+      // Stable partition of the cached base order: checked entries first
+      // within each group. Zero comparator calls, and equivalent to sorting
+      // checked and unchecked separately because the base order is already
+      // sorted by the same comparator and `Array.prototype.sort` is stable.
+      return [
+        ...selectAllEntries,
+        ...hoistWithinGroups(entries, (entry) => entry.checked),
+      ];
+    }
+
+    return [...selectAllEntries, ...entries];
   }
 
-  afterUpdate(() => {
-    if (checked.length !== prevChecked.length) {
-      if (selectionFeedback === "top") {
-        sortedItems = sort();
-      }
-      prevChecked = checked;
-      selectedIds = checked.map(({ id }) => id);
-      dispatch("select", {
-        selectedIds,
-        selected: checked,
-        unselected: unchecked,
-      });
+  // Shallow copies, so an item mutated in place and handed over in a new
+  // array still reads as changed. Declared before the first `sort()` call,
+  // which reads it to decide whether an entry can be reused.
+  let prevItemsSnapshot = items.map((item) => ({ ...item }));
+  sortedItems = sort();
+
+  /**
+   * Whether `sortedItems` already describes `nextItems` and `nextSelectedIds`,
+   * so sorting again would only rebuild every option for the same result.
+   * @type {(nextItems: typeof items, nextSelectedIds: typeof selectedIds) => boolean}
+   */
+  function isAlreadySorted(nextItems, nextSelectedIds) {
+    if (!deepEqual(prevItemsSnapshot, nextItems)) return false;
+
+    const checkedIds = new Set();
+    for (const item of sortedItems) {
+      if (item.checked && !item.isSelectAll) checkedIds.add(item.id);
     }
 
-    if (!open) {
-      if (!initialSorted || selectionFeedback !== "fixed") {
-        sortedItems = sort();
-        initialSorted = true;
-      }
-
-      highlightedIndex = -1;
-      inputValue = "";
-    }
-
-    items = sortedItems;
-  });
+    return sameItemSet(nextSelectedIds, checkedIds);
+  }
 
   $: menuId = `menu-${id}`;
+  $: comboId = `combo-${id}`;
+  $: ({ helperId, errorId, warnId, readonlyId } = buildFieldIds(id));
+  $: selectionId = `selection-${id}`;
+  // `aria-readonly` on a combobox/listbox does not reliably surface read-only state,
+  // so the read-only state is also exposed as a visually-hidden description. The
+  // single status/help id is combined with the read-only id (a describedby
+  // may reference multiple ids) so it works in every state.
+  $: statusDescribedById = resolveStatusDescribedBy({
+    showInvalid,
+    showWarn,
+    helperText,
+    invalidText: shownInvalidText,
+    warnText,
+    isFluid,
+    errorId,
+    warnId,
+    helperId,
+  });
+  $: hasSelectionDescription = !readonly && selectionCount > 0;
+  $: fieldDescribedById = joinDescribedBy(
+    readonly ? readonlyId : null,
+    hasSelectionDescription ? selectionId : null,
+    statusDescribedById,
+  );
+  // The selection count badge is hidden from assistive tech in read-only.
+  // Fold the count into the read-only description so the
+  // collapsed field still announces how much there is to review.
+  $: readonlyDescription =
+    selectionCount > 0
+      ? `${readonlyText}, ${selectionCountText(selectionCount)}`
+      : readonlyText;
   $: inline = type === "inline";
-  $: ariaLabel = $$props["aria-label"] || "Choose an item";
-  $: sortedItems = items.map((item) => ({
-    ...item,
-    checked: selectedIds.includes(item.id),
+  $: isFluid = !inline && (fluid || !!formContext?.isFluid);
+  // Keep the focus outline on the field while the menu is open, not just while
+  // the field itself is focused: selecting an item bounces focus to the option
+  // and back, which would otherwise drop the outline mid-interaction.
+  $: showFluidFieldFocus = isFluid && (fieldFocused || open);
+  $: showFieldFocus = !isFluid && (fieldFocused || open);
+  // Fluid (non-condensed) menu items are 64px tall (see css/_fluid-list-box.scss).
+  // Portaled menus render outside the fluid wrapper, so they keep default heights.
+  $: hasFluidMenuItems = isFluid && !condensed && !effectivePortalMenu;
+  // Invalid/warn states are suppressed when the multi-select is disabled or read-only.
+  $: if (!required || formItems.length > 0) requiredError = false;
+  $: shownInvalidText =
+    requiredError && !invalid ? requiredInvalidText : invalidText;
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid: invalid || requiredError,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
   }));
-  $: checked = sortedItems.filter(({ checked }) => checked);
-  $: unchecked = sortedItems.filter(({ checked }) => !checked);
-  $: filteredItems = sortedItems.filter((item) => filterItem(item, value));
-  $: highlightedId = sortedItems[highlightedIndex]
-    ? sortedItems[highlightedIndex].id
-    : undefined;
-  $: value = inputValue;
+  // A MultiSelect that turns disabled while open closes its menu, so no
+  // option stays clickable. A read-only menu stays open for review. Closing
+  // here is not a dismissal, so `close` does not fire.
+  $: if (effectiveDisabled && open) open = false;
+  // Neutral = default fluid state, i.e. none of the other wrapper modifiers apply.
+  $: fluidNeutral =
+    isFluid && !showInvalid && !showWarn && !effectiveDisabled && !readonly;
+  // Hoverable = disabled/readonly do not suppress the invalid/warning hover
+  // tint. showInvalid/showWarn already exclude both, so this only matters
+  // for readability of the selector it replaces.
+  $: fluidHoverable = isFluid && !effectiveDisabled && !readonly;
+  $: ariaLabel = $$props["aria-label"] ?? "Choose an item";
+  /**
+   * Runs on every `items` update, including the same array mutated in place
+   * (`items.push(item); items = items`), which is why it compares against
+   * `prevItemsSnapshot` rather than the previous `items` reference.
+   * @param {typeof items} nextItems
+   */
+  function syncItems(nextItems) {
+    if (isAlreadySorted(nextItems, selectedIds)) return;
+    // The base-order cache is keyed on the `items` reference, which an
+    // in-place mutation keeps.
+    baseOrderItems = undefined;
+    // `sort()` reads the OLD `prevItemsSnapshot` to decide which entries
+    // changed, so it must run before the snapshot is refreshed to match
+    // the new `items` — otherwise every entry would compare equal to its
+    // own just-taken snapshot and get stale-reused.
+    sortedItems = sort();
+    prevItemsSnapshot = nextItems.map((item) => ({ ...item }));
+    prevChecked = sortedItems.filter((item) => item.checked);
+  }
+
+  $: syncItems(items);
+  $: if (
+    selectedIds &&
+    ((selectionFeedback === "top" &&
+      !sameSelectedIds(selectedIds, prevSelectedIds)) ||
+      (selectionFeedback === "top-after-reopen" && open === false))
+  ) {
+    const external = !sameSelectedIds(selectedIds, prevSelectedIds);
+    prevSelectedIds = selectedIds.slice();
+    sortedItems = sort();
+    // Set by the consumer, not by a toggle or clear(): re-baseline so
+    // afterUpdate does not report it as a `select`.
+    if (external) prevChecked = sortedItems.filter((item) => item.checked);
+  } else if (selectedIds && !sameSelectedIds(selectedIds, prevSelectedIds)) {
+    prevSelectedIds = selectedIds.slice();
+    syncCheckedFromSelectedIds();
+  }
+  $: hasSelectAll = items.some((item) => item.isSelectAll);
+  $: checked = sortedItems.filter((item) => item.checked);
+  $: unchecked = sortedItems.filter((item) => !item.checked);
+  // Native form participation, decoupled from what's rendered: derived from
+  // `items` + `selectedIds` directly (in `items` order), never
+  // `sortedItems`/`checked` (whose order shifts with `selectionFeedback`),
+  // `filteredItems`, or the virtual window. Excludes the isSelectAll
+  // pseudo-item and disabled items (matching native disabled checkboxes,
+  // which never submit). A disabled MultiSelect disables the hidden inputs
+  // themselves, so the field is omitted entirely, like a disabled native
+  // control.
+  $: selectedIdsSet = new Set(selectedIds);
+  $: formItems = items.filter(
+    (item) =>
+      !item.isSelectAll && !item.disabled && selectedIdsSet.has(item.id),
+  );
+  // Tags in `items` order, so they don't jump as `selectionFeedback`
+  // reorders the menu. Disabled selected items show as disabled tags.
+  $: selectedTagItems =
+    selectionDisplay === "tags"
+      ? items.filter((item) => !item.isSelectAll && selectedIdsSet.has(item.id))
+      : [];
+  /** @type {"xs" | "sm" | "default"} */
+  $: tagSize =
+    effectiveSize === "xs" || effectiveSize === "sm"
+      ? effectiveSize
+      : "default";
+  // Scope select-all to the currently visible (filtered) items, so it
+  // doesn't check/uncheck items hidden by an active filter.
+  $: selectAllScope = filterable && open ? filteredItems : sortedItems;
+  $: selectAllScopeIds = new Set(selectAllScope.map((item) => item.id));
+  $: selectableItems = selectAllScope.filter(
+    (item) => !item.disabled && !item.isSelectAll,
+  );
+  $: selectableCheckedCount = selectableItems.filter(
+    (item) => item.checked,
+  ).length;
+  $: allSelected =
+    selectableItems.length > 0 &&
+    selectableCheckedCount === selectableItems.length;
+  $: selectAllIndeterminate =
+    hasSelectAll && selectableCheckedCount > 0 && !allSelected;
+  $: selectionCount = hasSelectAll
+    ? checked.filter((item) => !item.isSelectAll).length
+    : checked.length;
+  $: hasMaxSelectedItems =
+    typeof maxSelectedItems === "number" && maxSelectedItems > 0;
+  $: isAtSelectionCap =
+    hasMaxSelectedItems &&
+    selectionCount >= /** @type {number} */ (maxSelectedItems);
+  $: maxSelectedId = `max-selected-${id}`;
+  $: filteredItems =
+    filterable && open
+      ? sortedItems.filter(
+          (item) => item.isSelectAll || filterItem(item, value),
+        )
+      : [];
+  $: filterResultCount = filteredItems.filter(
+    (item) => !item.isSelectAll,
+  ).length;
+  $: if (filterable && open && value?.length > 0) {
+    announceFilterResults(filterResultCount);
+  } else {
+    announceFilterResults.cancel();
+  }
+  $: if (!open) {
+    announcedFilterCount = null;
+    statusText = "";
+  }
+  // Without a filter, only an empty `items` list (a select-all item aside)
+  // leaves nothing to show, such as before async options arrive.
+  $: hasNoMatches =
+    open &&
+    !loading &&
+    (filterable
+      ? filterResultCount === 0
+      : items.every((item) => item.isSelectAll));
+  $: emptyMessage = hasNoMatches
+    ? typeof emptyText === "function"
+      ? emptyText(value)
+      : (emptyText ?? (filterable ? "No results" : "No options"))
+    : "";
+  // A row after the options, not an option, so arrow keys never reach it.
+  $: showEmpty = hasNoMatches && ($$slots.empty || emptyMessage !== "");
+  // The row is hidden from assistive tech. Filtering announces its result
+  // count; without a filter, the live region carries the message instead.
+  $: if (hasNoMatches && !filterable && emptyMessage) {
+    announceStatus(emptyMessage);
+  }
+  $: highlightedId =
+    highlightedIndex > -1
+      ? ((filterable ? filteredItems : sortedItems)[highlightedIndex]?.id ??
+        null)
+      : null;
+  $: activeDescendantId =
+    highlightedId == null ? null : `${id}-${highlightedId}`;
+
+  $: shouldVirtualize = shouldVirtualizeMenu({ items, virtualize });
+
+  $: itemsToUse = filterable ? filteredItems : sortedItems;
+  $: scrollEndTracker.noteItemCount(itemsToUse.length);
+
+  $: grouped = items.some((item) => !!item.group);
+  // Group headers render as rows of their own, so the menu window indexes
+  // rows, not items. `toRowIndex` maps between the two.
+  $: groupRows = grouped && open ? buildGroupRows(itemsToUse) : null;
+  $: menuRows = groupRows ? groupRows.rows : itemsToUse;
+
+  $: menuState = menuWindow.update({
+    items: menuRows,
+    getKey: (row) => row.id,
+    shouldVirtualize,
+    virtualize,
+    // A header is not as tall as an option, so a grouped menu measures its
+    // rows the way a menu of wrapped options does.
+    wrapOptions: wrapOptions || grouped,
+    size: effectiveSize,
+    fluid: hasFluidMenuItems,
+    scrollTop: listScrollTop,
+  });
+  $: ({
+    itemsToRender,
+    isVirtualized,
+    startIndex,
+    offsetY,
+    totalHeight,
+    menuMaxHeight,
+    isWindowed,
+    isMeasured,
+    isPinned,
+  } = menuState);
+  // Each group's rendered rows sit inside one `role="group"` element.
+  $: menuRuns = splitGroupRuns(
+    itemsToRender,
+    isVirtualized ? startIndex : 0,
+    groupRows,
+  );
+
+  $: multiSelectListBoxClass = [
+    "bx--multi-select",
+    $$slots.decorator && !isFluid && "bx--list-box--decorator",
+    $aiLabelState === "active" && "bx--list-box--ai-label",
+    placement === "top" && "bx--list-box--up",
+    filterable && "bx--combo-box",
+    filterable && "bx--multi-select--filterable",
+    // A clear button for the filter text shows by the chevron.
+    filterable && value && "bx--list-box--clearable",
+    showInvalid && "bx--multi-select--invalid",
+    inline && "bx--multi-select--inline",
+    readonly && "bx--multi-select--readonly",
+    selectionCount > 0 && "bx--multi-select--selected",
+    hasSelectAll && "bx--multi-select--selectall",
+    // Thins the field's focus ring while an option holds the highlight.
+    open && highlightedId != null && "bx--list-box--option-highlighted",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  /**
+   * Dismiss the menu and notify consumers of the cause. Guarded on `open` so a
+   * dismissal gesture fired while already closed does not emit a phantom event.
+   * @type {(trigger: "escape-key" | "outside-click") => void}
+   */
+  const close = createMenuCloseHandler({
+    getOpen: () => open,
+    setOpen: (v) => (open = v),
+    dispatch,
+  });
+
+  /** @param {Event} event */
+  function handleOutsideInteraction(event) {
+    if (
+      open &&
+      isOutsideClick(event, [multiSelectRef, effectivePortalMenu && listRef])
+    ) {
+      close("outside-click");
+    }
+  }
+
+  // A form reset clears the filter field without an input event. Svelte 5
+  // syncs `bind:value` back on its own; Svelte 3 and 4 do not, so read the
+  // field.
+  function handleFilterFormReset() {
+    if (inputRef) value = inputRef.value;
+  }
+
+  /**
+   * A form reset unchecks the option checkboxes, but the selection lives in
+   * the items. Put each box back to the state its option announces.
+   */
+  function handleOptionFormReset() {
+    if (!listRef) return;
+    for (const option of listRef.querySelectorAll('[role="option"]')) {
+      /** @type {HTMLInputElement | null} */
+      const input = option.querySelector('input[type="checkbox"]');
+      if (input)
+        input.checked = option.getAttribute("aria-selected") === "true";
+    }
+  }
+
+  /**
+   * Title an option label while its text overflows. Measures the label
+   * text span, which is the element that truncates.
+   * @param {HTMLElement} node
+   * @param {string | undefined} title
+   */
+  function optionOverflowTitle(node, title) {
+    const measure = /** @type {HTMLElement | null} */ (node.firstElementChild);
+    const action = overflowTitle(node, { title, measure });
+    return {
+      /** @param {string | undefined} next */
+      update: (next) => action.update({ title: next, measure }),
+      destroy: action.destroy,
+    };
+  }
 </script>
 
-<svelte:window
-  on:click="{({ target }) => {
-    if (open && multiSelectRef && !multiSelectRef.contains(target)) {
-      open = false;
-    }
-  }}"
-/>
-
 <div
-  bind:this="{multiSelectRef}"
-  class:bx--multi-select__wrapper="{true}"
-  class:bx--list-box__wrapper="{true}"
-  class:bx--multi-select__wrapper--inline="{inline}"
-  class:bx--list-box__wrapper--inline="{inline}"
-  class:bx--multi-select__wrapper--inline--invalid="{inline && invalid}"
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  bind:this={multiSelectRef}
+  use:formReset={handleOptionFormReset}
+  use:dismiss={{
+    enabled: open,
+    type: ["click", "focusin"],
+    handler: handleOutsideInteraction,
+  }}
+  class:bx--multi-select__wrapper={true}
+  class:bx--list-box__wrapper={true}
+  class:bx--multi-select__wrapper--inline={inline}
+  class:bx--list-box__wrapper--inline={inline}
+  class:bx--multi-select__wrapper--inline--invalid={inline && showInvalid}
+  class:bx--list-box__wrapper--fluid={isFluid}
+  class:bx--list-box__wrapper--fluid--neutral={fluidNeutral}
+  class:bx--list-box__wrapper--fluid--hoverable={fluidHoverable}
+  class:bx--list-box__wrapper--fluid--invalid={isFluid && showInvalid}
+  class:bx--list-box__wrapper--fluid--warning={isFluid && showWarn}
+  class:bx--list-box__wrapper--fluid--disabled={isFluid && effectiveDisabled}
+  class:bx--list-box__wrapper--fluid--readonly={isFluid && readonly}
+  class:bx--list-box__wrapper--fluid--condensed={isFluid && condensed}
+  class:bx--multi-select--filterable__wrapper={isFluid && filterable}
 >
-  {#if titleText}
+  {#each formItems as item (item.id)}
+    {@const itemInput = itemToInput(item) ?? {}}
+    <input
+      type="hidden"
+      name={itemInput.name ?? name ?? item.id}
+      value={itemInput.value ?? (name ? item.id : "")}
+      disabled={effectiveDisabled}
+      form={$$restProps.form}
+    />
+  {/each}
+  {#if labelText || $$slots.labelChildren}
     <label
-      for="{id}"
-      class:bx--label="{true}"
-      class:bx--label--disabled="{disabled}"
-      class:bx--visually-hidden="{hideLabel}"
+      for={id}
+      class:bx--label={true}
+      class:bx--label--disabled={effectiveDisabled}
+      class:bx--visually-hidden={hideLabel}
+      class:bx--label--slotted={isFluid && $$slots.labelChildren}
+      use:titleWhenTruncated={{ enabled: isFluid && !$$slots.labelChildren }}
     >
-      {titleText}
+      <slot name="labelChildren">{labelText}</slot>
     </label>
   {/if}
   <ListBox
-    aria-label="{ariaLabel}"
-    id="{id}"
-    disabled="{disabled}"
-    invalid="{invalid}"
-    invalidText="{invalidText}"
-    open="{open}"
-    light="{light}"
-    size="{size}"
-    warn="{warn}"
-    warnText="{warnText}"
-    class="bx--multi-select {direction === 'top' &&
-      'bx--list-box--up'} {filterable && 'bx--combo-box'}
-      {filterable && 'bx--multi-select--filterable'}
-      {invalid && 'bx--multi-select--invalid'}
-      {inline && 'bx--multi-select--inline'}
-      {checked.length > 0 && 'bx--multi-select--selected'}"
+    id={comboId}
+    disabled={effectiveDisabled}
+    invalid={showInvalid}
+    invalidText={isFluid ? "" : shownInvalidText}
+    invalidId={errorId}
+    {open}
+    size={effectiveSize}
+    warn={showWarn}
+    warnText={isFluid ? "" : warnText}
+    {warnId}
+    class={multiSelectListBoxClass}
   >
-    {#if invalid}
-      <WarningFilled16 class="bx--list-box__invalid-icon" />
+    {#if !filterable && showInvalid}
+      <WarningFilled class="bx--list-box__invalid-icon" />
     {/if}
-    {#if !invalid && warn}
-      <WarningAltFilled16
+    {#if !filterable && showWarn}
+      <WarningAltFilled
         class="bx--list-box__invalid-icon bx--list-box__invalid-icon--warning"
       />
     {/if}
-    <ListBoxField
-      role="button"
-      tabindex="0"
-      aria-expanded="{open}"
-      on:click="{() => {
-        if (disabled) return;
-        if (filterable) {
-          open = true;
-          inputRef.focus();
-        } else {
-          open = !open;
-        }
-      }}"
-      on:keydown="{({ key }) => {
-        if (filterable) {
-          return;
-        }
-        if (key === ' ') {
-          open = !open;
-        } else if (key === 'Tab') {
-          if (selectionRef && checked.length > 0) {
-            selectionRef.focus();
-          } else {
-            open = false;
-            fieldRef.blur();
-          }
-        } else if (key === 'ArrowDown') {
-          change(1);
-        } else if (key === 'ArrowUp') {
-          change(-1);
-        } else if (key === 'Enter') {
-          if (highlightedIndex > -1) {
-            sortedItems = sortedItems.map((item, i) => {
-              if (i !== highlightedIndex) return item;
-              return { ...item, checked: !item.checked };
-            });
-          }
-        }
-      }}"
-      on:focus="{() => {
-        if (filterable) {
-          open = true;
-          if (inputRef) inputRef.focus();
-        }
-      }}"
-      on:blur="{({ relatedTarget }) => {
-        if (
-          relatedTarget &&
-          !['INPUT', 'SELECT', 'TEXTAREA'].includes(relatedTarget.tagName) &&
-          relatedTarget.getAttribute('role') !== 'button' &&
-          relatedTarget.getAttribute('role') !== 'searchbox'
-        ) {
-          fieldRef.focus();
-        }
-      }}"
-      id="{id}"
-      disabled="{disabled}"
-      translateWithId="{translateWithId}"
-    >
-      {#if checked.length > 0}
-        <ListBoxSelection
-          selectionCount="{checked.length}"
-          on:clear
-          on:clear="{() => {
-            sortedItems = sortedItems.map((item) => ({
-              ...item,
-              checked: false,
-            }));
-            if (fieldRef) fieldRef.blur();
-          }}"
-          translateWithId="{translateWithId}"
-          disabled="{disabled}"
-        />
-      {/if}
-      {#if filterable}
-        <input
-          bind:this="{inputRef}"
+    {#if $$slots.decorator}
+      <Decorator
+        class="bx--field-decorator bx--list-box__inner-wrapper--decorator"
+        size={effectiveSize}
+        state={aiLabelState}
+      >
+        <slot name="decorator" />
+      </Decorator>
+    {/if}
+    {#if filterable}
+      <div
+        style={isFluid ? undefined : "display: contents"}
+        class:bx--list-box__field--wrapper={isFluid}
+        class:bx--list-box__field--wrapper--input-focused={showFluidFieldFocus}
+      >
+        <div
+          class:bx--list-box__field={true}
+          class:bx--list-box__field--wrapper--input-focused={!isFluid &&
+            showFieldFocus}
+        >
+          {#if selectionCount > 0}
+            <ListBoxSelection
+              {selectionCount}
+              on:clear
+              on:clear={() => clear({ open: openOnClear })}
+              translateWithId={translateWithIdSelection}
+              disabled={effectiveDisabled}
+              {readonly}
+              class={tagSize === "default" ? undefined : `bx--tag--${tagSize}`}
+            />
+          {/if}
+          <input
+            bind:this={inputRef}
+            use:preserveFocusSelection={selectTextOnFocus && !effectiveDisabled}
+            use:formReset={handleFilterFormReset}
+            bind:value
+            aria-invalid={showInvalid ? "true" : undefined}
+            aria-required={required ? "true" : undefined}
+            {...$$restProps}
+            role="combobox"
+            tabindex="0"
+            autocomplete="off"
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-expanded={open ? "true" : "false"}
+            aria-activedescendant={activeDescendantId}
+            aria-disabled={effectiveDisabled ? "true" : undefined}
+            aria-readonly={readonly ? "true" : undefined}
+            aria-controls={open ? menuId : undefined}
+            aria-describedby={joinDescribedBy(
+              fieldDescribedById,
+              $$restProps["aria-describedby"],
+            )}
+            class:bx--text-input={true}
+            class:bx--text-input--empty={value === ""}
+            on:click={() => {
+              if (effectiveDisabled) return;
+              openMenu("click");
+            }}
+            on:keydown
+            on:keydown={(event) => {
+              // ListBox decides whether Escape propagates.
+              if (event.key !== "Escape") event.stopPropagation();
+              // Keys that belong to an IME composition (Enter commits, Escape
+              // cancels, arrows pick a candidate) are not menu keys.
+              if (isImeComposition(event)) return;
+              // Read-only opens and navigates the menu to review values, but the
+              // keys that clear the selection are blocked; selectItem guards the
+              // rest (Enter/option toggle).
+              if (
+                readonly &&
+                (event.key === "Backspace" || event.key === "Delete")
+              ) {
+                return;
+              }
+              if (event.key === "Enter") {
+                selectHighlightedItem(highlightedIndex, event.shiftKey);
+              } else if (event.key === "Tab") {
+                // Tab dismisses without selecting; report it as a keyboard
+                // dismissal, like Dropdown and ComboBox.
+                close("escape-key");
+              } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                const step = event.key === "ArrowDown" ? 1 : -1;
+                if (event.altKey) {
+                  // APG combobox pattern: Alt+ArrowDown opens a closed menu
+                  // without moving the highlight; Alt+ArrowUp closes an open one.
+                  if (event.key === "ArrowDown" && !open) {
+                    openMenu("keydown");
+                  } else if (event.key === "ArrowUp" && open) {
+                    close("escape-key");
+                  }
+                } else {
+                  openMenu("keydown");
+                  change(step);
+                }
+              } else if (
+                open &&
+                (event.key === "PageUp" || event.key === "PageDown")
+              ) {
+                // APG listbox: jump a page of options; a closed menu keeps the default.
+                event.preventDefault();
+                changePage(event.key === "PageDown" ? 1 : -1);
+              } else if (event.key === "Escape") {
+                close("escape-key");
+              } else if (event.key === " ") {
+                if (readonly) event.preventDefault();
+                openMenu("keydown");
+              } else if (event.key === "Backspace" && value === "") {
+                clearFromKeyboard(event);
+              } else if (event.key === "Delete") {
+                value = "";
+                if (!open) clearFromKeyboard(event);
+              }
+            }}
+            on:input
+            on:input={() => {
+              openMenu("input");
+            }}
+            on:keyup
+            on:focus
+            on:focus={() => {
+              fieldFocused = true;
+              if (selectTextOnFocus && !effectiveDisabled) {
+                tick().then(() => inputRef?.select());
+              }
+            }}
+            on:blur
+            on:blur={() => {
+              fieldFocused = false;
+            }}
+            on:paste
+            disabled={effectiveDisabled}
+            {readonly}
+            {placeholder}
+            {id}
+          />
+          <!-- After the input, as in ComboBox, so the list box rules move the
+            status icon left of the clear button once a query is typed. -->
+          {#if showInvalid}
+            <WarningFilled class="bx--list-box__invalid-icon" />
+          {/if}
+          {#if showWarn}
+            <WarningAltFilled
+              class="bx--list-box__invalid-icon bx--list-box__invalid-icon--warning"
+            />
+          {/if}
+          {#if value}
+            <ListBoxSelection
+              on:clear={() => {
+                value = "";
+                open = false;
+                // `bind:value` writes the DOM value without firing "input",
+                // so the `on:input` below would miss this clear. Set the
+                // node first, then dispatch. Svelte's `bind:value` listener
+                // reads `event.target.value`, and the reactive assignment
+                // above has not flushed yet.
+                if (inputRef) {
+                  inputRef.value = "";
+                  inputRef.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+              }}
+              translateWithId={translateWithIdSelection}
+              disabled={effectiveDisabled}
+              {readonly}
+            />
+          {/if}
+          <ListBoxMenuIcon
+            on:click={(event) => {
+              if (effectiveDisabled) return;
+              event.stopPropagation();
+              if (open) open = false;
+              else openMenu("click");
+            }}
+            {translateWithId}
+            {open}
+          />
+        </div>
+      </div>
+    {:else}
+      <!-- The visible focus outline renders on this wrapper, not the field
+           itself: Carbon resets `.bx--list-box__field:focus` to a transparent
+           outline, which outranks the `--input-focused` rule when both target
+           the focused field. Placing `--input-focused` on the (unfocused)
+           wrapper avoids that `:focus` specificity bump. -->
+      <div
+        class:bx--list-box__field--wrapper={true}
+        class:bx--list-box__field--wrapper--input-focused={isFluid
+          ? showFluidFieldFocus
+          : showFieldFocus}
+      >
+        <ListBoxField
+          aria-invalid={showInvalid || undefined}
+          aria-required={required || undefined}
           {...$$restProps}
           role="combobox"
           tabindex="0"
-          autocomplete="off"
-          aria-autocomplete="list"
-          aria-expanded="{open}"
-          aria-activedescendant="{highlightedId}"
-          aria-disabled="{disabled}"
-          aria-controls="{menuId}"
-          class:bx--text-input="{true}"
-          class:bx--text-input--empty="{inputValue === ''}"
-          class:bx--text-input--light="{light}"
-          on:input="{({ target }) => {
-            inputValue = target.value;
-          }}"
-          on:keydown
-          on:keydown|stopPropagation="{({ key }) => {
-            if (key === 'Enter') {
-              if (highlightedIndex > -1) {
-                if (filterable) {
-                  const filteredItemId = filteredItems[highlightedIndex].id;
-                  const filteredItemIndex = sortedItems
-                    .map((item) => item.id)
-                    .indexOf(filteredItemId);
-
-                  sortedItems = sortedItems.map((item, i) => {
-                    if (i !== filteredItemIndex) return item;
-                    return { ...item, checked: !item.checked };
-                  });
-                } else {
-                  sortedItems = sortedItems.map((item, i) => {
-                    if (i !== highlightedIndex) return item;
-                    return { ...item, checked: !item.checked };
-                  });
-                }
-              }
-            } else if (key === 'Tab') {
-              open = false;
-              inputRef.blur();
-            } else if (key === 'ArrowDown') {
-              change(1);
-            } else if (key === 'ArrowUp') {
-              change(-1);
-            } else if (key === 'Escape') {
-              open = false;
-            } else if (key === ' ') {
-              if (!open) open = true;
-            }
-          }}"
-          on:keyup
-          on:focus
-          on:blur
-          on:blur="{({ relatedTarget }) => {
+          aria-expanded={open ? "true" : "false"}
+          aria-activedescendant={activeDescendantId}
+          aria-controls={open ? menuId : undefined}
+          aria-describedby={joinDescribedBy(
+            fieldDescribedById,
+            $$restProps["aria-describedby"],
+          )}
+          on:focus={() => {
+            fieldFocused = true;
+          }}
+          on:click={() => {
+            if (effectiveDisabled) return;
+            if (open) open = false;
+            else openMenu("click");
+          }}
+          on:keydown={(event) => {
+            // The field is only aria-disabled, so a click can still focus it.
+            if (effectiveDisabled) return;
             if (
-              relatedTarget &&
-              !['INPUT', 'SELECT', 'TEXTAREA'].includes(
-                relatedTarget.tagName
-              ) &&
-              relatedTarget.getAttribute('role') !== 'button' &&
-              relatedTarget.getAttribute('role') !== 'searchbox'
+              event.key === " " ||
+              event.key === "Enter" ||
+              event.key === "ArrowUp" ||
+              event.key === "ArrowDown"
             ) {
-              inputRef.focus();
+              // Prevent the native button from synthesizing a click (which would
+              // toggle the menu) so these keys are handled solely below.
+              event.preventDefault();
             }
-          }}"
-          disabled="{disabled}"
-          placeholder="{placeholder}"
-          id="{id}"
-          name="{name}"
-          value="{inputValue}"
-        />
-        {#if invalid}
-          <WarningFilled16 class="bx--list-box__invalid-icon" />
-        {/if}
-        {#if inputValue}
-          <ListBoxSelection
-            on:clear="{() => {
-              inputValue = '';
-              open = false;
-            }}"
-            translateWithId="{translateWithId}"
-            disabled="{disabled}"
-            open="{open}"
-          />
-        {/if}
-        <ListBoxMenuIcon
-          style="pointer-events: {open ? 'auto' : 'none'}"
-          on:click="{(e) => {
-            e.stopPropagation();
-            open = !open;
-          }}"
-          translateWithId="{translateWithId}"
-          open="{open}"
-        />
-      {/if}
-      {#if !filterable}
-        <span class="bx--list-box__label">{label}</span>
-        <ListBoxMenuIcon open="{open}" translateWithId="{translateWithId}" />
-      {/if}
-    </ListBoxField>
-    {#if open}
-      <ListBoxMenu aria-label="{ariaLabel}" id="{id}">
-        {#each filterable ? filteredItems : sortedItems as item, i (item.id)}
-          <ListBoxMenuItem
-            id="{item.id}"
-            active="{item.checked}"
-            highlighted="{highlightedIndex === i}"
-            on:click="{() => {
-              sortedItems = sortedItems.map((_) =>
-                _.id === item.id ? { ..._, checked: !_.checked } : _
-              );
-              fieldRef.focus();
-            }}"
-            on:mouseenter="{() => {
-              highlightedIndex = i;
-            }}"
-          >
-            <Checkbox
-              readonly
-              tabindex="-1"
-              id="checkbox-{item.id}"
-              title="{useTitleInItem ? itemToString(item) : undefined}"
-              name="{itemToString(item)}"
-              labelText="{itemToString(item)}"
-              checked="{item.checked}"
-              disabled="{disabled}"
-              on:blur="{() => {
-                if (i === filteredItems.length - 1) open = false;
-              }}"
+            // Read-only still opens and navigates the menu; selectItem is the
+            // single guard that blocks the actual selection change.
+            if (event.key === " ") {
+              if (open) {
+                selectHighlightedItem(highlightedIndex, event.shiftKey);
+              } else {
+                openMenu("keydown");
+              }
+            } else if (event.key === "Tab") {
+              // Tab dismisses without selecting; report it as a keyboard
+              // dismissal, like Dropdown and ComboBox.
+              close("escape-key");
+            } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              const step = event.key === "ArrowDown" ? 1 : -1;
+              if (event.altKey) {
+                // APG combobox pattern: Alt+ArrowDown opens a closed menu
+                // without moving the highlight; Alt+ArrowUp closes an open one.
+                if (event.key === "ArrowDown" && !open) {
+                  openMenu("keydown");
+                } else if (event.key === "ArrowUp" && open) {
+                  close("escape-key");
+                }
+              } else {
+                openMenu("keydown");
+                change(step);
+              }
+            } else if (event.key === "Enter") {
+              if (open) {
+                selectHighlightedItem(highlightedIndex, event.shiftKey);
+              } else {
+                openMenu("keydown");
+              }
+            } else if (
+              open &&
+              (event.key === "PageUp" || event.key === "PageDown")
+            ) {
+              // APG listbox: jump a page of options; a closed menu keeps the default.
+              event.preventDefault();
+              changePage(event.key === "PageDown" ? 1 : -1);
+            } else if (event.key === "Escape") {
+              // Escape that cancels an IME composition is not a close.
+              if (!isImeComposition(event)) close("escape-key");
+            } else if (event.key === "Home" || event.key === "End") {
+              // APG select-only combobox: Home/End open a closed listbox, then
+              // move the highlight to the first/last option. The filterable
+              // variant deliberately leaves these keys to the text caret.
+              event.preventDefault();
+              openMenu("keydown");
+              highlightedIndex =
+                event.key === "Home" ? 0 : itemsToUse.length - 1;
+              highlightOrigin = "keyboard";
+            } else if (event.key === "Delete" || event.key === "Backspace") {
+              // Clear the whole selection from the keyboard, menu open or
+              // closed, matching the filterable variant. Read-only reviews the
+              // menu but never changes the selection.
+              if (readonly) return;
+              event.preventDefault();
+              clearFromKeyboard(event);
+            } else if (
+              open &&
+              (event.key === "a" || event.key === "A") &&
+              (event.ctrlKey || event.metaKey)
+            ) {
+              // Only wired for the non-filterable field: the filterable text
+              // input's Ctrl+A must keep selecting the filter text, not the
+              // options, so it is deliberately left unhandled there.
+              event.preventDefault();
+              selectAllViaKeyboard();
+            } else if (open && isTypeaheadKey(event)) {
+              event.preventDefault();
+              typeaheadSearch(event.key);
+            }
+          }}
+          on:blur={(event) => {
+            fieldFocused = false;
+            dispatch("blur", event);
+          }}
+          {id}
+          disabled={effectiveDisabled}
+          {readonly}
+        >
+          {#if selectionCount > 0}
+            <ListBoxSelection
+              {selectionCount}
+              on:clear
+              on:clear={() => clear({ open: openOnClear })}
+              translateWithId={translateWithIdSelection}
+              disabled={effectiveDisabled}
+              {readonly}
+              class={tagSize === "default" ? undefined : `bx--tag--${tagSize}`}
             />
-          </ListBoxMenuItem>
-        {/each}
+          {/if}
+          <span class:bx--list-box__label={true} use:titleWhenTruncated
+            >{label}</span
+          >
+          <ListBoxMenuIcon {open} {translateWithId} />
+        </ListBoxField>
+      </div>
+    {/if}
+    {#if required}
+      <ListBoxRequiredInput
+        hasValue={formItems.length > 0}
+        disabled={effectiveDisabled}
+        {readonly}
+        focusTarget={filterable ? inputRef : fieldRef}
+        form={$$restProps.form}
+        on:invalid={() => (requiredError = true)}
+        on:reset={() => (requiredError = false)}
+      />
+    {/if}
+    {#if open}
+      <ListBoxMenu
+        aria-label={ariaLabel}
+        {id}
+        portal={effectivePortalMenu}
+        portalHostClass="bx--multi-select bx--list-box--expanded"
+        {open}
+        anchor={fieldRef}
+        {direction}
+        highlightedId={activeDescendantId}
+        {wrapOptions}
+        aria-multiselectable="true"
+        aria-readonly={readonly || undefined}
+        aria-busy={loading || undefined}
+        on:scroll
+        on:scroll={handleMenuScroll}
+        bind:ref={listRef}
+        style={isWindowed
+          ? `max-height: ${menuMaxHeight}; overflow-y: auto;`
+          : effectivePortalMenu
+            ? `max-height: ${menuMaxHeight};`
+            : undefined}
+      >
+        {#if isVirtualized}
+          <VirtualWindow
+            {totalHeight}
+            {offsetY}
+            scrollTop={listScrollTop}
+            pinned={isPinned}
+            measured={isMeasured}
+          >
+            {#each menuRuns as run (run.key)}
+              <ListBoxMenuGroup
+                labelledBy={run.groupIndex > -1
+                  ? `group-${id}-${run.groupIndex}`
+                  : undefined}
+              >
+                {#each run.rows as item, runIndex (item.id)}
+                  {@const rowIndex = run.start + runIndex}
+                  {@const actualIndex = groupRows
+                    ? groupRows.itemIndexByRow[rowIndex]
+                    : rowIndex}
+                  {#if actualIndex === -1}
+                    <!-- Hidden from assistive tech: the enclosing group is named
+                         by a hidden label, which stays rendered when a virtualized
+                         window leaves this header out. -->
+                    <div
+                      role="presentation"
+                      aria-hidden="true"
+                      data-virtual-index={isMeasured ? rowIndex : undefined}
+                      class:bx--list-box__menu-group-header={true}
+                      class:bx--list-box__menu-group-header--first={rowIndex ===
+                        0}
+                      on:mousedown={(event) => {
+                        // Keep focus on the field, as options do.
+                        event.preventDefault();
+                      }}
+                    >
+                      <slot name="group" group={item.group} items={item.items}>
+                        {item.group}
+                      </slot>
+                    </div>
+                  {:else}
+                    {@const optionId = `${id}-${item.id}`}
+                    {@const itemDisabled =
+                      item.disabled ||
+                      (hasMaxSelectedItems && !!item.isSelectAll) ||
+                      (isAtSelectionCap && !item.checked)}
+                    {@const capDisabled =
+                      isAtSelectionCap &&
+                      !item.checked &&
+                      !item.disabled &&
+                      !item.isSelectAll}
+                    {@const optionInput = itemToInput(item) ?? {}}
+                    {@const optionChecked = item.isSelectAll
+                      ? allSelected
+                      : item.checked}
+                    {@const optionIndeterminate =
+                      item.isSelectAll && selectAllIndeterminate}
+                    <ListBoxMenuItem
+                      id={optionId}
+                      role="option"
+                      aria-labelledby="checkbox-{id}-{item.id}"
+                      aria-describedby={capDisabled ? maxSelectedId : undefined}
+                      aria-selected={item.isSelectAll
+                        ? allSelected
+                        : item.checked}
+                      aria-checked={item.isSelectAll
+                        ? selectAllIndeterminate
+                          ? "mixed"
+                          : allSelected
+                        : item.checked}
+                      aria-setsize={itemsToUse.length}
+                      aria-posinset={actualIndex + 1}
+                      data-virtual-index={isMeasured ? rowIndex : undefined}
+                      active={item.isSelectAll ? false : item.checked}
+                      disabled={itemDisabled}
+                      on:click={(event) =>
+                        handleOptionClick(
+                          event,
+                          item,
+                          actualIndex,
+                          itemDisabled,
+                        )}
+                      on:mousedown={(event) => {
+                        // Keep focus on the field so screen readers don't
+                        // re-announce it on every option click.
+                        event.preventDefault();
+                      }}
+                    >
+                      <HighlightSlot {optionId} let:highlighted>
+                        <div
+                          class:bx--form-item={true}
+                          class:bx--checkbox-wrapper={true}
+                          class:bx--checkbox-wrapper--readonly={readonly}
+                        >
+                          <input
+                            type="checkbox"
+                            class:bx--checkbox={true}
+                            id="checkbox-{id}-{item.id}"
+                            value={optionInput.value === "" ||
+                            optionInput.value == null
+                              ? "on"
+                              : optionInput.value}
+                            tabindex="-1"
+                            style="display: none;"
+                            checked={optionChecked}
+                            indeterminate={optionIndeterminate}
+                            disabled={itemDisabled}
+                            aria-readonly={readonly || undefined}
+                          />
+                          <label
+                            for="checkbox-{id}-{item.id}"
+                            use:optionOverflowTitle={"title" in optionInput
+                              ? optionInput.title
+                              : useTitleInItem
+                                ? itemToString(item)
+                                : undefined}
+                            data-contained-checkbox-state={optionIndeterminate
+                              ? "mixed"
+                              : undefined}
+                            data-contained-checkbox-disabled={optionIndeterminate &&
+                            itemDisabled
+                              ? "true"
+                              : undefined}
+                            class:bx--checkbox-label={true}
+                          >
+                            <span class:bx--checkbox-label-text={true}>
+                              <slot
+                                {item}
+                                index={actualIndex}
+                                selected={optionChecked}
+                                {highlighted}
+                              >
+                                {optionInput.labelText ?? itemToString(item)}
+                              </slot>
+                            </span>
+                          </label>
+                        </div>
+                      </HighlightSlot>
+                    </ListBoxMenuItem>
+                  {/if}
+                {/each}
+              </ListBoxMenuGroup>
+            {/each}
+          </VirtualWindow>
+        {:else}
+          {#each menuRuns as run (run.key)}
+            <ListBoxMenuGroup
+              labelledBy={run.groupIndex > -1
+                ? `group-${id}-${run.groupIndex}`
+                : undefined}
+            >
+              {#each run.rows as item, runIndex (item.id)}
+                {@const rowIndex = run.start + runIndex}
+                {@const index = groupRows
+                  ? groupRows.itemIndexByRow[rowIndex]
+                  : rowIndex}
+                {#if index === -1}
+                  <!-- Hidden from assistive tech: the enclosing group is named
+                       by a hidden label, which stays rendered when a virtualized
+                       window leaves this header out. -->
+                  <div
+                    role="presentation"
+                    aria-hidden="true"
+                    data-virtual-index={isMeasured ? rowIndex : undefined}
+                    class:bx--list-box__menu-group-header={true}
+                    class:bx--list-box__menu-group-header--first={rowIndex ===
+                      0}
+                    on:mousedown={(event) => {
+                      // Keep focus on the field, as options do.
+                      event.preventDefault();
+                    }}
+                  >
+                    <slot name="group" group={item.group} items={item.items}>
+                      {item.group}
+                    </slot>
+                  </div>
+                {:else}
+                  {@const optionId = `${id}-${item.id}`}
+                  {@const itemDisabled =
+                    item.disabled ||
+                    (hasMaxSelectedItems && !!item.isSelectAll) ||
+                    (isAtSelectionCap && !item.checked)}
+                  {@const capDisabled =
+                    isAtSelectionCap &&
+                    !item.checked &&
+                    !item.disabled &&
+                    !item.isSelectAll}
+                  {@const optionInput = itemToInput(item) ?? {}}
+                  {@const optionChecked = item.isSelectAll
+                    ? allSelected
+                    : item.checked}
+                  {@const optionIndeterminate =
+                    item.isSelectAll && selectAllIndeterminate}
+                  <ListBoxMenuItem
+                    id={optionId}
+                    role="option"
+                    aria-labelledby="checkbox-{id}-{item.id}"
+                    aria-describedby={capDisabled ? maxSelectedId : undefined}
+                    aria-selected={item.isSelectAll
+                      ? allSelected
+                      : item.checked}
+                    aria-checked={item.isSelectAll
+                      ? selectAllIndeterminate
+                        ? "mixed"
+                        : allSelected
+                      : item.checked}
+                    data-virtual-index={isMeasured ? rowIndex : undefined}
+                    active={item.isSelectAll ? false : item.checked}
+                    disabled={itemDisabled}
+                    on:click={(event) =>
+                      handleOptionClick(event, item, index, itemDisabled)}
+                    on:mousedown={(event) => {
+                      // Keep focus on the field so screen readers don't
+                      // re-announce it on every option click.
+                      event.preventDefault();
+                    }}
+                  >
+                    <HighlightSlot {optionId} let:highlighted>
+                      <div
+                        class:bx--form-item={true}
+                        class:bx--checkbox-wrapper={true}
+                        class:bx--checkbox-wrapper--readonly={readonly}
+                      >
+                        <input
+                          type="checkbox"
+                          class:bx--checkbox={true}
+                          id="checkbox-{id}-{item.id}"
+                          value={optionInput.value === "" ||
+                          optionInput.value == null
+                            ? "on"
+                            : optionInput.value}
+                          tabindex="-1"
+                          style="display: none;"
+                          checked={optionChecked}
+                          indeterminate={optionIndeterminate}
+                          disabled={itemDisabled}
+                          aria-readonly={readonly || undefined}
+                        />
+                        <label
+                          for="checkbox-{id}-{item.id}"
+                          use:optionOverflowTitle={"title" in optionInput
+                            ? optionInput.title
+                            : useTitleInItem
+                              ? itemToString(item)
+                              : undefined}
+                          data-contained-checkbox-state={optionIndeterminate
+                            ? "mixed"
+                            : undefined}
+                          data-contained-checkbox-disabled={optionIndeterminate &&
+                          itemDisabled
+                            ? "true"
+                            : undefined}
+                          class:bx--checkbox-label={true}
+                        >
+                          <span class:bx--checkbox-label-text={true}>
+                            <slot
+                              {item}
+                              {index}
+                              selected={optionChecked}
+                              {highlighted}
+                            >
+                              {optionInput.labelText ?? itemToString(item)}
+                            </slot>
+                          </span>
+                        </label>
+                      </div>
+                    </HighlightSlot>
+                  </ListBoxMenuItem>
+                {/if}
+              {/each}
+            </ListBoxMenuGroup>
+          {/each}
+        {/if}
+        {#if showEmpty}
+          <!-- Svelte 3 leaks the forwarded default slot's props into every
+               slot's context, so they are `{@const}`s: here, outside the
+               options, they read as undefined instead of throwing. -->
+          <ListBoxMenuStatus>
+            <slot name="empty" {value}>{emptyMessage}</slot>
+          </ListBoxMenuStatus>
+        {/if}
+        {#if showLoading}
+          <ListBoxMenuStatus>
+            <InlineLoading description={loadingText} />
+          </ListBoxMenuStatus>
+        {/if}
       </ListBoxMenu>
     {/if}
   </ListBox>
-  {#if !inline && !invalid && !warn && helperText}
+  {#if isFluid}
+    <hr class:bx--list-box__divider={true} />
+  {/if}
+  {#if isFluid && showInvalid && shownInvalidText}
+    <div id={errorId} class:bx--form-requirement={true} role="alert">
+      {shownInvalidText}
+    </div>
+  {/if}
+  {#if isFluid && showWarn && warnText}
+    <div id={warnId} class:bx--form-requirement={true}>{warnText}</div>
+  {/if}
+  {#if selectedTagItems.length > 0}
+    <div bind:this={selectedTagsRef} class:bx--multi-select__tags={true}>
+      <TagSet
+        id="{id}-tags"
+        navigation="roving"
+        multiline={tagOverflow === "wrap"}
+        overflowMode="popover"
+        size={tagSize}
+        on:close:tag={handleTagClose}
+      >
+        {#each selectedTagItems as item, index (item.id)}
+          {@const props = {
+            filter: !readonly,
+            disabled: effectiveDisabled || !!item.disabled,
+            value: item.id,
+            title: removeTagText,
+            maxWidth: "13rem",
+          }}
+          <!-- Spreading `props` onto any tag keeps it wired to the set: its
+               close button deselects the item by `value`. -->
+          <slot name="tag" {item} {index} {props}>
+            <Tag {...props}>{itemToString(item)}</Tag>
+          </slot>
+        {/each}
+      </TagSet>
+    </div>
+  {/if}
+  {#if !isFluid && !showInvalid && !showWarn && helperText}
     <div
-      class:bx--form__helper-text="{true}"
-      class:bx--form__helper-text--disabled="{disabled}"
+      id={helperId}
+      class:bx--form__helper-text={true}
+      class:bx--form__helper-text--disabled={effectiveDisabled}
     >
       {helperText}
     </div>
   {/if}
+  {#if groupRows}
+    {#each groupRows.headers as header, groupIndex (header.id)}
+      <span id="group-{id}-{groupIndex}" hidden>{header.group}</span>
+    {/each}
+  {/if}
+  {#if hasMaxSelectedItems}
+    <span id={maxSelectedId} class:bx--visually-hidden={true}
+      >{maxSelectedText}</span
+    >
+  {/if}
+  {#if readonly}
+    <span id={readonlyId} class:bx--visually-hidden={true}
+      >{readonlyDescription}</span
+    >
+  {/if}
+  {#if hasSelectionDescription}
+    <span id={selectionId} class:bx--visually-hidden={true}
+      >{selectionCountText(selectionCount)}. {clearSelectionText}</span
+    >
+  {/if}
+  <!-- Live region for selection announcements. Always rendered (even while
+       empty) so assistive tech registers the region before its text changes. -->
+  <span role="status" aria-live="polite" class:bx--visually-hidden={true}
+    >{statusText}</span
+  >
 </div>

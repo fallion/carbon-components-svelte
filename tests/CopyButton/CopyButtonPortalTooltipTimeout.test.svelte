@@ -1,0 +1,20 @@
+<script lang="ts">
+  import CopyButton from "carbon-components-svelte/CopyButton/CopyButton.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let portalTooltip: ComponentProps<CopyButton>["portalTooltip"] = true;
+  export let feedbackTimeout = 100;
+  export let tooltipPosition: ComponentProps<CopyButton>["tooltipPosition"] =
+    "bottom";
+  export let tooltipAlign: ComponentProps<CopyButton>["tooltipAlign"] =
+    undefined;
+</script>
+
+<CopyButton
+  text="text"
+  iconDescription="Copy"
+  {portalTooltip}
+  {feedbackTimeout}
+  {tooltipPosition}
+  {tooltipAlign}
+/>

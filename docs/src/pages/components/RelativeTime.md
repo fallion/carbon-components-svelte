@@ -1,0 +1,109 @@
+---
+components: ["RelativeTime"]
+description: RelativeTime formats a date as a human-readable relative string, such as "5 minutes ago" or "in 2 days", with the absolute time shown on hover.
+---
+
+<script>
+  import { RelativeTime, Stack } from "carbon-components-svelte";
+
+  const now = Date.parse("2026-09-01T12:00:00Z");
+</script>
+
+## Basic
+
+Render a `date` relative to the current time.
+
+<RelativeTime date={now - 5 * 60 * 1000} {now} />
+
+## Reference time
+
+Set `now` to a fixed reference instant instead of the live clock, for deterministic output. `date` can be in the past or the future.
+
+<Stack gap={5}>
+  <RelativeTime date={now - 5 * 60 * 1000} {now} />
+  <RelativeTime date={now + 2 * 24 * 60 * 60 * 1000} {now} />
+</Stack>
+
+## Numeric
+
+Set `numeric` to control whether a unit phrase like "yesterday" is preferred over a numeric count.
+
+### Auto
+
+The default `numeric="auto"` renders unit phrases such as "yesterday" when one exists.
+
+<RelativeTime date={now - 24 * 60 * 60 * 1000} {now} numeric="auto" />
+
+### Always
+
+Set `numeric="always"` to force a numeric count for every unit.
+
+<RelativeTime date={now - 24 * 60 * 60 * 1000} {now} numeric="always" />
+
+## Styles
+
+Set `style` to control the verbosity of the formatted output.
+
+### Long
+
+<RelativeTime date={now - 5 * 60 * 1000} {now} style="long" />
+
+### Short
+
+<RelativeTime date={now - 5 * 60 * 1000} {now} style="short" />
+
+### Narrow
+
+<RelativeTime date={now - 5 * 60 * 1000} {now} style="narrow" />
+
+## Locale
+
+Set `locale` to format the output for a specific language instead of the runtime default.
+
+<Stack gap={5}>
+  <RelativeTime date={now - 5 * 60 * 1000} {now} locale="fr" />
+  <RelativeTime date={now - 5 * 60 * 1000} {now} locale="ja" />
+</Stack>
+
+## Custom content
+
+Use the default slot with `let:formatted` to render custom content around the formatted string.
+
+<RelativeTime date={now - 5 * 60 * 1000} {now} let:formatted>
+  Updated {formatted}
+</RelativeTime>
+
+## Absolute time
+
+Hover over the rendered text to see the absolute time, sourced from the `title` attribute. Set `titleFormatOptions` to control its format. The underlying `datetime` attribute always holds the full ISO instant for assistive technology.
+
+<RelativeTime
+  date={now - 5 * 60 * 1000}
+  {now}
+  titleFormatOptions={{ dateStyle: "full", timeStyle: "long" }}
+/>
+
+Set `timeZone` to an IANA time zone to format the `title` in that zone instead of the runtime default. A server often runs in UTC while the browser runs in the viewer's zone, so without a fixed value the prerendered `title` differs from the one the client prints. Pass the same `timeZone` on both sides to keep them identical.
+
+<RelativeTime
+  date={now - 5 * 60 * 1000}
+  {now}
+  locale="en-US"
+  timeZone="Asia/Tokyo"
+/>
+
+## Chat timestamps
+
+Set `minUnit="minute"` to show the locale's word for the present, such as "now", for any time under a minute instead of counting seconds. Set `absoluteAfter` to a duration in milliseconds to show the clock time once `date` is that far in the past. Set `absoluteFormatOptions` to change its format. The default is the short time, such as "9:00 AM".
+
+<Stack gap={5}>
+  <RelativeTime date={now - 20 * 1000} {now} minUnit="minute" absoluteAfter={60 * 60 * 1000} timeZone="UTC" />
+  <RelativeTime date={now - 5 * 60 * 1000} {now} minUnit="minute" absoluteAfter={60 * 60 * 1000} timeZone="UTC" />
+  <RelativeTime date={now - 3 * 60 * 60 * 1000} {now} minUnit="minute" absoluteAfter={60 * 60 * 1000} timeZone="UTC" />
+</Stack>
+
+## Live
+
+Leave `live` at its default of `true` to keep the output refreshing on an adaptive timer as time passes.
+
+<FileSource src="/framed/RelativeTime/RelativeTimeLive" />

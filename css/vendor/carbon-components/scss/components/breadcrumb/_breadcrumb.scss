@@ -1,0 +1,327 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/layout';
+@import '../link/link';
+
+/// Breadcrumb styles
+/// @access private
+/// @group breadcrumb
+@mixin breadcrumb {
+  .#{$prefix}--breadcrumb {
+    @include reset;
+    @include type-style('body-compact-01');
+
+    display: inline;
+
+    @include carbon--breakpoint(md) {
+      display: flex;
+      flex-wrap: wrap;
+    }
+  }
+
+  .#{$prefix}--breadcrumb-item {
+    position: relative;
+    display: flex;
+    min-width: 0; // ccs: an item wider than the trail wraps inside it
+    max-width: 100%; // ccs: an item wider than the trail wraps inside it
+    align-items: flex-end; // ccs: a wrapped item's separator ends its last line
+    margin-inline-end: $carbon--spacing-03; // ccs: logical, so the trail mirrors in RTL
+    word-break: break-word; // ccs: so does a word longer than the trail
+  }
+
+  // `inline-flex` (matching `.#{$prefix}--link__icon`) so the surrounding
+  // link's hover/focus underline doesn't paint across the icon: text
+  // decoration lines don't propagate into atomic inline-level boxes like
+  // `inline-flex`. Left unset `color` so the icon inherits from its
+  // rendered position — inside `.#{$prefix}--link` when there's an `href`,
+  // matching that link's current color (default, hover, or current-page).
+  .#{$prefix}--breadcrumb-item__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-self: center;
+    margin-inline-end: $carbon--spacing-02; // ccs: logical, so the trail mirrors in RTL
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  .#{$prefix}--breadcrumb-item .#{$prefix}--link:visited {
+    color: $link-primary;
+
+    &:hover {
+      color: $link-primary-hover;
+    }
+  }
+
+  .#{$prefix}--breadcrumb-item::after {
+    margin-inline-start: $carbon--spacing-03; // ccs: logical, so the trail mirrors in RTL
+    color: $text-primary;
+    content: var(--ccs-separator, '/'); // ccs: configurable separator
+  }
+
+  .#{$prefix}--breadcrumb--no-trailing-slash
+    .#{$prefix}--breadcrumb-item:last-child::after {
+    content: '';
+  }
+
+  .#{$prefix}--breadcrumb-item:last-child,
+  .#{$prefix}--breadcrumb-item:last-child::after {
+    margin-inline-end: 0; // ccs: logical, so the trail mirrors in RTL
+  }
+
+  .#{$prefix}--breadcrumb .#{$prefix}--link {
+    min-width: 0; // ccs: wraps only when the item can't fit the trail
+  }
+
+  .#{$prefix}--breadcrumb-item [aria-current='page'],
+  .#{$prefix}--breadcrumb-item.#{$prefix}--breadcrumb-item--current
+    .#{$prefix}--link {
+    color: $text-primary;
+    cursor: auto;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  .#{$prefix}--breadcrumb-item .#{$prefix}--overflow-menu {
+    position: relative;
+    width: to-rem(20px);
+    height: to-rem(18px);
+
+    &:focus {
+      outline: 1px solid $focus;
+    }
+
+    &:hover {
+      background: transparent;
+    }
+
+    // Used to mimic link underline
+    &::after {
+      position: absolute;
+      bottom: 2px;
+      width: to-rem(12px);
+      height: 1px;
+      background: $link-primary-hover;
+      content: '';
+      opacity: 0;
+      transition: opacity $duration--fast-01 motion(standard, productive);
+
+      @media screen and (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+    }
+  }
+
+  .#{$prefix}--breadcrumb-item .#{$prefix}--overflow-menu:hover::after {
+    opacity: 1;
+  }
+
+  .#{$prefix}--breadcrumb-item
+    .#{$prefix}--overflow-menu.#{$prefix}--overflow-menu--open {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .#{$prefix}--breadcrumb-item .#{$prefix}--overflow-menu__icon {
+    position: relative;
+    fill: $link-primary;
+    transform: translateY(4px);
+  }
+
+  .#{$prefix}--breadcrumb-item
+    .#{$prefix}--overflow-menu:hover
+    .#{$prefix}--overflow-menu__icon {
+    fill: $link-primary-hover;
+  }
+
+  .#{$prefix}--breadcrumb-menu-options:focus {
+    outline: none;
+  }
+
+  $caret-size: to-rem(7px);
+  .#{$prefix}--breadcrumb-menu-options.#{$prefix}--overflow-menu-options[data-floating-menu-direction='bottom']::after {
+    top: -$caret-size;
+    // ccs: `width: 0` is set by overflow-menu's breadcrumb caret patch, which
+    // must emit after the overflow menu size variants
+    height: 0;
+    border-right: $caret-size solid transparent;
+    border-bottom: $caret-size solid $field;
+    border-left: $caret-size solid transparent;
+    margin: 0 auto;
+    background: transparent;
+    // ccs: the menu mirrors around the trigger in RTL
+    @include ccs-inset-inline($start: $caret-size * 2);
+  }
+
+  // ccs: 75px, the width of other skeleton label bars and nearer a
+  // crumb's: at 100px three crumbs and their separators took 363px and
+  // wrapped where real ones fit on one line.
+  .#{$prefix}--breadcrumb.#{$prefix}--skeleton .#{$prefix}--link {
+    @include skeleton;
+
+    width: to-rem(75px);
+    height: 1rem;
+  }
+}
+
+@include exports('breadcrumb') {
+  @include breadcrumb;
+}
+
+// carbon-components-svelte patch (formerly css/_breadcrumb.scss)
+@import "carbon-components/scss/globals/scss/typography";
+
+/// Small breadcrumb (Carbon React size="sm")
+/// @access private
+/// @group components
+@mixin breadcrumb-sm {
+  .#{$prefix}--breadcrumb--sm {
+    @include type-style('label-01');
+  }
+
+  .#{$prefix}--breadcrumb--sm .#{$prefix}--link {
+    font: inherit;
+  }
+
+  .#{$prefix}--breadcrumb--sm .#{$prefix}--breadcrumb-item {
+    margin-inline-end: $carbon--spacing-02;
+  }
+
+  .#{$prefix}--breadcrumb--sm .#{$prefix}--breadcrumb-item .#{$prefix}--link {
+    justify-content: center;
+    min-width: $carbon--spacing-04;
+  }
+
+  .#{$prefix}--breadcrumb--sm .#{$prefix}--breadcrumb-item::after {
+    margin-inline-start: $carbon--spacing-02;
+  }
+
+  .#{$prefix}--breadcrumb--sm
+    .#{$prefix}--breadcrumb-item
+    .#{$prefix}--overflow-menu {
+    width: $carbon--spacing-05;
+    height: $carbon--spacing-05;
+    min-height: $carbon--spacing-05;
+
+    // Carbon shifts this icon down 4px inside breadcrumb items. At 1rem trigger
+    // size the icon is already centered, so reset `transform`.
+    .#{$prefix}--overflow-menu__icon {
+      transform: none;
+    }
+  }
+}
+
+@include exports('breadcrumb-sm') {
+  @include breadcrumb-sm;
+}
+
+/// Pin the breadcrumb to one layout regardless of viewport. The base
+/// `.#{$prefix}--breadcrumb` stacks items below `md` (inline list of flex
+/// items) and switches to a wrapping row at `md`; these modifiers emit after
+/// it at equal specificity, so they win at every breakpoint.
+/// @access private
+/// @group components
+@mixin breadcrumb-orientation {
+  .#{$prefix}--breadcrumb--horizontal {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .#{$prefix}--breadcrumb--vertical {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@include exports('breadcrumb-orientation') {
+  @include breadcrumb-orientation;
+}
+
+/// Render a component-based `separator` (an icon or pictogram) as a real
+/// DOM node. `content: var(--ccs-separator, '/')` above only covers
+/// text-character separators — CSS generated content cannot hold a Svelte
+/// component.
+/// @access private
+/// @group components
+@mixin breadcrumb-separator-icon {
+  // The text-separator ::after above always renders, even with an empty
+  // `content`, and its own start margin would otherwise double up with
+  // this node's start margin.
+  .#{$prefix}--breadcrumb--separator-icon .#{$prefix}--breadcrumb-item::after {
+    display: none;
+  }
+
+  // Half the text-separator's margin: a visible icon reads as its own
+  // shape, so it needs less breathing room than an inline character to
+  // still group with its neighboring items (Gestalt proximity).
+  .#{$prefix}--breadcrumb-item__separator {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: $carbon--spacing-02;
+    color: $text-primary;
+  }
+
+  .#{$prefix}--breadcrumb--sm .#{$prefix}--breadcrumb-item__separator {
+    margin-inline-start: $carbon--spacing-01;
+  }
+
+  // Match the item's own trailing margin to the halved separator margin
+  // above, so the gap on both sides of the icon stays symmetric.
+  .#{$prefix}--breadcrumb--separator-icon .#{$prefix}--breadcrumb-item {
+    margin-inline-end: $carbon--spacing-02;
+
+    &:last-child {
+      margin-inline-end: 0;
+    }
+  }
+
+  .#{$prefix}--breadcrumb--separator-icon.#{$prefix}--breadcrumb--sm
+    .#{$prefix}--breadcrumb-item {
+    margin-inline-end: $carbon--spacing-01;
+
+    &:last-child {
+      margin-inline-end: 0;
+    }
+  }
+
+  .#{$prefix}--breadcrumb--no-trailing-slash
+    .#{$prefix}--breadcrumb-item:last-child
+    .#{$prefix}--breadcrumb-item__separator {
+    display: none;
+  }
+}
+
+@include exports('breadcrumb-separator-icon') {
+  @include breadcrumb-separator-icon;
+}
+
+/// Scale the BreadcrumbItem icon to match the breadcrumb size.
+/// Mirrors the `link-icon` patch (see `../link/_link.scss`): carbon-components
+/// v10 ships no icon scaling, so the icon stays at its native size regardless
+/// of the imported carbon-icons-svelte glyph. `Breadcrumb` only has `"sm" |
+/// "md"` sizes, so `md` keeps the native (16px) icon and only `sm` is scaled
+/// down.
+/// @access private
+/// @group components
+@mixin breadcrumb-icon {
+  .#{$prefix}--breadcrumb--sm .#{$prefix}--breadcrumb-item__icon svg {
+    width: to-rem(14px);
+    height: to-rem(14px);
+  }
+}
+
+@include exports('breadcrumb-icon') {
+  @include breadcrumb-icon;
+}

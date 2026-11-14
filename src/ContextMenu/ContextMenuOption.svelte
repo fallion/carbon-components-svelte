@@ -1,6 +1,23 @@
 <script>
   /**
-   * Specify the kind of option
+   * Dispatched on selection. Cancelable: call `preventDefault()` to keep
+   * this menu level open. A selectable or radio option's selection still
+   * updates.
+   * @event {Event} click
+   */
+
+  /**
+   * @slot {{}} shortcutChildren - Custom shortcut content. Replaces `shortcutText` and `shortcut`.
+   * @deprecated use the `shortcutChildren` slot
+   * @slot {{}} shortcutText
+   */
+
+  /**
+   * @template {import("../utils/icon-component.js").IconComponent} [Icon=any]
+   */
+
+  /**
+   * Specify the kind of option.
    * @type {"default" | "danger"}
    */
   export let kind = "default";
@@ -8,87 +25,165 @@
   /** Set to `true` to enable the disabled state */
   export let disabled = false;
 
-  /** Set to `true` to indent the label */
+  /**
+   * Set to `true` to indent the label.
+   * Rendered indented regardless when `icon` is set, or when the option is selectable or part of a radio group.
+   */
   export let indented = false;
 
   /**
-   * Specify the icon to render
-   * Icon is rendered to the left of the label text
-   * @type {typeof import("svelte").SvelteComponent}
+   * Specify the icon to render.
+   * Icon is rendered to the left of the label text.
+   * Overridden with a checkmark icon when the option is selectable or part of a radio group.
+   * @type {Icon | undefined}
    */
-  export let icon = undefined;
+  export let icon = /** @type {Icon | undefined} */ (undefined);
 
   /**
-   * Specify the label text
-   * Alternatively, use the "labelText" slot (e.g., <span slot="labelText">...</span>)
+   * Specify the label text.
+   * Alternatively, use the "labelChildren" slot.
+   * @example
+   * ```svelte
+   * <ContextMenuOption>
+   *   <span slot="labelChildren">Custom Label</span>
+   * </ContextMenuOption>
+   * ```
    */
   export let labelText = "";
 
-  /** Set to `true` to use the selected variant */
+  /**
+   * Set to `true` to use the selected variant.
+   * @bindable writable
+   */
   export let selected = false;
 
   /**
-   * Set to `true` to enable the selectable variant
-   * Automatically set to `true` if `selected` is `true`
+   * Set to `true` to enable the selectable variant.
+   * Automatically set to `true` if `selected` is `true`.
+   * @bindable writable
    */
   export let selectable = false;
 
   /**
-   * Specify the shortcut text
-   * Alternatively, use the "shortcutText" slot (e.g., <span slot="shortcutText">...</span>)
+   * Specify the shortcut text.
+   * Alternatively, use the "shortcutChildren" slot.
+   * @example
+   * ```svelte
+   * <ContextMenuOption>
+   *   <span slot="shortcutChildren">Ctrl+K</span>
+   * </ContextMenuOption>
+   * ```
    */
   export let shortcutText = "";
 
   /**
-   * Specify the id
-   * It's recommended to provide an id as a value to bind to within a selectable/radio menu group
+   * Specify a keyboard shortcut to show, such as `"mod+s"`. `mod` is
+   * Command on Apple platforms and Ctrl elsewhere. The keys show where
+   * `shortcutText` goes, and the item gets `aria-keyshortcuts`. Display only:
+   * bind the command itself with `onShortcut`, since the menu is usually
+   * closed. `shortcutText` and its slot take precedence. A value that isn't
+   * a shortcut, such as `"Ctrl C"`, shows as written.
    */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let shortcut = "";
 
-  /** Obtain a reference to the list item HTML element */
+  /**
+   * Specify the id.
+   * It's recommended to provide an id as a value to bind to within a selectable/radio menu group.
+   */
+  export let id = uniqueId();
+
+  /**
+   * Obtain a reference to the list item HTML element.
+   * @bindable readonly
+   * @type {null | HTMLLIElement}
+   */
   export let ref = null;
 
-  import { onMount, getContext, createEventDispatcher, tick } from "svelte";
+  import { createEventDispatcher, getContext, onMount, tick } from "svelte";
+  import Kbd from "../Kbd/Kbd.svelte";
+  import {
+    SUBMENU_AIM_PAUSE_MS,
+    SUBMENU_HOVER_DELAY_MS,
+  } from "../constants/timing.js";
+  import CaretRight from "../icons/CaretRight.svelte";
+  import Checkmark from "../icons/Checkmark.svelte";
+  import { clampIndex } from "../utils/clamp-index.js";
+  import { hasModifierKey } from "../utils/has-modifier-key.js";
+  import {
+    applePlatform,
+    ariaKeyShortcuts,
+    parseShortcut,
+  } from "../utils/keyboard-shortcut.js";
+  import {
+    getLayoutDirection,
+    inlineKey,
+    resolveLayoutDirection,
+  } from "../utils/layout-direction.js";
+  import { menuOptionLabel } from "../utils/menu-option-label.js";
+  import { fitMenuAxis } from "../utils/menu-placement.js";
+  import { createSubmenuHoverIntent } from "../utils/submenu-hover-intent.js";
+  import {
+    createTypeaheadBuffer,
+    isTypeaheadKey,
+    typeaheadIndex,
+  } from "../utils/typeahead.js";
+  import { uniqueId } from "../utils/unique-id.js";
   import ContextMenu from "./ContextMenu.svelte";
-  import Checkmark16 from "../icons/Checkmark16.svelte";
-  import CaretRight16 from "../icons/CaretRight16.svelte";
 
   const dispatch = createEventDispatcher();
-  const ctx = getContext("ContextMenu");
-  const ctxGroup = getContext("ContextMenuGroup");
-  const ctxRadioGroup = getContext("ContextMenuRadioGroup");
+  const layoutDirection = getLayoutDirection();
+  const ctx = getContext("carbon:ContextMenu");
+  const ctxGroup = getContext("carbon:ContextMenuGroup");
+  const ctxRadioGroup = getContext("carbon:ContextMenuRadioGroup");
 
-  // "moderate-01" duration (ms) from Carbon motion recommended for small expansion, short distance movements
-  const moderate01 = 150;
-
-  let unsubCurrentIds = undefined;
-  let unsubCurrentId = undefined;
-  let timeoutHover = undefined;
+  /** @type {(() => void) | undefined} */
+  let unsubCurrentIds;
+  /** @type {(() => void) | undefined} */
+  let unsubCurrentId;
   let rootMenuPosition = [0, 0];
   let focusIndex = 0;
+  /** @type {HTMLElement[]} */
   let options = [];
   let role = "menuitem";
   let submenuOpen = false;
   let submenuPosition = [0, 0];
-  let menuOffsetX = 0;
+  /** @type {HTMLUListElement | null} */
+  let submenuRef = null;
 
-  const unsubPosition = ctx.position.subscribe((position) => {
-    rootMenuPosition = position;
-  });
+  const typeahead = createTypeaheadBuffer();
 
-  const unsubMenuOffsetX = ctx.menuOffsetX.subscribe((_menuOffsetX) => {
-    menuOffsetX = _menuOffsetX;
-  });
+  const hoverIntent = createSubmenuHoverIntent(
+    (value) => {
+      submenuOpen = value;
+    },
+    {
+      openDelay: SUBMENU_HOVER_DELAY_MS,
+      closeDelay: SUBMENU_HOVER_DELAY_MS,
+      aimPause: SUBMENU_AIM_PAUSE_MS,
+      getSubmenu: () => (submenuOpen ? submenuRef : null),
+    },
+  );
 
-  function handleClick(opts = {}) {
-    if (disabled) return ctx.close();
+  const unsubPosition = ctx.position.subscribe(
+    (/** @type {[number, number]} */ position) => {
+      rootMenuPosition = position;
+    },
+  );
+
+  /**
+   * @param {MouseEvent | KeyboardEvent} event
+   * @param {{ fromKeyboard?: boolean, id?: string | null }} [options]
+   */
+  function handleClick(event, options = {}) {
+    if (disabled) return;
     if (subOptions) return;
 
-    if (!!ctxGroup) {
+    // Selection runs first so preventDefault only skips the close.
+    if (ctxGroup) {
       ctxGroup.toggleOption({ id });
-    } else if (!!ctxRadioGroup) {
-      if (opts.fromKeyboard) {
-        ctxRadioGroup.setOption({ id: opts.id });
+    } else if (ctxRadioGroup) {
+      if (options.fromKeyboard) {
+        ctxRadioGroup.setOption({ id: options.id });
       } else {
         ctxRadioGroup.setOption({ id });
       }
@@ -96,186 +191,263 @@
       selected = !selected;
     }
 
-    ctx.close();
-    dispatch("click");
+    const shouldClose = dispatch("click", event, { cancelable: true });
+
+    if (shouldClose) {
+      ctx.close("select");
+    }
   }
 
   onMount(() => {
     if (selected === true) selectable = true;
 
     if (ctxGroup) {
-      unsubCurrentIds = ctxGroup.currentIds.subscribe((_currentIds) => {
-        selected = _currentIds.includes(id);
-      });
+      unsubCurrentIds = ctxGroup.currentIds.subscribe(
+        (/** @type {string[]} */ _currentIds) => {
+          selected = _currentIds.includes(id);
+        },
+      );
     }
 
     if (ctxRadioGroup) {
-      unsubCurrentId = ctxRadioGroup.currentId.subscribe((_id) => {
-        selected = id === _id;
-      });
+      unsubCurrentId = ctxRadioGroup.currentId.subscribe(
+        (/** @type {string} */ _id) => {
+          selected = id === _id;
+        },
+      );
     }
 
     return () => {
       unsubPosition();
-      unsubMenuOffsetX();
       if (unsubCurrentIds) unsubCurrentIds();
       if (unsubCurrentId) unsubCurrentId();
-      if (typeof timeoutHover === "number") clearTimeout(timeoutHover);
+      hoverIntent.cancel();
+      typeahead.clear();
     };
   });
 
   $: isSelectable = !!ctxGroup || selectable;
   $: isRadio = !!ctxRadioGroup;
   $: subOptions = $$slots.default;
+  // A shortcut that doesn't parse, such as Carbon React's free-text "⌘C",
+  // shows as written, as `shortcutText` would.
+  $: parsable = parseShortcut(shortcut) !== null;
   $: ctx.setPopup(submenuOpen);
+  // The submenu opens toward the inline end (the left in RTL), flips when
+  // it doesn't fit, and pins to the viewport edge when it fits on neither
+  // side. The option spans its menu, which starts at `rootMenuPosition`.
   $: if (submenuOpen) {
-    const { width, y } = ref.getBoundingClientRect();
-    let x = rootMenuPosition[0] + width;
-
-    if (window.innerWidth - menuOffsetX < width) {
-      x = rootMenuPosition[0] - width;
-    }
+    const { width, y } = /** @type {HTMLLIElement} */ (
+      ref
+    ).getBoundingClientRect();
+    const x = fitMenuAxis({
+      before: rootMenuPosition[0],
+      after: rootMenuPosition[0] + width,
+      size: submenuRef?.getBoundingClientRect().width ?? width,
+      max: window.innerWidth,
+      reverse: resolveLayoutDirection($layoutDirection, ref) === "rtl",
+    });
 
     submenuPosition = [x, y];
   }
-  $: {
-    if (isSelectable) {
-      indented = true;
-      role = "menuitemcheckbox";
+  $: resolvedIcon =
+    isSelectable || isRadio ? (selected ? Checkmark : undefined) : icon;
+  $: isIndented = indented || icon !== undefined || isSelectable || isRadio;
 
-      if (selected) {
-        if (ctxGroup) ctxGroup.addOption({ id });
-        icon = Checkmark16;
-      } else {
-        icon = undefined;
-      }
+  $: {
+    let nextRole = "menuitem";
+    if (isSelectable) nextRole = "menuitemcheckbox";
+    if (isRadio) nextRole = "menuitemradio";
+    role = nextRole;
+
+    if (isSelectable && selected && ctxGroup) {
+      ctxGroup.addOption({ id });
     }
 
     if (isRadio) {
-      indented = true;
-      role = "menuitemradio";
       ctxRadioGroup.addOption({ id });
 
-      if (selected) {
-        if (ctxRadioGroup) ctxRadioGroup.setOption({ id });
-        icon = Checkmark16;
-      } else {
-        icon = undefined;
+      if (selected && ctxRadioGroup) {
+        ctxRadioGroup.setOption({ id });
       }
     }
   }
 </script>
 
 <li
-  bind:this="{ref}"
-  role="{role}"
+  bind:this={ref}
+  {role}
   tabindex="-1"
-  aria-disabled="{!subOptions && disabled}"
-  aria-haspopup="{subOptions ? true : undefined}"
-  aria-expanded="{subOptions ? submenuOpen : undefined}"
-  class:bx--menu-option="{true}"
-  class:bx--menu-option--disabled="{true}"
-  class:bx--menu-option--active="{subOptions && submenuOpen}"
-  class:bx--menu-option--danger="{!subOptions && kind === 'danger'}"
-  indented="{indented}"
-  aria-checked="{isSelectable || isRadio ? selected : undefined}"
-  data-nested="{ref &&
-    ref.closest('.bx--menu').getAttribute('data-level') === '2'}"
-  data-sub="{subOptions}"
-  data-id="{id}"
+  aria-disabled={disabled ? "true" : "false"}
+  aria-haspopup={subOptions ? true : undefined}
+  aria-expanded={subOptions ? (submenuOpen ? "true" : "false") : undefined}
+  class:bx--menu-option={true}
+  class:bx--menu-option--disabled={disabled}
+  class:bx--menu-option--active={subOptions && submenuOpen}
+  class:bx--menu-option--danger={!subOptions && kind === "danger"}
+  aria-checked={isSelectable || isRadio
+    ? selected
+      ? "true"
+      : "false"
+    : undefined}
+  data-nested={ctx.level === 2}
+  data-sub={subOptions}
+  data-id={id}
+  aria-keyshortcuts={shortcut
+    ? ariaKeyShortcuts(shortcut, { apple: $applePlatform }) || undefined
+    : undefined}
   {...$$restProps}
   on:keydown
-  on:keydown="{async ({ key, target }) => {
+  on:keydown={async (event) => {
     if (
       subOptions &&
-      (key === 'ArrowRight' || key === ' ' || key === 'Enter')
+      // Keys from the flyout's own items bubble here; only the trigger opens it.
+      event.target === ref &&
+      ((inlineKey(event.key, $layoutDirection, ref) === "ArrowRight" &&
+        !hasModifierKey(event)) ||
+        event.key === " " ||
+        event.key === "Enter")
     ) {
+      if (disabled) return;
       submenuOpen = true;
       await tick();
-      options = [...ref.querySelectorAll('li[tabindex]')];
+      options = /** @type {HTMLElement[]} */ ([
+        .../** @type {HTMLLIElement} */ (ref).querySelectorAll("li[tabindex]"),
+      ]);
       if (options[focusIndex]) options[focusIndex].focus();
       return;
     }
 
-    if (submenuOpen) {
-      if (key === 'ArrowLeft') {
+    if (submenuOpen && !hasModifierKey(event)) {
+      if (inlineKey(event.key, $layoutDirection, ref) === "ArrowLeft") {
+        event.stopPropagation();
         submenuOpen = false;
         focusIndex = 0;
+        ref?.focus({ preventScroll: true });
         return;
       }
 
-      if (key === 'ArrowDown') {
-        if (focusIndex < options.length - 1) focusIndex++;
-      } else if (key === 'ArrowUp') {
-        if (focusIndex === -1) {
-          focusIndex = options.length - 1;
-        } else {
-          if (focusIndex > 0) focusIndex--;
-        }
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        focusIndex = clampIndex(
+          focusIndex,
+          event.key === "ArrowDown" ? 1 : -1,
+          options.length,
+        );
+      } else if (event.key === "Home") {
+        if (options.length > 0) focusIndex = 0;
+      } else if (event.key === "End" && options.length > 0) {
+        focusIndex = options.length - 1;
+      } else if (isTypeaheadKey(event)) {
+        // WAI-ARIA APG menu first-character navigation, scoped to this
+        // submenu's own items (`options`) so it doesn't affect the parent
+        // level's typeahead search.
+        event.preventDefault();
+        const query = typeahead.push(event.key);
+        focusIndex = typeaheadIndex({
+          items: options,
+          query,
+          itemToString: menuOptionLabel,
+          index: focusIndex,
+          // Disabled options stay focusable, as with the arrow keys.
+          isDisabled: () => false,
+        });
       }
 
       if (options[focusIndex]) options[focusIndex].focus();
     }
 
-    if (key === ' ' || key === 'Enter') {
-      handleClick({ fromKeyboard: true, id: target.getAttribute('data-id') });
+    if (event.key === " " || event.key === "Enter") {
+      handleClick(event, {
+        fromKeyboard: true,
+        id: /** @type {Element} */ (event.target).getAttribute("data-id"),
+      });
     }
-  }}"
+  }}
   on:mouseenter
-  on:mouseenter="{() => {
-    if (subOptions) {
-      timeoutHover = setTimeout(() => {
-        submenuOpen = true;
-      }, moderate01);
+  on:mouseenter={() => {
+    if (subOptions && !disabled) {
+      hoverIntent.scheduleOpen();
     }
-  }}"
+  }}
   on:mouseleave
-  on:mouseleave="{(e) => {
+  on:mouseleave={(event) => {
     if (subOptions) {
-      if (typeof timeoutHover === 'number') clearTimeout(timeoutHover);
-      submenuOpen = false;
+      hoverIntent.scheduleClose(event);
     }
-  }}"
-  on:click="{handleClick}"
+  }}
+  on:click={(event) => {
+    if (subOptions) {
+      event.stopPropagation();
+      if (disabled || submenuRef?.contains(/** @type {Node} */ (event.target)))
+        return;
+      submenuOpen = true;
+      return;
+    }
+    handleClick(event);
+  }}
 >
   {#if subOptions}
     <div
-      class:bx--menu-option__content="{true}"
-      class:bx--menu-option__content--disabled="{disabled}"
+      class:bx--menu-option__content={true}
+      class:bx--menu-option__content--disabled={disabled}
     >
-      {#if indented}
-        <div class:bx--menu-option__icon="{true}">
-          <svelte:component this="{icon}" />
+      {#if isIndented}
+        <div class:bx--menu-option__icon={true}>
+          <slot name="icon"><svelte:component this={resolvedIcon} /></slot>
         </div>
       {/if}
-      <span class:bx--menu-option__label="{true}" title="{labelText}">
-        <slot name="labelText">{labelText}</slot>
+      <span
+        class:bx--menu-option__label={true}
+        class:bx--menu-option__label--slotted={!!$$slots.labelChildren}
+        title={labelText}
+      >
+        <slot name="labelChildren">{labelText}</slot>
       </span>
-      <div class:bx--menu-option__info="{true}"><CaretRight16 /></div>
+      <div class:bx--menu-option__info={true}><CaretRight /></div>
     </div>
 
     <ContextMenu
-      open="{submenuOpen}"
-      x="{submenuPosition[0]}"
-      y="{submenuPosition[1]}"
+      bind:ref={submenuRef}
+      open={submenuOpen}
+      x={submenuPosition[0]}
+      y={submenuPosition[1]}
+      on:close={() => {
+        // The flyout closes itself on select, Escape or an outside click.
+        submenuOpen = false;
+        focusIndex = 0;
+      }}
     >
       <slot />
     </ContextMenu>
   {:else}
     <div
-      class:bx--menu-option__content="{true}"
-      class:bx--menu-option__content--disabled="{disabled}"
+      class:bx--menu-option__content={true}
+      class:bx--menu-option__content--disabled={disabled}
     >
-      {#if indented}
-        <div class:bx--menu-option__icon="{true}">
-          <svelte:component this="{icon}" />
+      {#if isIndented}
+        <div class:bx--menu-option__icon={true}>
+          <slot name="icon"><svelte:component this={resolvedIcon} /></slot>
         </div>
       {/if}
-      <span class:bx--menu-option__label="{true}" title="{labelText}">
-        <slot name="labelText">{labelText}</slot>
+      <span
+        class:bx--menu-option__label={true}
+        class:bx--menu-option__label--slotted={!!$$slots.labelChildren}
+        title={labelText}
+      >
+        <slot name="labelChildren">{labelText}</slot>
       </span>
-      <div class:bx--menu-option__info="{true}">
-        <slot name="shortcutText">{shortcutText}</slot>
+      <div class:bx--menu-option__info={true}>
+        <slot name="shortcutChildren">
+          <slot name="shortcutText">
+            {#if shortcutText || !shortcut}
+              {shortcutText}
+            {:else if parsable}
+              <Kbd {shortcut} variant="muted" aria-hidden="true" />
+            {:else}
+              {shortcut}
+            {/if}
+          </slot>
+        </slot>
       </div>
     </div>
   {/if}

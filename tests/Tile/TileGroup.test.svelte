@@ -1,0 +1,33 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import RadioTile from "carbon-components-svelte/Tile/RadioTile.svelte";
+  import TileGroup from "carbon-components-svelte/Tile/TileGroup.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let selected: ComponentProps<TileGroup>["selected"] = undefined;
+  export let disabled: ComponentProps<TileGroup>["disabled"] = false;
+  export let required: ComponentProps<TileGroup>["required"] = undefined;
+  export let name: ComponentProps<TileGroup>["name"] = undefined;
+  export let form: ComponentProps<TileGroup>["form"] = undefined;
+  export let legendText: ComponentProps<TileGroup>["legendText"] = "";
+  export let hideLegend: ComponentProps<TileGroup>["hideLegend"] = false;
+  export let customClass = "";
+  export let onSelect: (detail: string) => void = () => {};
+</script>
+
+<TileGroup
+  bind:selected
+  {disabled}
+  {required}
+  {name}
+  {form}
+  {legendText}
+  {hideLegend}
+  class={customClass}
+  on:select={(e) => onSelect(e.detail)}
+>
+  <RadioTile value="option1">Option 1</RadioTile>
+  <RadioTile value="option2">Option 2</RadioTile>
+  <RadioTile value="option3">Option 3</RadioTile>
+</TileGroup>

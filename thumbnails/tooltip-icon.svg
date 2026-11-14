@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="320px" height="180px" viewBox="0 0 320 180" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>tooltip-icon</title>
+    <defs>
+        <filter id="tooltip-icon-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180">
+            <feOffset dy="2" in="SourceAlpha" result="offset"></feOffset>
+            <feGaussianBlur stdDeviation="3" in="offset" result="blur"></feGaussianBlur>
+            <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.3 0"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="tooltip-icon" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="button" fill="var(--cds-field-01, #f4f4f4)" x="100" y="74" width="32" height="32"></rect>
+        <path id="icon" fill="var(--cds-icon-primary, #161616)" transform="translate(108, 82) scale(0.5)" d="M17 22 17 14 13 14 13 16 15 16 15 22 12 22 12 24 20 24 20 22 17 22zM16,8a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,16,8ZM16,30A14,14,0,1,1,30,16,14,14,0,0,1,16,30ZM16,4A12,12,0,1,0,28,16,12,12,0,0,0,16,4Z"></path>
+        <rect id="bubble-shadow" fill="black" filter="url(#tooltip-icon-shadow)" x="142" y="79" width="84" height="22" rx="2"></rect>
+        <rect id="bubble" fill="var(--cds-background-inverse, #393939)" x="142" y="79" width="84" height="22" rx="2"></rect>
+        <polygon id="caret" fill="var(--cds-background-inverse, #393939)" points="142 85.5 136.7 90 142 94.5"></polygon>
+        <rect id="text-1" fill="var(--cds-text-inverse, #ffffff)" x="152" y="87" width="64" height="6"></rect>
+    </g>
+</svg>

@@ -1,58 +1,115 @@
 <script>
   /**
-   * @typedef {string} DropdownItemId
-   * @typedef {string} DropdownItemText
-   * @typedef {{ id: DropdownItemId; text: DropdownItemText; }} DropdownItem
-   * @event {{ selectedId: DropdownItemId, selectedIndex: number, selectedItem: DropdownItem }} select
+   * @template {DropdownItem<any>} [Item=DropdownItem<any>]
+   */
+
+  /** @restProps {div} */
+
+  /**
+   * @template [Id=any]
+   * @typedef {object} DropdownItem
+   * @property {Id} id
+   * @property {string} text
+   * @property {boolean} [disabled] - Whether the item is disabled
+   * @property {any} [icon] - Icon component shown left of the item text
+   * @property {string} [group] - Group label. Items sharing a label render together under a non-selectable header, ungrouped items first and groups in order of first appearance.
    */
 
   /**
-   * Set the dropdown items
-   * @type {DropdownItem[]}
+   * @event select
+   * @type {object}
+   * @property {Item["id"]} selectedId
+   * @property {Item} selectedItem
+   * @event {KeyboardEvent | MouseEvent} clear
+   * @slot {{ item: Item; index: number; selected: boolean; highlighted: boolean; }}
+   * @slot {{ item: Item; index: number; selected: boolean; highlighted: boolean; }} icon
+   * @slot {{ item: Item; index: number; selected: boolean; highlighted: boolean; }} iconEnd - Content at the end of each item. Replaces the checkmark on the selected item.
+   * @deprecated use the `iconEnd` slot
+   * @slot {{ item: Item; index: number; selected: boolean; highlighted: boolean; }} iconRight
+   * @slot {{ group: string; items: ReadonlyArray<Item>; }} group
+   * @slot {{}} empty
+   */
+
+  /**
+   * @event open
+   * @type {object}
+   * @property {"click" | "keydown" | "programmatic"} trigger
+   */
+
+  /**
+   * @event close
+   * @type {object}
+   * @property {"escape-key" | "outside-click" | "select"} trigger
+   */
+
+  /**
+   * Dispatched when the menu is scrolled near the bottom (load-more signal).
+   * Not the browser's native `scrollend` (scroll stopped).
+   * @event {{ scrollTop: number; scrollHeight: number; clientHeight: number }} scrollend
+   */
+
+  /**
+   * Set the dropdown items.
+   * @type {ReadonlyArray<Item>}
    */
   export let items = [];
 
   /**
-   * Override the display of a dropdown item
-   * @type {(item: DropdownItem) => string}
+   * Override the display of a dropdown item.
+   * @type {(item: Item) => string}
    */
-  export let itemToString = (item) => item.text || item.id;
-
-  /** Specify the selected item index */
-  export let selectedIndex = -1;
+  export let itemToString = function itemToString(item) {
+    return item.text ?? item.id;
+  };
 
   /**
-   * Specify the type of dropdown
+   * Specify the selected item id.
+   * @type {Item["id"] | undefined}
+   * @bindable writable
+   */
+  export let selectedId = undefined;
+
+  /**
+   * Specify the type of dropdown.
    * @type {"default" | "inline"}
    */
   export let type = "default";
 
   /**
-   * Specify the direction of the dropdown menu
+   * Specify the direction of the dropdown menu.
    * @type {"bottom" | "top"}
    */
   export let direction = "bottom";
 
   /**
-   * Specify the size of the dropdown field
-   * @type {"sm" | "lg" | "xl"}
+   * Specify which edge of the field the menu lines up with.
+   * Only visible when the menu is wider than the field, as with `type="inline"`.
+   * Set to `"end"` to open the menu toward the start side, e.g. for an inline
+   * dropdown near the right edge of its container.
+   * @type {"start" | "end"}
+   */
+  export let align = "start";
+
+  /**
+   * Specify the size of the dropdown field.
+   * Inherits the parent `Form` size when unset.
+   * Also accepts Carbon v11's `"md"` (the 40px default, which overrides a
+   * `Form` size). `"lg"` and `"xl"` are both 48px.
+   * @type {"xs" | "sm" | "md" | "lg" | "xl" | undefined}
    */
   export let size = undefined;
 
-  /** Set to `true` to open the dropdown */
+  /**
+   * Set to `true` to open the dropdown.
+   * @bindable writable
+   */
   export let open = false;
-
-  /** Set to `true` to use the inline variant */
-  export let inline = false;
-
-  /** Set to `true` to enable the light variant */
-  export let light = false;
 
   /** Set to `true` to disable the dropdown */
   export let disabled = false;
 
-  /** Specify the title text */
-  export let titleText = "";
+  /** Specify the label text */
+  export let labelText = "";
 
   /** Set to `true` to indicate an invalid state */
   export let invalid = false;
@@ -60,7 +117,7 @@
   /** Specify the invalid state text */
   export let invalidText = "";
 
-  /** Set to `true` to indicate an warning state */
+  /** Set to `true` to indicate a warning state */
   export let warn = false;
 
   /** Specify the warning state text */
@@ -69,9 +126,62 @@
   /** Specify the helper text */
   export let helperText = "";
 
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
+
   /**
-   * Specify the list box label
-   * @type {string}
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
+
+  /**
+   * Set to `true` to show a clear button when an item is selected.
+   * Clears `selectedId` and dispatches a `clear` event.
+   * Also enables clearing the selection with Delete/Backspace.
+   */
+  export let clearable = false;
+
+  /**
+   * Specify the assistive text advertising the keyboard shortcut that clears
+   * the selection. Appended to the field's description whenever there is a
+   * selection to clear. Only used when `clearable` is `true`.
+   */
+  export let clearSelectionText =
+    "To clear the selection, press Delete or Backspace";
+
+  /**
+   * Specify the assistive text announced through the status live region when
+   * the selection is cleared via the keyboard or the clear button. Only used
+   * when `clearable` is `true`.
+   */
+  export let selectionClearedText = "Selection cleared";
+
+  /**
+   * Set to `true` to reopen the dropdown menu after clearing the selection.
+   * This allows users to immediately see all available items after clearing.
+   * Only used when `clearable` is `true`.
+   */
+  export let openOnClear = false;
+
+  /**
+   * Set to `true` to use the fluid variant.
+   * Inherited from the parent `FluidForm` context,
+   * so it does not need to be set when used inside `FluidForm`.
+   * Cannot be combined with the inline variant.
+   */
+  export let fluid = false;
+
+  /**
+   * Set to `true` to render condensed menu items in the fluid variant.
+   * Menu items use the default height instead of the taller fluid height.
+   * Only applies when the fluid variant is active.
+   */
+  export let condensed = false;
+
+  /**
+   * Specify the list box label.
+   * @type {string | undefined}
    */
   export let label = undefined;
 
@@ -79,184 +189,1355 @@
   export let hideLabel = false;
 
   /**
-   * Override the default translation ids
-   * @type {(id: any) => string}
+   * Override the chevron icon label based on the open state.
+   * Defaults to "Open menu" when closed and "Close menu" when open.
+   * @type {((id: import("../ListBox/ListBoxMenuIcon.svelte").ListBoxMenuIconTranslationId) => string) | undefined}
    */
   export let translateWithId = undefined;
 
-  /** Set an id for the list box component */
-  export let id = "ccs-" + Math.random().toString(36);
+  /**
+   * Override the label of the clear button when a selection is present.
+   * Defaults to "Clear selected item" since a dropdown can only have one selection.
+   * @type {((id: "clearSelection") => string) | undefined}
+   */
+  export let translateWithIdSelection = undefined;
 
   /**
-   * Specify a name attribute for the list box
-   * @type {string}
+   * ListBoxSelection asks a single selection only for "clearSelection": it
+   * passes no count. Passed only when `translateWithIdSelection` is set.
+   * @param {"clearAll" | "clearSelection"} id
+   * @returns {string}
+   */
+  function translateSelectionId(id) {
+    const translate = /** @type {(id: "clearSelection") => string} */ (
+      translateWithIdSelection
+    );
+    return translate(/** @type {"clearSelection"} */ (id));
+  }
+
+  /**
+   * Enable virtualization for large lists. Virtualization renders only the items currently visible in the viewport, improving performance for large lists.
+   *
+   * By default, virtualization is automatically enabled for lists with more than 100 items.
+   *
+   * Set `virtualize={false}` to explicitly disable virtualization, even for large lists.
+   *
+   * Set `virtualize={true}` to explicitly enable virtualization with default settings.
+   *
+   * Provide an object to customize virtualization behavior:
+   * - `itemHeight` (default: size-based, or 64px for fluid unless `condensed`): Height of each item in pixels. Override when custom slots change row height. Under `wrapOptions`, heights are measured from the rendered options and this serves as the starting estimate for ones not yet measured.
+   * - `containerHeight` (default: 300): The maximum height in pixels of the dropdown container.
+   * - `overscan` (default: 3): The number of extra items to render above and below the viewport for smoother scrolling. Higher values may cause more flickering during very fast scrolling.
+   * - `threshold` (default: 100): The minimum number of items required before virtualization activates. Lists with fewer items will render all items normally without virtualization.
+   * - `maxItems` (default: undefined): The maximum number of items to render. When undefined, all visible items are rendered.
+   * - `optimizeFastScroll` (default: false): Keep the rendered options in view during very fast scrolling, such as a scrollbar drag, instead of showing blank space until new options render. The options then follow the scroll a frame behind, and pause while the main thread is busy.
+   * @type {undefined | boolean | { itemHeight?: number, containerHeight?: number, overscan?: number, threshold?: number, maxItems?: number, optimizeFastScroll?: boolean }}
+   */
+  export let virtualize = undefined;
+
+  /**
+   * Specify the message shown in the open menu when `items` is empty, such as
+   * before async options arrive. Screen readers hear it through the status
+   * live region, also when the `empty` slot replaces the visible text.
+   * Set to `""` to show no message.
+   */
+  export let emptyText = "No options";
+
+  /**
+   * Set to `true` to show a loading row after the options while the menu is
+   * open, such as while fetching more items on `scrollend`. Marks the menu
+   * `aria-busy` and hides the empty state; the options stay interactive.
+   */
+  export let loading = false;
+
+  /** Specify the text of the loading row */
+  export let loadingText = "Loading...";
+
+  /**
+   * Wait this many milliseconds after `loading` turns `true` before showing
+   * the loading row. Once shown, it stays for at least 500 ms, so fast work
+   * shows nothing and slow work never flashes. The menu sets `aria-busy` and
+   * holds back the empty state as soon as `loading` is `true`.
+   * Set to `0` to show it at once.
+   */
+  export let loadingDelay = 0;
+
+  /**
+   * Set to `true` to let an option's label wrap onto as many lines as it needs
+   * instead of being truncated with an ellipsis.
+   * @type {boolean}
+   */
+  export let wrapOptions = false;
+
+  /**
+   * Set to `true` to always render the menu in a portal, or `false` to
+   * keep it in place. Left unset, the menu moves to a portal inside a
+   * Modal, or when a box around it (`overflow` other than `visible`)
+   * would cut it off.
+   * @type {boolean | undefined}
+   */
+  export let portalMenu = undefined;
+
+  /** Set an id for the list box component */
+  export let id = uniqueId();
+
+  /**
+   * Specify a name attribute for native form submission.
+   * Mounts a hidden input whose value mirrors `selectedId`
+   * (empty string when nothing is selected, or when the
+   * selected item is disabled). Omitted from submission
+   * when the dropdown is disabled.
+   * @type {string | undefined}
    */
   export let name = undefined;
 
-  /** Obtain a reference to the button HTML element */
+  /**
+   * Specify the id of a form element outside the component to associate the
+   * hidden `name` input with.
+   * @type {string | undefined}
+   */
+  export let form = undefined;
+
+  /**
+   * Set to `true` to require a selection. A wrapping `<form>` blocks
+   * submission while nothing is selected or the selected item is disabled,
+   * and the field shows its invalid state with `requiredInvalidText`
+   * instead of the browser's error bubble.
+   */
+  export let required = false;
+
+  /**
+   * Specify the invalid state text shown when a required dropdown blocks
+   * submission. Cleared once an item is selected. `invalid` and
+   * `invalidText` take precedence.
+   */
+  export let requiredInvalidText = "Select an item";
+
+  /**
+   * Obtain a reference to the button HTML element.
+   * @bindable readonly
+   * @type {null | HTMLButtonElement}
+   */
   export let ref = null;
 
-  import { createEventDispatcher } from "svelte";
-  import WarningFilled16 from "../icons/WarningFilled16.svelte";
-  import WarningAltFilled16 from "../icons/WarningAltFilled16.svelte";
+  /**
+   * Obtain a reference to the list HTML element.
+   * @type {null | HTMLDivElement}
+   * @bindable readonly
+   */
+  export let listRef = null;
+
+  import {
+    afterUpdate,
+    createEventDispatcher,
+    getContext,
+    onMount,
+    tick,
+  } from "svelte";
+  import { writable } from "svelte/store";
+  import Decorator from "../AILabel/Decorator.svelte";
+  import InlineLoading from "../InlineLoading/InlineLoading.svelte";
+  import HighlightSlot from "../ListBox/HighlightSlot.svelte";
+  import ListBoxMenuGroup from "../ListBox/ListBoxMenuGroup.svelte";
+  import ListBoxMenuStatus from "../ListBox/ListBoxMenuStatus.svelte";
+  import ListBoxRequiredInput from "../ListBox/ListBoxRequiredInput.svelte";
   import {
     ListBox,
     ListBoxMenu,
     ListBoxMenuIcon,
     ListBoxMenuItem,
-  } from "../ListBox";
+    ListBoxSelection,
+  } from "../ListBox/index.js";
+  import {
+    MENU_PAGE_STEP,
+    shouldVirtualizeMenu,
+  } from "../ListBox/list-box-utils.js";
+  import {
+    createGroupRows,
+    orderByGroup,
+    splitGroupRuns,
+  } from "../ListBox/menu-groups.js";
+  import {
+    applyPostClearOptions,
+    createMenuCloseHandler,
+    createMenuOpenHandler,
+    createStatusAnnouncer,
+  } from "../ListBox/menu-status.js";
+  import {
+    createMenuWindow,
+    scheduleHighlightScroll,
+  } from "../ListBox/menu-window.js";
+  import VirtualWindow from "../VirtualList/VirtualWindow.svelte";
+  import {
+    FORM_CONTEXT_KEY,
+    FORM_SIZE_CONTEXT_KEY,
+    MODAL_CONTEXT_KEY,
+  } from "../constants/context-keys.js";
+  import Checkmark from "../icons/Checkmark.svelte";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import { clampIndex } from "../utils/clamp-index.js";
+  import { createLoadingIndicator } from "../utils/delayed-loading.js";
+  import { dismiss } from "../utils/dismiss.js";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { clippedBy } from "../utils/fit-align.js";
+  import { isImeComposition } from "../utils/ime-composition.js";
+  import { isOutsideClick } from "../utils/is-outside-click.js";
+  import { createScrollEndTracker } from "../utils/is-scroll-near-end.js";
+  import { fitEdgeMenu, menuSide } from "../utils/menu-placement.js";
+  import { moveIndex } from "../utils/move-index.js";
+  import { titleWhenTruncated } from "../utils/title-when-truncated.js";
+  import {
+    createTypeaheadBuffer,
+    isTypeaheadKey,
+    typeaheadIndex,
+  } from "../utils/typeahead.js";
+  import { uniqueId } from "../utils/unique-id.js";
+  import { resetVirtualScrollOnClose } from "../utils/virtualize.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
 
   const dispatch = createEventDispatcher();
+  const scrollEndTracker = createScrollEndTracker();
+  const insideModal = getContext(MODAL_CONTEXT_KEY);
+  const formContext = getContext(FORM_CONTEXT_KEY);
+  /** @type {undefined | import("svelte/store").Readable<undefined | "xs" | "sm" | "md" | "xl">} */
+  const formSize = getContext(FORM_SIZE_CONTEXT_KEY);
+  $: effectiveSize = size ?? $formSize;
 
-  let selectedId = undefined;
-  let highlightedIndex = -1;
+  /**
+   * Starts active for a filled slot, so the server renders the AI surface.
+   * `Decorator` clears it when no `AILabel` claims the slot.
+   * @type {import("svelte/store").Writable<undefined | "active" | "revert">}
+   */
+  const aiLabelState = writable($$slots.decorator ? "active" : undefined);
 
-  function change(dir) {
-    let index = highlightedIndex + dir;
+  // Set for one open when the in-place menu turns out to be cut off by a
+  // box around it (a scrolling panel, an `overflow: hidden` card): the menu
+  // moves to a portal instead. Only when `portalMenu` is left unset.
+  let portalWhenClipped = false;
+  $: if (!open) portalWhenClipped = false;
 
-    if (index < 0) {
-      index = items.length - 1;
-    } else if (index >= items.length) {
-      index = 0;
+  $: effectivePortalMenu =
+    portalMenu === undefined ? !!insideModal || portalWhenClipped : portalMenu;
+
+  // In place, the menu opens on `direction`'s side unless it doesn't fit
+  // there and the other side has more room; a portalled menu flips itself.
+  // Measured once per open, after the menu renders and before it paints.
+  /** @type {"top" | "bottom" | null} */
+  let measuredSide = null;
+  $: placement = measuredSide ?? direction;
+  // Likewise along the field: a menu wider than the field (an inline one is
+  // at least 18rem) that runs past the window's side lines up with the
+  // field's other edge, or, with room on neither, narrows to fit.
+  /** @type {"start" | "end" | null} */
+  let measuredAlign = null;
+  /** @type {number | null} */
+  let menuWidth = null;
+  $: menuAlign = measuredAlign ?? align;
+  $: if (open && !effectivePortalMenu) {
+    void direction;
+    tick().then(placeMenu);
+  } else {
+    measuredSide = null;
+    measuredAlign = null;
+    menuWidth = null;
+  }
+
+  async function placeMenu() {
+    if (!(open && listRef && ref)) return;
+    const mayPortal = portalMenu === undefined;
+    if (mayPortal && clippedBy(listRef)) {
+      portalWhenClipped = true;
+      return;
     }
-
-    highlightedIndex = index;
+    fitMenuToWindow(listRef);
+    const side = menuSide(ref, listRef, direction);
+    if (side === placement) return;
+    measuredSide = side;
+    await tick();
+    if (mayPortal && open && listRef && clippedBy(listRef)) {
+      portalWhenClipped = true;
+    }
   }
 
-  $: if (selectedIndex > -1) {
-    dispatch("select", { selectedId, selectedIndex, selectedItem });
+  /** @param {HTMLElement} menu */
+  function fitMenuToWindow(menu) {
+    const box = menu.offsetParent?.getBoundingClientRect();
+    if (!box) return;
+    const rtl = getComputedStyle(menu).direction === "rtl";
+    // `fitEdgeMenu` takes physical edges; in RTL, start is the right one.
+    /** @param {"start" | "end"} edge */
+    const mirror = (edge) =>
+      rtl ? (edge === "start" ? "end" : "start") : edge;
+    const fit = fitEdgeMenu({
+      before: box.left,
+      after: box.right,
+      size: menu.getBoundingClientRect().width,
+      max: document.documentElement.clientWidth,
+      align: mirror(align),
+    });
+    measuredAlign = mirror(fit.align);
+    menuWidth = fit.width;
   }
+
+  // Naming and description belong on the combobox button. On the role-less
+  // wrapper, where the rest props land, they never reach assistive tech.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
+  $: menuAriaLabel = ariaLabel ?? (labelText || "Choose an item");
+
+  let highlightedIndex = -1;
+  let highlightOrigin = /** @type {"keyboard" | null} */ (null);
+  let prevHighlightedIndex = -1;
+  let prevItemsLength = items.length;
+  let listScrollTop = 0;
+  let prevOpen = false;
+  let fieldFocused = false;
+  /** Set when a required, empty dropdown blocked form submission. */
+  let requiredError = false;
+  let itemsById = new Map();
+  /** Text content of the visually-hidden status live region. */
+  let statusText = "";
+  // Rows are items or group headers, told apart by the row index in the
+  // template, so the window's row type is `any`.
+  /** @type {import("../ListBox/menu-window.js").MenuWindowState<any>} */
+  let menuState;
+
+  /** @type {import("../ListBox/menu-window.js").MenuWindow<any>} */
+  const menuWindow = createMenuWindow({
+    getContainer: () => listRef,
+    onScrollTop: (scrollTop) => {
+      listScrollTop = scrollTop;
+    },
+    onState: (state) => {
+      menuState = state;
+    },
+  });
+
+  const typeahead = createTypeaheadBuffer();
+  const buildGroupRows = createGroupRows();
+
+  // `openMenu(trigger)` opens a closed menu and records the cause, which
+  // `syncOpenEvent` reports in `open` once the menu has rendered.
+  const { openMenu, sync: syncOpenEvent } = createMenuOpenHandler({
+    getOpen: () => open,
+    setOpen: (v) => (open = v),
+    dispatch,
+  });
+
+  onMount(() => {
+    return () => {
+      typeahead.clear();
+      menuWindow.destroy();
+      loadingIndicator.cancel();
+    };
+  });
+
+  // `loading` takes effect at once for `aria-busy` and the empty state. Only
+  // the indicator waits for `loadingDelay`; with no delay it follows `loading`
+  // exactly.
+  let showLoading = loading;
+  const loadingIndicator = createLoadingIndicator((shown) => {
+    showLoading = shown;
+  });
+  $: loadingIndicator(loading, loadingDelay);
+
   $: inline = type === "inline";
-  $: selectedItem = items[selectedIndex];
-  $: selectedId = items[selectedIndex] ? items[selectedIndex].id : undefined;
+  // A Dropdown that turns disabled or read-only while open closes its menu,
+  // like a native `<select>`, so no option stays clickable. Closing here is
+  // not a dismissal, so `close` does not fire.
+  $: if ((effectiveDisabled || readonly) && open) open = false;
+  $: {
+    itemsById = new Map();
+    for (let index = 0; index < items.length; index++) {
+      itemsById.set(items[index].id, items[index]);
+    }
+  }
+  $: menuId = `menu-${id}`;
+  $: ({ helperId, errorId, warnId, readonlyId } = buildFieldIds(id));
+  $: selectionId = `selection-${id}`;
+  // Invalid/warn states are suppressed when the dropdown is disabled or read-only.
+  $: if (!required || hiddenInputValue !== "") requiredError = false;
+  $: shownInvalidText =
+    requiredError && !invalid ? requiredInvalidText : invalidText;
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid: invalid || requiredError,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
+  }));
+  $: hasSelectionDescription =
+    clearable && !readonly && selectedId !== undefined;
+  $: statusDescribedById = resolveStatusDescribedBy({
+    showInvalid,
+    showWarn,
+    helperText,
+    invalidText: shownInvalidText,
+    warnText,
+    isFluid,
+    errorId,
+    warnId,
+    helperId,
+  });
+  $: fieldDescribedById = joinDescribedBy(
+    readonly ? readonlyId : null,
+    hasSelectionDescription ? selectionId : null,
+    statusDescribedById,
+    ariaDescribedBy,
+  );
+  $: isFluid = !inline && (fluid || !!formContext?.isFluid);
+  $: showFieldFocus = isFluid && (fieldFocused || open);
+  // Neutral = default fluid state, i.e. none of the other wrapper modifiers apply.
+  $: fluidNeutral =
+    isFluid && !showInvalid && !showWarn && !effectiveDisabled && !readonly;
+  // Hoverable = disabled/readonly do not suppress the invalid/warning hover
+  // tint. showInvalid/showWarn already exclude both, so this only matters
+  // for readability of the selector it replaces.
+  $: fluidHoverable = isFluid && !effectiveDisabled && !readonly;
+  // Scope the option id with the instance `id` so multiple Dropdowns on a
+  // page do not produce duplicate DOM ids. `aria-activedescendant` references
+  // this same scoped value (see the `ListBoxMenuItem` ids below).
+  $: highlightedId =
+    highlightedIndex > -1 && menuItems[highlightedIndex]
+      ? `${id}-${menuItems[highlightedIndex].id}`
+      : undefined;
+  $: selectedItem = itemsById.get(selectedId);
+  // Mirrors native `<select><option value>`: a disabled selection is not a
+  // successful control, so it serializes as empty like nothing being selected.
+  // A disabled Dropdown disables the input itself, so the field is omitted
+  // entirely, like a disabled `<select>`.
+  $: hiddenInputValue =
+    selectedId === undefined || selectedItem?.disabled ? "" : selectedId;
   $: if (!open) {
     highlightedIndex = -1;
+    highlightOrigin = null;
+    prevHighlightedIndex = -1;
+    typeahead.clear();
+  }
+
+  // Clamp a stale highlight when `items` shrinks while the menu is open, so a
+  // keyboard-driven Enter/Space cannot dereference an index past the end.
+  $: if (items.length !== prevItemsLength) {
+    prevItemsLength = items.length;
+    if (highlightedIndex >= items.length) {
+      highlightedIndex = -1;
+      highlightOrigin = null;
+      prevHighlightedIndex = -1;
+    }
+  }
+
+  $: shouldVirtualize = shouldVirtualizeMenu({ items, virtualize });
+
+  $: grouped = items.some((item) => !!item.group);
+  // Each group is contiguous: ungrouped items first, then groups in order of
+  // first appearance. Highlight indexes point into this order.
+  $: menuItems = grouped ? orderByGroup(items, (item) => item.group) : items;
+  // Group headers render as rows of their own, so the menu window indexes
+  // rows, not items. `toRowIndex` maps between the two.
+  $: groupRows = grouped && open ? buildGroupRows(menuItems) : null;
+  $: menuRows = groupRows ? groupRows.rows : menuItems;
+
+  // Fluid (non-condensed) menu items are 64px tall (see css/_fluid-list-box.scss).
+  // Portaled menus render outside the fluid wrapper, so they keep default heights.
+  $: hasFluidMenuItems = isFluid && !condensed && !effectivePortalMenu;
+
+  $: menuState = menuWindow.update({
+    items: menuRows,
+    getKey: (row) => row.id,
+    shouldVirtualize,
+    virtualize,
+    // A header is not as tall as an option, so a grouped menu measures its
+    // rows the way a menu of wrapped options does.
+    wrapOptions: wrapOptions || grouped,
+    size: effectiveSize,
+    fluid: hasFluidMenuItems,
+    scrollTop: listScrollTop,
+  });
+  $: ({
+    itemsToRender,
+    isVirtualized,
+    startIndex,
+    offsetY,
+    totalHeight,
+    menuMaxHeight,
+    isWindowed,
+    isMeasured,
+    isPinned,
+  } = menuState);
+  // Each group's rendered rows sit inside one `role="group"` element.
+  $: menuRuns = splitGroupRuns(
+    itemsToRender,
+    isVirtualized ? startIndex : 0,
+    groupRows,
+  );
+  $: scrollEndTracker.noteItemCount(items.length);
+  // A row after the (absent) options, not an option, so arrow keys never
+  // reach it. `loading` holds it back until the items arrive.
+  $: hasNoItems = open && !loading && items.length === 0;
+  $: showEmpty = hasNoItems && ($$slots.empty || emptyText !== "");
+
+  afterUpdate(() => {
+    syncOpenEvent();
+    prevHighlightedIndex = scheduleHighlightScroll({
+      open,
+      shouldVirtualize,
+      highlightedIndex: toRowIndex(highlightedIndex),
+      prevHighlightedIndex,
+      listRef,
+      menuWindow,
+    });
+
+    // Set highlighted index to selected item when menu opens
+    const wasJustOpened = open && !prevOpen;
+    const selectedIndex =
+      wasJustOpened && selectedId !== undefined && selectedItem
+        ? menuItems.findIndex((item) => item.id === selectedId)
+        : -1;
+    if (wasJustOpened && selectedIndex >= 0) {
+      // Set highlighted index to selected item so keyboard nav starts there
+      highlightedIndex = selectedIndex;
+      highlightOrigin = "keyboard";
+      prevHighlightedIndex = toRowIndex(selectedIndex);
+    }
+
+    // Scroll to selected item when menu opens without virtualization.
+    // The list may overflow its max-height even below the virtualization threshold.
+    if (
+      wasJustOpened &&
+      !shouldVirtualize &&
+      listRef &&
+      selectedId !== undefined &&
+      selectedItem
+    ) {
+      tick().then(() => {
+        if (!listRef) return;
+        const selectedOption = listRef.querySelector('[aria-selected="true"]');
+        if (!selectedOption) return;
+        // Keep the group header in view above the first option of a group.
+        const header = selectedOption.previousElementSibling;
+        const target = header?.classList.contains(
+          "bx--list-box__menu-group-header",
+        )
+          ? header
+          : selectedOption;
+        // Adjust the menu's own scrollTop instead of scrollIntoView,
+        // which would also scroll the document.
+        listRef.scrollTop +=
+          target.getBoundingClientRect().top -
+          listRef.getBoundingClientRect().top;
+      });
+    }
+
+    // Scroll to selected item when menu opens with virtualization
+    if (wasJustOpened && shouldVirtualize && listRef) {
+      tick().then(() => {
+        if (!listRef) return;
+        const row = toRowIndex(selectedIndex);
+        // Keep the group header in view above the first option of a group.
+        menuWindow.scrollIntoView(
+          groupRows?.itemIndexByRow[row - 1] === -1 ? row - 1 : row,
+          "top",
+        );
+      });
+    }
+    prevOpen = open;
+
+    menuWindow.sync();
+
+    // Reset scroll position when menu closes
+    if (!open && shouldVirtualize) {
+      listScrollTop = resetVirtualScrollOnClose();
+    }
+    if (!open) {
+      scrollEndTracker.reset();
+      menuWindow.reset();
+    }
+  });
+
+  /**
+   * Row position of the option at `index` in `menuItems`. Group headers are
+   * rows too, so the two differ once items are grouped.
+   * @param {number} index
+   * @returns {number}
+   */
+  function toRowIndex(index) {
+    return groupRows && index >= 0 ? groupRows.rowIndexByItem[index] : index;
+  }
+
+  /**
+   * @param {Event} event
+   */
+  function handleMenuScroll(event) {
+    const target = /** @type {HTMLElement} */ (event.target);
+    listScrollTop = target.scrollTop;
+    menuWindow.noteScroll(target.scrollTop);
+    const detail = scrollEndTracker.observe({
+      scrollTop: target.scrollTop,
+      scrollHeight: target.scrollHeight,
+      clientHeight: target.clientHeight,
+      itemCount: items.length,
+    });
+    if (detail) {
+      dispatch("scrollend", detail);
+    }
+  }
+
+  /** @param {number} step */
+  function change(step) {
+    // Disabled options stay in the keyboard navigation sequence (APG:
+    // "Focusability of disabled controls") so assistive-tech users can
+    // discover them; selectHighlighted and the option click handlers refuse
+    // the actual selection.
+    highlightedIndex = moveIndex(highlightedIndex, step, menuItems.length);
+    highlightOrigin = "keyboard";
+  }
+
+  /**
+   * Move the highlight a page of options (PageUp/PageDown), stopping at the
+   * ends instead of wrapping.
+   * @param {1 | -1} direction
+   */
+  function changePage(direction) {
+    highlightedIndex = clampIndex(
+      highlightedIndex,
+      direction * MENU_PAGE_STEP,
+      menuItems.length,
+    );
+    highlightOrigin = "keyboard";
+  }
+
+  /** @param {string} character */
+  function typeaheadSearch(character) {
+    if (menuItems.length === 0) return;
+
+    const query = typeahead.push(character);
+
+    highlightedIndex = typeaheadIndex({
+      items: menuItems,
+      query,
+      itemToString,
+      index: highlightedIndex,
+    });
+    highlightOrigin = "keyboard";
+  }
+
+  function dispatchSelect() {
+    dispatch("select", {
+      selectedId,
+      selectedItem: itemsById.get(selectedId),
+    });
+  }
+
+  const announceStatus = createStatusAnnouncer((text) => (statusText = text));
+
+  // The empty row is hidden from assistive tech, since a listbox holds only
+  // options and groups, so the live region carries its message instead.
+  $: if (hasNoItems && emptyText) announceStatus(emptyText);
+
+  /**
+   * Clear the dropdown selection programmatically.
+   * By default, focuses the dropdown after clearing. Set `options.focus` to `false` to prevent focusing.
+   * Set `options.open` to `true` to open the dropdown menu after clearing.
+   * @type {(options?: { focus?: boolean; open?: boolean; }) => Promise<void>}
+   * @example
+   * ```svelte
+   * <Dropdown bind:this={dropdown} items={items} />
+   * <button on:click={() => dropdown.clear()}>Clear</button>
+   * ```
+   */
+  export async function clear(options = {}) {
+    if (readonly || selectedId === undefined) return;
+    selectedId = undefined;
+    open = false;
+    announceStatus(selectionClearedText);
+    await applyPostClearOptions(
+      options,
+      (v) => (open = v),
+      () => ref,
+    );
+  }
+
+  /**
+   * Close the menu and notify consumers of the dismissal cause.
+   * Only dispatches when transitioning from open to closed so redundant
+   * `open = false` assignments do not double-fire.
+   * @type {(trigger: "escape-key" | "outside-click" | "select") => void}
+   */
+  const close = createMenuCloseHandler({
+    getOpen: () => open,
+    setOpen: (v) => (open = v),
+    dispatch,
+  });
+
+  /**
+   * @param {Item} item
+   */
+  function selectItem(item) {
+    if (item.id === selectedId) {
+      // Same rule as selectHighlighted: re-picking the current item is not a
+      // selection, so close without `select` or `close`.
+      open = false;
+      return;
+    }
+    selectedId = item.id;
+    dispatchSelect();
+    close("select");
+  }
+
+  function selectHighlighted() {
+    if (!open) {
+      openMenu("keydown");
+      return;
+    }
+    const highlighted =
+      highlightOrigin === "keyboard" && highlightedIndex > -1
+        ? menuItems[highlightedIndex]
+        : undefined;
+    // Enter/Space on a highlighted disabled option -> the menu stays open.
+    if (highlighted?.disabled) {
+      return;
+    }
+    if (highlighted && highlighted.id !== selectedId) {
+      selectedId = highlighted.id;
+      dispatchSelect();
+      close("select");
+    } else {
+      // Toggling closed via Enter/Space without picking a (new) item is not a
+      // meaningful dismissal trigger, so close silently.
+      open = false;
+    }
+  }
+
+  $: dropdownListBoxClass = [
+    "bx--dropdown",
+    $$slots.decorator && !isFluid && "bx--list-box--decorator",
+    $aiLabelState === "active" && "bx--list-box--ai-label",
+    placement === "top" && "bx--list-box--up",
+    showInvalid && "bx--dropdown--invalid",
+    showWarn && "bx--dropdown--warning",
+    clearable && selectedId !== undefined && "bx--dropdown--clearable",
+    clearable && selectedId !== undefined && "bx--list-box--clearable",
+    open && "bx--dropdown--open",
+    effectiveSize === "xs" && "bx--dropdown--xs",
+    effectiveSize === "sm" && "bx--dropdown--sm",
+    effectiveSize === "lg" && "bx--dropdown--lg",
+    effectiveSize === "xl" && "bx--dropdown--xl",
+    inline && "bx--dropdown--inline",
+    effectiveDisabled && "bx--dropdown--disabled",
+    readonly && "bx--dropdown--readonly",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  /** @param {Event} event */
+  function handleOutsideClick(event) {
+    // The menu counts as inside even when not portaled: a click on a group
+    // header lands in it without closing the menu itself.
+    if (open && isOutsideClick(event, [ref, listRef])) {
+      close("outside-click");
+    }
   }
 </script>
 
-<svelte:window
-  on:click="{({ target }) => {
-    if (open && ref && !ref.contains(target)) {
-      open = false;
-    }
-  }}"
-/>
-
 <div
-  class:bx--dropdown__wrapper="{true}"
-  class:bx--list-box__wrapper="{true}"
-  class:bx--dropdown__wrapper--inline="{inline}"
-  class:bx--list-box__wrapper--inline="{inline}"
-  class:bx--dropdown__wrapper--inline--invalid="{inline && invalid}"
-  {...$$restProps}
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  class:bx--dropdown__wrapper={true}
+  class:bx--list-box__wrapper={true}
+  class:bx--dropdown__wrapper--inline={inline}
+  class:bx--list-box__wrapper--inline={inline}
+  class:bx--dropdown__wrapper--inline--invalid={inline && showInvalid}
+  class:bx--list-box__wrapper--fluid={isFluid}
+  class:bx--list-box__wrapper--fluid--neutral={fluidNeutral}
+  class:bx--list-box__wrapper--fluid--hoverable={fluidHoverable}
+  class:bx--list-box__wrapper--fluid--invalid={isFluid && showInvalid}
+  class:bx--list-box__wrapper--fluid--warning={isFluid && showWarn}
+  class:bx--list-box__wrapper--fluid--disabled={isFluid && effectiveDisabled}
+  class:bx--list-box__wrapper--fluid--readonly={isFluid && readonly}
+  class:bx--list-box__wrapper--fluid--condensed={isFluid && condensed}
+  use:dismiss={{ enabled: open, type: "click", handler: handleOutsideClick }}
+  {...wrapperProps}
 >
-  {#if titleText}
+  {#if labelText || $$slots.labelChildren}
     <label
-      for="{id}"
-      class:bx--label="{true}"
-      class:bx--label--disabled="{disabled}"
-      class:bx--visually-hidden="{hideLabel}"
+      for={id}
+      class:bx--label={true}
+      class:bx--label--disabled={effectiveDisabled}
+      class:bx--visually-hidden={hideLabel}
+      class:bx--label--slotted={isFluid && $$slots.labelChildren}
+      use:titleWhenTruncated={{ enabled: isFluid && !$$slots.labelChildren }}
     >
-      {titleText}
+      <slot name="labelChildren">{labelText}</slot>
     </label>
   {/if}
+  {#if name}
+    <input
+      type="hidden"
+      {name}
+      value={hiddenInputValue}
+      disabled={effectiveDisabled}
+      {form}
+    />
+  {/if}
   <ListBox
-    type="{type}"
-    size="{size}"
-    id="{id}"
-    name="{name}"
-    aria-label="{$$props['aria-label']}"
-    class="bx--dropdown {direction === 'top' && 'bx--list-box--up'} {invalid &&
-      'bx--dropdown--invalid'} {!invalid &&
-      warn &&
-      'bx--dropdown--warning'} {open && 'bx--dropdown--open'}
-      {size === 'sm' && 'bx--dropdown--sm'}
-      {size === 'xl' && 'bx--dropdown--xl'}
-      {inline && 'bx--dropdown--inline'}
-      {disabled && 'bx--dropdown--disabled'}
-      {light && 'bx--dropdown--light'}"
-    on:click="{({ target }) => {
-      open = ref.contains(target) ? !open : false;
-    }}"
-    disabled="{disabled}"
-    open="{open}"
-    invalid="{invalid}"
-    invalidText="{invalidText}"
-    light="{light}"
-    warn="{warn}"
-    warnText="{warnText}"
+    {type}
+    size={effectiveSize}
+    class={dropdownListBoxClass}
+    on:click={(event) => {
+      if (effectiveDisabled || readonly) return;
+      // Options close the menu themselves. Anything else in the menu, such
+      // as a group header, is not a dismissal.
+      if (listRef?.contains(/** @type {Node} */ (event.target))) return;
+      if (
+        open ||
+        !(
+          /** @type {HTMLElement} */ (ref).contains(
+            /** @type {Node} */ (event.target),
+          )
+        )
+      )
+        open = false;
+      else openMenu("click");
+    }}
+    disabled={effectiveDisabled}
+    {open}
+    invalid={showInvalid}
+    warn={showWarn}
   >
-    {#if invalid}
-      <WarningFilled16 class="bx--list-box__invalid-icon" />
+    {#if showInvalid}
+      <WarningFilled class="bx--list-box__invalid-icon" />
     {/if}
-    {#if !invalid && warn}
-      <WarningAltFilled16
+    {#if showWarn}
+      <WarningAltFilled
         class="bx--list-box__invalid-icon bx--list-box__invalid-icon--warning"
       />
     {/if}
-    <button
-      bind:this="{ref}"
-      class:bx--list-box__field="{true}"
-      tabindex="0"
-      role="button"
-      aria-expanded="{open}"
-      on:keydown="{(e) => {
-        const { key } = e;
-        if (['Enter', 'ArrowDown', 'ArrowUp'].includes(key)) {
-          e.preventDefault();
-        }
-        if (key === 'Enter') {
-          open = !open;
-          if (highlightedIndex > -1 && highlightedIndex !== selectedIndex) {
-            selectedIndex = highlightedIndex;
-            open = false;
-          }
-        } else if (key === 'Tab') {
-          open = false;
-          ref.blur();
-        } else if (key === 'ArrowDown') {
-          change(1);
-        } else if (key === 'ArrowUp') {
-          change(-1);
-        }
-      }}"
-      disabled="{disabled}"
-      translateWithId="{translateWithId}"
-      id="{id}"
+    {#if $$slots.decorator}
+      <Decorator
+        class="bx--field-decorator bx--list-box__inner-wrapper--decorator"
+        size={effectiveSize}
+        state={aiLabelState}
+      >
+        <slot name="decorator" />
+      </Decorator>
+    {/if}
+    <div
+      style={isFluid ? undefined : "display: contents"}
+      class:bx--list-box__field--wrapper={isFluid}
+      class:bx--list-box__field--wrapper--input-focused={showFieldFocus}
     >
-      <span class="bx--list-box__label">
-        {#if selectedItem}{itemToString(selectedItem)}{:else}{label}{/if}
-      </span>
-      <ListBoxMenuIcon open="{open}" translateWithId="{translateWithId}" />
-    </button>
+      <button
+        bind:this={ref}
+        type="button"
+        role="combobox"
+        class:bx--list-box__field={true}
+        class:bx--list-box__field--clearable={clearable &&
+          selectedId !== undefined}
+        tabindex="0"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-expanded={open}
+        aria-readonly={readonly || undefined}
+        aria-required={required || undefined}
+        aria-haspopup="listbox"
+        aria-activedescendant={highlightedId ?? ""}
+        aria-controls={open ? menuId : undefined}
+        aria-invalid={showInvalid || undefined}
+        aria-describedby={fieldDescribedById}
+        on:focus={() => {
+          if (isFluid) fieldFocused = true;
+        }}
+        on:blur={() => {
+          if (isFluid) fieldFocused = false;
+        }}
+        on:keydown={(event) => {
+          if (
+            event.key === " " ||
+            event.key === "Enter" ||
+            event.key === "ArrowDown" ||
+            event.key === "ArrowUp"
+          ) {
+            event.preventDefault();
+          }
+
+          if (readonly) return;
+
+          if (event.key === "Enter") {
+            selectHighlighted();
+          } else if (event.key === "Tab") {
+            // Tab dismisses without selecting; report it as a keyboard
+            // dismissal, like ComboBox does for a Tab that accepts nothing.
+            close("escape-key");
+          } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            const step = event.key === "ArrowDown" ? 1 : -1;
+            if (event.altKey) {
+              // APG combobox pattern: Alt+ArrowDown opens a closed menu without
+              // moving the highlight; Alt+ArrowUp closes an open one.
+              if (event.key === "ArrowDown" && !open) {
+                openMenu("keydown");
+              } else if (event.key === "ArrowUp" && open) {
+                // APG combobox: Alt+ArrowUp dismisses an open menu without
+                // selecting, so it shares the keyboard-dismissal trigger.
+                close("escape-key");
+              }
+            } else if (open) {
+              change(step);
+            } else {
+              openMenu("keydown");
+              // `afterUpdate` highlights any selected item only after the open
+              // state flushes; if nothing is highlighted by then, start at the
+              // first (ArrowDown) or last (ArrowUp) enabled item.
+              tick().then(() => {
+                if (highlightedIndex === -1) change(step);
+              });
+            }
+          } else if (event.key === "Home" || event.key === "End") {
+            // APG select-only combobox: Home/End open a closed listbox, then
+            // move the highlight to the first/last option, mirroring the
+            // open-and-move convention already used for the plain arrow keys.
+            event.preventDefault();
+            const toFirst = event.key === "Home";
+            const moveToEdge = () => {
+              if (menuItems.length === 0) return;
+              highlightedIndex = toFirst ? 0 : menuItems.length - 1;
+              highlightOrigin = "keyboard";
+            };
+            if (open) {
+              moveToEdge();
+            } else {
+              openMenu("keydown");
+              // `afterUpdate` highlights the selected item once the open state
+              // flushes; move to the edge after that so Home/End win.
+              tick().then(moveToEdge);
+            }
+          } else if (
+            open &&
+            (event.key === "PageUp" || event.key === "PageDown")
+          ) {
+            // APG listbox: jump a page of options; a closed menu keeps the default.
+            event.preventDefault();
+            changePage(event.key === "PageDown" ? 1 : -1);
+          } else if (event.key === "Escape") {
+            // Escape that cancels an IME composition is not a close.
+            if (!isImeComposition(event)) close("escape-key");
+          } else if (
+            clearable &&
+            selectedId !== undefined &&
+            (event.key === "Delete" || event.key === "Backspace")
+          ) {
+            // Clear the selection from the keyboard, menu open or closed,
+            // matching the click-to-clear button, `clear` event included.
+            // Only wired when `clearable` is set, since that is what makes
+            // clearing possible at all.
+            event.preventDefault();
+            dispatch("clear", event);
+            clear({ open: openOnClear });
+          } else if (isTypeaheadKey(event)) {
+            // APG select-only combobox: typing on the closed field opens the
+            // listbox and highlights the first match.
+            event.preventDefault();
+            const character = event.key;
+            if (open) {
+              typeaheadSearch(character);
+            } else {
+              openMenu("keydown");
+              // `afterUpdate` highlights the selected item once the open state
+              // flushes; search after that so the match starts past the
+              // selection, the same way it does in an open menu.
+              tick().then(() => typeaheadSearch(character));
+            }
+          }
+        }}
+        on:keyup={(event) => {
+          if (event.key === " ") {
+            event.preventDefault();
+          } else {
+            return;
+          }
+          if (readonly) return;
+          selectHighlighted();
+        }}
+        disabled={effectiveDisabled}
+        {id}
+      >
+        <span class:bx--list-box__label={true} use:titleWhenTruncated>
+          {#if selectedItem}
+            {itemToString(selectedItem)}
+          {:else}
+            {label ?? ""}
+          {/if}
+        </span>
+        {#if clearable && selectedId !== undefined}
+          <ListBoxSelection
+            on:clear
+            on:clear={() => clear({ open: openOnClear })}
+            translateWithId={translateWithIdSelection && translateSelectionId}
+            disabled={effectiveDisabled}
+            {readonly}
+          />
+        {/if}
+        <ListBoxMenuIcon
+          on:click={(event) => {
+            event.stopPropagation();
+            if (effectiveDisabled || readonly) return;
+            if (open) open = false;
+            else openMenu("click");
+          }}
+          {translateWithId}
+          {open}
+        />
+      </button>
+    </div>
+    {#if required}
+      <ListBoxRequiredInput
+        hasValue={hiddenInputValue !== ""}
+        disabled={effectiveDisabled}
+        {readonly}
+        focusTarget={ref}
+        {form}
+        on:invalid={() => (requiredError = true)}
+        on:reset={() => (requiredError = false)}
+      />
+    {/if}
     {#if open}
-      <ListBoxMenu aria-labelledby="{id}" id="{id}">
-        {#each items as item, i (item.id)}
-          <ListBoxMenuItem
-            id="{item.id}"
-            active="{selectedIndex === i || selectedId === item.id}"
-            highlighted="{highlightedIndex === i || selectedIndex === i}"
-            on:click="{() => {
-              selectedId = item.id;
-              selectedIndex = i;
-              ref.focus();
-            }}"
-            on:mouseenter="{() => {
-              highlightedIndex = i;
-            }}"
+      <ListBoxMenu
+        aria-label={menuAriaLabel}
+        {id}
+        portal={effectivePortalMenu}
+        portalHostClass={inline ? "bx--dropdown__menu-host--inline" : undefined}
+        {open}
+        anchor={ref}
+        {direction}
+        align={menuAlign}
+        {highlightedId}
+        {wrapOptions}
+        aria-busy={loading || undefined}
+        on:scroll
+        on:scroll={handleMenuScroll}
+        bind:ref={listRef}
+        style={[
+          isWindowed
+            ? `max-height: ${menuMaxHeight}; overflow-y: auto;`
+            : effectivePortalMenu
+              ? `max-height: ${menuMaxHeight};`
+              : "",
+          menuWidth === null
+            ? ""
+            : `min-width: ${menuWidth}px; max-width: ${menuWidth}px;`,
+        ]
+          .filter(Boolean)
+          .join(" ") || undefined}
+      >
+        {#if isVirtualized}
+          <VirtualWindow
+            {totalHeight}
+            {offsetY}
+            scrollTop={listScrollTop}
+            pinned={isPinned}
+            measured={isMeasured}
           >
-            {itemToString(item)}
-          </ListBoxMenuItem>
-        {/each}
+            {#each menuRuns as run (run.key)}
+              <ListBoxMenuGroup
+                labelledBy={run.groupIndex > -1
+                  ? `group-${id}-${run.groupIndex}`
+                  : undefined}
+              >
+                {#each run.rows as item, runIndex (item.id)}
+                  {@const rowIndex = run.start + runIndex}
+                  {@const actualIndex = groupRows
+                    ? groupRows.itemIndexByRow[rowIndex]
+                    : rowIndex}
+                  {#if actualIndex === -1}
+                    <!-- Hidden from assistive tech: the enclosing group is named
+                         by a hidden label, which stays rendered when a virtualized
+                         window leaves this header out. -->
+                    <div
+                      role="presentation"
+                      aria-hidden="true"
+                      data-virtual-index={isMeasured ? rowIndex : undefined}
+                      class:bx--list-box__menu-group-header={true}
+                      class:bx--list-box__menu-group-header--first={rowIndex ===
+                        0}
+                      on:mousedown={(event) => {
+                        // Keep focus on the field, as options do.
+                        event.preventDefault();
+                      }}
+                    >
+                      <slot name="group" group={item.group} items={item.items}>
+                        {item.group}
+                      </slot>
+                    </div>
+                  {:else}
+                    {@const selected = selectedId === item.id}
+                    {@const optionId = `${id}-${item.id}`}
+                    <ListBoxMenuItem
+                      id={optionId}
+                      active={selectedId === item.id}
+                      disabled={item.disabled}
+                      hasLeftIcon={Boolean($$slots.icon || item.icon)}
+                      aria-setsize={items.length}
+                      aria-posinset={actualIndex + 1}
+                      data-virtual-index={isMeasured ? rowIndex : undefined}
+                      on:click={(event) => {
+                        if (item.disabled) {
+                          event.stopPropagation();
+                          return;
+                        }
+                        selectItem(item);
+                      }}
+                      on:mousedown={(event) => {
+                        // Keep focus on the field so screen readers don't
+                        // re-announce it on every option click.
+                        event.preventDefault();
+                      }}
+                    >
+                      {#if $$slots.icon}
+                        <span
+                          class:bx--list-box__menu-item__icon={true}
+                          class:bx--list-box__menu-item__icon--left={true}
+                        >
+                          <HighlightSlot {optionId} let:highlighted>
+                            <slot
+                              name="icon"
+                              {item}
+                              index={actualIndex}
+                              {selected}
+                              {highlighted}
+                            />
+                          </HighlightSlot>
+                        </span>
+                      {:else if item.icon}
+                        <span
+                          class:bx--list-box__menu-item__icon={true}
+                          class:bx--list-box__menu-item__icon--left={true}
+                        >
+                          <svelte:component this={item.icon} />
+                        </span>
+                      {/if}
+                      {#if $$slots.default}
+                        <HighlightSlot {optionId} let:highlighted>
+                          <slot
+                            {item}
+                            index={actualIndex}
+                            {selected}
+                            {highlighted}
+                          />
+                        </HighlightSlot>
+                      {:else}
+                        {itemToString(item)}
+                      {/if}
+                      {#if $$slots.iconEnd || $$slots.iconRight}
+                        <span
+                          class:bx--list-box__menu-item__icon={true}
+                          class:bx--list-box__menu-item__icon--right={true}
+                        >
+                          <HighlightSlot {optionId} let:highlighted>
+                            <slot
+                              name="iconEnd"
+                              {item}
+                              index={actualIndex}
+                              {selected}
+                              {highlighted}
+                              ><slot
+                                name="iconRight"
+                                {item}
+                                index={actualIndex}
+                                {selected}
+                                {highlighted}
+                              /></slot
+                            >
+                          </HighlightSlot>
+                        </span>
+                      {:else if selected}
+                        <Checkmark
+                          class="bx--list-box__menu-item__selected-icon"
+                        />
+                      {/if}
+                    </ListBoxMenuItem>
+                  {/if}
+                {/each}
+              </ListBoxMenuGroup>
+            {/each}
+          </VirtualWindow>
+        {:else}
+          {#each menuRuns as run (run.key)}
+            <ListBoxMenuGroup
+              labelledBy={run.groupIndex > -1
+                ? `group-${id}-${run.groupIndex}`
+                : undefined}
+            >
+              {#each run.rows as item, runIndex (item.id)}
+                {@const rowIndex = run.start + runIndex}
+                {@const index = groupRows
+                  ? groupRows.itemIndexByRow[rowIndex]
+                  : rowIndex}
+                {#if index === -1}
+                  <!-- Hidden from assistive tech: the enclosing group is named
+                       by a hidden label, which stays rendered when a virtualized
+                       window leaves this header out. -->
+                  <div
+                    role="presentation"
+                    aria-hidden="true"
+                    data-virtual-index={isMeasured ? rowIndex : undefined}
+                    class:bx--list-box__menu-group-header={true}
+                    class:bx--list-box__menu-group-header--first={rowIndex ===
+                      0}
+                    on:mousedown={(event) => {
+                      // Keep focus on the field, as options do.
+                      event.preventDefault();
+                    }}
+                  >
+                    <slot name="group" group={item.group} items={item.items}>
+                      {item.group}
+                    </slot>
+                  </div>
+                {:else}
+                  {@const selected = selectedId === item.id}
+                  {@const optionId = `${id}-${item.id}`}
+                  <ListBoxMenuItem
+                    id={optionId}
+                    active={selectedId === item.id}
+                    disabled={item.disabled}
+                    hasLeftIcon={Boolean($$slots.icon || item.icon)}
+                    data-virtual-index={isMeasured ? rowIndex : undefined}
+                    on:click={(event) => {
+                      if (item.disabled) {
+                        event.stopPropagation();
+                        return;
+                      }
+                      selectItem(item);
+                    }}
+                    on:mousedown={(event) => {
+                      // Keep focus on the field so screen readers don't
+                      // re-announce it on every option click.
+                      event.preventDefault();
+                    }}
+                  >
+                    {#if $$slots.icon}
+                      <span
+                        class:bx--list-box__menu-item__icon={true}
+                        class:bx--list-box__menu-item__icon--left={true}
+                      >
+                        <HighlightSlot {optionId} let:highlighted>
+                          <slot
+                            name="icon"
+                            {item}
+                            {index}
+                            {selected}
+                            {highlighted}
+                          />
+                        </HighlightSlot>
+                      </span>
+                    {:else if item.icon}
+                      <span
+                        class:bx--list-box__menu-item__icon={true}
+                        class:bx--list-box__menu-item__icon--left={true}
+                      >
+                        <svelte:component this={item.icon} />
+                      </span>
+                    {/if}
+                    {#if $$slots.default}
+                      <HighlightSlot {optionId} let:highlighted>
+                        <slot {item} {index} {selected} {highlighted} />
+                      </HighlightSlot>
+                    {:else}
+                      {itemToString(item)}
+                    {/if}
+                    {#if $$slots.iconEnd || $$slots.iconRight}
+                      <span
+                        class:bx--list-box__menu-item__icon={true}
+                        class:bx--list-box__menu-item__icon--right={true}
+                      >
+                        <HighlightSlot {optionId} let:highlighted>
+                          <slot
+                            name="iconEnd"
+                            {item}
+                            {index}
+                            {selected}
+                            {highlighted}
+                            ><slot
+                              name="iconRight"
+                              {item}
+                              {index}
+                              {selected}
+                              {highlighted}
+                            /></slot
+                          >
+                        </HighlightSlot>
+                      </span>
+                    {:else if selected}
+                      <Checkmark
+                        class="bx--list-box__menu-item__selected-icon"
+                      />
+                    {/if}
+                  </ListBoxMenuItem>
+                {/if}
+              {/each}
+            </ListBoxMenuGroup>
+          {/each}
+        {/if}
+        {#if showEmpty}
+          <ListBoxMenuStatus>
+            <slot name="empty">{emptyText}</slot>
+          </ListBoxMenuStatus>
+        {/if}
+        {#if showLoading}
+          <ListBoxMenuStatus>
+            <InlineLoading description={loadingText} />
+          </ListBoxMenuStatus>
+        {/if}
       </ListBoxMenu>
     {/if}
   </ListBox>
-  {#if !inline && !invalid && !warn && helperText}
+  {#if isFluid}
+    <hr class:bx--list-box__divider={true} />
+  {/if}
+  {#if showInvalid && shownInvalidText}
+    <div id={errorId} class:bx--form-requirement={true} role="alert">
+      {shownInvalidText}
+    </div>
+  {/if}
+  {#if showWarn && warnText}
+    <div id={warnId} class:bx--form-requirement={true}>{warnText}</div>
+  {/if}
+  {#if !isFluid && !showInvalid && !showWarn && helperText}
     <div
-      class:bx--form__helper-text="{true}"
-      class:bx--form__helper-text--disabled="{disabled}"
+      id={helperId}
+      class:bx--form__helper-text={true}
+      class:bx--form__helper-text--disabled={effectiveDisabled}
     >
       {helperText}
     </div>
   {/if}
+  {#if groupRows}
+    {#each groupRows.headers as header, groupIndex (header.id)}
+      <span id="group-{id}-{groupIndex}" hidden>{header.group}</span>
+    {/each}
+  {/if}
+  {#if readonly}
+    <span id={readonlyId} class:bx--visually-hidden={true}>{readonlyText}</span>
+  {/if}
+  {#if hasSelectionDescription}
+    <span id={selectionId} class:bx--visually-hidden={true}
+      >{clearSelectionText}</span
+    >
+  {/if}
+  <!-- Live region for selection announcements. Always rendered (even while
+       empty) so assistive tech registers the region before its text changes. -->
+  <span role="status" aria-live="polite" class:bx--visually-hidden={true}
+    >{statusText}</span
+  >
 </div>

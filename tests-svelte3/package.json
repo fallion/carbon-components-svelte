@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun --bun vitest",
+    "test:types": "svelte-typecheck --workspace ../tests --tsconfig ../tests-svelte3/tsconfig.check.json --svelte node_modules/svelte --checker bun --diagnostic-sources js --out-dir node_modules/.cache/svelte-typecheck/tests"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@testing-library/user-event": "^14.6.8",
+    "jsdom": "^30.1.3",
+    "svelte": "^3.59.1",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

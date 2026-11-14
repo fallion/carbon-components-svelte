@@ -1,0 +1,222 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/colors';
+@import '../../globals/scss/vars';
+@import '../../globals/scss/theme';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+
+/// Pseudo underline
+/// @access private
+/// @group pagination-nav
+@mixin pseudo-underline() {
+  // ccs: dropped the guard on unrendered `__page--direction`
+  &::after {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    display: block;
+    width: 0;
+    height: $carbon--spacing-02;
+    background-color: $background-brand;
+    content: '';
+    opacity: 0;
+    transition: width $duration--fast-02 motion(standard, productive);
+
+    @media screen and (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  .#{$prefix}--pagination-nav__page--active + &::after,
+  &.#{$prefix}--pagination-nav__page--active::after {
+    left: calc(50% - #{$carbon--spacing-05 * 0.5});
+    width: $carbon--spacing-05;
+    opacity: 1;
+  }
+}
+
+/// Pagination nav base styles
+/// @access private
+/// @group pagination-nav
+/// @param {Color} $text-color [$text-secondary]
+/// @param {Color} $text-color-active [$text-secondary]
+/// @param {Color} $background-color-hover [$layer-hover]
+/// @param {Color} $background-color-active [initial]
+/// @param {Number} $font-weight [400]
+/// @param {Number} $item-padding [0]
+/// @param {Number} $button-min-width [$carbon--spacing-09]
+/// @param {Value} $button-padding [1.0625rem $carbon--spacing-02]
+/// @param {Number} $button-direction-size [$carbon--spacing-09]
+/// @param {Number} $select-icon-top-position [$carbon--spacing-05]
+/// @param {Number} $select-icon-left-position [$carbon--spacing-05]
+@mixin pagination-nav(
+  $text-color: $text-secondary,
+  $text-color-active: $text-secondary,
+  $background-color-hover: $layer-hover,
+  $background-color-active: initial,
+  $font-weight: 400,
+  $item-padding: 0,
+  $button-min-width: $carbon--spacing-09,
+  $button-padding: 1.0625rem $carbon--spacing-02,
+  $button-direction-size: $carbon--spacing-09,
+  $select-icon-top-position: $carbon--spacing-05,
+  $select-icon-left-position: $carbon--spacing-05
+) {
+  .#{$prefix}--pagination-nav {
+    @include reset;
+    @include type-style('body-compact-01', $omit: (line-height));
+
+    line-height: 0;
+  }
+
+  // ccs: wrap the pages onto more rows when the nav is narrower than
+  // them, so a 320 px page does not scroll sideways. Carbon React drops
+  // to four pages under `sm` in JS; set `shown` for that.
+  .#{$prefix}--pagination-nav__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+  }
+
+  .#{$prefix}--pagination-nav__list-item {
+    padding: $item-padding;
+
+    &:first-child {
+      padding-left: 0;
+    }
+
+    &:last-child {
+      padding-right: 0;
+    }
+  }
+
+  .#{$prefix}--pagination-nav__page {
+    @include type-style('body-compact-01', $omit: (font-weight, line-height));
+    @include button-reset($width: false, $omit: (display, padding));
+
+    position: relative;
+    display: block;
+    min-width: $button-min-width;
+    padding: $button-padding;
+    border-radius: 0;
+    color: $text-color;
+    font-weight: $font-weight;
+    line-height: 1;
+    outline: 0;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color $duration--fast-02 motion(standard, productive),
+      color $duration--fast-02 motion(standard, productive);
+    user-select: none;
+
+    @media (any-hover: hover) {
+      &:hover {
+        background-color: $background-color-hover;
+        color: $text-color;
+      }
+    }
+
+    &:focus {
+      @include focus-outline('outline');
+    }
+
+    &:disabled {
+      background: none;
+      color: rgba($text-color, 0.5);
+      outline: none;
+      pointer-events: none;
+    }
+
+    @include pseudo-underline();
+
+    &.#{$prefix}--pagination-nav__page--active {
+      background-color: $background-color-active;
+      color: $text-color-active;
+      font-weight: 600;
+    }
+
+  }
+
+  .#{$prefix}--pagination-nav__select {
+    position: relative;
+  }
+
+  .#{$prefix}--pagination-nav__page--select {
+    max-height: $button-min-width;
+    appearance: none;
+    text-indent: calc(50% - 4.5px);
+    // Override some Firefox user-agent styles
+    @-moz-document url-prefix() {
+      text-indent: 0;
+    }
+  }
+
+  .#{$prefix}--pagination-nav__select-icon-wrapper {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+
+    @include pseudo-underline();
+
+    .#{$prefix}--pagination-nav__page--active + & {
+      .#{$prefix}--pagination-nav__select-icon {
+        display: none;
+      }
+    }
+  }
+
+  .#{$prefix}--pagination-nav__select-icon {
+    position: absolute;
+    top: calc(50% - #{$select-icon-top-position * 0.5});
+    left: calc(50% - #{$select-icon-top-position * 0.5});
+    pointer-events: none;
+  }
+
+  .#{$prefix}--pagination-nav__accessibility-label {
+    @include hidden();
+  }
+
+  // ccs: only the previous and next buttons carry a button icon. They
+  // point to the inline start and end.
+  .#{$prefix}--pagination-nav__list-item .#{$prefix}--btn__icon {
+    @include ccs-mirror-rtl;
+  }
+}
+
+@include exports('pagination-nav') {
+  @include pagination-nav;
+}
+
+// carbon-components-svelte patch (pagination-nav-forced-colors)
+// The current page's underline is a background fill, which forced-colors
+// mode repaints as `Canvas`, so only the bold number marked the current
+// page. The underline paints in `Highlight`, as TableOfContents' active bar
+// does.
+
+/// PaginationNav current-page underline in forced-colors mode.
+/// @access private
+/// @group pagination-nav
+@mixin pagination-nav-forced-colors {
+  @media (forced-colors: active) {
+    .#{$prefix}--pagination-nav__page::after,
+    .#{$prefix}--pagination-nav__select-icon-wrapper::after {
+      background-color: Highlight;
+    }
+  }
+}
+
+@include exports("pagination-nav-forced-colors") {
+  @include pagination-nav-forced-colors;
+}

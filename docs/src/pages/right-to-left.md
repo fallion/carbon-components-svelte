@@ -1,0 +1,199 @@
+---
+title: Right-to-left
+layout: guide
+description: Lay out Carbon Components Svelte from right to left for Arabic, Hebrew, Persian, or Urdu, for a whole app or one part of a page.
+---
+
+<script>
+  import {
+    BigNumber,
+    Button,
+    ButtonSet,
+    Checkbox,
+    CodeSnippet,
+    CopyInput,
+    Dropdown,
+    LayoutDirection,
+    Link,
+    PaginationNav,
+    PinCodeInput,
+    Stack,
+    TextInput,
+  } from "carbon-components-svelte";
+  import ArrowRight from "carbon-icons-svelte/lib/ArrowRight.svelte";
+</script>
+
+## Set the direction
+
+For a whole app, set `dir="rtl"` and `lang` on `<html>`. The styles mirror from the first paint, and components read the direction from the page.
+
+```html
+<!-- index.html, or src/app.html in SvelteKit -->
+<html lang="ar" dir="rtl">
+```
+
+For one part of a page, such as an Arabic form in an English app, wrap it in [LayoutDirection](/components/LayoutDirection). It renders an element with `dir`, and components inside it read the direction from context. Menus and tooltips that render in a portal keep it.
+
+<LayoutDirection dir="rtl" lang="ar" tag="form">
+  <Stack gap={6}>
+    <TextInput labelText="اسم الخدمة" placeholder="api-gateway" />
+    <Dropdown
+      labelText="المنطقة"
+      selectedId="0"
+      items={[
+        { id: "0", text: "شرق الولايات المتحدة" },
+        { id: "1", text: "غرب أوروبا" },
+      ]}
+    />
+    <Checkbox labelText="النشر التلقائي عند الدمج" checked />
+    <ButtonSet>
+      <Button kind="secondary">إلغاء</Button>
+      <Button>نشر</Button>
+    </ButtonSet>
+  </Stack>
+</LayoutDirection>
+
+To switch back for one part, such as an English field in an Arabic form, set `dir="ltr"` on it, or nest a `LayoutDirection` with `dir="ltr"`. The nearest `dir` wins, for the styles and the arrow keys.
+
+To change the direction at runtime, such as when the user picks a language, wrap the app in a `LayoutDirection` and change its `dir`. Components follow it at once. See [When the direction is read](#when-the-direction-is-read).
+
+## What flips
+
+In RTL, these components mirror their layout. The links go to examples on the [LayoutDirection](/components/LayoutDirection) page.
+
+| Area | Components |
+| :--- | :--- |
+| UI Shell | Header, HeaderNav and its menus, SideNav and its resize handle, Content, HeaderPanel, switcher |
+| [Text fields](/components/LayoutDirection#text-fields) | TextInput, PasswordInput, CopyInput, NumberInput, Search, TextArea, TagInput, PinCodeInput, Select, and the fluid fields |
+| List boxes | Dropdown, ComboBox, MultiSelect |
+| [Buttons](/components/LayoutDirection#buttons) | Button, ButtonSet, ComboButton, MenuButton, ActionSet, modal footers |
+| [Menus](/components/LayoutDirection#menus) | Menu, MenuButton, ComboButton, ContextMenu, OverflowMenu, HeaderNavMenu |
+| [Tooltips and popovers](/components/LayoutDirection#tooltips-and-popovers) | Tooltip, TooltipIcon, TooltipDefinition, Toggletip, Popover, AILabel, icon-only button tooltips |
+| Navigation | [Tabs](/components/LayoutDirection#tabs), TabsVertical rows, Breadcrumb, Pagination, PaginationNav, ProgressIndicator, ContentSwitcher, Carousel |
+| Trees and tags | [TreeView](/components/LayoutDirection#treeview), Tag, TagSet, Checkbox |
+| Inputs | [Slider and RangeSlider](/components/LayoutDirection#slider), [DatePicker and DateCalendar](/components/LayoutDirection#date-picker) |
+| Layout | [CssGrid](/components/CssGrid#right-to-left), [SidePanel](/components/SidePanel#right-to-left), [Splitter](/components/LayoutDirection#resizing), Card, the ClickableTile icon, the UserAvatar badge |
+
+Some components still keep parts of their left-to-right layout. See [Known limits](#known-limits).
+
+## What stays left to right
+
+Some content reads left to right in any language. The components keep it that way, and the parts around it still flip.
+
+| Content | In RTL |
+| :--- | :--- |
+| Code | `CodeSnippet` code and Prose code blocks read left to right. The copy and expand buttons move to the left. See [CodeSnippet](/components/CodeSnippet#right-to-left). |
+| Copied values | `CopyInput` takes the direction of its value from the first letter, so a URL keeps its order. Set `dir="ltr"` to force it. |
+| Numbers | `BigNumber` keeps each number in its locale's order, so "+12%" does not become "12%+". The "+N" counts of `TagSet` and `UserAvatarGroup` read "+1". |
+| Codes | `PinCodeInput` segments run from the right. Set `dir="ltr"` on it for a code that reads left to right. Its label moves to the left too. |
+| Dates | `DatePicker` day numbers use Latin digits in every locale. |
+| The block axis | <DocKbd label="ArrowUp" />, <DocKbd label="ArrowDown" />, vertical sliders, and vertical alignment do not change. |
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={6}>
+    <CodeSnippet code={'npm run deploy -- --service="api-gateway"'} />
+    <CopyInput labelText="رابط الخدمة" value="https://api.example.com/v1/" />
+    <BigNumber labelText="عمليات النشر" value={1240} total={2000} />
+    <PinCodeInput dir="ltr" labelText="رمز التحقق" count={6} />
+  </Stack>
+</LayoutDirection>
+
+## Arrow keys
+
+In RTL, <DocKbd label="ArrowLeft" /> moves forward along a row and <DocKbd label="ArrowRight" /> moves back, as in React Aria. <DocKbd label="ArrowUp" />, <DocKbd label="ArrowDown" />, <DocKbd label="Home" />, and <DocKbd label="End" /> do not change.
+
+| Component | <DocKbd label="ArrowLeft" /> in RTL |
+| :--- | :--- |
+| Slider, RangeSlider | Raises the value |
+| TreeView | Expands a row or moves to its first child |
+| Tabs, ContentSwitcher, ToggleButtonGroup, ProgressIndicator, TagSet, HeaderNav, Carousel | Moves to the next item |
+| Menu, ContextMenu, MenuButton, ComboButton | Opens a submenu |
+| DatePicker, DateCalendar | Moves to the next day, month, or year |
+| TagInput | Moves from the tags back toward the text |
+| PinCodeInput | Moves to the next segment |
+| SideNav and Splitter resize handles | Widens the side nav or the start pane |
+
+## Icons
+
+Icons that point forward or back mirror in RTL, such as the arrows of Pagination, PaginationNav, Carousel, and Tabs, and submenu carets. Icons with no direction stay as they are, such as check marks, the search icon, and the `Launch` icon of an outbound link. See [Icons](/components/LayoutDirection#icons) for the full list.
+
+To mirror your own forward or back icon, add the `bx--icon--mirror-rtl` class. A `dir="ltr"` region inside an RTL page turns the mirror off again.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={5}>
+    <Link href="#">
+      عرض سجل النشر
+      <ArrowRight slot="icon" class="bx--icon--mirror-rtl" />
+    </Link>
+    <PaginationNav
+      total={5}
+      forwardText="الصفحة التالية"
+      backwardText="الصفحة السابقة"
+    />
+  </Stack>
+</LayoutDirection>
+
+## Start and end
+
+`start` and `end` name inline sides, so they swap in RTL. `left` and `right` name physical sides and stay put.
+
+| Prop | `start` in RTL |
+| :--- | :--- |
+| `align` on Tooltip, TooltipIcon, TooltipDefinition, Toggletip, and Popover | Lines up with the trigger's right edge. See [Tooltips and popovers](/components/LayoutDirection#tooltips-and-popovers). |
+| `intrinsicAlign` on MenuButton and ComboButton | Lines the menu up with the trigger's right edge |
+| `align` on DatePicker | Opens a portalled calendar at the field's right edge |
+| `columnAlign` in DataTable `headers` | Aligns the column to the right |
+
+OverflowMenu's `flipped` moves the menu to the button's inline end, which is its left edge in RTL. Popover's older names, such as `"top-left"`, and NotificationQueue's `position` are physical.
+
+## Portals
+
+A component that renders a menu, calendar, or tooltip in a [Portal](/components/Portal) moves it to the end of `<body>`. The portal keeps the direction of the place it left: the nearest `dir` attribute, as for the styles, else the `LayoutDirection`'s. So a `Dropdown` with `portalMenu` in a `dir="ltr"` field of an Arabic form opens left to right.
+
+## When the direction is read
+
+The styles always follow the current `dir`. Script reads the direction in one of two ways:
+
+- A `dir` attribute on the component or an ancestor wins, as it does for the styles. Inside a `LayoutDirection` with no nearer `dir`, components read it from context and follow a change at once.
+- Outside one, components read the element's computed direction when it is needed: when a key arrives, when a menu or tooltip opens, or when a drag starts.
+
+Nothing reports a change to `dir` on an ancestor. Outside a `LayoutDirection`, a menu or tooltip that is open when `dir` changes keeps its side until it opens again. `Slider` and `RangeSlider` place their thumbs in the styles, so the thumbs follow a change at once. Their keys and pointer read the page direction again when the pointer or keyboard focus reaches them. To switch the direction at runtime, use `LayoutDirection`.
+
+## Server rendering
+
+Set `dir` and `lang` on `<html>` in `src/app.html`, so the first paint is mirrored. `Slider` and `RangeSlider` place their thumbs by the nearest `dir` in the styles, so they render mirrored from the server too. On the server, script cannot read the attribute and takes the direction as left to right. Wrap the root layout in `LayoutDirection` so components read the direction from context before hydration too.
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import { LayoutDirection } from "carbon-components-svelte";
+</script>
+
+<LayoutDirection dir="rtl">
+  <slot />
+</LayoutDirection>
+```
+
+See [Server-side rendering](/server-rendering#right-to-left).
+
+## Forced colors
+
+Mirroring changes only where parts sit and which way icons point, not their colors. The forced-colors styles, such as for Windows high contrast themes, apply the same way in RTL.
+
+## Known limits
+
+These parts still keep their left-to-right layout in RTL.
+
+| Component | In RTL |
+| :--- | :--- |
+| InlineNotification, ToastNotification | The color bar stays on the left edge. |
+| Modal | The close button stays in the top-right corner. |
+| Accordion | Titles stay at the left. |
+| DataTable | Cells align left. Set `columnAlign: "start"` in `headers` to align them right. Sortable headers and expanded rows keep their left padding. |
+| StructuredList | Header cells align left. |
+| UnorderedList, OrderedList | Markers stay at the left edge. |
+| ProgressBar | The bar fills from the left. |
+| Grid | A `Column` offset stays on the left. Use [CssGrid](/components/CssGrid#right-to-left), which mirrors. |
+| Box, Bleed | Side props such as `paddingLeft`, `marginRight`, `left`, and `right` are physical. |
+
+To report a component that does not mirror, [open an issue](https://github.com/carbon-design-system/carbon-components-svelte/issues).

@@ -1,0 +1,50 @@
+import type { Readable } from "svelte/store";
+import type { TooltipGroup } from "./tooltip-group.js";
+
+/**
+ * Hover and focus scheduling for a tooltip in a tooltip group. Only one
+ * tooltip shows at a time page-wide. Entering while another tooltip in the
+ * same group is shown, or within the group's skip window after one closed,
+ * skips the enter delay (warm handoff) and marks the open as `instant`.
+ */
+export function createTooltipHandoff(options?: {
+  group?: TooltipGroup;
+  /** Overrides the group's enter delay when it returns a number. */
+  enterDelayMs?: () => number | undefined;
+  /** Overrides the group's leave delay when it returns a number. */
+  leaveDelayMs?: () => number | undefined;
+  /**
+   * Set for `Tooltip` and `TooltipDefinition`. Without a leave delay from
+   * the group or the tooltip, they wait `TOOLTIP_LEAVE_DELAY_MS` before
+   * they close, and icon tooltips `TOOLTIP_ICON_LEAVE_DELAY_MS`.
+   */
+  rich?: boolean;
+}): {
+  /** `true` while this tooltip holds the active slot. */
+  active: Readable<boolean>;
+  /** `true` while another tooltip holds the active slot. */
+  hidden: Readable<boolean>;
+  /** `true` while this tooltip holds the slot it took by warm handoff. */
+  instant: Readable<boolean>;
+  scheduleEnter: (onShow: () => void) => void;
+  scheduleLeave: (onHide: () => void) => void;
+  /**
+   * Claim the active slot. `instant` marks the open as instant even
+   * without a warm handoff, e.g. on keyboard focus.
+   */
+  claim: (options?: { instant?: boolean }) => void;
+  /**
+   * Claim the slot at once for focus on `node`, unless the library moved
+   * focus there itself (`focusQuietly`). Returns `false` then, and the
+   * caller treats the tooltip as dismissed.
+   */
+  claimFocus: (node: Element | null | undefined) => boolean;
+  release: () => void;
+  /**
+   * Hide on the user's request (Escape): cancel pending timers, clear the
+   * slot, and end the group's skip window, so the next tooltip waits out
+   * its enter delay.
+   */
+  dismiss: () => void;
+  cancel: () => void;
+};

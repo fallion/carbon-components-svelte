@@ -1,0 +1,281 @@
+---
+components: ["Theme"]
+description: Theme provides dynamic client-side theming using CSS variables, with five built-in themes and custom token overrides.
+keywords: ["dark mode", "light mode"]
+---
+
+<script>
+</script>
+
+## Setup
+
+Theme supports five built-in themes and custom token overrides. Import `all.css` for dynamic theming, which uses [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties).
+
+```css
+import "carbon-components-svelte/css/all.css";
+```
+
+`Theme` sets the theme for the whole page. To theme one part of it, such as a sidebar, use [ThemeZone](/components/ThemeZone).
+
+## Basic
+
+Create a basic theme component that can be controlled programmatically.
+
+<FileSource src="/framed/Theme/Theme" />
+
+## Persist locally
+
+Set `persist` to `true` to save the theme in [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage). Use `persistKey` for a custom storage key.
+
+When persistence is enabled, theme changes sync across browser tabs that share the same `persistKey`.
+
+<FileSource src="/framed/Theme/ThemePersist" />
+
+## Follow the system
+
+Set `system` to `true` to follow the operating system color scheme. The theme updates when the user changes the setting.
+
+Set `systemThemes` to choose which theme represents light and dark; the default pairs `white` with `g100`.
+
+With `persist` also set, the system preference wins when the page loads and the stored value is updated to match. Choosing a theme from a control keeps that theme until the system preference changes again.
+
+To follow the system without JavaScript, see [Follow the system with CSS only](#follow-the-system-with-css-only).
+
+<FileSource src="/framed/Theme/ThemeSystem" />
+
+## Apply before first paint
+
+`Theme` restores a persisted or system theme after it mounts, so a server-rendered or prerendered page first paints the default theme. To avoid the flash, inline `themeScript` as the first script in `<head>`. It returns a small script that sets the theme on `<html>` before the page renders.
+
+Pass `themeScript` the same `theme`, `tokens`, `persist`, `persistKey`, `system`, and `systemThemes` values as `Theme` so both pick the same theme and set the same tokens.
+
+In SvelteKit, add a placeholder to `src/app.html` and replace it in a server hook.
+
+```html
+<!-- src/app.html -->
+<head>
+  %carbon.theme%
+  %sveltekit.head%
+</head>
+```
+
+```js
+// src/hooks.server.js
+import { themeScript } from "carbon-components-svelte";
+
+const script = `<script>${themeScript({ persist: true, system: true })}</script>`;
+
+export function handle({ event, resolve }) {
+  return resolve(event, {
+    transformPageChunk: ({ html }) => html.replace("%carbon.theme%", script),
+  });
+}
+```
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<Theme persist system />
+```
+
+For other setups, generate the string at build time and inline it the same way. With a Content Security Policy, add the page's nonce to the `<script>` tag.
+
+## Follow the system with CSS only
+
+`all.css` also has a `system` theme. Set `theme="system"` on `<html>`, and the page is White when the operating system is light and Gray 100 when it is dark. It runs no JavaScript, so nothing flashes. It suits static and server-rendered pages, and pages whose Content Security Policy blocks inline scripts.
+
+```html
+<html theme="system">
+```
+
+[ThemeZone](/components/ThemeZone#system-color-scheme) takes `theme="system"` too.
+
+Use `Theme` with `system` and `themeScript` when you need more than White and Gray 100:
+
+| You need | Use |
+| :--- | :--- |
+| White and Gray 100, with no JavaScript | `<html theme="system">` |
+| Another pair, such as Gray 10 and Gray 90 | `<Theme system systemThemes={["g10", "g90"]} />` and `themeScript` |
+| To remember the user's choice | `<Theme persist system />` and `themeScript` |
+| A theme control, or `update` events | `<Theme render="toggle" system />` |
+
+The `theme` prop doesn't take `"system"`. It holds the theme that the controls show, `update` reports, and `persist` stores, so it is always one of the five themes. When `Theme` mounts, it sets the `theme` attribute on `<html>` to that theme.
+
+So you can start with CSS and let `Theme` take over. Render `<html theme="system">` and mount `<Theme system />`. With the default `systemThemes`, `Theme` picks the theme that the page already shows, so nothing changes on screen.
+
+## Custom theme
+
+Override default Carbon theme tokens using the `tokens` prop.
+
+`Theme` sets CSS custom properties as `--cds-{token}`. Not every token name maps directly to component styles. Components often use semantic tokens (like `layer-01`) rather than component-specific ones.
+
+For example, primary buttons use `button-primary` for background, with separate `button-primary-hover` and `button-primary-active` tokens. Check component CSS or Carbon docs to see which tokens affect a given component.
+
+<FileSource src="/framed/Theme/ThemeTokens" />
+
+### Token names
+
+Tokens use Carbon v11 names, matching the v11 Figma kit: `layer-01`, `text-primary`, `border-subtle-01`, `body-compact-01`. v10 names such as `ui-01`, `text-01`, `interactive-01`, and `body-short-01` are not declared, so overriding one has no effect. Carbon's [v10 to v11 token table](https://github.com/carbon-design-system/carbon/blob/main/docs/migration/v11.md#design-tokens) lists each rename. The `tokens` prop is typed with `CarbonToken`, so editors complete token names and flag a v10 name as an error.
+
+Components read contextual tokens such as `layer` and `field`, which hold the first layer's value. Overriding a first-layer token (`layer-01`, `field-01`, `border-subtle-00`) also sets its contextual token, unless you set that one too. A `Layer` still reads the numbered token for its own level.
+
+Where a v10 token split into several v11 tokens, pick the one for the role. For example, `ui-03` became `border-subtle-01` for borders and `layer-accent-01` for fills.
+
+## Brand theme
+
+Build a brand theme from one color with `createTheme`. Pass a base theme and a brand color. It returns `tokens` for `Theme`, contrast `warnings`, and a `css` method for static use. Try it in the [theme builder](/theme-builder).
+
+```svelte
+<script>
+  import { createTheme, Theme } from "carbon-components-svelte";
+
+  const { tokens } = createTheme({ theme: "g100", brand: "#d02670" });
+</script>
+
+<Theme theme="g100" {tokens} />
+```
+
+The brand becomes `button-primary`. The tokens Carbon pairs with its brand blue follow it: the button hover and active states, interactive borders, focus, links, and `background-brand`. Dark themes get lighter link and interactive colors, as in Carbon.
+
+A Carbon palette color, such as purple 60 (`#8a3ffc`), steps through Carbon's own palette. Any other color keeps its hue and takes the luminance of Carbon's steps, so it keeps Carbon's contrast. `support-info` and `link-visited` keep their Carbon values, since Carbon doesn't tie them to the brand.
+
+The tokens suit their base theme only. If users can switch themes, call `createTheme` for each theme and pass the matching tokens with it.
+
+### Contrast warnings
+
+`warnings` lists each pair below WCAG AA. `text-on-color` on `button-primary` and `link-primary` on `background` need 4.5:1, and `focus` on `background` needs 3:1. Each warning has both token names, the ratio, the minimum, and a message.
+
+Fix a pair with an override in `tokens`. Overrides win over the derived tokens. `text-on-color` applies to every colored surface, not only buttons.
+
+```js
+const { warnings } = createTheme({
+  brand: "#f1c21b",
+  tokens: {
+    "text-on-color": "#161616",
+    "link-primary": "#8e6a00",
+    focus: "#8e6a00",
+  },
+});
+
+warnings; // []
+```
+
+### Static CSS
+
+Call `css` to get the tokens as a CSS rule for a stylesheet. The rule applies while the base theme is set on the html element, so load it after `all.css`. Pass a selector to scope it elsewhere.
+
+```js
+const { css } = createTheme({ theme: "g100", brand: "#d02670" });
+
+css(); // :root[theme="g100"] { --cds-button-primary: #d02670; ... }
+css(".brand-zone");
+```
+
+## Token data
+
+Import token names and values from `carbon-components-svelte/tokens` to list tokens, build a palette, or pass a theme color to code that can't read CSS custom properties, such as a canvas. The data comes from the same build as `all.css`, so it has the same Carbon v11 names and values.
+
+| Export | Contents |
+| :--- | :--- |
+| `colorTokens` | Theme colors, with a value for each theme |
+| `componentTokens` | Button, tag, notification, content switcher, and status colors, with a value for each theme |
+| `typeTokens` | Type styles: font size, weight, line height, and letter spacing |
+| `spacingTokens`, `layoutTokens`, `containerTokens`, `sizeTokens` | Spacing and size scales |
+
+Each token name is also a custom property, `--cds-{name}`. Contextual tokens such as `layer` and `field` hold their value on the first layer; inside a `Layer`, read the numbered token for that level.
+
+```js
+import { colorTokens, typeTokens } from "carbon-components-svelte/tokens";
+
+colorTokens["background"].g100; // "#161616"
+typeTokens["heading-compact-01"]["font-size"]; // "0.875rem"
+```
+
+The table below lists every theme color. The [token reference](/tokens) shows every token with a swatch in all five themes, plus the type, spacing and size scales.
+
+<FileSource src="/framed/Theme/ThemeTokenData" />
+
+## Controls
+
+Render a built-in control instead of managing `theme` yourself. Set `render` to `"toggle"`, `"select"`, or `"dropdown"`.
+
+### Toggle
+
+Set `render` to `"toggle"` to display a toggle switch for switching between two themes. By default, it toggles between "white" and "g100" themes.
+
+<FileSource src="/framed/Theme/ThemeToggle" />
+
+#### Custom
+
+Customize themes, labels, and other toggle options with `toggle`.
+
+<FileSource src="/framed/Theme/ThemeToggleCustom" />
+
+### Select
+
+Set `render` to `"select"` to display a dropdown menu for selecting from all available themes.
+
+<FileSource src="/framed/Theme/ThemeSelect" />
+
+#### Custom
+
+Choose which themes to include, customize labels, and adjust other select options with `select`.
+
+<FileSource src="/framed/Theme/ThemeSelectCustom" />
+
+### Dropdown
+
+Set `render` to `"dropdown"` to display a Dropdown component for selecting from all available themes.
+
+<FileSource src="/framed/Theme/ThemeDropdown" />
+
+#### Custom
+
+Choose which themes to include, customize labels, and adjust other dropdown options with `dropdown`.
+
+<FileSource src="/framed/Theme/ThemeDropdownCustom" />
+
+## Events
+
+Theme dispatches an `update` event whenever `theme` changes, whether from a built-in control or a bound value updated elsewhere in your app. The initial theme on mount does not dispatch `update`.
+
+```svelte
+<Theme render="toggle" on:update={(e) => console.log(e.detail.theme)} />
+```
+
+## Slot
+
+Use the default slot to access the current `theme` value with `let:theme`, without duplicating local state.
+
+```svelte
+<Theme render="select" let:theme>
+  <p>Current theme: {theme}</p>
+</Theme>
+```
+
+## Exported themes constant
+
+The `themes` constant exports all theme keys and labels for programmatic use.
+
+Import `themes` from the Theme component file in a `script context="module"` block.
+
+```html
+<script context="module">
+  import { themes } from "carbon-components-svelte/src/Theme/Theme.svelte";
+
+  // themes = {
+  //   white: "White",
+  //   g10: "Gray 10",
+  //   g80: "Gray 80",
+  //   g90: "Gray 90",
+  //   g100: "Gray 100"
+  // }
+
+  // Get all theme keys programmatically
+  const themeKeys = Object.keys(themes); // ["white", "g10", "g80", "g90", "g100"]
+
+  // Build custom theme selectors with correct labels
+  Object.entries(themes).forEach(([key, label]) => {
+    console.log(`${key}: ${label}`); // "white: White", etc.
+  });
+</script>
+```

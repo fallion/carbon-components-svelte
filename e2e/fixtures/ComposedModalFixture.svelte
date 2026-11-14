@@ -1,0 +1,64 @@
+<script>
+  import {
+    Button,
+    ComposedModal,
+    ModalBody,
+    ModalFooter,
+    ModalHeader,
+    Select,
+    SelectItem,
+  } from "carbon-components-svelte";
+
+  // `?passive` leaves out the ModalFooter, so an outside click closes the
+  // modal.
+  const passive = new URLSearchParams(location.search).has("passive");
+
+  // `?select-on-open` mounts the select (and nothing else focusable in the
+  // body) in the update that opens the modal.
+  const selectOnOpen = new URLSearchParams(location.search).has(
+    "select-on-open",
+  );
+
+  let open = false;
+  let closeEvents = [];
+</script>
+
+<button type="button" data-testid="open-modal" on:click={() => (open = true)}>
+  Open modal
+</button>
+
+<p data-testid="close-events">{closeEvents.join(",")}</p>
+
+<ComposedModal
+  bind:open
+  on:close={(e) =>
+    (closeEvents = [...closeEvents, e.detail?.trigger ?? "null"])}
+>
+  <ModalHeader title="Modal title" />
+  <ModalBody>
+    <p data-testid="modal-body">Modal content</p>
+    {#if !selectOnOpen}
+      <input
+        type="text"
+        data-modal-primary-focus
+        data-testid="modal-primary-focus"
+        aria-label="Primary focus input"
+      />
+    {/if}
+    {#if !selectOnOpen || open}
+      <Select data-testid="modal-select" labelText="Contact method">
+        <SelectItem value="slack" text="Slack" />
+        <SelectItem value="email" text="Email" />
+      </Select>
+    {/if}
+  </ModalBody>
+  {#if !passive}
+    <ModalFooter>
+      <!-- The footer "Close" closes via app code (sets `open = false`), not a
+           built-in close affordance — exercises the "programmatic" trigger. -->
+      <Button data-testid="close-modal" on:click={() => (open = false)}>
+        Close
+      </Button>
+    </ModalFooter>
+  {/if}
+</ComposedModal>

@@ -4,26 +4,41 @@
 
   import { getContext, onMount } from "svelte";
 
-  let ref = null;
+  /** @type {null | HTMLDivElement} */
+  let footerRef = null;
   let open = false;
+  let openedByHover = false;
 
-  const ctx = getContext("Tooltip");
-  const unsubscribe = ctx.tooltipOpen.subscribe((tooltipOpen) => {
-    open = tooltipOpen;
+  /**
+   * @type {{
+   *   tooltipOpen: import("svelte/store").Readable<boolean>,
+   *   openedByHover?: import("svelte/store").Readable<boolean>,
+   * } | null}
+   */
+  const ctx = getContext("carbon:Tooltip") ?? null;
+  const unsubscribeOpen = ctx?.tooltipOpen.subscribe((value) => {
+    open = value;
+  });
+  const unsubscribeOpenedByHover = ctx?.openedByHover?.subscribe((value) => {
+    openedByHover = value;
   });
 
   onMount(() => {
     return () => {
-      unsubscribe();
+      unsubscribeOpen?.();
+      unsubscribeOpenedByHover?.();
     };
   });
 
-  $: if (open && ref) {
-    const node = ref.querySelector(selectorPrimaryFocus);
+  // Move focus into the footer only when the tooltip was opened via keyboard or
+  // programmatically. Focusing on mouse hover would yank focus away from a user
+  // who is only pointing at the trigger.
+  $: if (open && !openedByHover && footerRef) {
+    const node = /** @type {HTMLElement | null} */ (
+      footerRef.querySelector(selectorPrimaryFocus)
+    );
     if (node) node.focus();
   }
 </script>
 
-<div bind:this="{ref}" class:bx--tooltip__footer="{true}">
-  <slot />
-</div>
+<div bind:this={footerRef} class:bx--tooltip__footer={true}><slot /></div>

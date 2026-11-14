@@ -1,0 +1,105 @@
+<svelte:options accessors />
+
+<script lang="ts">
+  import Content from "carbon-components-svelte/UIShell/Content.svelte";
+  import Header from "carbon-components-svelte/UIShell/Header.svelte";
+  import HeaderNav from "carbon-components-svelte/UIShell/HeaderNav.svelte";
+  import HeaderNavItem from "carbon-components-svelte/UIShell/HeaderNavItem.svelte";
+  import SideNav from "carbon-components-svelte/UIShell/SideNav.svelte";
+  import SideNavItems from "carbon-components-svelte/UIShell/SideNavItems.svelte";
+  import SideNavLink from "carbon-components-svelte/UIShell/SideNavLink.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let headerHref: ComponentProps<Header>["href"] = undefined;
+  export let companyName: ComponentProps<Header>["companyName"] = undefined;
+  export let platformName: ComponentProps<Header>["platformName"] = "";
+  export let isSideNavOpen: ComponentProps<Header>["isSideNavOpen"] = false;
+  export let expandedByDefault: ComponentProps<Header>["expandedByDefault"] = true;
+  export let persistentHamburgerMenu: ComponentProps<Header>["persistentHamburgerMenu"] = false;
+  export let ariaLabelMenu: ComponentProps<Header>["ariaLabelMenu"] = undefined;
+  export let headerRef: ComponentProps<Header>["ref"] = null;
+  export let headerClass = "";
+  export let useSlots = false;
+  export let ariaLabel: ComponentProps<Header>["aria-label"] = undefined;
+  export let expansionBreakpoint: ComponentProps<Header>["expansionBreakpoint"] =
+    undefined;
+
+  export let sideNavFixed: ComponentProps<SideNav>["fixed"] = false;
+  export let sideNavRail: ComponentProps<SideNav>["rail"] = false;
+  export let sideNavAriaLabel: ComponentProps<SideNav>["ariaLabel"] = undefined;
+  export let sideNavIsOpen: ComponentProps<SideNav>["isOpen"] = false;
+  export let sideNavClass = "";
+
+  export let headerNavClass = "";
+
+  export let headerTheme: ComponentProps<Header>["theme"] = undefined;
+  export let sideNavTheme: ComponentProps<SideNav>["theme"] = undefined;
+
+  export let onHeaderClick: () => void = () => {};
+  export let onSideNavOpen: () => void = () => {};
+  export let onSideNavClose: () => void = () => {};
+  export let onSideNavOverlayClick: () => void = () => {};
+</script>
+
+{#if useSlots}
+  <Header
+    aria-label={ariaLabel}
+    bind:isSideNavOpen
+    {expandedByDefault}
+    {expansionBreakpoint}
+    {persistentHamburgerMenu}
+    {ariaLabelMenu}
+    theme={headerTheme}
+    bind:ref={headerRef}
+    class={headerClass}
+    on:click={onHeaderClick}
+  >
+    <span slot="company">Custom Company</span>
+    <span slot="platform">Custom Platform</span>
+    <HeaderNav class={headerNavClass} aria-label="Navigation">
+      <HeaderNavItem href="#" text="Link 1" />
+      <HeaderNavItem href="#" text="Link 2" />
+    </HeaderNav>
+  </Header>
+{:else}
+  <Header
+    aria-label={ariaLabel}
+    href={headerHref}
+    {companyName}
+    {platformName}
+    bind:isSideNavOpen
+    {expandedByDefault}
+    {expansionBreakpoint}
+    {persistentHamburgerMenu}
+    {ariaLabelMenu}
+    theme={headerTheme}
+    bind:ref={headerRef}
+    class={headerClass}
+    on:click={onHeaderClick}
+  >
+    <HeaderNav class={headerNavClass} aria-label="Navigation">
+      <HeaderNavItem href="#" text="Link 1" />
+      <HeaderNavItem href="#" text="Link 2" />
+    </HeaderNav>
+  </Header>
+{/if}
+
+<SideNav
+  fixed={sideNavFixed}
+  rail={sideNavRail}
+  ariaLabel={sideNavAriaLabel}
+  bind:isOpen={sideNavIsOpen}
+  {expansionBreakpoint}
+  theme={sideNavTheme}
+  class={sideNavClass}
+  on:open={onSideNavOpen}
+  on:close={onSideNavClose}
+  on:click:overlay={onSideNavOverlayClick}
+>
+  <SideNavItems>
+    <SideNavLink href="#" text="Link 1" />
+    <SideNavLink href="#" text="Link 2" />
+  </SideNavItems>
+</SideNav>
+
+<Content>Content goes here</Content>

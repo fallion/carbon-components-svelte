@@ -1,9 +1,9 @@
-import svelte from "rollup-plugin-svelte";
-import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
+import resolve from "@rollup/plugin-node-resolve";
+import terser from "@rollup/plugin-terser";
+import { optimizeCss, optimizeImports } from "carbon-preprocess-svelte";
 import css from "rollup-plugin-css-only";
-import { terser } from "rollup-plugin-terser";
-import { optimizeImports } from "carbon-preprocess-svelte";
+import svelte from "rollup-plugin-svelte";
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -14,6 +14,9 @@ export default {
     format: "iife",
     name: "app",
     file: "public/build/bundle.js",
+    // Single-file IIFE cannot load extra chunks.
+    // Dynamic imports (DatePicker flatpickr rangePlugin) must be inlined.
+    inlineDynamicImports: true,
   },
   plugins: [
     svelte({
@@ -24,5 +27,6 @@ export default {
     commonjs(),
     css({ output: "bundle.css" }),
     production && terser(),
+    production && optimizeCss(),
   ],
 };

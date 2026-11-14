@@ -1,0 +1,292 @@
+---
+components: ["Checkbox", "CheckboxGroup", "CheckboxSkeleton"]
+description: Checkboxes let users select one or more options from a list, for multiple-choice questions, settings, or confirmations.
+---
+
+<script>
+  import { AILabel, Checkbox, CheckboxGroup, CheckboxSkeleton, Stack, Tooltip } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a checkbox with a label using `labelText`.
+
+By default, the checkbox is unchecked.
+
+<Checkbox labelText="Sync data automatically" />
+
+## Checked
+
+Set `checked` to `true` to pre-select the checkbox.
+
+<Checkbox labelText="Remember this device" checked />
+
+## Indeterminate
+
+Set `indeterminate` to `true` to show a mixed state, typically used in parent checkboxes with some children selected.
+
+<Checkbox labelText="Select all permissions" indeterminate />
+
+## Labels
+
+Control the visibility and content of the checkbox label.
+
+### Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<Checkbox labelText="Select row" hideLabel />
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom label content instead of `labelText`.
+
+<Checkbox labelText="Fallback label">
+  <svelte:fragment slot="labelChildren">
+    I agree to the <strong>terms and conditions</strong>
+  </svelte:fragment>
+</Checkbox>
+
+### Label title
+
+A label too long for its container shows its full text in the native `title` attribute while it is cut off. Set `title` to choose that text yourself. It then applies at every width.
+
+<Checkbox labelText="Email notifications" title="Sent to the address on your profile" />
+
+## No margin
+
+By default, a checkbox renders with outer margin to space it within a stack of checkboxes. Set `noMargin` to `true` to omit the margin when the checkbox sits in a table cell or a row that spaces its own content.
+
+<Stack orientation="horizontal" gap={5} align="center">
+  <Checkbox noMargin labelText="Mark as reviewed" />
+  <span>3 files changed</span>
+</Stack>
+
+## Helper text
+
+Use `helperText` to provide additional context or instructions below the checkbox.
+
+<Checkbox labelText="Subscribe to newsletter" helperText="You can unsubscribe at any time" />
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the option as AI-generated. The label renders at the `"mini"` size, or `"md"` for the inline kind. On a `CheckboxGroup`, the label follows the legend.
+
+<Stack gap={5}>
+  <Checkbox labelText="Enable automatic failover" checked>
+    <AILabel slot="decorator">
+      <p>Recommended because this database had two outages last quarter.</p>
+    </AILabel>
+  </Checkbox>
+  <CheckboxGroup legendText="Alert channels">
+    <AILabel slot="decorator">
+      <p>Picked from the channels your team acknowledged alerts in last month.</p>
+    </AILabel>
+    <Checkbox labelText="Email" checked />
+    <Checkbox labelText="Slack" checked />
+    <Checkbox labelText="PagerDuty" />
+  </CheckboxGroup>
+</Stack>
+
+## States
+
+Reflect validation and interaction states.
+
+### Disabled
+
+Set `disabled` to `true` to prevent user interaction.
+
+<Checkbox labelText="Enable single sign-on (SSO)" disabled />
+
+### Read-only
+
+Set `readonly` to `true` to make the checkbox non-interactive while keeping the label text readable. Unlike disabled, the readonly state is intended for displaying checkbox values that can only be changed programmatically.
+
+<Checkbox labelText="Require multi-factor authentication (unchecked)" readonly />
+<Checkbox labelText="Require multi-factor authentication (checked)" checked readonly />
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` to show a validation error.
+
+<Checkbox labelText="I agree to the terms and conditions" invalid invalidText="You must agree to the terms and conditions to continue" />
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` to show a warning message. `invalid` takes precedence over `warn` when both are set.
+
+<Checkbox labelText="Subscribe to promotional emails" warn warnText="You may receive fewer updates about your account" />
+
+## Decorative
+
+Set `decorative` to `true` to hide the checkbox from the accessibility tree using CSS, rather than just `tabindex`/`aria-hidden` (which axe-core's nested-interactive check doesn't treat as sufficient). Use this when the checkbox is nested inside another interactive, widget-role element that already owns the checked-state semantics, such as a custom listbox option.
+
+<div role="option" aria-selected="true" aria-checked="true">
+  <Checkbox decorative checked labelText="Option A" hideLabel />
+  Option A
+</div>
+
+## Reactive
+
+Bind to track and update the checkbox state.
+
+### bind:checked
+
+Use two-way binding with `bind:checked` to track the checkbox state.
+
+<FileSource src="/framed/Checkbox/CheckboxReactive" />
+
+### bind:group
+
+Bind an array to `group` so each checkbox adds or removes its value when toggled. This API is inspired by Svelte [group inputs](https://svelte.dev/tutorial/svelte/group-inputs).
+
+When using `bind:group`, the checked state is derived from the group array: use `bind:group` (not `bind:checked`) to control selection, since updating checked directly will be overwritten.
+
+<FileSource src="/framed/Checkbox/MultipleCheckboxes" />
+
+## Events
+
+Use `on:check` to listen for changes to a standalone checkbox. The event dispatches the new checked state as `event.detail`.
+
+<Checkbox
+  labelText="Enable audit logging"
+  on:check={(e) => console.log(e.detail)} // boolean
+/>
+
+## Skeleton
+
+Use `CheckboxSkeleton` to show a loading state.
+
+<CheckboxSkeleton />
+
+## CheckboxGroup
+
+Use a checkbox group to wrap multiple checkbox components with a shared legend, layout, and validation. This mirrors the [RadioButtonGroup](/components/RadioButton) API but supports multiple selections.
+
+<CheckboxGroup legendText="Notification preferences" name="prefs" selected={["email"]}>
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Reactive
+
+Use two-way binding with `bind:selected` to track and update the selected values.
+
+<FileSource src="/framed/Checkbox/CheckboxGroupReactive" />
+
+### Horizontal
+
+Set `orientation` to `"horizontal"` to lay the checkboxes out in a row. Each checkbox is sized to its label, and the row wraps when it runs out of space. The legend, helper text, and validation text stay above and below the row.
+
+<CheckboxGroup orientation="horizontal" legendText="Show" name="prefs-horizontal" selected={["page", "markdown"]} helperText="Pick the views to compare">
+<Checkbox value="page" labelText="Page" />
+<Checkbox value="markdown" labelText="Markdown" />
+<Checkbox value="compiled" labelText="Compiled" />
+<Checkbox value="source" labelText="Source" />
+</CheckboxGroup>
+
+### Hidden legend
+
+Hide the legend visually by setting `hideLegend` to `true`. The legend remains available to screen readers.
+
+<CheckboxGroup hideLegend legendText="Notification preferences" name="prefs-hidden" selected={["email"]}>
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Custom label
+
+Use the `legendChildren` slot to provide custom legend content instead of `legendText`.
+
+<CheckboxGroup name="prefs-legend-slot" selected={["email"]}>
+  <Stack slot="legendChildren" orientation="horizontal">
+    Notification preferences
+    <Tooltip>
+      <p>
+        You can change these settings at any time.
+      </p>
+    </Tooltip>
+  </Stack>
+  <Checkbox value="email" labelText="Email" />
+  <Checkbox value="sms" labelText="SMS" />
+  <Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Helper text
+
+Use `helperText` to provide additional context below the checkbox group.
+
+<CheckboxGroup legendText="Notification preferences" name="prefs-helper" selected={["email"]} helperText="You can change these settings at any time">
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Disabled
+
+Disable all checkboxes in the group.
+
+<CheckboxGroup disabled legendText="Notification preferences" name="prefs-disabled" selected={["email"]}>
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Read-only
+
+Set `readonly` to `true` on CheckboxGroup to display non-editable values. Unlike disabled, the readonly state keeps labels readable. You can also set readonly on individual checkboxes when needed.
+
+<CheckboxGroup readonly legendText="Notification preferences" name="prefs-readonly" selected={["email", "push"]}>
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` to show a validation error for the group. The group's invalid state propagates to every checkbox in the group, so each one is styled as invalid and marked with `aria-invalid` without setting the prop individually.
+
+<CheckboxGroup invalid invalidText="Select at least one notification preference" legendText="Notification preferences" name="prefs-invalid">
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` to show a warning message for the group. Like `invalid`, the group's warning state propagates to every checkbox in the group.
+
+<CheckboxGroup warn warnText="Push notifications may be delayed" legendText="Notification preferences" name="prefs-warn" selected={["email"]}>
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>
+
+### Validation within a group
+
+Set validation on the group rather than on individual checkboxes. Carbon hides a checkbox's own `invalidText` and `warnText` inside a group and resets its invalid styling unless the group itself is invalid, so the group owns the validation message for all of its checkboxes.
+
+Disabled and read-only checkboxes are exempt from the group's validation styling.
+
+<CheckboxGroup invalid invalidText="Select at least one notification preference" legendText="Notification preferences" name="prefs-invalid-suppressed" selected={["push"]}>
+<Checkbox value="email" labelText="Email (disabled)" disabled />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications (read-only)" readonly />
+</CheckboxGroup>
+
+### Events
+
+Use `on:change` to listen for changes to the group's selected values. The event dispatches the updated array as `event.detail`.
+
+<CheckboxGroup
+  legendText="Notification preferences"
+  name="prefs-events"
+  selected={["email"]}
+  on:change={(e) => console.log(e.detail)} // Array<string | number>
+>
+<Checkbox value="email" labelText="Email" />
+<Checkbox value="sms" labelText="SMS" />
+<Checkbox value="push" labelText="Push notifications" />
+</CheckboxGroup>

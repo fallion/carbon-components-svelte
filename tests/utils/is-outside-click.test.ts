@@ -1,0 +1,87 @@
+import { isOutsideClick } from "../../src/utils/is-outside-click.js";
+
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
+function setup() {
+  const box = document.createElement("div");
+  const inside = document.createElement("button");
+  box.appendChild(inside);
+  const outside = document.createElement("button");
+  document.body.append(box, outside);
+  return { box, inside, outside };
+}
+
+function clickOn(target: Element) {
+  return { target } as unknown as Event;
+}
+
+describe("isOutsideClick", () => {
+  it("false when the target is inside the only element", () => {
+    const { box, inside } = setup();
+    expect(isOutsideClick(clickOn(inside), box)).toBe(false);
+    expect(isOutsideClick(clickOn(box), box)).toBe(false);
+  });
+
+  it("true when the target is outside the element", () => {
+    const { box, outside } = setup();
+    expect(isOutsideClick(clickOn(outside), box)).toBe(true);
+  });
+
+  it("false when any element in the list contains the target", () => {
+    const { box, inside, outside } = setup();
+    expect(isOutsideClick(clickOn(inside), [outside, box])).toBe(false);
+  });
+
+  it("skips falsy entries", () => {
+    const { box, outside } = setup();
+    expect(
+      isOutsideClick(clickOn(outside), [null, undefined, false, box]),
+    ).toBe(true);
+  });
+
+  // Non-Node targets must not count as outside (overlays should not dismiss).
+  it("false when the target is not a Node", () => {
+    const { box } = setup();
+    expect(isOutsideClick({ target: null } as unknown as Event, box)).toBe(
+      false,
+    );
+  });
+
+  // event.target is the shadow host for listeners outside the shadow root.
+  // element.contains(host) is then false even when the click was inside.
+  // composedPath() still includes the real node.
+  it("false when the true target is inside via composedPath, even if event.target is retargeted to the shadow host", () => {
+    const shadowHost = document.createElement("div");
+    document.body.appendChild(shadowHost);
+    const shadowRoot = shadowHost.attachShadow({ mode: "open" });
+    const box = document.createElement("div");
+    const innerButton = document.createElement("button");
+    box.appendChild(innerButton);
+    shadowRoot.appendChild(box);
+
+    const event = {
+      target: shadowHost,
+      composedPath: () => [
+        innerButton,
+        box,
+        shadowRoot,
+        shadowHost,
+        document.body,
+      ],
+    } as unknown as Event;
+
+    expect(isOutsideClick(event, box)).toBe(false);
+  });
+
+  it("true via composedPath when the true target is genuinely outside", () => {
+    const { box, outside } = setup();
+    const event = {
+      target: outside,
+      composedPath: () => [outside, document.body],
+    } as unknown as Event;
+
+    expect(isOutsideClick(event, box)).toBe(true);
+  });
+});

@@ -1,0 +1,48 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+@import "carbon-components/scss/globals/scss/typography";
+
+/// Badge indicator (Carbon React BadgeIndicator; absent from v10).
+/// An empty dot or a numbered count overlaid on a positioned ancestor.
+/// @access private
+/// @group components
+@mixin badge-indicator {
+  .#{$prefix}--badge-indicator {
+    @include type-style("helper-text-01");
+
+    position: absolute;
+    display: flex;
+    padding: 0 $carbon--spacing-02 $carbon--spacing-01;
+    border-radius: 100px;
+    background: $support-error;
+    color: $text-on-color;
+
+    top: 0;
+    right: 0;
+
+    margin-top: $carbon--spacing-03;
+    margin-right: $carbon--spacing-03;
+
+    max-height: $carbon--spacing-05;
+    min-height: $carbon--spacing-03;
+    min-width: $carbon--spacing-03;
+  }
+
+  .#{$prefix}--badge-indicator--count {
+    margin-top: $carbon--spacing-02;
+    margin-right: $carbon--spacing-02;
+  }
+
+  .#{$prefix}--btn__badge-wrapper {
+    position: relative;
+    display: inline-flex;
+
+    .#{$prefix}--badge-indicator {
+      pointer-events: none;
+    }
+  }
+}
+
+@include exports("badge-indicator") {
+  @include badge-indicator;
+}

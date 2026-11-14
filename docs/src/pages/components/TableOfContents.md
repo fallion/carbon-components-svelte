@@ -1,0 +1,439 @@
+---
+description: A table of contents lists the sections of a page as links and highlights the section the reader is on.
+---
+
+<script>
+  import {
+    Box,
+    Column,
+    Grid,
+    Prose,
+    RadioButton,
+    RadioButtonGroup,
+    Row,
+    Stack,
+    TableOfContents,
+    TableOfContentsGroup,
+    TableOfContentsItem,
+    Text,
+  } from "carbon-components-svelte";
+
+  let container = null;
+  let selectedId;
+
+  const staticItems = [
+    { id: "toc-static-overview", text: "Overview", body: "What the program covers, who it's for, and how long it runs." },
+    { id: "toc-static-measures-of-success", text: "Measures of success", body: "The adoption and satisfaction targets each team reports on every quarter." },
+    { id: "toc-static-key-moments", text: "Key moments", body: "The milestones where a team checks in: kickoff, first release, and the 90-day review." },
+    { id: "toc-static-tutorials", text: "Tutorials", body: "Step-by-step guides for setting up a project and shipping a first change." },
+    { id: "toc-static-articles", text: "Articles", body: "Background reading on the practices the program builds on." },
+  ];
+  let staticSelectedId = "toc-static-key-moments";
+
+  let lineContainer = null;
+  let activationLine = "1";
+
+  let nestedContainer = null;
+  let groupContainer = null;
+  let smallContainer = null;
+
+  let article = null;
+  let headings = [];
+
+  $: if (article) {
+    headings = Array.from(article.querySelectorAll("h4[id], h5[id]"), (heading) => ({
+      id: heading.id,
+      text: heading.textContent.trim(),
+      level: heading.tagName === "H5" ? 2 : 1,
+    }));
+  }
+</script>
+
+## Scroll spy
+
+Add a `TableOfContentsItem` for each section, with `href` set to the section's id, such as `"#overview"`. As the page scrolls, the bar moves to the last section whose top has passed the top of the window. At the end of the page, the last section is selected, even if it is too short to reach the top.
+
+Clicking an item selects it right away and keeps it selected while the page scrolls to the section. On a top-level page, the click is a native hash jump, so the URL hash updates and client-side routers handle it as usual. Inside an iframe, as in this example, the table of contents scrolls only the frame, not the page around it. The active link has `aria-current="location"`. Each item is a regular link, so Tab moves through them.
+
+<FileSource src="/framed/TableOfContents/TableOfContentsScrollSpy" />
+
+### Activation line
+
+By default a section becomes active when its top reaches the top of the scroller, so the next heading can sit in view while the previous section stays highlighted. Set `activationLine` to move that line down the visible height: `0.5` activates a section at the middle, and `1` as soon as it scrolls into view. The dashed line marks where sections activate. Clicked sections still land at the top.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <Stack gap={6}>
+        <RadioButtonGroup legendText="Activation line" orientation="vertical" bind:selected={activationLine}>
+          <RadioButton labelText="0 (top)" value="0" />
+          <RadioButton labelText="0.5 (middle)" value="0.5" />
+          <RadioButton labelText="1 (in view)" value="1" />
+        </RadioButtonGroup>
+        <TableOfContents scrollContainer={lineContainer} activationLine={Number(activationLine)}>
+          <TableOfContentsItem href="#toc-line-overview" text="Overview" />
+          <TableOfContentsItem href="#toc-line-setup" text="Setup" />
+          <TableOfContentsItem href="#toc-line-usage" text="Usage" />
+          <TableOfContentsItem href="#toc-line-faq" text="FAQ" />
+        </TableOfContents>
+      </Stack>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      <Box position="relative">
+        <Box bind:ref={lineContainer} height="16rem" overflowY="auto">
+          <Prose>
+            <section id="toc-line-overview">
+              <h4>Overview</h4>
+              <p>The reporting API returns usage and billing data for every project in your organization, so finance and engineering read the same numbers.</p>
+              <p>It's read-only. To change limits or plans, use the console.</p>
+            </section>
+            <section id="toc-line-setup">
+              <h4>Setup</h4>
+              <p>Create a project in the console, then generate an API key under Settings. Keys are scoped to one project and can be revoked at any time.</p>
+              <p>Choose the region your data is stored in when you create the project. It can't be changed later.</p>
+            </section>
+            <section id="toc-line-usage">
+              <h4>Usage</h4>
+              <p>Send a GET request with the key in the Authorization header. Responses are JSON, paginated at 100 records, with a cursor for the next page.</p>
+              <p>Errors return a status code and a message that names the field at fault.</p>
+            </section>
+            <section id="toc-line-faq">
+              <h4>FAQ</h4>
+              <p>Requests are limited to 600 per minute per key. Data is kept for 13 months, and support answers within one business day.</p>
+              <p>When you hit the limit, requests return status 429 with a header that says how many seconds to wait before retrying.</p>
+              <p>Export data you need for longer than 13 months to your own storage. The export endpoint writes one file per day.</p>
+            </section>
+          </Prose>
+        </Box>
+        <Box
+          aria-hidden="true"
+          position="absolute"
+          left={0}
+          right={0}
+          top="min({Number(activationLine) * 100}%, calc(100% - 1px))"
+          border="strong"
+          borderStyle="dashed"
+          borderSide="top"
+          style="pointer-events: none"
+        />
+      </Box>
+    </Column>
+  </Row>
+</Grid>
+
+### Scroll container
+
+When the sections scroll inside an element rather than the window, pass that element as `scrollContainer`. Clicking an item scrolls only that element, where a native hash jump would also scroll the page around it, and moves focus to the section so the next Tab continues from there. Bind `selectedId` to read or set the active section. The `change` event fires with the new id when a click or scroll changes it, but not when the first section is selected on load.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <TableOfContents bind:selectedId scrollContainer={container}>
+        <TableOfContentsItem href="#toc-container-profile" text="Profile" />
+        <TableOfContentsItem href="#toc-container-security" text="Security" />
+        <TableOfContentsItem href="#toc-container-billing" text="Billing" />
+        <TableOfContentsItem href="#toc-container-notifications" text="Notifications" />
+      </TableOfContents>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      <Stack gap={5}>
+        <Box bind:ref={container} height="16rem" overflowY="auto">
+          <Prose>
+            <section id="toc-container-profile">
+              <h4>Profile</h4>
+              <p>Your name, photo, and email address appear wherever teammates mention or assign you.</p>
+              <p>Changes take effect right away, including in comments you've already left.</p>
+            </section>
+            <section id="toc-container-security">
+              <h4>Security</h4>
+              <p>Change your password, turn on two-factor authentication, and review the devices signed in to your account.</p>
+              <p>Signing out a device ends its session within a minute.</p>
+            </section>
+            <section id="toc-container-billing">
+              <h4>Billing</h4>
+              <p>Update the payment method, download past invoices, and choose who receives billing email.</p>
+              <p>Invoices are issued on the first of each month in your account's currency.</p>
+            </section>
+            <section id="toc-container-notifications">
+              <h4>Notifications</h4>
+              <p>Choose which events send email, and whether to get them as they happen or in a daily digest.</p>
+              <p>Mentions and assignments always notify you, even with digests on, so nothing waiting on you gets buried.</p>
+              <p>Mobile push notifications follow the same settings. Mute a project to silence it everywhere for a set time.</p>
+            </section>
+          </Prose>
+        </Box>
+        <Text>Selected: <strong>{selectedId}</strong></Text>
+      </Stack>
+    </Column>
+  </Row>
+</Grid>
+
+### Without scroll spy
+
+Set `noScrollSpy` to control `selectedId` yourself, for example when the sections are tabs or steps rather than one scrolling page. Clicking an item still selects it. Here each section is a panel that shows only while its item is selected, so cancel each item's click to keep the browser or router from jumping to the hash.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <TableOfContents bind:selectedId={staticSelectedId} noScrollSpy>
+        {#each staticItems as item (item.id)}
+          <TableOfContentsItem
+            href="#{item.id}"
+            text={item.text}
+            on:click={(e) => e.preventDefault()}
+          />
+        {/each}
+      </TableOfContents>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      {#each staticItems as item (item.id)}
+        <section id={item.id} hidden={item.id !== staticSelectedId}>
+          <Stack gap={3}>
+            <Text tag="h4" type="heading-03">{item.text}</Text>
+            <Text>{item.body}</Text>
+          </Stack>
+        </section>
+      {/each}
+    </Column>
+  </Row>
+</Grid>
+
+## Layout
+
+Place the table of contents beside the content it lists, and pick a row size that fits the length of the list.
+
+### Right column
+
+Many documentation pages put the table of contents in the rightmost column, after the content. Here it spans 4 of 16 columns on large screens and 2 of 8 on medium ones, and hides on small screens with `sm={0}`, where a sidebar would leave the content too narrow. Content first in the DOM also means Tab reaches the article before the table of contents. Set `labelText` to the heading the column shows, such as "On this page".
+
+<FileSource src="/framed/TableOfContents/TableOfContentsRightColumn" />
+
+### Small size
+
+Set `size` to `"sm"` for a long table of contents, such as a documentation sidebar with dozens of sections. Rows are shorter, and nested rows use smaller type so they read as part of the section above. The default size is `"md"`.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <TableOfContents size="sm" scrollContainer={smallContainer}>
+        <TableOfContentsGroup labelText="Examples">
+          <TableOfContentsItem href="#toc-small-basic" text="Basic" />
+          <TableOfContentsItem href="#toc-small-sizes" text="Sizes" />
+          <TableOfContentsItem href="#toc-small-sizes-sm" text="Small" level={2} />
+          <TableOfContentsItem href="#toc-small-sizes-lg" text="Large" level={2} />
+          <TableOfContentsItem href="#toc-small-disabled" text="Disabled" />
+        </TableOfContentsGroup>
+        <TableOfContentsGroup labelText="Component API">
+          <TableOfContentsItem href="#toc-small-props" text="Props" />
+          <TableOfContentsItem href="#toc-small-events" text="Events" />
+        </TableOfContentsGroup>
+      </TableOfContents>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      <Box bind:ref={smallContainer} height="16rem" overflowY="auto">
+        <Prose>
+          <section id="toc-small-basic">
+            <h4>Basic</h4>
+            <p>The basic example shows the component with its default props.</p>
+            <p>Start here, then add props as the design needs them.</p>
+          </section>
+          <section id="toc-small-sizes">
+            <h4>Sizes</h4>
+            <p>Each size sets the height of the control. Match the size of the controls around it.</p>
+          </section>
+          <section id="toc-small-sizes-sm">
+            <h5>Small</h5>
+            <p>Use the small size in dense layouts, such as a toolbar or a table row.</p>
+          </section>
+          <section id="toc-small-sizes-lg">
+            <h5>Large</h5>
+            <p>Use the large size on touch screens and in forms with plenty of room.</p>
+          </section>
+          <section id="toc-small-disabled">
+            <h4>Disabled</h4>
+            <p>A disabled control can't receive focus. Say why it's disabled nearby, so the reader knows what to change.</p>
+          </section>
+          <section id="toc-small-props">
+            <h4>Props</h4>
+            <p>Each prop lists its type, its default, and a short description.</p>
+          </section>
+          <section id="toc-small-events">
+            <h4>Events</h4>
+            <p>Each event lists the detail it carries.</p>
+            <p>Dispatched events fire after the state changes, so the detail holds the new value.</p>
+            <p>Forwarded events are the native events of the root element.</p>
+          </section>
+        </Prose>
+      </Box>
+    </Column>
+  </Row>
+</Grid>
+
+## Hierarchy
+
+Show how sections relate: nest subsections under their section, or split the list into titled groups.
+
+### Nested headings
+
+Set `level` to list a subsection under its section, such as an `h3` under an `h2`. Each level below the first indents by one more step, and its rows sit closer together so the group reads as part of the section above. `level` goes from 1 to 3, enough for `h2` through `h4`; deeper headings rarely belong in a table of contents, and their indent leaves a sidebar label little room.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <TableOfContents scrollContainer={nestedContainer}>
+        <TableOfContentsItem href="#toc-nested-overview" text="Overview" />
+        <TableOfContentsItem href="#toc-nested-tokens" text="Design tokens" />
+        <TableOfContentsItem href="#toc-nested-colors" text="Colors" level={2} />
+        <TableOfContentsItem href="#toc-nested-contrast" text="Contrast" level={3} />
+        <TableOfContentsItem href="#toc-nested-spacing" text="Spacing" level={2} />
+        <TableOfContentsItem href="#toc-nested-type" text="Type" level={2} />
+        <TableOfContentsItem href="#toc-nested-components" text="Components" />
+      </TableOfContents>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      <Box bind:ref={nestedContainer} height="16rem" overflowY="auto">
+        <Prose>
+          <section id="toc-nested-overview">
+            <h4>Overview</h4>
+            <p>The design system is the shared set of tokens, components, and guidance behind every product we ship.</p>
+            <p>A core team maintains it. Anyone can propose a change by opening an issue with the problem it solves.</p>
+          </section>
+          <section id="toc-nested-tokens">
+            <h4>Design tokens</h4>
+            <p>Tokens are named values for color, spacing, and type. Design files and code read the same names, so a change in one place reaches every product.</p>
+          </section>
+          <section id="toc-nested-colors">
+            <h5>Colors</h5>
+            <p>Color tokens name a role, such as background or text on color, not a hue. Each theme maps the roles to its own palette.</p>
+            <p>Use the role that describes the job, and the contrast holds in every theme.</p>
+          </section>
+          <section id="toc-nested-contrast">
+            <h6>Contrast</h6>
+            <p>Text roles meet a 4.5:1 contrast ratio against the background roles they're paired with, and large text meets 3:1.</p>
+            <p>Check custom pairings with a contrast checker before shipping them.</p>
+          </section>
+          <section id="toc-nested-spacing">
+            <h5>Spacing</h5>
+            <p>Spacing comes from one scale that starts at 2px and roughly doubles at each step.</p>
+            <p>Use small steps inside a component and large ones between sections of a page.</p>
+          </section>
+          <section id="toc-nested-type">
+            <h5>Type</h5>
+            <p>Each type style sets size, weight, and line height together, so text stays readable at every size.</p>
+            <p>Pick the style by role, such as a heading or body copy, not by the size you want.</p>
+            <p>Long-form text uses the body-long styles, which add line height for comfortable reading.</p>
+          </section>
+          <section id="toc-nested-components">
+            <h4>Components</h4>
+            <p>Components are built from the tokens, so they follow the theme without extra work.</p>
+            <p>Each one documents when to use it, what it looks like in every state, and how it behaves with a keyboard.</p>
+            <p>Start from the component closest to what you need. If none fits, ask in the design system channel before building a new one; someone may already be working on it.</p>
+            <p>New components go through a short review for accessibility, theming, and naming before they're published.</p>
+          </section>
+        </Prose>
+      </Box>
+    </Column>
+  </Row>
+</Grid>
+
+### Groups
+
+Use `TableOfContentsGroup` to split the list under section titles, such as examples and reference. Set the title with `labelText`, or use the `labelChildren` slot for custom content. The title is plain text, not a link. Screen readers announce each group by its title. Each group draws its own track beside its items, and one active bar moves across all groups.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <TableOfContents scrollContainer={groupContainer}>
+        <TableOfContentsGroup labelText="Guides">
+          <TableOfContentsItem href="#toc-group-install" text="Install" />
+          <TableOfContentsItem href="#toc-group-theme" text="Theme" />
+        </TableOfContentsGroup>
+        <TableOfContentsGroup labelText="Reference">
+          <TableOfContentsItem href="#toc-group-props" text="Props" />
+          <TableOfContentsItem href="#toc-group-events" text="Events" />
+        </TableOfContentsGroup>
+      </TableOfContents>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      <Box bind:ref={groupContainer} height="16rem" overflowY="auto">
+        <Prose>
+          <section id="toc-group-install">
+            <h4>Install</h4>
+            <p>Add the package with your package manager, then import the CSS once at the root of your app.</p>
+            <p>The components work in any Svelte app, with or without SvelteKit.</p>
+          </section>
+          <section id="toc-group-theme">
+            <h4>Theme</h4>
+            <p>Wrap the app in a theme to set the color tokens. Every component reads the same tokens.</p>
+            <p>Switch the theme at runtime, and the page updates at once.</p>
+          </section>
+          <section id="toc-group-props">
+            <h4>Props</h4>
+            <p>Each component lists its props with a type, a default, and a short description.</p>
+            <p>Props that aren't listed pass through to the root element.</p>
+          </section>
+          <section id="toc-group-events">
+            <h4>Events</h4>
+            <p>Components forward native events and dispatch their own. Each event lists the detail it carries.</p>
+            <p>Listen with <code>on:</code> as with any Svelte element.</p>
+            <p>Dispatched events fire after the state changes, so the detail always holds the new value.</p>
+          </section>
+        </Prose>
+      </Box>
+    </Column>
+  </Row>
+</Grid>
+
+### Generated from headings
+
+For rendered Markdown or other content you don't write item by item, read the headings after they render and map each one to an item. Here the content is set in [Prose](/components/Prose), the `h4`s become top-level items, and the `h5`s nest under them.
+
+<Grid>
+  <Row>
+    <Column sm={4} md={3} lg={4}>
+      <TableOfContents scrollContainer={article}>
+        {#each headings as heading (heading.id)}
+          <TableOfContentsItem href="#{heading.id}" text={heading.text} level={heading.level} />
+        {/each}
+      </TableOfContents>
+    </Column>
+    <Column sm={4} md={5} lg={12}>
+      <Box bind:ref={article} height="16rem" overflowY="auto">
+        <Prose>
+          <h4 id="toc-generated-install">Install</h4>
+          <p>Add the package with your package manager, then import the styles once in your app's entry point.</p>
+          <p>The styles include every theme, so you don't need a separate import to switch.</p>
+          <h4 id="toc-generated-configure">Configure</h4>
+          <p>Two settings cover most apps: the theme and the base path.</p>
+          <h5 id="toc-generated-theme">Theme</h5>
+          <p>Pick one of the four themes, or follow the system preference so the app matches the operating system.</p>
+          <p>The theme can change at runtime without a reload.</p>
+          <h5 id="toc-generated-base-path">Base path</h5>
+          <p>If the app isn't served from the root of its domain, set the base path so links and assets resolve.</p>
+          <p>Prefix in-page links with the same path.</p>
+          <p>Server-rendered apps read it from the request, so it can differ between environments.</p>
+          <h4 id="toc-generated-deploy">Deploy</h4>
+          <p>Build once and serve the output from any static host. Nothing runs on the server.</p>
+          <p>Cache the hashed assets for a year and the HTML for a few minutes.</p>
+          <p>Preview deployments work the same way. Each branch gets its own URL, which you can share for review before merging.</p>
+          <p>To roll back, point the host at the previous build. There's no database migration to undo.</p>
+        </Prose>
+      </Box>
+    </Column>
+  </Row>
+</Grid>
+
+## Usage
+
+| Do | Why |
+| --- | --- |
+| Give the scroller a `scroll-padding-top` equal to the height of a sticky header, or set `scrollOffset` and a matching `scroll-margin-top` on the sections. | `scrollOffset` defaults to the scroller's `scroll-padding-top`, so one CSS value moves both the line a section must cross to become active and where a clicked section lands. |
+| Lay the page out with `Grid`, `Row`, and `Column`, giving the table of contents 4 of 16 columns on large screens and hiding it on small ones with `sm={0}`. | It lines up with the rest of the page's grid, and a sidebar on a small screen leaves the content too narrow. |
+| Raise `activationLine` when sections are short or headings sit low on the page. | A section otherwise only activates once its top reaches the top, so its heading can be in view while the previous section stays highlighted. |
+| Give a long table of contents a sticky sidebar with `overflow-y: auto`. | The active item scrolls into view within the sidebar as the reader moves through the page, without moving the page. |
+| Sync the URL from the `change` event if you need the hash when using `scrollContainer` or inside an iframe. | In those cases the click scrolls the container itself instead of following the link, so the URL hash doesn't change. |
+| Give each section a unique `id` that matches its item's `href`. | The scroll spy finds sections with `document.getElementById`, and skips items whose section is missing. |
+| Group items under a `TableOfContentsGroup` when the page has distinct parts, such as examples and reference. | A plain-text title names each part without adding a link that goes nowhere, and screen readers announce the group. |
+| Set `size="sm"` when the list is long. | Shorter rows fit more sections in view, so the reader sees where they are without scrolling the sidebar. |
+| Keep item text short and matching the section heading. | Long labels wrap onto several lines and push later sections out of view in a sticky sidebar. |
+| Set `labelText` when a page has more than one navigation landmark. | It names the `nav`, which defaults to "Table of contents". |

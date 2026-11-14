@@ -1,0 +1,104 @@
+---
+description: Pagination nav provides a compact navigation interface for paginated content, with page numbers, navigation buttons, and overflow menus.
+---
+
+<script>
+  import { PaginationNav } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a basic pagination navigation with default settings.
+
+<PaginationNav />
+
+## Reactive
+
+Bind to `page` for the current page number.
+
+<FileSource src="/framed/PaginationNav/PaginationNavReactive" />
+
+## Query string
+
+Keep the current page in the URL so it survives a reload and can be shared.
+`queryParam` returns a store mirrored to a query parameter; bind `page` to it.
+`PaginationNav` does not clamp `page`, so `parse` rejects values below 1 or
+above `total`. Page 1 removes the parameter. In an app with a router, pass the
+router's navigation API as `replace`.
+
+<FileSource src="/framed/PaginationNav/PaginationNavQueryString" />
+
+## Page count
+
+### Total pages
+
+Specify the total number of pages with `total`.
+
+<PaginationNav total={3} />
+
+### Visible pages
+
+Control the number of visible page numbers with `shown`. Pages that don't fit collapse into an overflow menu.
+
+<PaginationNav total={100} shown={5} />
+
+## Navigation buttons
+
+The forward and backward navigation buttons can be customized independently of the page numbers.
+
+### Loop
+
+Enable circular navigation between pages with `loop`. When enabled, clicking "Next" from the last page wraps to the first page, and clicking "Previous" from the first page wraps to the last page.
+
+<PaginationNav total={3} loop />
+
+### Custom text
+
+Customize navigation button text with `forwardText` and `backwardText`.
+
+<PaginationNav
+  forwardText="Next"
+  backwardText="Previous"
+/>
+
+### Tooltip position
+
+Set tooltip position relative to the navigation buttons with `tooltipPosition`.
+
+<PaginationNav tooltipPosition="outside" total={3} loop />
+
+## Translations
+
+Set `pageText` to name each page and `pageSelectLabelText` to name the overflow select. When the user changes the page, screen readers hear the page text followed by `pageRangeText`, as in "Page 3 of 20". Only the nav the user acted on announces it, so two navs bound to one `page` (above and below a table) announce once. A `page` set by your code is not announced. These props work like the Pagination props of the same names.
+
+<PaginationNav
+  total={20}
+  forwardText="Página siguiente"
+  backwardText="Página anterior"
+  pageText={(page) => `Página ${page}`}
+  pageRangeText={(_current, total) => `de ${total}`}
+  pageSelectLabelText={() => "Seleccionar página"}
+/>
+
+## Events
+
+Respond to page changes and button clicks.
+
+### Change
+
+Use `on:change` to listen for every user interaction—clicking a page number, an overflow menu item, or the previous/next buttons. The event detail includes the resulting page.
+
+<PaginationNav
+  total={5}
+  on:change={(e) => console.log(e.detail)} // { page: number }
+/>
+
+### Button clicks
+
+Use `on:click:button--previous` and `on:click:button--next` to listen specifically for previous and next button clicks, separate from the page numbers and overflow menu. Both dispatch the resulting page number.
+
+<PaginationNav
+  total={5}
+  on:click:button--previous={(e) => console.log(e.detail)} // { page: number }
+  on:click:button--next={(e) => console.log(e.detail)} // { page: number }
+/>

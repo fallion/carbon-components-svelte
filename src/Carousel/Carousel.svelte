@@ -1,0 +1,348 @@
+<script>
+  /**
+   * @event {{ currentIndex: number; previousIndex: number; totalViews: number }} change
+   * @restProps {div}
+   * @slot {{}}
+   */
+
+  /**
+   * Specify the active slide index.
+   * Out-of-range values are clamped to the first or last slide.
+   * @bindable writable
+   */
+  export let selectedIndex = 0;
+
+  /** Specify the accessible label for the carousel region. */
+  export let labelText = "Carousel";
+
+  /** Specify the accessible label for the previous-slide button. */
+  export let prevButtonLabelText = "Previous slide";
+
+  /** Specify the accessible label for the next-slide button. */
+  export let nextButtonLabelText = "Next slide";
+
+  /**
+   * Set to `false` to size the viewport to each active slide's own height
+   * instead of the tallest slide.
+   */
+  export let useMaxHeight = true;
+
+  /**
+   * Set to `true` to wrap around: next on the last slide goes to the first,
+   * and previous on the first slide goes to the last. Applies to the buttons
+   * and arrow keys; a bound `selectedIndex` is still clamped.
+   */
+  export let wrap = false;
+
+  /**
+   * Set to `true` to show the active slide's position next to the buttons.
+   * Pair it with `wrap`, where the buttons no longer disable at the bounds.
+   */
+  export let showCounter = false;
+
+  /**
+   * Set an id for the top-level element.
+   * The viewport id derives from it as `{id}-viewport`.
+   */
+  export let id = uniqueId();
+
+  /**
+   * Override the counter text.
+   * @type {(current: number, total: number) => string}
+   */
+  export let counterText = (current, total) => `${current} of ${total}`;
+
+  import {
+    afterUpdate,
+    createEventDispatcher,
+    onMount,
+    setContext,
+    tick,
+  } from "svelte";
+  import { writable } from "svelte/store";
+  import ChevronLeft from "../icons/ChevronLeft.svelte";
+  import ChevronRight from "../icons/ChevronRight.svelte";
+  import { initCarousel } from "../utils/carousel.js";
+  import { returnFocus } from "../utils/focus.js";
+  import {
+    getLayoutDirection,
+    resolveLayoutDirection,
+  } from "../utils/layout-direction.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  const dispatch = createEventDispatcher();
+  const layoutDirection = getLayoutDirection();
+
+  /** @type {import("svelte/store").Writable<Element[]>} */
+  const views = writable([]);
+
+  // The active slide's index. Before mount it is the requested slide, so the
+  // server's markup and the first client paint show only that slide.
+  /** @type {import("svelte/store").Writable<number>} */
+  const active = writable(Math.max(0, selectedIndex));
+
+  // Before mount with `useMaxHeight`, the slides share one grid cell and the
+  // inactive ones are invisible, so the viewport is already as tall as the
+  // tallest slide, as `initCarousel` then sizes it.
+  const stacked = writable(useMaxHeight);
+
+  // Each slide claims its position as it initializes, in document order on
+  // the server and during hydration, before `views` knows it. Slides added
+  // after mount wait for `views`. A closure, not component state: the
+  // controls read the count once, after the slides have rendered.
+  const claims = (() => {
+    let count = 0;
+    return {
+      /** @returns {number} */
+      claim: () => (mounted ? -1 : count++),
+      /** @returns {number} */
+      count: () => count,
+    };
+  })();
+
+  /** @returns {number} */
+  function claimSlide() {
+    return claims.claim();
+  }
+
+  setContext("carbon:Carousel", { views, active, stacked, claimSlide });
+
+  /**
+   * The slide count and active index before mount, from the claimed slides.
+   * The controls render after the slides, so the count is complete.
+   * @param {number} startIndex
+   * @returns {{ total: number; index: number }}
+   */
+  function initialState(startIndex) {
+    const total = claims.count();
+    return {
+      total,
+      index: Math.max(0, Math.min(startIndex, total - 1)),
+    };
+  }
+
+  /** @type {null | HTMLDivElement} */
+  let viewportRef = null;
+  /** @type {null | HTMLButtonElement} */
+  let prevButton = null;
+  /** @type {null | HTMLButtonElement} */
+  let nextButton = null;
+  let mounted = false;
+  let currentIndex = 0;
+  /** @type {import("../utils/carousel.js").Carousel | null} */
+  let carousel = null;
+  let appliedUseMaxHeight = useMaxHeight;
+  // Set while restoring the index after (re-)initializing, so only real
+  // navigation dispatches `change`.
+  let silent = false;
+
+  function syncIndex() {
+    // No slides yet: keep `currentIndex` and the bound `selectedIndex` so a
+    // slide count that arrives later still starts at the requested slide.
+    const index = carousel?.getActiveItem().index ?? -1;
+    if (index < 0) return;
+    currentIndex = index;
+    selectedIndex = index;
+    active.set(index);
+  }
+
+  /** @param {number} index */
+  function goTo(index) {
+    carousel?.goToIndex(index);
+    // `goToIndex` clamps; reflect a clamped value back into `selectedIndex`.
+    syncIndex();
+  }
+
+  function childrenChanged() {
+    const children = /** @type {HTMLDivElement} */ (viewportRef).children;
+    return (
+      children.length !== $views.length ||
+      $views.some((view, index) => view !== children[index])
+    );
+  }
+
+  // `initCarousel` snapshots the container's children, so it is re-created
+  // whenever a slide is added, removed, or reordered.
+  function setup() {
+    carousel?.destroyEvents();
+    carousel = null;
+    if (!viewportRef) return;
+
+    const children = Array.from(viewportRef.children);
+    const previousIndex = currentIndex;
+    views.set(children);
+    appliedUseMaxHeight = useMaxHeight;
+    carousel = initCarousel(viewportRef, {
+      useMaxHeight,
+      onViewChangeEnd: (detail) => {
+        if (!silent) dispatch("change", detail);
+      },
+    });
+
+    silent = true;
+    goTo(selectedIndex);
+    silent = false;
+
+    // The rebuilt carousel starts at 0, so compare against the index before
+    // the rebuild: a clamped or newly selected slide is a real change.
+    if (mounted && currentIndex !== previousIndex) {
+      dispatch("change", {
+        currentIndex,
+        previousIndex,
+        totalViews: children.length,
+      });
+    }
+  }
+
+  onMount(() => {
+    stacked.set(false);
+    setup();
+    mounted = true;
+
+    // Catches slide changes that do not update this component itself.
+    const observer = new MutationObserver(() => {
+      if (childrenChanged()) setup();
+    });
+    observer.observe(/** @type {HTMLDivElement} */ (viewportRef), {
+      childList: true,
+    });
+
+    return () => {
+      observer.disconnect();
+      carousel?.destroyEvents();
+      carousel = null;
+    };
+  });
+
+  // Runs after the DOM update, so a slide added in the same update as a
+  // `selectedIndex` pointing at it is already in the viewport.
+  afterUpdate(() => {
+    if (!mounted) return;
+    if (useMaxHeight !== appliedUseMaxHeight || childrenChanged()) setup();
+    else if (selectedIndex !== currentIndex) goTo(selectedIndex);
+  });
+
+  $: atStart = !wrap && currentIndex <= 0;
+  $: atEnd = !wrap && currentIndex >= $views.length - 1;
+  $: prevDisabled = $views.length <= 1 || atStart;
+  $: nextDisabled = $views.length <= 1 || atEnd;
+
+  /**
+   * @param {"start" | "end"} edge
+   * @param {number} startIndex
+   * @param {boolean} wraps
+   * @returns {boolean}
+   */
+  function initialDisabled(edge, startIndex, wraps) {
+    const { total, index } = initialState(startIndex);
+    if (total <= 1) return true;
+    if (wraps) return false;
+    return edge === "start" ? index <= 0 : index >= total - 1;
+  }
+
+  /** @param {1 | -1} step */
+  async function navigate(step) {
+    const focused = document.activeElement;
+    const total = $views.length;
+    const target = currentIndex + step;
+    goTo(wrap && total > 0 ? (target + total) % total : target);
+    await tick();
+
+    // Clicking a button up to a bound disables it; hand focus to the other
+    // button instead of letting it drop to `<body>`, unless a `change`
+    // handler already moved it.
+    if (focused === prevButton && prevDisabled && !nextDisabled) {
+      returnFocus(nextButton, prevButton);
+    } else if (focused === nextButton && nextDisabled && !prevDisabled) {
+      returnFocus(prevButton, nextButton);
+    }
+  }
+
+  /** @param {KeyboardEvent} event */
+  function handleKeydown(event) {
+    if (event.defaultPrevented) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+      return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+
+    // Leave arrow keys to slide content that uses them.
+    const target = /** @type {HTMLElement} */ (event.target);
+    if (
+      target.isContentEditable ||
+      target.closest(
+        "input, textarea, select, [role='slider'], [role='listbox'], [role='tablist']",
+      )
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    // In RTL the previous button sits on the right, so Right goes back.
+    // Read the direction now: nothing reports a `dir` change on an ancestor.
+    const node =
+      event.currentTarget instanceof Element ? event.currentTarget : null;
+    const step = event.key === "ArrowLeft" ? -1 : 1;
+    const rtl = resolveLayoutDirection($layoutDirection, node) === "rtl";
+    navigate(rtl ? /** @type {1 | -1} */ (-step) : step);
+  }
+</script>
+
+<div
+  {...$$restProps}
+  {id}
+  class:bx--carousel={true}
+  role="region"
+  aria-roledescription="carousel"
+  aria-label={$$restProps["aria-label"] ?? labelText}
+  on:keydown={handleKeydown}
+>
+  <div
+    bind:this={viewportRef}
+    id="{id}-viewport"
+    class:bx--carousel__viewport={true}
+    class:bx--carousel__viewport--stacked={$stacked}
+    aria-live="polite"
+  >
+    <slot />
+  </div>
+  <div class:bx--carousel__controls={true}>
+    {#if showCounter && (mounted ? $views.length : initialState(selectedIndex).total) > 0}
+      <span class:bx--carousel__counter={true}>
+        {mounted
+          ? counterText(currentIndex + 1, $views.length)
+          : counterText(
+              initialState(selectedIndex).index + 1,
+              initialState(selectedIndex).total,
+            )}
+      </span>
+    {/if}
+    <button
+      bind:this={prevButton}
+      type="button"
+      class:bx--carousel__button={true}
+      class:bx--carousel__button--previous={true}
+      aria-label={prevButtonLabelText}
+      aria-controls="{id}-viewport"
+      disabled={mounted
+        ? prevDisabled
+        : initialDisabled("start", selectedIndex, wrap)}
+      on:click={() => navigate(-1)}
+    >
+      <ChevronLeft />
+    </button>
+    <button
+      bind:this={nextButton}
+      type="button"
+      class:bx--carousel__button={true}
+      class:bx--carousel__button--next={true}
+      aria-label={nextButtonLabelText}
+      aria-controls="{id}-viewport"
+      disabled={mounted
+        ? nextDisabled
+        : initialDisabled("end", selectedIndex, wrap)}
+      on:click={() => navigate(1)}
+    >
+      <ChevronRight />
+    </button>
+  </div>
+</div>

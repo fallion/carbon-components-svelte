@@ -1,0 +1,205 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/layout';
+
+@import '../list-box/list-box';
+
+/// Dropdown styles
+/// @access private
+/// @group dropdown
+@mixin dropdown {
+  .#{$prefix}--dropdown__wrapper--inline {
+    display: inline-grid;
+    align-items: center;
+    grid-gap: 0 to-rem(24px);
+    grid-template: auto auto / auto min-content;
+
+    .#{$prefix}--label {
+      @include type-style('body-compact-01');
+    }
+
+    .#{$prefix}--label,
+    .#{$prefix}--form__helper-text,
+    .#{$prefix}--form-requirement {
+      margin: 0;
+    }
+
+    // ccs: helper text sits under the field too, like the message.
+    .#{$prefix}--form-requirement,
+    .#{$prefix}--form__helper-text {
+      grid-column: 2;
+    }
+  }
+
+  .#{$prefix}--dropdown {
+    @include reset;
+    @include focus-outline('reset');
+
+    position: relative;
+    display: block;
+    width: 100%;
+    height: to-rem(40px);
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    background-color: $field;
+    color: $text-primary;
+    cursor: pointer;
+    list-style: none;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+
+    &:hover {
+      background-color: $field-hover;
+    }
+  }
+
+  // Menu's triggering element updated to button with Downshift v5 upgrade
+  .#{$prefix}--dropdown .#{$prefix}--list-box__field {
+    text-align: start;
+  }
+
+  // ccs: `lg` is 48px, as on ComboBox and MultiSelect; `.bx--dropdown`'s
+  // own height otherwise wins over `.bx--list-box--lg`.
+  .#{$prefix}--dropdown--xl,
+  .#{$prefix}--dropdown--lg {
+    height: to-rem(48px);
+    max-height: to-rem(48px);
+  }
+
+  .#{$prefix}--dropdown--sm {
+    height: to-rem(32px);
+    max-height: to-rem(32px);
+  }
+
+  .#{$prefix}--dropdown--open {
+    border-bottom-color: $border-subtle;
+  }
+
+  .#{$prefix}--dropdown--invalid {
+    @include focus-outline('invalid');
+
+    + .#{$prefix}--form-requirement {
+      display: inline-block;
+      max-height: to-rem(200px);
+      color: $text-error;
+    }
+  }
+
+  .#{$prefix}--dropdown--open:hover {
+    background-color: $field;
+  }
+
+  .#{$prefix}--dropdown--open:focus {
+    outline: 1px solid transparent;
+  }
+
+  // V11: Possibly deprecate
+  .#{$prefix}--dropdown--disabled {
+    border-bottom-color: transparent;
+
+    &:hover {
+      background-color: $field;
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    .#{$prefix}--list-box__label {
+      color: $text-disabled;
+    }
+
+    .#{$prefix}--list-box__menu-icon svg {
+      fill: $icon-disabled;
+    }
+
+    // V11: Possibly deprecate
+  }
+
+  .#{$prefix}--dropdown--disabled .#{$prefix}--list-box__field,
+  .#{$prefix}--dropdown--disabled .#{$prefix}--list-box__menu-icon {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--dropdown--inline {
+    display: inline-block;
+    width: auto;
+    border-bottom-color: transparent;
+    background-color: transparent;
+    justify-self: start;
+    transition: background $duration--fast-01 motion(entrance, productive);
+
+    &:hover {
+      background-color: $field-hover;
+    }
+
+    &.#{$prefix}--dropdown--disabled,
+    &.#{$prefix}--dropdown--open { // ccs: dedupe
+      background-color: transparent;
+    }
+  }
+
+  .#{$prefix}--dropdown-v2.#{$prefix}--skeleton,
+  .#{$prefix}--dropdown.#{$prefix}--skeleton {
+    @include skeleton;
+  }
+
+  // Windows HCM fix
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--dropdown .#{$prefix}--list-box__field {
+    @include high-contrast-mode('outline');
+  }
+
+  .#{$prefix}--list-box__menu-item__option {
+    @include high-contrast-mode {
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--list-box__menu-item__selected-icon {
+    @include high-contrast-mode('icon-fill');
+  }
+}
+
+@include exports('dropdown') {
+  @include dropdown;
+}
+
+// carbon-components-svelte patch (formerly css/_dropdown-readonly.scss)
+/// Readonly dropdown styles
+/// @access private
+/// @group dropdown
+@mixin dropdown-readonly {
+  .#{$prefix}--dropdown--readonly,
+  .#{$prefix}--dropdown--readonly:hover {
+    background-color: transparent;
+    border-block-end-color: $border-subtle;
+  }
+
+  .#{$prefix}--dropdown--inline.#{$prefix}--dropdown--readonly,
+  .#{$prefix}--dropdown--inline.#{$prefix}--dropdown--readonly:hover {
+    border-block-end-color: transparent;
+  }
+
+  .#{$prefix}--dropdown--readonly .#{$prefix}--list-box__field,
+  .#{$prefix}--dropdown--readonly .#{$prefix}--list-box__menu-icon {
+    cursor: default;
+  }
+
+  .#{$prefix}--dropdown--readonly .#{$prefix}--list-box__menu-icon svg {
+    fill: $icon-secondary;
+  }
+}
+
+@include exports("dropdown-readonly") {
+  @include dropdown-readonly;
+}

@@ -1,45 +1,108 @@
 <script>
-  /** Set to `true` to check the input */
+  /**
+   * @template {string} [Value=string]
+   */
+
+  /**
+   * Set to `true` to check the input.
+   * @bindable writable
+   */
   export let checked = false;
 
-  /** Specify the title of the input */
-  export let title = "title";
+  /**
+   * Specify the title of the input.
+   * @type {string | undefined}
+   */
+  export let title = undefined;
 
-  /** Specify the value of the input */
-  export let value = "value";
+  /**
+   * Specify the value of the input.
+   * @type {Value}
+   */
+  export let value = /** @type {Value} */ ("value");
 
   /** Set an id for the input element */
-  export let id = "ccs-" + Math.random().toString(36);
+  export let id = uniqueId();
 
   /** Specify a name attribute for the input */
   export let name = "";
 
-  /** Obtain a reference to the input HTML element */
+  /**
+   * Specify the tabindex
+   * @type {number | string | undefined}
+   */
+  export let tabindex = "0";
+
+  /**
+   * Obtain a reference to the input HTML element.
+   * @bindable readonly
+   * @type {null | HTMLInputElement}
+   */
   export let ref = null;
 
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
+  import { readable, writable } from "svelte/store";
+  import { noop } from "../utils/noop.js";
+  import { tabindexAttribute } from "../utils/tabindex.js";
+  import { uniqueId } from "../utils/unique-id.js";
 
-  const { selectedValue, update } = getContext("StructuredListWrapper");
+  const initialChecked = checked;
+  const ctx = getContext("carbon:StructuredListWrapper");
+  const multiple = ctx?.multiple ?? readable(false);
+  // Standalone (no wrapper context) is always single-select.
+  const selectedValue =
+    ctx?.selectedValue ?? writable(initialChecked ? value : undefined);
+  /** @type {(v: Value) => void} */
+  const update = ctx?.update ?? ((v) => selectedValue.set(v));
+  const inputName = ctx?.inputName ?? writable("");
+  const register = ctx?.register ?? (() => noop);
 
-  if (checked) {
-    update(value);
+  if (initialChecked && ctx) {
+    ctx.add(value);
   }
 
-  $: checked = $selectedValue === value;
+  let unregister = register(value);
+  let prevValue = value;
+  onMount(() => () => unregister());
+
+  $: if (value !== prevValue) {
+    unregister();
+    unregister = register(value);
+    prevValue = value;
+  }
+
+  $: checked = $multiple
+    ? Array.isArray($selectedValue) && $selectedValue.includes(value)
+    : $selectedValue === value;
+  $: groupName = name || $inputName;
 </script>
 
-<input
-  bind:this="{ref}"
-  type="radio"
-  tabindex="-1"
-  checked="{checked}"
-  id="{id}"
-  name="{name}"
-  title="{title}"
-  value="{value}"
-  class:bx--structured-list-input="{true}"
-  {...$$restProps}
-  on:change="{() => {
-    update(value);
-  }}"
-/>
+<span
+  class:bx--structured-list-input-wrapper={true}
+  class:bx--structured-list-input-wrapper--checked={checked}
+>
+  <input
+    bind:this={ref}
+    type={$multiple ? "checkbox" : "radio"}
+    tabindex={tabindexAttribute(tabindex)}
+    {checked}
+    {id}
+    name={groupName}
+    {title}
+    {value}
+    class:bx--structured-list-input={true}
+    {...$$restProps}
+    on:change={() => {
+      update(value);
+    }}
+    on:keydown={(event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        // Toggle once per press, like Space; a held key would otherwise
+        // toggle on every auto-repeat.
+        if (event.repeat) return;
+        /** @type {HTMLInputElement} */ (ref).click();
+      }
+    }}
+  />
+</span>

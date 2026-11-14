@@ -1,0 +1,402 @@
+---
+components: ["CodeSnippet", "CodeSnippetSkeleton"]
+description: Code snippets display and copy code examples, with single-line, multi-line, and inline formats and customizable copy and expand controls.
+---
+
+<script>
+  import { Box, CodeSnippet, CodeSnippetSkeleton, Layer } from "carbon-components-svelte";
+  import Checkmark from "carbon-icons-svelte/lib/Checkmark.svelte";
+</script>
+
+## Basic
+
+Display a single-line code snippet by default. By default, the copy button uses the native [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText) to copy text, with a `document.execCommand("copy")` fallback when that API is unavailable or rejects (for example in an insecure context). Pass a function to `copy` to replace it. See [Override](#override).
+
+<CodeSnippet code="npm i carbon-components-svelte" />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <CodeSnippet code="npm i carbon-components-svelte" />
+  </Box>
+</Layer>
+
+## Right-to-left
+
+Code reads left to right in any language. In a right-to-left layout, each line keeps its order and starts at the left, and the copy and expand buttons move to the left. Inline code keeps its order inside right-to-left text. See [LayoutDirection](/components/LayoutDirection).
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetRightToLeft" />
+
+## Inline
+
+Set `type="inline"` to display code inline with text. Click the snippet to copy it. Press <DocKbd label="Escape" /> to hide the copy feedback early.
+
+<CodeSnippet type="inline" code="rm -rf node_modules/" />
+
+## Multi-line
+
+Set `type="multi"` to display multiple lines of code with expand/collapse functionality.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetMultiLine" />
+
+### Overflow detection
+
+The "Show more"/"Show less" button only appears when the multi-line snippet content exceeds the collapsed height. Because the visibility is based on the snippet's measured height, it adapts to the consumer's font size and line height, and updates automatically if the content or layout changes.
+
+Toggle the example below to grow the content past the threshold and reveal the expand button.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetOverflow" />
+
+### Collapsed row count
+
+Set `maxCollapsedNumberOfRows` to shorten the collapsed preview. Each row is 1rem tall, the code's line height, so the row counts hold at any text size; the default is `15`. Use `minCollapsedNumberOfRows`, `minExpandedNumberOfRows`, and `maxExpandedNumberOfRows` for the matching minimum and expanded limits.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetRowCounts" />
+
+### Custom show more/less text
+
+Set `showMoreText` and `showLessText` to customize the expand/collapse button text.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetCustomText" />
+
+### Full width
+
+A single-line or multi-line snippet stops at 48rem. Set `fullWidth` to fill the container, such as a log or a response in a wide panel.
+
+<CodeSnippet type="multi" fullWidth code={`GET /v1/projects?limit=10
+200 OK  80 ms  534 B`} />
+
+### Wrapped text
+
+By default, the code snippet preserves text formatting and does not wrap text. Set `wrapText` to `true` to wrap long lines instead of scrolling horizontally.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetWrapText" />
+
+### Expanded by default
+
+Set `expanded` to `true` to show the full multi-line code snippet.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetExpanded" />
+
+### Events
+
+Dispatches `expand` and `collapse` events when the snippet is toggled open and closed.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetReactive" />
+
+### Dynamic code
+
+Use `code` instead of the default slot for dynamically updated code.
+
+<FileSource src="/framed/CodeSnippet/DynamicCodeSnippet" />
+
+### Hidden content
+
+A multi-line snippet that mounts inside a hidden container (for example, `display: none` or an inactive tab) measures its height again when the container becomes visible. The "Show more" button appears once the content is shown. You do not need to re-render the component.
+
+<FileSource src="/framed/CodeSnippet/HiddenCodeSnippet" />
+
+## Copy behavior
+
+Customize, replace, or disable the default clipboard behavior.
+
+### Slot content
+
+Omit `code` and pass the text in the default slot. The copy button copies the rendered text, with markup stripped. Set `code` to copy something other than what is shown.
+
+<CodeSnippet>npm i carbon-components-svelte</CodeSnippet>
+
+### Async
+
+Pass an async function to `copy` when clipboard text is not ready at render time, such as a longer install command fetched on click. The copy feedback text appears after `copy()` resolves.
+
+During the request, the copy control sets `aria-busy="true"` and ignores further clicks. A rejected copy shows `errorFeedback` (default `"Failed to copy"`) in the same tooltip slot as the success message and emits `copy:error`.
+
+Prefetch on hover with `on:mouseenter:copy-button` on the copy control. The example below shows async copy for each variant (`single`, `inline`, `multi`).
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetAsync" />
+
+### Override
+
+Pass a function to `copy` to replace the default Clipboard API behavior.
+
+This example calls the Clipboard API directly, without the `document.execCommand("copy")` fallback.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetOverride" />
+
+### Prevent
+
+Set `copy` to a no-op function to disable copying.
+
+<CodeSnippet code="npm i carbon-components-svelte" copy={() => {}} />
+
+## Custom feedback
+
+Customize the message, icon, and duration shown after copying.
+
+### Text
+
+Set `feedback` to customize the message shown after copying. Set `errorFeedback` to customize the message shown when copying fails (default `"Failed to copy"`).
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetFeedback" />
+
+### Icon
+
+Set `feedbackIcon` to show a different icon while feedback is visible. The copy icon returns when feedback closes. Applies to `"single"` and `"multi"` types; has no effect on `"inline"`.
+
+<CodeSnippet code="npm i carbon-components-svelte" feedbackIcon={Checkmark} />
+
+### Duration
+
+Set `feedbackTimeout` to change how long the feedback stays visible, in milliseconds. Defaults to `2000`.
+
+<CodeSnippet code="npm i carbon-components-svelte" feedbackTimeout={5000} />
+
+## Custom labels
+
+Customize the ARIA labels used for accessibility. Which prop applies depends on `type`.
+
+### Copy label
+
+Set `copyLabel` to customize the ARIA label of the copy control. Applies to `"inline"` only; single and multi-line snippets use `codeLabel` and `copyButtonDescription` instead.
+
+<CodeSnippet type="inline" code="rm -rf node_modules/" copyLabel="Delete node_modules" />
+
+### Code label
+
+Set `codeLabel` to customize the ARIA label of the code container (default `"Code snippet"`). Applies to `"single"` and `"multi"` only; inline snippets have no separate container.
+
+<CodeSnippet code="npm i carbon-components-svelte" codeLabel="npm install command" />
+
+### Copy button description
+
+Set `copyButtonDescription` to customize the ARIA label of the copy button. It also shows as a proactive tooltip on hover or focus, before the button is clicked. Applies to `"single"` and `"multi"` only.
+
+<CodeSnippet code="npm i carbon-components-svelte" copyButtonDescription="Copy install command" />
+
+## Hidden buttons
+
+Hide the copy or show-more controls.
+
+### Copy
+
+Set `hideCopyButton` to `true` to hide the copy button.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetHideCopyButton" />
+
+### Show more
+
+Set `showMoreLess` to `false` to hide the expand/collapse button on multi-line snippets. Overflowing content scrolls inside the collapsed container instead of being clipped with no way to reach the rest.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetHideShowMore" />
+
+### Copy and show more
+
+Hide both the copy and expand/collapse buttons.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetHideButtons" />
+
+## Disabled
+
+Set `disabled` to `true` to disable interaction.
+
+### Single line
+
+<CodeSnippet disabled code="npm i carbon-components-svelte" />
+
+### Multi-line
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetDisabledMulti" />
+
+### Inline
+
+<CodeSnippet disabled type="inline" code="rm -rf node_modules/" />
+
+## Syntax highlighting
+
+CodeSnippet does not ship a syntax highlighter. Pass the plain source to `code` so copy uses unstyled text, and color the rendered code with one of the approaches below.
+
+### Syntax subpackage
+
+`carbon-components-svelte/syntax` has a small highlighter for JavaScript, TypeScript, Svelte 4 and 5, HTML, CSS, SCSS, JSON, shell, and diffs, colored with Carbon's syntax tokens. Its styles are separate stylesheets, so apps that don't highlight code don't load them.
+
+| Stylesheet | Contains | Load with |
+| --- | --- | --- |
+| `css/syntax-tokens.css` | `--cds-syntax-*` custom properties for Carbon's 88 syntax tokens, switched by `<html theme>` | `all.css` |
+| `css/syntax-tokens-<theme>.css` | The same properties for one theme | `<theme>.css` |
+| `css/syntax.css` | `.tok-*` classes and `::highlight(syntax-*)` rules that read the properties | Either tokens stylesheet |
+
+```js
+import "carbon-components-svelte/css/all.css";
+import "carbon-components-svelte/css/syntax-tokens.css";
+import "carbon-components-svelte/css/syntax.css";
+```
+
+| Export | Use |
+| --- | --- |
+| `highlight(code, language)` | HTML with `tok-*` spans, for `{@html}` in the default slot |
+| `highlightCode` | Svelte action that colors code with the CSS Custom Highlight API, without changing the DOM |
+| `tokenize(code, language)` | `{ type, text }` runs, for your own renderer |
+
+### Build-time spans
+
+`highlight` returns HTML with each token in a `tok-*` span. Render it in the default slot.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetSyntaxSpans" />
+
+### Highlight API
+
+`highlightCode` colors the first `<code>` inside the element it's on, so put it on a wrapper around the snippet. Selection and copy see plain text. It re-highlights when the code's text changes, whether Svelte or your own code changes it. It sets `data-ccs-highlight` on the element, and the `::highlight()` rules in `syntax.css` apply only inside that element. If you register highlights with the API yourself, set the attribute on their container. The [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API) is supported in Chrome 105, Safari 17.2, and Firefox 140; elsewhere the code stays plain.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetSyntaxHighlightApi" />
+
+### Carbon syntax tokens
+
+`syntax-tokens.css` declares Carbon's values: one set for white and g10, and one for g80, g90, and g100 (Carbon defines no g80 values). Carbon tunes its dark set for g100, so on g80's and g90's lighter snippet backgrounds the tokens below 4.5:1 move to the next lighter step of the same color, such as blue 50 to blue 40 for `keyword` in g90. Each token `x` has a `--cds-syntax-x` property, and `syntax.css` adds a `.tok-x` class and a `::highlight(syntax-x)` rule. The highlighter emits these types:
+
+| Group | Token types |
+| --- | --- |
+| Keywords | `keyword` (including runes such as `$state`, `$:`, and directive prefixes such as `on`), `control-keyword` (including `{#each}` and `{@html}`), `definition-keyword`, `module-keyword` (including `export default`) |
+| Names | `variable-name`, `definition` (including parameters, imports, and the names that blocks and destructuring declare), `function`, `property-name`, `type-name`, `class-name`, `self`, `special` (including `$store` references and template `${}` delimiters), `annotation` (decorators) |
+| Literals | `string`, `special-string` (module specifiers such as `"carbon-components-svelte"`), `escape` (escape sequences in strings), `number`, `bool`, `null`, `regexp`, `color`, `unit` |
+| Markup | `tag-name`, `attribute-name`, `attribute-value`, `angle-bracket`, `modifier` (directive modifiers such as `preventDefault`), `character` (HTML character references) |
+| Punctuation | `operator`, `punctuation`, `paren`, `brace`, `bracket` |
+| Comments | `comment`, `meta` (including doctypes and diff headers) |
+| Diffs | `inserted`, `deleted` (color the background, not the text) |
+
+The other Carbon tokens, such as `heading-1`, `emphasis`, `link`, and `doc-comment`, are there for highlighters that emit them.
+
+### Custom token colors
+
+Override a `--cds-syntax-*` property to change a token's color. Match the selectors in `syntax-tokens.css`, load your CSS after it, and keep 4.5:1 contrast on each theme's snippet background. Carbon leaves strings in the text color; this site colors them magenta:
+
+```css
+:root,
+:root[theme="white"],
+:root[theme="g10"] {
+  --cds-syntax-string: #9f1853; /* magenta 70 */
+  --cds-syntax-attribute-value: #9f1853;
+}
+
+:root[theme="g90"],
+:root[theme="g100"] {
+  --cds-syntax-string: #ff7eb6; /* magenta 40 */
+  --cds-syntax-attribute-value: #ff7eb6;
+}
+
+:root[theme="g80"] {
+  --cds-syntax-string: #ffafd2; /* magenta 30 */
+  --cds-syntax-attribute-value: #ffafd2;
+}
+```
+
+### Third-party highlighter
+
+Render highlighted HTML from Prism, Shiki, or another highlighter in the default slot with `{@html}`. To match Carbon, color its token classes with the `--cds-syntax-*` properties, as in this Prism example:
+
+```svelte
+<script>
+  import { CodeSnippet } from "carbon-components-svelte";
+  import Prism from "prismjs";
+  import "prismjs/components/prism-typescript";
+
+  const code = `export function isAdmin(role: string) {
+  return role === "admin";
+}`;
+
+  const highlighted = Prism.highlight(
+    code,
+    Prism.languages.typescript,
+    "typescript",
+  );
+</script>
+
+<CodeSnippet type="multi" {code}>{@html highlighted}</CodeSnippet>
+
+<style>
+  /* Color Prism's token classes with the Carbon syntax tokens. */
+  :global(.token.keyword) {
+    color: var(--cds-syntax-keyword);
+  }
+
+  :global(.token.function) {
+    color: var(--cds-syntax-function);
+  }
+
+  :global(.token.string) {
+    color: var(--cds-syntax-string);
+  }
+
+  :global(.token.number),
+  :global(.token.boolean) {
+    color: var(--cds-syntax-number);
+  }
+
+  :global(.token.builtin),
+  :global(.token.class-name) {
+    color: var(--cds-syntax-type-name);
+  }
+
+  :global(.token.operator),
+  :global(.token.punctuation) {
+    color: var(--cds-syntax-punctuation);
+  }
+
+  :global(.token.comment) {
+    color: var(--cds-syntax-comment);
+  }
+</style>
+```
+
+## Tooltip
+
+The copy button shows a tooltip: a proactive hint on hover or focus for single and multi-line snippets (see [Copy button description](#copy-button-description)), and copy feedback for every variant, including inline. Both render in the same floating portal.
+
+### Position
+
+Set `tooltipAlign` to place the tooltip relative to the copy button, with Popover's `align` names. Applies to every variant, including the inline snippet. It replaces `tooltipPosition` and `tooltipAlignment`, which still work and are deprecated.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetTooltipPosition" />
+
+### Alignment
+
+Add `-start` or `-end` to align the tooltip with one end of the copy button.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetTooltipAlignment" />
+
+## Portal tooltip
+
+The "Copied!" feedback tooltip is rendered in a floating portal by default, so it
+is never clipped by a parent container with hidden overflow or a z-index stacking
+context. Set `portalTooltip` to `false` to use Carbon's inline feedback caret
+instead. The example renders each variant inside a container with hidden overflow.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetPortalTooltip" />
+
+## Inside a modal
+
+Because the feedback tooltip is portalled by default, it is not clipped inside a
+[Modal](/components/Modal). Set `portalTooltip` to `false` to use the inline caret.
+
+<FileSource src="/framed/CodeSnippet/CodeSnippetInModal" />
+
+## Skeleton
+
+Use `CodeSnippetSkeleton` to show a loading state. Defaults to `"single"` type.
+
+<CodeSnippetSkeleton />
+
+### Multi-line
+
+Set `type="multi"` on `CodeSnippetSkeleton` to show a multi-line loading state.
+
+<CodeSnippetSkeleton type="multi" />
+
+### Inline
+
+Set `type="inline"` on `CodeSnippetSkeleton` to hold the place of an inline snippet in a line of text. Set `chars` to the length of the code it stands in for; `CodeSnippet` with `skeleton` sets it from `code`.
+
+Run <CodeSnippetSkeleton type="inline" chars={20} /> to clean up the install.

@@ -1,0 +1,67 @@
+//
+// Copyright IBM Corp. 2018, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+/// @access private
+/// @group @carbon/themes
+$custom-property-prefix: 'cds' !default;
+
+/// ccs: drop the static fallback from every token `var()`. Only for an entry
+/// whose `:root` always declares the tokens (`all.scss`), where it is dead weight.
+/// @access public
+/// @type Bool
+$ccs-omit-token-fallbacks: false !default;
+
+/// ccs: reference a token custom property
+/// @access private
+/// @param {String} $name - Token name, without the custom property prefix
+/// @param {*} $fallback - Static value of the token
+/// @returns {String}
+@function custom-property-var($name, $fallback) {
+  @if $ccs-omit-token-fallbacks {
+    @return var(--#{$custom-property-prefix}-#{$name});
+  }
+  @return var(--#{$custom-property-prefix}-#{$name}, #{$fallback});
+}
+
+/// @access private
+/// @group @carbon/themes
+@mixin custom-property($name, $value, $prefix: $custom-property-prefix) {
+  @if type-of($value) == map {
+    @each $property, $property-value in $value {
+      // Only support one-level of depth for values that are maps. This is to
+      // avoid bringing properties like `breakpoints` on type tokens
+      @if type-of($property-value) != map {
+        @include custom-property('#{$name}-#{$property}', $property-value);
+      }
+    }
+  } @else {
+    --#{$prefix}-#{$name}: #{$value};
+  }
+}
+
+/// @access private
+/// @group @carbon/themes
+@function should-emit($theme-a, $theme-b, $token, $emit-difference) {
+  @if $emit-difference == false {
+    @return true;
+  }
+  // ccs: a list of themes emits the token when any of them disagrees, for a
+  // scope that can nest under every theme (`true` only compares the parent).
+  @if type-of($emit-difference) == 'list' {
+    @each $theme-c in $emit-difference {
+      @if map-get($theme-a, $token) != map-get($theme-c, $token) {
+        @return true;
+      }
+    }
+    @return false;
+  }
+  @return map-get($theme-a, $token) != map-get($theme-b, $token);
+}
+
+// We import mixins last so that these methods are made available to the
+// carbon--theme mixin
+@import './generated/mixins';

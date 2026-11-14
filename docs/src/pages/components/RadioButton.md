@@ -1,0 +1,214 @@
+---
+components: ["RadioButtonGroup", "RadioButton", "RadioButtonSkeleton"]
+description: Radio buttons are a selection control for choosing a single option from a set, with support for individual and grouped usage.
+---
+
+<script>
+  import { AILabel, RadioButton, RadioButtonSkeleton, RadioButtonGroup, Tooltip, Stack } from "carbon-components-svelte";
+</script>
+
+## Basic
+
+Create a group of radio buttons with a shared name and legend.
+
+See [Standalone usage](#standalone-usage) for individual usage or [Implicit grouping](#implicit-grouping) to group multiple standalone radio buttons by name without using a radio button group.
+
+If `name` is omitted, `RadioButtonGroup` generates and shares one internally, so grouped keyboard navigation still works. That generated name is random per component instance, so set `name` explicitly when the group is part of a submitted form.
+
+<RadioButtonGroup legendText="Storage tier (disk)" name="plan" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+## Standalone usage
+
+Use a radio button individually with bindable checked state for simple use cases.
+
+<FileSource src="/framed/RadioButton/RadioButtonStandalone" />
+
+Set `readonly` to `true` on a standalone radio button to display a non-editable value. It merges with a parent `RadioButtonGroup`'s own `readonly` the same way `Checkbox` merges its own `readonly` with a group's.
+
+<Stack align="start">
+  <RadioButton labelText="Production deployment window approved" checked readonly />
+</Stack>
+
+## Implicit grouping
+
+Multiple standalone radio buttons sharing the same name automatically form a group and synchronize their checked state — no radio button group component required.
+
+<FileSource src="/framed/RadioButton/RadioButtonImplicitGroup" />
+
+## Reactive
+
+Bind and update the selected value programmatically.
+
+<FileSource src="/framed/RadioButton/RadioButtonReactive" />
+
+## Labels and legend
+
+Control the visibility and content of individual radio button labels and the group legend.
+
+### Hidden legend
+
+Hide the legend visually by setting `hideLegend` to `true`. The legend remains available to screen readers.
+
+<RadioButtonGroup hideLegend legendText="Storage tier (disk)" name="plan-legend" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Hidden label
+
+Hide an individual radio button's label text by setting `hideLabel` to `true` on `RadioButton`. The label remains available to screen readers.
+
+<RadioButton labelText="Enable two-factor authentication" hideLabel />
+
+### Custom label
+
+Use the `legendChildren` slot to provide custom legend content instead of `legendText`.
+
+<RadioButtonGroup name="plan-legend-slot" selected="standard">
+  <Stack slot="legendChildren" orientation="horizontal">
+    Storage tier (disk)
+    <Tooltip>
+      <p>
+        Storage tiers may vary based on geolocation.
+      </p>
+    </Tooltip>
+  </Stack>
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+## Layout
+
+Control the position and orientation of radio buttons within a group.
+
+### Left-aligned label
+
+Position labels to the left of the radio buttons.
+
+<RadioButtonGroup labelPosition="left" legendText="Storage tier (disk)" name="plan-left-aligned" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Vertical
+
+Display radio buttons in a vertical layout.
+
+<RadioButtonGroup orientation="vertical" legendText="Storage tier (disk)" name="plan-vertical" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the option as AI-generated. On a `RadioButtonGroup`, the label follows the legend.
+
+<RadioButtonGroup legendText="Billing cycle" selected="annual">
+  <AILabel slot="decorator">
+    <p>Suggested because annual billing lowers your cost by 15%.</p>
+  </AILabel>
+  <RadioButton labelText="Monthly" value="monthly" />
+  <RadioButton labelText="Annual" value="annual" />
+</RadioButtonGroup>
+
+## Helper text
+
+Use `helperText` to provide additional context below the radio button group.
+
+<RadioButtonGroup legendText="Notification preferences" name="plan-helper" selected="email" helperText="You can change this setting at any time">
+  <RadioButton labelText="Email" value="email" />
+  <RadioButton labelText="SMS" value="sms" />
+  <RadioButton labelText="Push notifications" value="push" />
+</RadioButtonGroup>
+
+## States
+
+Reflect interaction states.
+
+### Disabled buttons
+
+Disable specific radio buttons to prevent selection.
+
+<RadioButtonGroup labelPosition="left" legendText="Storage tier (disk)" name="plan-disabled" selected="standard">
+  <RadioButton disabled labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton disabled labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Disabled group
+
+Disable all radio buttons in the group with `disabled` on RadioButtonGroup. Their labels are also visually muted.
+
+<RadioButtonGroup disabled legendText="Storage tier (disk)" name="plan-disabled-group" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Read-only
+
+Display non-editable values with `readonly` on RadioButtonGroup.
+
+<RadioButtonGroup readonly labelPosition="left" legendText="Storage tier (disk)" name="plan-readonly" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Invalid
+
+Set `invalid` to `true` and provide `invalidText` to show a validation error for the group. `aria-invalid` goes on the radiogroup, and each radio's `aria-describedby` points at the error message.
+
+<RadioButtonGroup invalid invalidText="Select a storage tier" legendText="Storage tier (disk)" name="plan-invalid">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Warning
+
+Set `warn` to `true` and provide `warnText` to show a warning message for the group. `invalid` takes precedence over `warn` when both are set.
+
+<RadioButtonGroup warn warnText="Pro tier billing starts immediately" legendText="Storage tier (disk)" name="plan-warn" selected="pro">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+### Deselecting
+
+Radio buttons normally keep one option selected once a choice is made. Set `allowDeselect` on RadioButtonGroup to opt out of that: clicking the already-selected radio clears the selection instead of leaving it selected.
+
+<RadioButtonGroup allowDeselect legendText="Storage tier (disk)" name="plan-deselect" selected="standard">
+  <RadioButton labelText="Free (1 GB)" value="free" />
+  <RadioButton labelText="Standard (10 GB)" value="standard" />
+  <RadioButton labelText="Pro (128 GB)" value="pro" />
+</RadioButtonGroup>
+
+## Skeleton
+
+Show a loading state for horizontal radio buttons.
+
+<RadioButtonGroup legendText="Storage tier (disk)">
+  <RadioButtonSkeleton />
+  <RadioButtonSkeleton />
+  <RadioButtonSkeleton />
+</RadioButtonGroup>
+
+### Vertical
+
+Show a loading state for vertical radio buttons.
+
+<RadioButtonGroup orientation="vertical" legendText="Storage tier (disk)">
+  <RadioButtonSkeleton />
+  <RadioButtonSkeleton />
+  <RadioButtonSkeleton />
+</RadioButtonGroup>

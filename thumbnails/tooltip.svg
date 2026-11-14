@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="320px" height="180px" viewBox="0 0 320 180" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>tooltip</title>
+    <defs>
+        <filter id="tooltip-shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180">
+            <feOffset dy="2" in="SourceAlpha" result="offset"></feOffset>
+            <feGaussianBlur stdDeviation="3" in="offset" result="blur"></feGaussianBlur>
+            <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.3 0"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="tooltip" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="bubble-shadow" fill="black" filter="url(#tooltip-shadow)" x="100" y="58" width="120" height="36" rx="2"></rect>
+        <rect id="bubble" fill="var(--cds-background-inverse, #393939)" x="100" y="58" width="120" height="36" rx="2"></rect>
+        <polygon id="caret" fill="var(--cds-background-inverse, #393939)" points="155 94 165 94 160 100"></polygon>
+        <rect id="text-1" fill="var(--cds-text-inverse, #ffffff)" x="112" y="70" width="88" height="6"></rect>
+        <rect id="text-2" fill="var(--cds-text-inverse, #ffffff)" x="112" y="80" width="60" height="6"></rect>
+        <path id="trigger" fill="var(--cds-icon-primary, #161616)" transform="translate(152, 108) scale(0.5)" d="M17 22 17 14 13 14 13 16 15 16 15 22 12 22 12 24 20 24 20 22 17 22zM16,8a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,16,8ZM16,30A14,14,0,1,1,30,16,14,14,0,0,1,16,30ZM16,4A12,12,0,1,0,28,16,12,12,0,0,0,16,4Z"></path>
+    </g>
+</svg>

@@ -7,29 +7,36 @@
   export let open = false;
 
   /** Default translation ids */
-  export const translationIds = { close: "close", open: "open" };
+  export const translationIds = /** @type {const} */ ({
+    close: "close",
+    open: "open",
+  });
 
   /**
-   * Override the default translation ids
+   * Override the default translation ids.
    * @type {(id: ListBoxMenuIconTranslationId) => string}
    */
-  export let translateWithId = (id) => defaultTranslations[id];
+  export let translateWithId = function translateWithId(id) {
+    return defaultTranslations[id];
+  };
 
-  import ChevronDown16 from "../icons/ChevronDown16.svelte";
+  import ChevronDown from "../icons/ChevronDown.svelte";
 
   const defaultTranslations = {
     [translationIds.close]: "Close menu",
     [translationIds.open]: "Open menu",
   };
 
-  $: description = open ? translateWithId("close") : translateWithId("open");
+  $: translationId = open ? translationIds.close : translationIds.open;
+  $: description =
+    translateWithId?.(translationId) ?? defaultTranslations[translationId];
 </script>
 
 <div
-  class:bx--list-box__menu-icon="{true}"
-  class:bx--list-box__menu-icon--open="{open}"
+  class:bx--list-box__menu-icon={true}
+  class:bx--list-box__menu-icon--open={open}
   {...$$restProps}
   on:click|preventDefault
 >
-  <ChevronDown16 aria-label="{description}" title="{description}" />
+  <ChevronDown aria-label={description} title={description} />
 </div>

@@ -1,0 +1,522 @@
+---
+components:
+  [
+    "Header",
+    "HeaderAction",
+    "HeaderActionLink",
+    "HeaderSearch",
+    "HeaderNav",
+    "HeaderNavItem",
+    "HeaderNavMenu",
+    "HeaderSideNavItems",
+    "HeaderPanelDivider",
+    "HeaderPanelGroup",
+    "HeaderPanelLink",
+    "HeaderPanelLinks",
+    "HeaderUtilities",
+    "ProfileMenu",
+    "ProfileMenuHeader",
+    "ProfileMenuList",
+    "ProfileMenuItem",
+    "ProfileMenuDetail",
+    "ProfileMenuDivider",
+    "HeaderSwitcher",
+    "SideNav",
+    "SideNavItems",
+    "SideNavLink",
+    "SideNavMenu",
+    "SideNavMenuItem",
+    "SideNavDivider",
+    "Content",
+    "SkipToContent",
+    "HeaderGlobalAction",
+  ]
+description: The UI shell provides components for building application shells and navigation — header, side navigation, and content areas.
+---
+
+## Header
+
+Create a basic header with the header component. Open these examples in a new tab to experience them in full.
+
+### Basic header
+
+<FileSource src="/framed/UIShell/Header" />
+
+### Navigation menus
+
+Group related links behind a dropdown with `HeaderNavMenu` inside `HeaderNav`, as shown in the "Manage" menu in the example above. Clicking the trigger toggles the dropdown; clicking a `HeaderNavItem` link inside it also collapses the dropdown, since the click bubbles up to the trigger.
+
+Keyboard support follows the WAI-ARIA menu pattern: <DocKbd label="Enter" />, <DocKbd label="Space" />, <DocKbd label="ArrowDown" />, or <DocKbd label="ArrowUp" /> open the menu and move focus to the first or last item, <DocKbd label="ArrowDown" />/<DocKbd label="ArrowUp" /> move between items once open, and <DocKbd label="Escape" /> closes the menu and returns focus to the trigger.
+
+`HeaderNav` is a WAI-ARIA menubar, so its top-level items (`HeaderNavItem`s and `HeaderNavMenu` triggers) are a single <DocKbd label="Tab" /> stop: the current page item (or the first item) takes focus, and the arrow keys move between the rest. <DocKbd label="ArrowLeft" />/<DocKbd label="ArrowRight" /> move between top-level items (wrapping at either end), <DocKbd label="Home" />/<DocKbd label="End" /> jump to the first or last, and typing a character focuses the next item whose label starts with it. While a menu is open, <DocKbd label="ArrowLeft" />/<DocKbd label="ArrowRight" /> close it and move to the adjacent top-level item, opening its menu and focusing the first item when it is a `HeaderNavMenu`. In a right-to-left layout, <DocKbd label="ArrowLeft" /> and <DocKbd label="ArrowRight" /> swap. Typing a character focuses the next menu item starting with it.
+
+Set `icon` on `HeaderNavMenu` to render a trailing icon between the text and the chevron, or use the `icon` slot. Replace the label with the `textChildren` slot when it needs custom content; the trigger's accessible name follows what is rendered.
+
+<FileSource src="/framed/UIShell/HeaderNavMenuTrigger" />
+
+`HeaderNavMenu` dispatches `close` with `event.detail.trigger` set to `"escape-key"`, `"outside-click"`, or `"blur"` (focus moved elsewhere, including with the arrow keys):
+
+```svelte
+<HeaderNavMenu
+  text="Manage"
+  on:close={(event) => console.log(event.detail.trigger)}
+>
+  <HeaderNavItem href="/account" text="Account" />
+</HeaderNavMenu>
+```
+
+### Current page
+
+Set `isSelected` on `HeaderNavItem` to mark the current page. It adds `aria-current="page"` and a persistent underline style. The same prop is available on `SideNavLink` and `SideNavMenuItem` in the side navigation section below.
+
+```svelte
+<HeaderNavItem href="/catalog" text="Catalog" isSelected />
+```
+
+### External links
+
+Set the `icon` prop on `HeaderNavItem` to add a trailing icon after the text. For external links that open in a new tab, set `target="_blank"` and an external `href`. Use `Launch` from [carbon-icons-svelte](https://github.com/carbon-design-system/carbon-icons-svelte). The icon is decorative and inherits the link color on hover, focus, and active.
+
+Duplicate those items in `HeaderSideNavItems` so the links stay in the side nav below the large breakpoint.
+
+<FileSource src="/framed/UIShell/HeaderNavExternalLinks" />
+
+### Skip to content
+
+Pair `SkipToContent` with `Content` so keyboard users can jump past the header and navigation straight to the main content. By default `SkipToContent` links to `href="#main-content"` and `Content` renders with `id="main-content"`, so the two work together without extra configuration. Override both `href` and `id` together if you render more than one `Content` region, or need a different anchor.
+
+## Side navigation
+
+Pair the header with a `SideNav`. It collapses behind a hamburger menu by default and also supports responsive, fixed, and rail layouts.
+
+### Collapsible
+
+The hamburger menu is automatically rendered when the side nav component is used.
+
+<FileSource src="/framed/UIShell/HeaderNav" />
+
+### Side nav menus
+
+Group related links behind a dropdown with `SideNavMenu`, wrapping `SideNavMenuItem` children, as shown in the "Kubernetes" menu in the example above. Set `expanded` to open the dropdown by default, and `icon` to render a leading icon on the trigger. Separate groups of items with `SideNavDivider`.
+
+In the [rail](#rail) variant, an expanded `SideNavMenu` automatically collapses when the rail returns to its narrow state.
+
+### Nested menus
+
+Nest a `SideNavMenu` inside another for deeper hierarchies. Each level's text starts 16px past its parent's.
+
+A menu that contains the current page opens on mount, at any depth. Here, `isSelected` on "Deployments" opens "Controllers", "Workloads", and "Kubernetes".
+
+<FileSource src="/framed/UIShell/SideNavMenuNested" />
+
+A nested item with an icon places the icon where its siblings' text starts, as at the top level, and its children start past its own text. See "Workloads" and "Rollouts".
+
+<FileSource src="/framed/UIShell/SideNavMenuNestedIcons" />
+
+| Do | Why |
+| --- | --- |
+| Nest at most two levels below the top level | The default side nav is 256px wide. Past the third level, labels have little room before they truncate. For deeper trees, use a [resizable](#resizable) side nav. |
+| Keep icons on top-level items | A nested icon adds its width to that row and to every row below it. |
+| Mark the current page with `isSelected` instead of setting `expanded` | Every menu that contains the current page opens on mount. |
+
+### Badges
+
+Compose a `badge` named slot into `SideNavLink` or `SideNavMenu` to render a status or count indicator next to the label, such as [BadgeIndicator](/components/BadgeIndicator).
+
+<FileSource src="/framed/UIShell/SideNavBadge" />
+
+### Border
+
+Set `border` on the side nav to render a border between it and the content. Useful when both share the same background and would otherwise blend together. Composes with `theme="classic"`, using a themed gray instead of white.
+
+<FileSource src="/framed/UIShell/SideNavBorder" />
+
+### Current page
+
+Set `isSelected` on `SideNavLink` or `SideNavMenuItem` to mark the current page — see "Dashboard" in the example above. It adds `aria-current="page"` and a persistent highlight style so the current location stays visible even while hovering other items.
+
+A collapsed `SideNavMenu` that contains the current page, at any depth, shows the selected background and accent bar. In the [nested menus](#nested-menus) example, collapse "Kubernetes" to see it.
+
+Set `isActive` on a `SideNavMenu` to mark it for a page the nav doesn't list, such as a detail route under a listed section.
+
+### Large
+
+Set `large` on `SideNavLink` or `SideNavMenu` to increase the item's height from 32px to 48px — useful for a top-level item that should stand out, or for larger touch targets. Not available on `SideNavMenuItem` (nested items). Composes with `icon` on both components.
+
+Only the row that sets `large` grows. Its children stay 32px unless they set it too.
+
+<FileSource src="/framed/UIShell/HeaderNavLarge" />
+
+### Responsive
+
+On smaller screens, header links belong in the side nav, above the regular side nav items.
+
+Carbon hides the header nav below the large breakpoint (66rem). Duplicate those links with `HeaderSideNavItems`; its children only appear below that breakpoint. Set `hasDivider` to separate them from the regular side nav items below.
+
+`HeaderSideNavItems` is the same menubar laid out vertically: its items are a single <DocKbd label="Tab" /> stop, <DocKbd label="ArrowDown" />/<DocKbd label="ArrowUp" /> move between them (wrapping at either end), and <DocKbd label="Home" />/<DocKbd label="End" /> and typing a character work as in the header. Because Up and Down move between items, a `HeaderNavMenu` opens with <DocKbd label="ArrowRight" /> (as well as <DocKbd label="Enter" /> or <DocKbd label="Space" />) and <DocKbd label="ArrowLeft" /> or <DocKbd label="Escape" /> closes it and returns focus to the trigger. In a right-to-left layout, the two arrows swap.
+
+Resize the viewport to see the switch.
+
+<FileSource src="/framed/UIShell/HeaderSideNavItems" />
+
+### Custom expansion breakpoint
+
+By default, the expansion breakpoint is 1056px (Carbon's [large breakpoint](/components/Breakpoint)).
+
+Below that width the side nav is collapsed and the hamburger is shown; opening it shows the overlay. At 1056px and above the side nav is expanded and the hamburger is hidden.
+
+Set `expansionBreakpoint` on both the header and side nav to change that threshold. For example, set it to `Infinity` to keep the overlay collapsed at every viewport size.
+
+The header nav and `HeaderSideNavItems` switch at the same width, so the header links move into the side nav wherever the hamburger appears.
+
+<FileSource src="/framed/UIShell/HeaderNavCustomBreakpoint" />
+
+### Fixed
+
+Set `fixed` on the side nav to keep it always visible, regardless of viewport width. The hamburger menu is not rendered because the side nav is not collapsible.
+
+<FileSource src="/framed/UIShell/HeaderNavFixed" />
+
+### Rail
+
+Set `rail` on the side nav to use the rail variant. Expanded side nav menu items automatically collapse when the rail is in its narrow state.
+
+<FileSource src="/framed/UIShell/HeaderNavRail" />
+
+### Rail hover delay
+
+A rail expands once the pointer rests on it for `enterDelayMs` (default `100`), so passing over it on the way to the content doesn't flash it open. It collapses `leaveDelayMs` after the pointer leaves (default `0`). Keyboard focus expands it at once, and touch never does.
+
+This example waits `300` ms in both directions.
+
+<FileSource src="/framed/UIShell/HeaderNavRailDelay" />
+
+### Fixed rail
+
+Combine `rail` with `fixed` to keep the rail at its narrow width even on hover, instead of temporarily expanding.
+
+<FileSource src="/framed/UIShell/HeaderNavRailFixed" />
+
+### Rail + large
+
+`large` composes with `rail`, including its narrow, icon-only state.
+
+<FileSource src="/framed/UIShell/HeaderNavRailLarge" />
+
+### Pin toggle
+
+`rail` is a plain bindable prop, so a consumer can flip it from a button click to let users pin a collapsed rail open (full width) or unpin it back to its narrow, hover-expand state — no dedicated pin API is needed on `SideNav` itself.
+
+<FileSource src="/framed/UIShell/HeaderNavRailPinToggle" />
+
+### Resizable
+
+Set `resizable` to let the user drag the side nav's trailing edge to resize it with a mouse, pen, or touch. `width` is a bindable prop in pixels (default `256`), rendered clamped to `[minWidth, maxWidth]`, and `Content` offsets its left margin to match.
+
+The handle is also focusable: <DocKbd label="ArrowLeft" />/<DocKbd label="ArrowRight" /> step by 16px (64px with <DocKbd label="Shift" />), <DocKbd label="Home" />/<DocKbd label="End" /> jump to `minWidth`/`maxWidth`, and double-clicking it restores the starting width. In a right-to-left layout the handle sits on the nav's left edge, and <DocKbd label="ArrowLeft" /> widens it. Customize its accessible name with `resizeHandleLabel`. Hovering highlights the handle and shows the resize cursor after `resizeEnterDelayMs` (default `150`), so passing over it on the way to the content doesn't flash it.
+
+`bind:width` updates on every step of a drag; the `resize` event fires once the gesture ends, with the final `width`. This example persists the width with `LocalStorage`, so it survives a reload.
+
+`resizable` has no effect when `rail` is set, since a rail's width is defined by its icon-only vs. hover-expanded state. On mobile, the overlay uses the same width, capped at the viewport width.
+
+<FileSource src="/framed/UIShell/SideNavResizable" />
+
+### Persisted hamburger
+
+Create a header with a persistent hamburger menu state.
+
+<FileSource src="/framed/UIShell/PersistedHamburgerMenu" />
+
+### Events
+
+`SideNav` dispatches `open` and `close` when `isOpen` changes, and `click:overlay` when the mobile overlay behind the panel is clicked (just before it closes):
+
+```svelte
+<SideNav
+  bind:isOpen
+  on:open={() => console.log("opened")}
+  on:close={() => console.log("closed")}
+  on:click:overlay={() => console.log("overlay clicked")}
+>
+  <SideNavItems>...</SideNavItems>
+</SideNav>
+```
+
+### Scroll gradient
+
+When the side nav's content overflows, wrap `SideNavItems` in [ScrollGradient](/components/ScrollGradient) to fade its top and bottom edges as a scroll affordance, hiding each edge's gradient once it's scrolled into view. The side nav's background uses the `background` token rather than `layer`, so pass `color="background"` to match it — otherwise `ScrollGradient` fades to the wrong color.
+
+```svelte
+<SideNav fixed isOpen>
+  <ScrollGradient color="background">
+    <SideNavItems>
+      <SideNavLink href="/dashboard" text="Dashboard" isSelected />
+      <SideNavLink href="/resources" text="Resource list" />
+      <SideNavLink href="/activity" text="Activity tracker" />
+    </SideNavItems>
+  </ScrollGradient>
+</SideNav>
+```
+
+<FileSource src="/framed/UIShell/HeaderNavScrollGradient" />
+
+## Switcher
+
+A `HeaderAction` reveals a panel from the right edge.
+
+### App switcher
+
+The panel does not animate by default. Enable a slide transition by passing [transition:slide params](https://svelte.dev/docs#slide) to `transition`, for example `{ duration: 200 }`, to customize duration, delay, and easing.
+
+<FileSource src="/framed/UIShell/HeaderSwitcher" />
+
+### Multiple switchers
+
+You can mount multiple switchers and customize each button. For example, add a tooltip with `iconDescription`. Press <DocKbd label="Escape" /> to hide the tooltip without moving the pointer or focus. While the action has focus and its panel is open, the same press also closes the panel. When the panel closes with focus inside it, focus returns to the action without showing the tooltip. Only one panel stays open at a time: opening a panel closes any other open `HeaderAction`, `ProfileMenu`, or `HeaderSwitcher`.
+
+Control tooltip alignment with `tooltipAlignment`. Providing button text overrides the tooltip.
+
+<FileSource src="/framed/UIShell/HeaderMultipleSwitcher" />
+
+### Panel composition
+
+Compose the panel content from `HeaderPanelLinks` and `HeaderPanelLink`, as shown in both examples above. `HeaderPanelLinks` renders the list wrapper and `HeaderPanelLink` renders each item. Group related links under a heading with `HeaderPanelGroup`, and separate groups that have no heading with a plain `HeaderPanelDivider`. The same components compose the notification and help panels in the multiple-switchers example — panel composition is not specific to the app switcher icon.
+
+| Component | Use it for |
+| :-------- | :--------- |
+| `HeaderPanelGroup` | A labelled group of links. Screen readers announce the group by its label. |
+| `HeaderPanelDivider` | A plain rule between links. A label passed to it is visual only, so prefer `HeaderPanelGroup` for labelled groups. |
+
+Set `isSelected` on `HeaderPanelLink` to mark the current selection — see "Cloud console" in the app switcher example above. It adds `aria-current="page"` and a persistent highlight style, the same pattern used by `isSelected` on `HeaderNavItem`, `SideNavLink`, and `SideNavMenuItem`.
+
+### Panel groups
+
+`HeaderPanelGroup` wraps its links in a nested list named by `label`, so a screen reader announces "Resources, list, 2 items" instead of reading the label as another list item. The visible label and rule are hidden from assistive technology to avoid announcing the label twice. It looks the same as a `HeaderPanelDivider` followed by links. Use the `labelChildren` slot for custom label content.
+
+```svelte
+<HeaderPanelLinks>
+  <HeaderPanelGroup label="Resources">
+    <HeaderPanelLink href="/docs">Documentation</HeaderPanelLink>
+    <HeaderPanelLink href="/status">Status page</HeaderPanelLink>
+  </HeaderPanelGroup>
+</HeaderPanelLinks>
+```
+
+### Panel items
+
+`HeaderPanelLink` renders an anchor when `href` is set. Omit `href` for an action that does not navigate, such as switching a theme; it renders a `<button>` that is reachable with Tab and styled like the link. Set `text` instead of the default slot for a plain label, and `icon` (or the `icon` slot) to render an icon after it. Long labels wrap onto more lines while the icon keeps its size.
+
+Within a `HeaderPanelLinks` list, ArrowUp and ArrowDown move focus between links, including across groups, and wrap at the ends. Home and End jump to the first and last link.
+
+Activating a link closes the panel and dispatches `close` with `trigger: "select"`. Call `event.preventDefault()` in the link's `click` handler to keep the panel open. Focus returns to the panel button only if it would otherwise be lost.
+
+<FileSource src="/framed/UIShell/HeaderPanelItems" />
+
+### Events
+
+`HeaderAction` dispatches `open` and `close` as the panel toggles, with `event.detail.trigger` set to `"toggle"`, `"outside-click"`, `"escape-key"`, or `"select"`. Set `preventCloseOnClickOutside` to keep the panel open when the user clicks elsewhere on the page — useful when the panel hosts its own dismiss controls.
+
+```svelte
+<HeaderAction
+  bind:isOpen
+  preventCloseOnClickOutside
+  on:open={(event) => console.log(event.detail.trigger)}
+  on:close={(event) => console.log(event.detail.trigger)}
+>
+  <HeaderPanelLinks>...</HeaderPanelLinks>
+</HeaderAction>
+```
+
+## Search
+
+A `HeaderSearch` adds global search to the header, with customizable result rendering.
+
+### Global search
+
+Add a global search component to the header.
+
+<FileSource src="/framed/UIShell/HeaderSearch" />
+
+### Keyboard shortcut
+
+Set `shortcut` to open the search from anywhere on the page, such as `"mod+k"` (<DocKbd shortcut="mod+k" /> on your platform). While closed, the search shows the keys beside its icon, or the icon alone on small screens, and announces them with `aria-keyshortcuts`. The global search above uses `mod+k`. To do something else, such as opening a command palette, handle `on:shortcut` and call `preventDefault()`.
+
+### Custom results
+
+Override the default slot to customize each result. The slot exposes `let:result`, `let:index`, and `let:selected` for the highlighted row.
+
+<FileSource src="/framed/UIShell/HeaderSearchSlot" />
+
+### Customization
+
+Set `icon` to render a different trigger icon. Use `placeholder`, `labelText`, and `closeButtonLabelText` to localize the input placeholder, the assistive field label, and the clear button label.
+
+<FileSource src="/framed/UIShell/HeaderSearchCustom" />
+
+### Menu slot
+
+Use the `menu` slot to render [SearchMenu](/components/SearchMenu) items in the header. Compose `SearchMenuGroup` and `SearchMenuItem` for grouped, fuzzy-highlighted results with icons, persistent footer actions, and a `loading` skeleton state.
+
+When the `menu` slot is present, it replaces the `results` prop. Keyboard navigation uses `role="option"`. Press <DocKbd label="Enter" /> with no selection to dispatch `submit`. Use the `noResults` slot when nothing matches. The `results` prop still works if you do not use `menu`.
+
+Set `size` to `"sm"` (default), `"lg"`, or `"xl"` to control row density. Result text stays flush with the header input at every size. Pass `icon` or `iconRight` to each `SearchMenuItem`, or use the default slot with `let:segments` to highlight the query in secondary text like a description.
+
+<FileSource src="/framed/UIShell/HeaderSearchMenu" />
+
+### Select on focus
+
+Set `selectTextOnFocus` to select the full value when the search bar receives focus.
+
+```svelte
+<HeaderSearch selectTextOnFocus bind:value />
+```
+
+### Debounce
+
+Set `debounce` to delay a `search` event until typing pauses, in milliseconds — useful for fetching results (`results` or the `menu` slot) without a request per keystroke. `value` stays immediate; only `search` waits. The default `debounce` of `0` never dispatches `search`.
+
+Selecting a result or submitting with <DocKbd label="Enter" /> cancels a pending `search` rather than also firing it. Clearing the field is always instant and also cancels a pending `search` — with the clear icon, or with <DocKbd label="Escape" /> when it clears the value (pressing <DocKbd label="Escape" /> to close an open `menu` slot, like `SearchMenu`, leaves the value and any pending `search` untouched).
+
+### Events
+
+`HeaderSearch` dispatches `active` and `inactive` as the search bar opens and closes, `clear` when the clear ("x") button is clicked, `select` when a result is chosen (from `results` or the `menu` slot), `submit` with the value when <DocKbd label="Enter" /> is pressed with no result selected, and `search` after the `debounce` pause (see [Debounce](#debounce)).
+
+It also dispatches `close` — with `event.detail.trigger` set to `"escape-key"`, `"outside-click"`, `"blur"` (<DocKbd label="Tab" /> moved focus out of it), or `"select"` — whenever the search bar deactivates, whether the user dismissed it or selected a result:
+
+```svelte
+<HeaderSearch
+  bind:value
+  on:active={() => console.log("active")}
+  on:inactive={() => console.log("inactive")}
+  on:clear={() => console.log("cleared")}
+  on:select={(event) => console.log(event.detail)}
+  on:close={(event) => console.log(event.detail.trigger)}
+/>
+```
+
+## Utilities
+
+Add utilities to the header with header utilities. Compose [BadgeIndicator](/components/BadgeIndicator) in the badge slot on `HeaderGlobalAction`. Set `iconDescription` for screen readers.
+
+### Icon actions
+
+<FileSource src="/framed/UIShell/HeaderUtilities" />
+
+### Action links
+
+Use `HeaderActionLink` instead of `HeaderGlobalAction` when the utility is a plain link rather than a button that toggles a panel — for example, a link out to a GitHub repository. Set `icon`, `href`, and `target="_blank"` as needed; set `linkIsActive` to style it as active.
+
+<FileSource src="/framed/UIShell/HeaderActionLink" />
+
+## Profile menu
+
+Use `ProfileMenu` for an account menu in the header.
+
+### Fallback avatar
+
+When the `avatar` slot is empty, a default [UserAvatar](/components/UserAvatar) renders. The menu closes on outside click and <DocKbd label="Escape" />.
+
+<FileSource src="/framed/UIShell/ProfileMenuDefaultAvatar" />
+
+From the trigger, <DocKbd label="ArrowDown" />/<DocKbd label="ArrowUp" /> open the menu and move focus to the first or last `ProfileMenuItem`. Once inside, <DocKbd label="ArrowDown" />/<DocKbd label="ArrowUp" /> move between items (wrapping at either end), and <DocKbd label="Home" />/<DocKbd label="End" /> jump to the first or last item.
+
+### Composed menu
+
+Render the avatar with [UserAvatar](/components/UserAvatar) in the `avatar` slot, and compose the card from `ProfileMenuHeader`, `ProfileMenuList`, `ProfileMenuItem`, and `ProfileMenuDivider`.
+
+<FileSource src="/framed/UIShell/ProfileMenuSimple" />
+
+### With details
+
+Add `ProfileMenuDetail` for labelled values with a trailing action, and pass an image to the avatar.
+
+<FileSource src="/framed/UIShell/ProfileMenu" />
+
+### Events
+
+`ProfileMenu` dispatches `open` and `close` as the menu toggles, with `event.detail.trigger` set to `"toggle"`, `"outside-click"`, `"escape-key"`, or `"select"` (`close` only). Activating a `ProfileMenuItem` closes the menu and dispatches `close` with `trigger: "select"`. Call `event.preventDefault()` in the item's `click` handler to keep the menu open. Focus returns to the trigger only if it would otherwise be lost. Set `preventCloseOnClickOutside` to keep the menu open when the user clicks elsewhere on the page, and `transition` (for example `{ duration: 200 }`) to animate the menu open and closed — by default it does not animate.
+
+```svelte
+<ProfileMenu
+  bind:isOpen
+  preventCloseOnClickOutside
+  on:open={(event) => console.log("opened", event.detail.trigger)}
+  on:close={(event) => console.log("closed", event.detail.trigger)}
+>
+  <ProfileMenuList>...</ProfileMenuList>
+</ProfileMenu>
+```
+
+## Account switcher
+
+Use `HeaderSwitcher` in place of the header logo to let users switch between accounts or workspaces. The trigger shows the active account name; the chevron rotates to indicate the open state.
+
+_Prototype — pending review._
+
+<FileSource src="/framed/UIShell/HeaderSwitcherWorkspace" />
+
+Compose the dropdown from [`ProfileMenuList`](#profile-menu) and `ProfileMenuItem`, as shown above. Pass an `icon` to `ProfileMenuItem` to mark the active account, and use its `avatar` slot for a leading avatar. The label truncates with an ellipsis when the name overflows the menu width, as shown by the last item.
+
+The trigger's `text` truncates with an ellipsis past `maxWidth`, defaulting to `"10rem"`, so a long account name does not push the header wider. Set `maxWidth` to a different CSS length, or to `"none"` to let the trigger grow with the text instead.
+
+<DocKbd label="ArrowDown" /> and <DocKbd label="ArrowUp" /> from the trigger open the menu and move focus to the first or last item. Once inside, <DocKbd label="ArrowDown" />/<DocKbd label="ArrowUp" /> move between items (wrapping at either end), <DocKbd label="Home" />/<DocKbd label="End" /> jump to the first or last item, and <DocKbd label="Escape" /> closes the menu and returns focus to the trigger.
+
+### No avatar
+
+Neither `HeaderSwitcher` nor `ProfileMenuItem` renders a default avatar — the `avatar` slot is empty unless you provide one. Omit it on both for a text-only trigger and menu.
+
+<FileSource src="/framed/UIShell/HeaderSwitcherNoAvatar" />
+
+### Without a logo
+
+Omit `companyName` and `platformName` on `Header` to make `HeaderSwitcher` the only brand element.
+
+<FileSource src="/framed/UIShell/HeaderSwitcherNoLogo" />
+
+### Icon avatar
+
+Use the `avatar` slot to render a plain icon instead of a `UserAvatar`, for example a fixed brand icon rather than a per-account photo.
+
+<FileSource src="/framed/UIShell/HeaderSwitcherIconAvatar" />
+
+### Events
+
+`HeaderSwitcher` dispatches `open` and `close` as the menu toggles, with `event.detail.trigger` set to `"toggle"`, `"outside-click"`, `"escape-key"`, or `"select"` (`close` only). Activating a `ProfileMenuItem` closes the menu and dispatches `close` with `trigger: "select"`; call `event.preventDefault()` in the item's `click` handler to keep it open:
+
+```svelte
+<HeaderSwitcher
+  bind:isOpen
+  on:open={(event) => console.log(event.detail.trigger)}
+  on:close={(event) => console.log(event.detail.trigger)}
+>
+  <ProfileMenuList>...</ProfileMenuList>
+</HeaderSwitcher>
+```
+
+## Integrations
+
+The UI Shell coordinates body scroll locking and notifications with other components.
+
+### Modal
+
+Opening a modal while the mobile side nav overlay is also open keeps body scroll locked until both close. The lock is ref-counted across components.
+
+<FileSource src="/framed/UIShell/HeaderWithModal" />
+
+### Toast notification
+
+Integrate toasts with the UI Shell. This example triggers a toast, which appears in the top right corner, below the header.
+
+<FileSource src="/framed/UIShell/HeaderWithToast" />
+
+## Classic theme
+
+Before version 0.105.0, the UI Shell defaulted to a mixed theme: **Gray 100** header and **White** side navigation. Now it follows the active theme (`white`, `g10`, `g80`, `g90`, `g100`).
+
+Set `theme="classic"` on both the header and side nav for the classic look: **Gray 100** header and **White** side navigation, independent of the global theme. The classic theme requires **carbon-components-svelte/css/all.css** because it relies on CSS custom properties.
+
+```css
+import "carbon-components-svelte/css/all.css";
+```
+
+<FileSource src="/framed/UIShell/HeaderNavClassic" />

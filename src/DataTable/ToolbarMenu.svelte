@@ -1,23 +1,36 @@
 <script>
-  /** @extends {"../OverflowMenu/OverflowMenu.svelte"} OverflowMenuProps */
+  /** @extendProps {"../OverflowMenu/OverflowMenu.svelte"} OverflowMenuProps */
 
-  import { getContext } from "svelte";
-  import Settings16 from "../icons/Settings16.svelte";
-  import { OverflowMenu } from "../OverflowMenu";
+  import { getContext, onMount } from "svelte";
+  import OverflowMenu from "../OverflowMenu/OverflowMenu.svelte";
+  import Settings from "../icons/Settings.svelte";
 
-  const ctx = getContext("Toolbar");
+  const ctx = getContext("carbon:Toolbar") ?? {};
 
+  /** @type {null | HTMLUListElement} */
   let menuRef = null;
+  let prevVisible = false;
 
-  $: ctx.setOverflowVisible(menuRef != null);
-  $: if (menuRef) menuRef.style.top = "100%";
+  $: {
+    const visible = menuRef != null;
+    if (visible !== prevVisible) {
+      prevVisible = visible;
+      ctx.setOverflowVisible?.(visible);
+    }
+  }
+
+  onMount(() => () => {
+    if (prevVisible) ctx.setOverflowVisible?.(false);
+  });
 </script>
 
 <OverflowMenu
   bind:menuRef
-  icon="{Settings16}"
+  icon={Settings}
   {...$$restProps}
-  class="bx--toolbar-action bx--overflow-menu {$$restProps.class}"
+  class={["bx--toolbar-action", "bx--overflow-menu", $$restProps.class]
+    .filter(Boolean)
+    .join(" ")}
   flipped
 >
   <slot />

@@ -1,0 +1,183 @@
+import { render, screen, waitFor } from "@testing-library/svelte";
+import { user } from "../utils/user";
+import ToolbarSearchGenerics from "./ToolbarSearchGenerics.test.svelte";
+import { getFilteredIds } from "./helpers";
+
+describe("ToolbarSearch Generics", () => {
+  describe("String literal IDs with `as const`", () => {
+    it("should properly type filteredRowIds as string literal union", async () => {
+      render(ToolbarSearchGenerics);
+
+      const searchInputs = screen.getAllByRole("searchbox");
+      const firstSearchInput = searchInputs[0];
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds).toEqual(
+          expect.arrayContaining(["row-1", "row-2", "row-3"]),
+        );
+        expect(filteredIds.length).toBe(3);
+      });
+
+      await user.type(firstSearchInput, "Laptop");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds).toEqual(["row-1"]);
+        expect(filteredIds.length).toBe(1);
+      });
+
+      await user.clear(firstSearchInput);
+      await user.type(firstSearchInput, "Phone");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds).toEqual(["row-2"]);
+        expect(filteredIds.length).toBe(1);
+      });
+    });
+
+    it("should filter rows correctly with string literal IDs", async () => {
+      render(ToolbarSearchGenerics);
+
+      const searchInputs = screen.getAllByRole("searchbox");
+      const firstSearchInput = searchInputs[0];
+
+      await user.type(firstSearchInput, "999");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds).toEqual(["row-1"]);
+      });
+
+      await user.clear(firstSearchInput);
+      await user.type(firstSearchInput, "row");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds.length).toBe(3);
+        expect(filteredIds).toEqual(
+          expect.arrayContaining(["row-1", "row-2", "row-3"]),
+        );
+      });
+    });
+  });
+
+  describe("Numeric IDs", () => {
+    it("should properly type filteredRowIds as numeric literal union", async () => {
+      render(ToolbarSearchGenerics);
+
+      const searchInputs = screen.getAllByRole("searchbox");
+      const secondSearchInput = searchInputs[1];
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-2");
+        expect(filteredIds).toEqual(expect.arrayContaining([1, 2, 3]));
+        expect(filteredIds.length).toBe(3);
+      });
+
+      await user.type(secondSearchInput, "Item 1");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-2");
+        expect(filteredIds).toEqual([1]);
+        expect(filteredIds.length).toBe(1);
+      });
+
+      await user.clear(secondSearchInput);
+      await user.type(secondSearchInput, "Electronics");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-2");
+        expect(filteredIds).toEqual(expect.arrayContaining([1, 3]));
+        expect(filteredIds.length).toBe(2);
+      });
+    });
+  });
+
+  describe("Explicit generic with DataTableRow<string> and custom filter", () => {
+    it("should properly type filteredRowIds as string array", async () => {
+      render(ToolbarSearchGenerics);
+
+      const searchInputs = screen.getAllByRole("searchbox");
+      const thirdSearchInput = searchInputs[2];
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-3");
+        expect(filteredIds).toEqual(
+          expect.arrayContaining(["prod-1", "prod-2", "prod-3"]),
+        );
+        expect(filteredIds.length).toBe(3);
+      });
+
+      await user.type(thirdSearchInput, "Widget");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-3");
+        expect(filteredIds).toEqual(["prod-1"]);
+        expect(filteredIds.length).toBe(1);
+      });
+    });
+
+    it("should use custom filter function with correct row type", async () => {
+      render(ToolbarSearchGenerics);
+
+      const searchInputs = screen.getAllByRole("searchbox");
+      const thirdSearchInput = searchInputs[2];
+
+      // Custom filter should search by name and id
+      await user.type(thirdSearchInput, "prod-2");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-3");
+        expect(filteredIds).toEqual(["prod-2"]);
+      });
+
+      await user.clear(thirdSearchInput);
+      await user.type(thirdSearchInput, "Gadget");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-3");
+        expect(filteredIds).toEqual(["prod-2"]);
+      });
+
+      // Search by ID prefix
+      await user.clear(thirdSearchInput);
+      await user.type(thirdSearchInput, "prod");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-3");
+        expect(filteredIds.length).toBe(3);
+        expect(filteredIds).toEqual(
+          expect.arrayContaining(["prod-1", "prod-2", "prod-3"]),
+        );
+      });
+    });
+  });
+
+  describe("Empty search behavior", () => {
+    it("should clear filtered IDs when search is cleared", async () => {
+      render(ToolbarSearchGenerics);
+
+      const searchInputs = screen.getAllByRole("searchbox");
+      const firstSearchInput = searchInputs[0];
+
+      await user.type(firstSearchInput, "Laptop");
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds).toEqual(["row-1"]);
+      });
+
+      await user.clear(firstSearchInput);
+
+      await waitFor(() => {
+        const filteredIds = getFilteredIds("filtered-ids-1");
+        expect(filteredIds.length).toBe(3);
+        expect(filteredIds).toEqual(
+          expect.arrayContaining(["row-1", "row-2", "row-3"]),
+        );
+      });
+    });
+  });
+});

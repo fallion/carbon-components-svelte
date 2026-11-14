@@ -1,0 +1,312 @@
+<script>
+  /**
+   * @restProps {div}
+   * @template {string | number} [Value=string | number]
+   * @event {ReadonlyArray<Value>} change
+   */
+
+  /**
+   * Set the selected checkbox values.
+   * @type {ReadonlyArray<Value>}
+   * @bindable writable
+   */
+  export let selected = [];
+
+  /** Set to `true` to disable all checkboxes */
+  export let disabled = false;
+
+  /**
+   * Set to `true` to require at least one selection.
+   * @type {boolean | undefined}
+   */
+  export let required = undefined;
+
+  /**
+   * Specify a name attribute for the checkbox inputs.
+   * @type {string | undefined}
+   */
+  export let name = undefined;
+
+  /**
+   * Specify the id of a form element outside the component to associate
+   * the fieldset and checkbox inputs with. Overrides each checkbox's own `form`.
+   * @type {string | undefined}
+   */
+  export let form = undefined;
+
+  /**
+   * Specify the legend text.
+   * Alternatively, use the named slot "legendChildren".
+   * @example
+   * ```svelte
+   * <CheckboxGroup>
+   *   <span slot="legendChildren">Custom Legend</span>
+   *   <Checkbox value="a" labelText="Option A" />
+   *   <Checkbox value="b" labelText="Option B" />
+   * </CheckboxGroup>
+   * ```
+   */
+  export let legendText = "";
+
+  /** Set to `true` to visually hide the legend */
+  export let hideLegend = false;
+
+  /**
+   * Specify the orientation of the checkboxes.
+   * `"horizontal"` lays them out in a wrapping row, each sized to its label.
+   * @type {"vertical" | "horizontal"}
+   */
+  export let orientation = "vertical";
+
+  /** Specify the helper text */
+  export let helperText = "";
+
+  /** Set to `true` to indicate an invalid state */
+  export let invalid = false;
+
+  /** Specify the invalid state text */
+  export let invalidText = "";
+
+  /** Set to `true` to indicate a warning state */
+  export let warn = false;
+
+  /** Specify the warning state text */
+  export let warnText = "";
+
+  /** Set to `true` to use the read-only variant */
+  export let readonly = false;
+
+  /**
+   * Specify the assistive text announced to screen readers when read-only.
+   * Exposed because VoiceOver does not announce `aria-readonly`.
+   */
+  export let readonlyText = "Read-only";
+
+  /**
+   * Set an id for the container div element.
+   * @type {string | undefined}
+   */
+  export let id = undefined;
+
+  import { createEventDispatcher, onMount, setContext, tick } from "svelte";
+  import { readonly as readOnly, writable } from "svelte/store";
+  import Decorator from "../AILabel/Decorator.svelte";
+  import WarningAltFilled from "../icons/WarningAltFilled.svelte";
+  import WarningFilled from "../icons/WarningFilled.svelte";
+  import { splitAriaNaming } from "../utils/aria-naming.js";
+  import { sameArrayItems } from "../utils/array-set-ops.js";
+  import {
+    buildFieldIds,
+    joinDescribedBy,
+    resolveStatusDescribedBy,
+    resolveValidationVisibility,
+  } from "../utils/field-status.js";
+  import { fieldsetDisabled } from "../utils/fieldset-disabled.js";
+  import { uniqueId } from "../utils/unique-id.js";
+
+  // A disabled `<fieldset>` around the component disables it too.
+  let inDisabledFieldset = false;
+  $: effectiveDisabled = disabled || inDisabledFieldset;
+
+  const dispatch = createEventDispatcher();
+
+  // Naming and description belong on the fieldset, not the wrapper.
+  $: ({
+    ariaLabel,
+    ariaLabelledBy,
+    ariaDescribedBy,
+    rest: wrapperProps,
+  } = splitAriaNaming($$restProps));
+  /**
+   * @type {import("svelte/store").Writable<ReadonlyArray<Value>>}
+   */
+  const selectedValues = writable(selected);
+  /** @type {import("svelte/store").Writable<string | undefined>} */
+  const groupName = writable(name);
+  /** @type {import("svelte/store").Writable<string | undefined>} */
+  const groupForm = writable(form);
+  /** @type {import("svelte/store").Writable<boolean | undefined>} */
+  const groupRequired = writable(required);
+  const groupReadonly = writable(readonly);
+  const groupDisabled = writable(disabled);
+  const groupInvalid = writable(invalid);
+  const groupWarn = writable(warn);
+  let initialRender = true;
+  // Suppresses the store's own "change" dispatch (below) while a form reset
+  // rewrites `selectedValues`: a reset fires no events, like the other form
+  // controls.
+  let resettingFromForm = false;
+
+  /**
+   * @type {(value: Value, checked: boolean, fromReset?: boolean) => void}
+   */
+  function update(value, checked, fromReset = false) {
+    resettingFromForm = fromReset;
+    selectedValues.update((prev) => {
+      if (checked) {
+        return prev.includes(value) ? prev : [...prev, value];
+      }
+      return prev.filter((v) => v !== value);
+    });
+    resettingFromForm = false;
+  }
+
+  setContext("carbon:CheckboxGroup", {
+    selectedValues,
+    groupName: readOnly(groupName),
+    groupForm: readOnly(groupForm),
+    groupRequired: readOnly(groupRequired),
+    readonly: readOnly(groupReadonly),
+    disabled: readOnly(groupDisabled),
+    invalid: readOnly(groupInvalid),
+    warn: readOnly(groupWarn),
+    update,
+  });
+
+  // A copy of the values the store last held. `selected` mutated in place
+  // (`selected.push(value); selected = selected`) is the store's own array,
+  // so only its contents tell the change apart from the store's echo below.
+  let syncedValues = [...selected];
+
+  /**
+   * @param {ReadonlyArray<Value>} next
+   * @param {boolean} isReadonly
+   */
+  function syncSelected(next, isReadonly) {
+    if (isReadonly) return;
+    if (next === $selectedValues && sameArrayItems(next, syncedValues)) return;
+    $selectedValues = next;
+  }
+
+  $: syncSelected(selected, readonly);
+
+  const unsubscribe = selectedValues.subscribe((value) => {
+    selected = value;
+    syncedValues = [...value];
+    if (!initialRender && !resettingFromForm) {
+      dispatch("change", value);
+    }
+  });
+
+  onMount(() => {
+    tick().then(() => {
+      initialRender = false;
+    });
+    return unsubscribe;
+  });
+
+  $: $groupName = name;
+  $: $groupForm = form;
+  $: $groupRequired = required;
+  $: $groupReadonly = readonly;
+  $: $groupDisabled = effectiveDisabled;
+  $: $groupInvalid = invalid;
+  $: $groupWarn = warn;
+  $: ({ showInvalid, showWarn } = resolveValidationVisibility({
+    invalid,
+    warn,
+    disabled: effectiveDisabled,
+    readonly,
+  }));
+
+  const fallbackHelperId = uniqueId();
+  const fallbackErrorId = uniqueId();
+  const fallbackWarnId = uniqueId();
+  const fallbackReadonlyId = uniqueId();
+  $: ({ helperId, errorId, warnId, readonlyId } = buildFieldIds(id, {
+    helperId: fallbackHelperId,
+    errorId: fallbackErrorId,
+    warnId: fallbackWarnId,
+    readonlyId: fallbackReadonlyId,
+  }));
+
+  /** @type {import("svelte/store").Writable<undefined | "active" | "revert">} */
+  const aiLabelState = writable(undefined);
+</script>
+
+<div
+  use:fieldsetDisabled={(value) => (inDisabledFieldset = value)}
+  {id}
+  class:bx--form-item={true}
+  {...wrapperProps}
+  on:click
+  on:mouseover
+  on:mouseenter
+  on:mouseleave
+>
+  <fieldset
+    {form}
+    class:bx--checkbox-group={true}
+    class:bx--checkbox-group--horizontal={orientation === "horizontal"}
+    class:bx--checkbox-group--readonly={readonly}
+    class:bx--checkbox-group--invalid={showInvalid}
+    class:bx--checkbox-group--warning={showWarn}
+    class:bx--checkbox-group--decorator={$$slots.decorator}
+    disabled={effectiveDisabled}
+    data-invalid={showInvalid || undefined}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledBy}
+    aria-describedby={joinDescribedBy(
+      readonly ? readonlyId : null,
+      resolveStatusDescribedBy({
+        showInvalid,
+        showWarn,
+        invalidText,
+        warnText,
+        helperText,
+        errorId,
+        warnId,
+        helperId,
+      }),
+      ariaDescribedBy,
+    )}
+  >
+    {#if legendText || $$slots.legendChildren}
+      <legend class:bx--label={true} class:bx--visually-hidden={hideLegend}>
+        <slot name="legendChildren">{legendText}</slot>
+      </legend>
+    {/if}
+    {#if $$slots.decorator}
+      <Decorator
+        class="bx--checkbox-group-inner--decorator"
+        state={aiLabelState}
+        labelVariant="default"
+        labelAlign="start"
+      >
+        <slot name="decorator" />
+      </Decorator>
+    {/if}
+    <slot />
+    <div class:bx--checkbox-group__validation-msg={true}>
+      {#if showInvalid}
+        <WarningFilled class="bx--checkbox__invalid-icon" />
+        {#if invalidText}
+          <div id={errorId} class:bx--form-requirement={true} role="alert">
+            {invalidText}
+          </div>
+        {/if}
+      {:else if showWarn}
+        <WarningAltFilled
+          class="bx--checkbox__invalid-icon bx--checkbox__invalid-icon--warning"
+        />
+        {#if warnText}
+          <div id={warnId} class:bx--form-requirement={true}>{warnText}</div>
+        {/if}
+      {/if}
+    </div>
+    {#if readonly}
+      <span id={readonlyId} class:bx--visually-hidden={true}
+        >{readonlyText}</span
+      >
+    {/if}
+  </fieldset>
+  {#if helperText && !showInvalid && !showWarn}
+    <div
+      id={helperId}
+      class:bx--form__helper-text={true}
+      class:bx--form__helper-text--disabled={effectiveDisabled}
+    >
+      {helperText}
+    </div>
+  {/if}
+</div>

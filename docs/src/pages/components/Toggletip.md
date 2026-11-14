@@ -1,0 +1,150 @@
+---
+components: ["Toggletip", "ToggletipFooter"]
+description: Toggletips display contextual content in a popover that is toggled open and closed by clicking the trigger button.
+---
+
+<script>
+  import { Toggletip, ToggletipFooter, Box, Button, Link, Stack } from "carbon-components-svelte";
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+</script>
+
+## Basic
+
+Unlike a tooltip, a toggletip opens and closes on click. Click the button to toggle the content. Press <DocKbd label="Escape" /> or click outside to close it.
+
+<Toggletip>
+  API keys are limited to 1,000 requests per minute. Requests beyond this
+  limit return an HTTP 429 status until the next window.
+</Toggletip>
+
+## Reactive example
+
+Control the toggletip state programmatically by binding to `open`.
+
+<FileSource src="/framed/Toggletip/ToggletipReactive" />
+
+## Custom labels
+
+Customize the toggletip's visible label and the button's accessible name.
+
+### Label prop
+
+Render an inline label beside the button using the `labelText` prop.
+
+<Toggletip labelText="Density">
+  Controls the row height and spacing across tables in this workspace.
+</Toggletip>
+
+### Label slot
+
+Alternatively, use the `labelChildren` slot for custom markup.
+
+<Toggletip>
+  <strong slot="labelChildren">Density</strong>
+  Controls the row height and spacing across tables in this workspace.
+</Toggletip>
+
+### Accessible label
+
+Set the button's ARIA label with `iconDescription`. It defaults to `"Show information"`.
+
+<Toggletip iconDescription="Density settings">
+  Controls the row height and spacing across tables in this workspace.
+</Toggletip>
+
+## Actions
+
+Use `ToggletipFooter` to render one or two actions at the base of the content.
+
+<Toggletip>
+  Your billing cycle renews on the 1st of each month. Usage-based charges
+  are calculated at the end of the cycle.
+  <ToggletipFooter>
+    <Link href="#">View invoices</Link>
+    <Button size="small">Manage billing</Button>
+  </ToggletipFooter>
+</Toggletip>
+
+## Custom icon
+
+### Component
+
+Pass an icon component to the `icon` prop.
+
+<Toggletip icon={Add} iconDescription="Add environment variable">
+  Environment variables are encrypted at rest and injected into your build
+  at deploy time.
+</Toggletip>
+
+### Slot
+
+Alternatively, use the `"icon"` slot.
+
+<Toggletip iconDescription="Add environment variable">
+  <Add slot="icon" />
+  Environment variables are encrypted at rest and injected into your build
+  at deploy time.
+</Toggletip>
+
+## Placement
+
+Position the content with `direction` (`"top"`, `"right"`, `"bottom"`, `"left"`) and `align` (`"start"`, `"center"`, `"end"`). The defaults are `direction="bottom"` and `align="center"`.
+
+### Directions
+
+<Stack orientation="horizontal" gap={10}>
+  <Toggletip direction="top">top</Toggletip>
+  <Toggletip direction="right">right</Toggletip>
+  <Toggletip direction="bottom">bottom</Toggletip>
+  <Toggletip direction="left">left</Toggletip>
+</Stack>
+
+### Alignment
+
+With `align` set to `"start"` or `"end"`, the caret points at the button's center whatever its size. If the content would run past its container, such as a table's scroll area, it opens toward the other side. Above and below the button, `start` and `end` swap sides in RTL. See [LayoutDirection](/components/LayoutDirection#tooltips-and-popovers).
+
+<Stack orientation="horizontal" gap={10}>
+  <Toggletip direction="bottom" align="start">start</Toggletip>
+  <Toggletip direction="bottom" align="center">center</Toggletip>
+  <Toggletip direction="bottom" align="end">end</Toggletip>
+</Stack>
+
+## Portal
+
+Content that a container would cut off, such as a box with `overflow: hidden` or a scroll area, opens in a portal. Inside a Modal, the content always opens in a portal.
+
+Set `portalTooltip` to `true` to always render the content in a portal, or to `false` to keep it in place. Portalled content leaves its container in the DOM, so CSS that targets it as a descendant of the container does not match it.
+
+<Box padding={5} border="subtle" maxWidth="8rem" overflow="hidden">
+  <Toggletip portalTooltip>
+    Deleting this workspace also removes its API keys, webhooks, and audit
+    logs.
+  </Toggletip>
+</Box>
+
+### Directions
+
+Portalled content supports every `direction`. The portal flips to the opposite side when there is not enough space.
+
+<Stack orientation="horizontal" gap={10}>
+  <Toggletip portalTooltip direction="top">top</Toggletip>
+  <Toggletip portalTooltip direction="right">right</Toggletip>
+  <Toggletip portalTooltip direction="bottom">bottom</Toggletip>
+  <Toggletip portalTooltip direction="left">left</Toggletip>
+</Stack>
+
+### Alignment
+
+Portalled content supports every `align` value.
+
+<Stack orientation="horizontal" gap={10}>
+  <Toggletip portalTooltip direction="bottom" align="start">start</Toggletip>
+  <Toggletip portalTooltip direction="bottom" align="center">center</Toggletip>
+  <Toggletip portalTooltip direction="bottom" align="end">end</Toggletip>
+</Stack>
+
+## Inside a modal
+
+When a toggletip is used inside a [Modal](/components/Modal), the content is portalled by default so it is not clipped by the modal overflow or z-index stacking. Set `portalTooltip` to override this behavior.
+
+<FileSource src="/framed/Toggletip/ToggletipModal" />

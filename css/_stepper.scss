@@ -1,0 +1,42 @@
+@import "carbon-components/scss/globals/scss/vars";
+@import "carbon-components/scss/globals/scss/helper-mixins";
+@import "carbon-components/scss/globals/scss/vendor/@carbon/elements/scss/import-once/import-once";
+
+/// Stepper: progress, the current step's content, then Back and Continue.
+/// @access private
+/// @group components
+@mixin stepper {
+  .#{$prefix}--stepper {
+    display: flex;
+    flex-direction: column;
+    gap: $carbon--spacing-06;
+  }
+
+  // Each step is at least 7rem wide, so a few steps are wider than a phone.
+  // The rail scrolls instead of widening the page.
+  .#{$prefix}--stepper > .#{$prefix}--progress {
+    overflow-x: auto;
+  }
+
+  // Focus lands here on each step change so reading starts at the step;
+  // the panel itself isn't a control, so it draws no ring.
+  .#{$prefix}--stepper__panel:focus {
+    outline: none;
+  }
+
+  .#{$prefix}--stepper__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: $carbon--spacing-03;
+  }
+
+  // Back and Continue point to the inline start and end.
+  .#{$prefix}--stepper__actions .#{$prefix}--btn__icon {
+    @include ccs-mirror-rtl;
+  }
+}
+
+@include exports("stepper") {
+  @include stepper;
+}

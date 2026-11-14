@@ -1,0 +1,230 @@
+import { render, screen } from "@testing-library/svelte";
+import type RecursiveListComponent from "carbon-components-svelte/RecursiveList/RecursiveList.svelte";
+import type { RecursiveListNode } from "carbon-components-svelte/RecursiveList/RecursiveList.svelte";
+import RecursiveList from "carbon-components-svelte/RecursiveList/RecursiveList.svelte";
+import type { ComponentProps } from "svelte";
+import RecursiveListHierarchyTest from "./RecursiveList.hierarchy.test.svelte";
+import RecursiveListIdTest from "./RecursiveList.id.test.svelte";
+import RecursiveListTest from "./RecursiveList.test.svelte";
+
+describe("RecursiveList", () => {
+  it("renders all top-level items", () => {
+    render(RecursiveListTest);
+
+    expect(screen.getByText("Item 1")).toBeInTheDocument();
+    expect(screen.getByText("Item 2")).toBeInTheDocument();
+    expect(screen.getByText("Item 3")).toBeInTheDocument();
+
+    expect(screen.getAllByRole("list")).toHaveLength(4);
+
+    expect(screen.getByText("Item 1a")).toBeInTheDocument();
+  });
+
+  it("renders HTML content", () => {
+    render(RecursiveListTest);
+
+    const htmlContent = screen.getByText("HTML content");
+    expect(htmlContent.tagName).toBe("H5");
+  });
+
+  it("renders links correctly", () => {
+    render(RecursiveListTest);
+
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(4);
+
+    const customLink = screen.getByText("Link with custom text");
+    expect(customLink).toHaveAttribute("href", "https://svelte.dev/");
+
+    const plainLink = links.find(
+      (link) => link.textContent?.trim() === "https://svelte.dev/",
+    );
+    expect(plainLink).toHaveAttribute("href", "https://svelte.dev/");
+  });
+
+  it("renders link target and computes rel for `_blank`", () => {
+    render(RecursiveListTest);
+
+    const externalLink = screen.getByText("External link");
+    expect(externalLink).toHaveAttribute("target", "_blank");
+    expect(externalLink).toHaveAttribute("rel", "noopener noreferrer");
+
+    const externalLinkCustomRel = screen.getByText(
+      "External link with custom rel",
+    );
+    expect(externalLinkCustomRel).toHaveAttribute("target", "_blank");
+    expect(externalLinkCustomRel).toHaveAttribute("rel", "noopener");
+  });
+});
+
+describe("RecursiveList hierarchy", () => {
+  it("renders the same nested lists as the literal fixture", () => {
+    render(RecursiveListHierarchyTest);
+
+    expect(screen.getByText("Item 1a")).toBeInTheDocument();
+    expect(screen.getAllByRole("list")).toHaveLength(4);
+  });
+});
+
+describe("RecursiveList id field", () => {
+  it("renders nodes that supply an id (string or number)", () => {
+    render(RecursiveListIdTest);
+
+    expect(screen.getByText("Item A")).toBeInTheDocument();
+    expect(screen.getByText("Item B")).toBeInTheDocument();
+    expect(screen.getByText("Item C")).toBeInTheDocument();
+    expect(screen.getByText("Item C1")).toBeInTheDocument();
+  });
+
+  it.each([
+    [[{ id: 1, text: "a" }, { text: "b" }]],
+    [[{ text: "a" }, { id: 0, text: "b" }]],
+  ])("renders nodes that mix id and no id", (nodes) => {
+    render(RecursiveList, { nodes });
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+
+  it("keeps node fields off the nested list element", () => {
+    render(RecursiveListIdTest);
+
+    const nested = screen.getAllByRole("list")[1];
+    expect(nested).not.toHaveAttribute("id");
+    expect(nested).not.toHaveAttribute("text");
+  });
+});
+
+describe("RecursiveList props", () => {
+  const nodes = [
+    { text: "Item 1", nodes: [{ text: "Item 1a" }] },
+    { text: "Item 2" },
+  ];
+
+  it("applies expressive class to the top-level list and nested lists", () => {
+    render(RecursiveList, { nodes, expressive: true });
+
+    const lists = screen.getAllByRole("list");
+    expect(lists.length).toBeGreaterThan(1);
+    for (const list of lists) {
+      expect(list).toHaveClass("bx--list--expressive");
+    }
+  });
+
+  it("renders only descendant lists as nested and applies no expressive class by default", () => {
+    render(RecursiveList, { nodes });
+
+    const lists = screen.getAllByRole("list");
+    expect(lists).toHaveLength(2);
+    expect(lists[1]).toHaveClass("bx--list--nested");
+    expect(lists[0]).not.toHaveClass("bx--list--nested");
+    expect(lists[0]).not.toHaveClass("bx--list--expressive");
+  });
+
+  it("does not set a `native` attribute on unordered lists", () => {
+    render(RecursiveList, { nodes });
+
+    for (const list of screen.getAllByRole("list")) {
+      expect(list).not.toHaveAttribute("native");
+    }
+  });
+
+  it.each([
+    ["unordered", "UL", "bx--list--unordered"],
+    ["ordered", "OL", "bx--list--ordered"],
+    ["ordered-native", "OL", "bx--list--ordered--native"],
+  ] as const)(
+    "renders `type` %s as %s with %s at every depth",
+    (type, tagName, className) => {
+      const { container } = render(RecursiveList, { nodes, type });
+
+      const lists = container.querySelectorAll("ul, ol");
+      expect(lists).toHaveLength(2);
+      for (const list of lists) {
+        expect(list.tagName).toBe(tagName);
+        expect(list).toHaveClass(className);
+      }
+    },
+  );
+
+  it("renders `text` instead of `html` when a node has both", () => {
+    const { container } = render(RecursiveList, {
+      nodes: [{ text: "Plain", html: "<strong>Bold</strong>" }],
+    });
+
+    expect(screen.getByText("Plain")).toBeInTheDocument();
+    expect(container.querySelector("strong")).toBeNull();
+  });
+
+  it("keeps the same element for a keyed node when nodes are reordered", async () => {
+    const a = { id: "a", text: "Item A" };
+    const b = { id: "b", text: "Item B" };
+    const { rerender } = render(RecursiveList, { nodes: [a, b] });
+    const itemA = screen.getByText("Item A");
+
+    await rerender({ nodes: [b, a] });
+
+    expect(screen.getByText("Item A")).toBe(itemA);
+    expect(screen.getAllByRole("listitem")[1]).toBe(itemA);
+  });
+
+  it("does not render a nested list for empty `nodes`", () => {
+    render(RecursiveList, { nodes: [{ text: "Item 1", nodes: [] }] });
+
+    expect(screen.getAllByRole("list")).toHaveLength(1);
+  });
+
+  it("renders the top-level list as nested when `nested` is set", () => {
+    render(RecursiveList, { nodes, nested: true });
+
+    const [topLevel] = screen.getAllByRole("list");
+    expect(topLevel).toHaveClass("bx--list--nested");
+  });
+});
+
+describe("RecursiveList Generics", () => {
+  it("should accept an optional id field on RecursiveListNode", () => {
+    const withStringId: RecursiveListNode = { id: "a", text: "Item" };
+    const withNumberId: RecursiveListNode = { id: 1, text: "Item" };
+    const withoutId: RecursiveListNode = { text: "Item" };
+
+    expectTypeOf(withStringId.id).toEqualTypeOf<string | number | undefined>();
+    expectTypeOf(withNumberId.id).toEqualTypeOf<string | number | undefined>();
+    expectTypeOf(withoutId.id).toEqualTypeOf<string | number | undefined>();
+  });
+
+  it("should enforce RecursiveListNode constraint on generic type", () => {
+    type CustomNode = {
+      text?: string;
+      href?: string;
+      html?: string;
+      badge?: number;
+      nodes?: CustomNode[];
+    };
+
+    type ComponentType = RecursiveListComponent<CustomNode>;
+    type Props = ComponentProps<ComponentType>;
+
+    expectTypeOf<NonNullable<Props["nodes"]>>().toEqualTypeOf<
+      ReadonlyArray<CustomNode>
+    >();
+
+    type BaseComponentType = RecursiveListComponent<RecursiveListNode>;
+    type BaseProps = ComponentProps<BaseComponentType>;
+    expectTypeOf<NonNullable<BaseProps["nodes"]>>().toEqualTypeOf<
+      ReadonlyArray<RecursiveListNode>
+    >();
+  });
+
+  it("takes a tree whose nodes have different shapes", () => {
+    const tree = [
+      {
+        text: "Docs",
+        nodes: [{ text: "Guide", nodes: [{ html: "<b>New</b>" }] }],
+      },
+      { text: "Links", nodes: [{ href: "/a" }, { href: "/b", text: "B" }] },
+      { text: "Plain" },
+    ];
+    type Props = ComponentProps<RecursiveListComponent<(typeof tree)[number]>>;
+    expectTypeOf(tree).toExtend<NonNullable<Props["nodes"]>>();
+  });
+});

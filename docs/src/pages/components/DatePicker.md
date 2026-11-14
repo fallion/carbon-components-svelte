@@ -1,0 +1,737 @@
+---
+components: ["DatePicker", "DatePickerInput", "DatePickerSkeleton", "FluidDatePickerSkeleton"]
+description: Date pickers collect dates through simple typed fields, single calendars, or range calendars, with formatting, constraints, validation states, and fluid layouts.
+---
+
+<script>
+  import { AILabel, Box, DatePicker, DatePickerInput, DatePickerSkeleton, FluidDatePickerSkeleton, Layer, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Calendar types
+
+DatePicker supports eight `datePickerType` values: `"simple"` (default, no calendar), `"single"`, `"multiple"`, `"range"`, `"month"`, `"quarter"`, `"year"`, and `"week"`.
+
+### Simple
+
+The default `datePickerType` renders a text field without a dropdown calendar.
+
+<DatePicker>
+  <DatePickerInput labelText="Subscription renewal date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Single
+
+Set `datePickerType` to `"single"` for one date with a dropdown calendar. Use a single DatePickerInput; clicking the field or calendar icon opens the calendar to pick one day. Bind `value` to read or set the formatted date string.
+
+From the keyboard, <DocKbd label="Down" /> in the field moves focus into the calendar, the arrow keys move by day and week, <DocKbd label="PageUp" /> and <DocKbd label="PageDown" /> move by month (by year with <DocKbd label="Shift" />), and <DocKbd label="Home" /> and <DocKbd label="End" /> go to the start and end of the week. <DocKbd label="Enter" /> or <DocKbd label="Space" /> picks the focused day and closes the calendar. <DocKbd label="Escape" /> closes it and returns focus to the field. To type a date instead, enter it and press <DocKbd label="Enter" />.
+
+<FileSource src="/framed/DatePicker/DatePickerSingle" />
+
+### Multiple
+
+Set `datePickerType` to `"multiple"` to select several individual, non-contiguous dates from one calendar. Each click toggles that day; `value` holds the dates as a single string, joined with `", "`, formatted with the same `dateFormat` used by other calendar types. Shift-click a day to add the contiguous range between it and the last-clicked day to the selection; disabled dates within that range are skipped. From the keyboard, <DocKbd label="Enter" /> adds or removes the focused day and the calendar stays open for the next one.
+
+<FileSource src="/framed/DatePicker/DatePickerMultiple" />
+
+Selecting many dates never drops any of them from `value` or the `change` event's `selectedDates`; the field just visually truncates the joined string with an ellipsis once it no longer fits. Track `event.detail.selectedDates.length` (as in the example above) and surface it through `helperText` to show a count instead of relying on the truncated text.
+
+### Range
+
+Set `datePickerType` to `"range"` for a start and end date. Provide two DatePickerInput components in order—start, then end—and bind `valueFrom` and `valueTo`. Both fields share one calendar: the user selects a span, and the start and end inputs update together. From the keyboard, <DocKbd label="Enter" /> picks the start, then the end, and focus stays in the calendar between the two.
+
+<FileSource src="/framed/DatePicker/DatePickerRange" />
+
+### Month
+
+Set `datePickerType` to `"month"` to select a month instead of a day. The calendar shows a 12-month grid for the current year; use the year stepper to change years. Pair it with a `dateFormat` that omits the day, such as `"F Y"` (for example, "January 2026").
+
+<FileSource src="/framed/DatePicker/DatePickerMonth" />
+
+#### Custom format
+
+Pass a numeric `dateFormat`, such as `"Y-m"`, along with a matching `placeholder` for a compact "yyyy-mm" input.
+
+<FileSource src="/framed/DatePicker/DatePickerMonthCustomFormat" />
+
+### Quarter
+
+Set `datePickerType` to `"quarter"` to pick a quarter of a year. The value is the quarter's first day in `dateFormat`; the `Q` token prints the quarter number, so `"\\QQ Y"` shows "Q2 2026".
+
+<FileSource src="/framed/DatePicker/DatePickerQuarter" />
+
+### Year
+
+Set `datePickerType` to `"year"` to select a year instead of a day. The calendar shows a decade grid; use the prev/next controls to move between decades. Pair it with a year-only `dateFormat` such as `"Y"` (for example, "2026").
+
+<FileSource src="/framed/DatePicker/DatePickerYear" />
+
+### Week
+
+Set `datePickerType` to `"week"` to select a whole week. Picking any day selects the first day of its week, per the locale, so `value` is that date in `dateFormat`. Pair it with a `displayFormat` that uses the `W` token, such as `"\\W\\e\\e\\k W, Y"`, to show the week number; it is the ISO week of the days the row shows. A `value` set from outside is kept as given. Multiple months (`showMonths`) are not supported.
+
+<FileSource src="/framed/DatePicker/DatePickerWeek" />
+
+### Inline calendar
+
+Set `inline` to `true` to render the calendar permanently below the input instead of in a popup. The input still shows the selected date. The calendar does not dispatch `open` or `close`, ignores `portalMenu`, and stops accepting selection or navigation while the input is read-only or disabled.
+
+<FileSource src="/framed/DatePicker/DatePickerInline" />
+
+## Programmatic control
+
+Drive the calendar from outside the component—set values, select many dates at once, or read the underlying calendar instance.
+
+### Open and close
+
+Use `bind:open` to open or close the calendar from outside the component. It also updates when the user opens or dismisses the calendar. Opening through the prop dispatches `open`, and closing through it dispatches `close` with the `"programmatic"` trigger.
+
+<FileSource src="/framed/DatePicker/DatePickerOpen" />
+
+### Programmatic access
+
+For everything else, use `bind:calendar`: it has `open()`, `close()`, `showMonth(date)`, `focusDate(date)`, `isOpen`, `view` (the month on show), and `selectedDates`. Set dates through `bind:selectedDates` instead.
+
+<FileSource src="/framed/DatePicker/DatePickerCalendarInstance" />
+
+### Multiple
+
+Use `bind:calendar` to select or clear dates from outside the component with `calendar.setDate(dates, true)` and `calendar.clear(true)`. The example below selects 20 or 100 dates at once to exercise the field's truncation and rendering with a large selection.
+
+<FileSource src="/framed/DatePicker/DatePickerMultipleProgrammatic" />
+
+### Range
+
+Use `bind:valueFrom` and `bind:valueTo` to update the range from outside the component, such as preset buttons or filters.
+
+<FileSource src="/framed/DatePicker/DatePickerProgrammatic" />
+
+### Selected dates
+
+Use `bind:selectedDates` to read and set the selection as `Date` objects instead of strings in `dateFormat`. It stays in sync with `value` (or `valueFrom` and `valueTo`) both ways; setting it does not dispatch `change`. At mount, a non-empty `value` takes precedence. It is not supported by the `"simple"` type.
+
+<FileSource src="/framed/DatePicker/DatePickerSelectedDates" />
+
+### Range presets
+
+Build preset range buttons (for example "Last 7 days" or "This month") by setting `valueFrom` and `valueTo` from outside the component, the same way as the programmatic example above.
+
+<FileSource src="/framed/DatePicker/DatePickerRangePresets" />
+
+### Month
+
+Use `bind:value` to update the selected month from outside the component, such as a "previous month" button.
+
+<FileSource src="/framed/DatePicker/DatePickerMonthProgrammatic" />
+
+### Year
+
+Use `bind:value` to select a year from outside the component, or `bind:calendar` to move the displayed decade—such as jumping to the current year or paging forward—without changing the selection.
+
+<FileSource src="/framed/DatePicker/DatePickerYearProgrammatic" />
+
+## Date constraints
+
+Constrain which dates are selectable, for single, range, month, and year calendars.
+
+### Min and max dates
+
+Use `minDate` and `maxDate` to constrain selectable dates. Values may be a Date, or a string in the same format as `dateFormat`.
+
+<FileSource src="/framed/DatePicker/DatePickerMinMax" />
+
+### Disabled dates
+
+Set `disabledDates` to restrict which individual dates are selectable, in addition to or instead of `minDate`/`maxDate`. It accepts an array mixing date strings, `Date` objects, `{ from, to }` range objects, and predicate functions. Disabled days receive `aria-disabled` automatically.
+
+<FileSource src="/framed/DatePicker/DatePickerDisabledDates" />
+
+`disabledDates` is reactive: reassigning the array updates an open calendar, so most rule changes no longer need imperative control. Keep the array reference stable when the rules have not changed. A constant written in the markup is only evaluated once, but an array rebuilt in a `$:` statement, or built from an object that gets reassigned, is a new value each time. Equal dates and ranges are detected and skipped; a predicate function created inline is not, since functions can only be compared by identity, and each new one redraws the calendar. 
+
+### Enable only specific dates
+
+Set `enabledDates` for the inverse of [disabled dates](#disabled-dates): every date is disabled except those that match. It accepts the same entry types as `disabledDates`, and is reactive the same way.
+
+<FileSource src="/framed/DatePicker/DatePickerEnableDates" />
+
+### Range length
+
+Set `minRangeDays` and `maxRangeDays` on a range picker to limit how many days a range may span, counting both ends. Once the start is picked, days that would make the range too short or too long are disabled until the end is picked. Only picks in the calendar are limited; typed and programmatic ranges are not checked.
+
+<DatePicker datePickerType="range" minRangeDays={2} maxRangeDays={14}>
+  <DatePickerInput labelText="Check-in" placeholder="mm/dd/yyyy" />
+  <DatePickerInput labelText="Check-out" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Load availability for the shown month
+
+The `view` event fires when the calendar is created and whenever it moves to another month, with the first and last dates on show in `event.detail.start` and `event.detail.end`. Use it to fetch the dates to block for that range, and pass them to `disabledDates`.
+
+<FileSource src="/framed/DatePicker/DatePickerAvailability" />
+
+### Keep out-of-range initial values
+
+By default, an initial `value` outside of `minDate` and `maxDate` (or matching `disabledDates`) is cleared. Set `keepOutOfRangeValue` to keep it, for example to display legacy data that predates the current bounds.
+
+<FileSource src="/framed/DatePicker/DatePickerAllowInvalidPreload" />
+
+## Calendar options
+
+Every calendar option is a prop: `allowInput`, `closeOnSelect`, `months`, `conjunction`, `monthLabel`, `parseDate` and `formatDate`, `align`, `direction` and `anchor`, `keepOutOfRangeValue`, `keepOpenFor`, `dayDescription` and `dayClass`, `weekNumbers`, `firstDayOfWeek`, and `animate`. The example below shows two months side by side.
+
+### Multiple months
+
+The example below sets `months` so two months appear side by side in the calendar.
+
+<FileSource src="/framed/DatePicker/DatePickerFlatpickrProps" />
+
+### Day content
+
+Set `dayDescription` to annotate days, such as dates with events. Return a short description for a date, or `undefined`: the text is added to the day's label for screen readers, and the day gets a marker. Set `dayClass` to add your own class to a day instead.
+
+<FileSource src="/framed/DatePicker/DatePickerDayContent" />
+
+### Week numbers
+
+Set `weekNumbers` to show a week number column beside the day grid. Weeks are numbered per ISO 8601. The column is only shown with a single month.
+
+<FileSource src="/framed/DatePicker/DatePickerWeekNumbers" />
+
+### Abbreviated month label
+
+Set `monthLabel="short"` to show the abbreviated month name from the active `locale` in the calendar header, such as "Sep" instead of "September".
+
+<FileSource src="/framed/DatePicker/DatePickerShorthandMonth" />
+
+### Enable open animation
+
+By default, the calendar appears instantly with no animation. Set `animate` to animate the calendar as it opens and closes.
+
+<FileSource src="/framed/DatePicker/DatePickerEnableAnimation" />
+
+## Calendar interaction
+
+Control how users interact with the open calendar.
+
+### Calendar-only selection
+
+By default, Carbon enables `allowInput` so typed dates work like an editable field.
+
+Set `allowInput={false}` when you want calendar-only selection: the field still receives the chosen date and remains focusable for accessibility, but users cannot type into it; they must pick a date from the calendar. That reduces invalid or ambiguous typed values when you need strict control.
+
+<FileSource src="/framed/DatePicker/DatePickerAllowInput" />
+
+### Handle invalid dates
+
+By default, the calendar logs a warning and clears the field when it cannot parse a typed date. Listen for `on:error` to surface it in the UI instead. The `error` event fires before the following `change`, and that `change` has an empty `selectedDates`, so only clear the error once a `change` reports a real selection.
+
+<FileSource src="/framed/DatePicker/DatePickerErrorHandler" />
+
+### Keep open on select
+
+By default, the calendar closes when a date is selected. Set `closeOnSelect={false}` to keep it open.
+
+<FileSource src="/framed/DatePicker/DatePickerCloseOnSelect" />
+
+### Keep open for outside controls
+
+By default, clicking anywhere outside the calendar closes it. Pass the elements that should not dismiss it as `keepOpenFor`, such as a preset button that updates the open calendar through `bind:selectedDates`.
+
+<FileSource src="/framed/DatePicker/DatePickerIgnoredFocusElements" />
+
+### Position relative to another element
+
+When `portalMenu` is enabled, set `anchor` to position the calendar against an element other than the input, and `align` (`"start"`, `"center"`, `"end"`; `"start"` is the right edge in a right-to-left layout) and `direction` (`"auto"`, `"bottom"`, `"top"`) to place it. They have no effect while the calendar opens in place, where it is placed below the input by CSS.
+
+<FileSource src="/framed/DatePicker/DatePickerPositionElement" />
+
+## Defaults
+
+Preselect a date or starting month without controlling `value`.
+
+### Default date
+
+Set `selectedDates` to preselect dates as `Date` objects when `value` is empty; the formatted result is written back to `value`. A non-empty `value` takes precedence.
+
+<FileSource src="/framed/DatePicker/DatePickerDefaultDate" />
+
+### Initial month
+
+Set `initialMonth` to open the calendar on a specific month and year when there is no selection, such as a conference several months out. Unlike `defaultDate`, it never selects a date.
+
+<FileSource src="/framed/DatePicker/DatePickerInitialMonth" />
+
+## Formatting
+
+Customize the date format and locale.
+
+### Date format
+
+Use the `dateFormat` prop to customize the date format (default: `"m/d/Y"`). The input pattern attribute is automatically derived to match, ensuring native form validation works correctly.
+
+<FileSource src="/framed/DatePicker/DatePickerCustomFormat" />
+
+### Human-readable display format
+
+Set `displayFormat` to show a friendly date in the input while `value` and the submitted form field keep the machine format from `dateFormat`. It uses the same tokens as `dateFormat` and can change at any time. It is not supported with the range date picker type.
+
+<FileSource src="/framed/DatePicker/DatePickerAltInput" />
+
+### Custom parsing and formatting
+
+Set `formatDate` and `parseDate` when `dateFormat` tokens are not expressive enough, for example to format with `Intl.DateTimeFormat`. Always set both: the calendar re-parses the input text it wrote.
+
+<FileSource src="/framed/DatePicker/DatePickerParseFormat" />
+
+### Multiple date separator
+
+With `datePickerType="multiple"`, dates in `value` are joined with `", "` by default. Set `conjunction` to use a different separator; the same separator is used to parse typed input. It has no effect on other types.
+
+<FileSource src="/framed/DatePicker/DatePickerConjunction" />
+
+### Locale
+
+The `locale` prop accepts either a [BCP 47 language tag](https://en.wikipedia.org/wiki/IETF_language_tag) (for example `"de"` or `"ar-EG"`), or a partial locale object merged over the English defaults. A tag drives month and weekday names through `Intl`, and the first day of the week from the same [CLDR](https://cldr.unicode.org/) data. It defaults to `"en"`, which renders Carbon-spec single-letter weekday abbreviations (S, M, T, W, Th, F, S). Other tags use one-letter weekdays when those tell the days apart (日 月 火 for Japanese), and short names otherwise (So Mo Di for German).
+
+To customize the weekday labels (for example, to use `Sun, Mon, Tue, ...` shorthands), pass a locale object. It may set `weekdays`, `months`, `firstDayOfWeek`, `rangeSeparator`, `weekAbbreviation`, and `yearAriaLabel`. A flatpickr locale module, such as `German` from `flatpickr/dist/l10n/de`, has this shape and can be passed as is.
+
+The calendar's own labels are props: `calendarLabelText` names the calendar ("Choose a date"), and `previousLabelText` and `nextLabelText` name the arrows ("Previous month", "Next month"). Set them to translate the calendar for screen readers.
+
+<FileSource src="/framed/DatePicker/DatePickerLocale" />
+
+### First day of the week
+
+The week starts on the locale's first day: Sunday for `"en"`, Monday for `"de"`. Set `firstDayOfWeek` from 0 (Sunday) to 6 (Saturday) to start it elsewhere without changing the locale.
+
+<DatePicker datePickerType="single" firstDayOfWeek={1}>
+  <DatePickerInput labelText="Shift start" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Non-English locale
+
+Pass any language tag; no locale module needs to be imported. The example below uses German (`de`).
+
+<FileSource src="/framed/DatePicker/DatePickerNonEnglishLocale" />
+
+### Locale with year-first order
+
+For locales where `Intl.DateTimeFormat` orders the year before the month (for example Japanese), the calendar header automatically reorders to match—"2000年1月" instead of "January 2000".
+
+<FileSource src="/framed/DatePicker/DatePickerYearFirstLocale" />
+
+### Right-to-left
+
+In a right-to-left layout, the calendar runs from the right: the week starts at the right edge, and the previous month arrow sits on the right. <DocKbd label="ArrowLeft" /> moves to the next day and <DocKbd label="ArrowRight" /> to the previous one. The calendar icon, the clear button, and the invalid and warning icons sit at the field's left end. A right-to-left locale such as `"ar"` names the months and weekdays and starts the week on Saturday. See [LayoutDirection](/components/LayoutDirection).
+
+<FileSource src="/framed/DatePicker/DatePickerRightToLeft" />
+
+## Portal
+
+A calendar that a container would cut off, such as a box with `overflow: hidden`, a scroll area or a [DataTable](/components/DataTable), opens in a portal for that open. Inside a [Modal](/components/Modal), the calendar always opens in a portal.
+
+Set `portalMenu` to `true` to always render the calendar in a floating portal, which also escapes z-index stacking contexts, or to `false` to keep it in place. A portalled calendar leaves its container in the DOM, so CSS that targets the calendar as a descendant of the container does not match it.
+
+<FileSource src="/framed/DatePicker/DatePickerModal" />
+
+### Native dialog
+
+When the date picker is inside a [Dialog](/components/Dialog) opened as a modal, portalMenu mounts the calendar into that dialog so it appears above the modal backdrop. The calendar uses `position: fixed` with viewport coordinates.
+
+<FileSource src="/framed/DatePicker/DatePickerDialog" />
+
+### Native popover
+
+When the date picker is inside an open element with a [popover](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/popover) attribute (see the [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)), portalMenu mounts the calendar into that ancestor so it stays in the popover top layer.
+
+<FileSource src="/framed/DatePicker/DatePickerPopover" />
+
+## Events
+
+Listen for calendar interactions.
+
+### Change
+
+Listen for `on:change` to respond to value updates. For the `"simple"` date picker type (no calendar), `event.detail` is the input's string value. For calendar types (`"single"`, `"range"`, `"month"`, `"year"`), `event.detail` is an object with `selectedDates` (an array of `Date`) and `dateStr` (a string, or `{ from, to }` for `"range"`).
+
+<DatePicker datePickerType="single" on:change={(e) => console.log(e.detail)}>
+  <DatePickerInput labelText="Invoice due date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Close
+
+Listen for `on:close` to know when the calendar closes and why. This event is only dispatched for calendar types (not `"simple"`). `event.detail.trigger` is `"escape-key"`, `"outside-click"`, `"select"`, or `"programmatic"` (closed through `bind:open`); the detail also includes `selectedDates` and `dateStr`.
+
+<DatePicker datePickerType="single" on:close={(e) => console.log(e.detail.trigger)}>
+  <DatePickerInput labelText="Maintenance window date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Error
+
+Listen for `on:error` to catch a date the calendar could not parse. `event.detail.error` is an `Error` and `event.detail.value` is the raw text that failed to parse.
+
+<DatePicker datePickerType="single" on:error={(e) => console.log(e.detail.error.message)}>
+  <DatePickerInput labelText="Renewal date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+## Helper text
+
+Add helper text to provide additional context or formatting instructions.
+
+<DatePicker>
+  <DatePickerInput labelText="Contract start date" helperText="Example: 01/12/2026" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+## Select on focus
+
+Set `selectTextOnFocus` on `DatePickerInput` to select the full value when the field receives focus.
+
+<DatePicker value="01/12/2026">
+  <DatePickerInput selectTextOnFocus labelText="Contract start date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+## Clearable
+
+Set `clearable` to `true` on DatePicker to show a clear button while the field has a value. It takes the calendar icon's place, empties the date, dispatches `change` and then `clear`, and returns focus to the field. In a range picker, one button on the end input clears both dates. It is hidden while the input is read-only or disabled.
+
+<FileSource src="/framed/DatePicker/DatePickerClearable" />
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<DatePicker>
+  <DatePickerInput hideLabel labelText="Report date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+## AI label
+
+Put an `AILabel` in the `decorator` slot to mark the value as AI-generated. The field shows the AI gradient. See [AI label](/components/AILabel#fields) for the revert flow.
+
+<DatePicker datePickerType="single">
+  <DatePickerInput labelText="Renewal date" placeholder="mm/dd/yyyy">
+    <AILabel slot="decorator">
+      <p>Estimated from your current usage trend.</p>
+    </AILabel>
+  </DatePickerInput>
+</DatePicker>
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <DatePicker>
+      <DatePickerInput labelText="Onboarding date" placeholder="mm/dd/yyyy" />
+    </DatePicker>
+  </Box>
+</Layer>
+
+## Fluid
+
+Set `fluid` to `true` on DatePicker to use the fluid variant, which embeds the
+label inside the field. Fluid date pickers can be used standalone or inside
+[FluidForm](/components/FluidForm), where the fluid variant is applied
+automatically.
+
+Standalone fluid date pickers default to `288px` wide so the field matches the
+calendar menu. Inside a fluid form they stretch to `100%` of the column. Override
+the width with `style` or `class` when you need a different size (for example
+`style="width: 50%"`).
+
+<DatePicker fluid datePickerType="single">
+  <DatePickerInput labelText="Subscription renewal date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Simple
+
+The fluid variant also supports the default `"simple"` date picker type.
+
+<DatePicker fluid>
+  <DatePickerInput labelText="License expiration date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Range
+
+The range date picker renders both inputs inside a single fluid field.
+
+<DatePicker fluid datePickerType="range">
+  <DatePickerInput labelText="Report period start" placeholder="mm/dd/yyyy" />
+  <DatePickerInput labelText="Report period end" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Month
+
+The fluid variant also supports the `"month"` date picker type.
+
+<DatePicker fluid datePickerType="month" dateFormat="F Y">
+  <DatePickerInput labelText="Billing month" placeholder="Month Year" />
+</DatePicker>
+
+### Year
+
+The fluid variant also supports the `"year"` date picker type.
+
+<DatePicker fluid datePickerType="year" dateFormat="Y">
+  <DatePickerInput labelText="Fiscal year" placeholder="yyyy" />
+</DatePicker>
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a tooltip
+icon.
+
+<DatePicker fluid datePickerType="single">
+  <DatePickerInput placeholder="mm/dd/yyyy">
+    <svelte:fragment slot="labelChildren">
+      License expiration date
+      <TooltipIcon tooltipText="Use the format mm/dd/yyyy." icon={Information} />
+    </svelte:fragment>
+  </DatePickerInput>
+</DatePicker>
+
+### Invalid
+
+Fluid date pickers display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<DatePicker fluid datePickerType="single">
+  <DatePickerInput invalid invalidText="The provided date is not valid. Enter a date in the mm/dd/yyyy format that falls within the allowed range." labelText="License expiration date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Warning
+
+<DatePicker fluid datePickerType="single">
+  <DatePickerInput warn warnText="This date will not be stored" labelText="Invoice due date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Disabled
+
+Invalid and warning states are not displayed while the input is disabled.
+
+<DatePicker fluid datePickerType="single" value="01/15/2024">
+  <DatePickerInput disabled invalid invalidText="The provided date is not valid" labelText="Contract start date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Read-only
+
+Invalid and warning states are not displayed while the input is read-only.
+
+<DatePicker fluid datePickerType="single" value="03/01/2024">
+  <DatePickerInput readonly warn warnText="This date will not be stored" labelText="Onboarding date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Skeleton
+
+Display a loading skeleton for the fluid date picker variant. Set `range` to `true` to mimic the range variant.
+
+<FluidDatePickerSkeleton />
+
+### Skeleton (range)
+
+<FluidDatePickerSkeleton range />
+
+## Sizes
+
+Set `size` on DatePickerInput. The default is `md`.
+
+### Short
+
+Set `short` to `true` on DatePicker for a narrower field, sized for a short format such as month and year. A full date like `mm/dd/yyyy` doesn't fit and is cut off. It only changes the field width for the default `"simple"` date picker type.
+
+<DatePicker short dateFormat="m/y">
+  <DatePickerInput labelText="Card expiration" placeholder="mm/yy" />
+</DatePicker>
+
+### Full width
+
+Set `fullWidth` to `true` to fill the parent instead of the fixed field width, for example in a grid column or beside other full-width fields. A range splits the width between its two inputs.
+
+<DatePicker fullWidth datePickerType="single">
+  <DatePickerInput labelText="Invoice due date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Full width (range)
+
+<DatePicker fullWidth datePickerType="range">
+  <DatePickerInput labelText="Rental pick-up" placeholder="mm/dd/yyyy" />
+  <DatePickerInput labelText="Rental return" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Extra-large
+
+Set `size` to `"xl"` on DatePickerInput for a more prominent input.
+
+<DatePicker datePickerType="single">
+  <DatePickerInput size="xl" labelText="License expiration date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Extra-large (range)
+
+<DatePicker datePickerType="range">
+  <DatePickerInput size="xl" labelText="Report period start" placeholder="mm/dd/yyyy" />
+  <DatePickerInput size="xl" labelText="Report period end" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Small
+
+Set `size` to `"sm"` on DatePickerInput for a compact input.
+
+<DatePicker datePickerType="single">
+  <DatePickerInput size="sm" labelText="Invoice due date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Small (range)
+
+<DatePicker datePickerType="range">
+  <DatePickerInput size="sm" labelText="Report period start" placeholder="mm/dd/yyyy" />
+  <DatePickerInput size="sm" labelText="Report period end" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Extra-small
+
+Set `size` to `"xs"` on DatePickerInput for dense layouts.
+
+<DatePicker datePickerType="single">
+  <DatePickerInput size="xs" labelText="Invoice due date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Extra-small (range)
+
+<DatePicker datePickerType="range">
+  <DatePickerInput size="xs" labelText="Report period start" placeholder="mm/dd/yyyy" />
+  <DatePickerInput size="xs" labelText="Report period end" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Show an invalid state when the input value is not valid.
+
+<DatePicker>
+  <DatePickerInput invalid invalidText="Invalid date" labelText="License expiration date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Warning
+
+Show a warning state to indicate potential issues with the input.
+
+<DatePicker>
+  <DatePickerInput warn warnText="This info will not be stored" labelText="Invoice due date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Disabled (simple)
+
+With the default datePickerType (`"simple"`), disabled prevents interaction and styles the field as unavailable.
+
+<DatePicker value="01/15/2024">
+  <DatePickerInput disabled labelText="Contract start date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Disabled (single)
+
+Set `disabled` to `true` to block interaction with the single-date picker and calendar.
+
+<DatePicker datePickerType="single" value="01/15/2027">
+  <DatePickerInput disabled labelText="License expiration date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Disabled (range)
+
+Apply disabled to each DatePickerInput in a range picker when both fields should be unavailable.
+
+<DatePicker datePickerType="range" valueFrom="01/01/2025" valueTo="01/31/2025">
+  <DatePickerInput disabled labelText="Report period start" placeholder="mm/dd/yyyy" />
+  <DatePickerInput disabled labelText="Report period end" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Read-only (simple)
+
+With the default datePickerType (`"simple"`), readonly shows a fixed value in the text field without a calendar.
+
+<DatePicker value="03/01/2024">
+  <DatePickerInput readonly labelText="Onboarding date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Read-only (single)
+
+Set `readonly` to `true` to display a value while preventing edits. Unlike disabled, the input remains focusable and its value is submitted with the form.
+
+<DatePicker datePickerType="single" value="01/15/2024">
+  <DatePickerInput readonly labelText="Contract start date" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+### Read-only (range)
+
+The readonly state also works with range pickers.
+
+<DatePicker datePickerType="range" valueFrom="01/01/2025" valueTo="01/31/2025">
+  <DatePickerInput readonly labelText="Report period start" placeholder="mm/dd/yyyy" />
+  <DatePickerInput readonly labelText="Report period end" placeholder="mm/dd/yyyy" />
+</DatePicker>
+
+## Skeleton
+
+Show a loading state with the skeleton component.
+
+<DatePickerSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<DatePickerSkeleton size="xs" />
+
+### Range
+
+Set `datePickerType` to the type of the picker the skeleton stands in for. `"range"` draws two inputs; `"single"` and the other calendar types draw one full-width input.
+
+<DatePickerSkeleton datePickerType="range" />
+
+### Short
+
+Set `short` to `true` to render a skeleton for the short variant.
+
+<DatePickerSkeleton short />
+
+## Standalone calendar (experimental)
+
+`DateCalendar` is the calendar on its own, rendered by Svelte rather than built by script: it renders on the server, and its `day` slot puts any content in a day. It picks a single date with `bind:value`, takes `minDate`, `maxDate`, `isDateDisabled`, `locale`, `firstDayOfWeek`, and `weekNumbers`, and moves with the arrow keys, Home, End, PageUp, and PageDown. Set `today` when rendering on the server, so the server and the browser mark the same day.
+
+<FileSource src="/framed/DatePicker/DateCalendar" />
+
+### Day content
+
+The `day` slot receives `date`, `selected`, `today`, `disabled`, and `outside` (a day of the next or previous month).
+
+<FileSource src="/framed/DatePicker/DateCalendarDayContent" />
+
+## Migrating from flatpickr
+
+The calendar used to be [flatpickr](https://flatpickr.js.org/). It is now built in, each flatpickr option it supports is a prop, and its markup uses Carbon's class names.
+
+| Do | Why |
+| --- | --- |
+| Move each `flatpickrProps` key to its prop: `minDate`, `maxDate`, `allowInput`, `closeOnSelect`, `showMonths` → `months`, `conjunction`, `shorthandCurrentMonth` → `monthLabel="short"`, `positionElement` → `anchor`, `position` → `align` and `direction`, `allowInvalidPreload` → `keepOutOfRangeValue`, `ignoredFocusElements` → `keepOpenFor`, `disable` → `disabledDates`, `enable` → `enabledDates`, `altInput` and `altFormat` → `displayFormat`, `inline` → `inline`, `defaultDate` → `value` or `selectedDates`. | `flatpickrProps` is removed. |
+| Replace `onDayCreate` with `dayDescription` or `dayClass`, and the other hooks with the component's events (`on:change`, `on:open`, `on:close`, `on:view`, `on:error`). | flatpickr's hooks are removed. |
+| Replace flatpickr's range, monthSelect, and weekSelect plugins with `datePickerType`. | Those modes are built in. Other plugins are not supported. |
+| Prefer a language tag such as `locale="de"` to an imported locale module. | Tags need no import; month and weekday names come from the browser's `Intl` data. A locale object still works when you need exact strings, so `locale={German}` behaves as before. |
+| Pair the DatePicker with a [TimePicker](/components/TimePicker) to collect a time. | The calendar has no time picker. |
+| Use `bind:calendar`'s `open()`, `close()`, `showMonth()`, `focusDate()`, `view`, and `selectedDates`; set dates with `bind:selectedDates`. | `bind:calendar` no longer hands out the engine. |
+| Rename flatpickr classes in app CSS and tests (table below). | The calendar's markup uses `bx--date-picker__*` classes, with a modifier for each state. |
+| Find the calendar by role in tests: `getByRole("dialog", { name: "Choose a date" })`, then `grid`, `row`, and `gridcell`. | The calendar is a dialog of month grids, not a `role="application"` labelled `calendar-container`. |
+
+| flatpickr class | Carbon class |
+| --- | --- |
+| `flatpickr-calendar`, with `open`, `inline`, `static` | `bx--date-picker__calendar`, with `--open`, `--inline`, `--static` |
+| `flatpickr-prev-month`, `flatpickr-next-month` | `bx--date-picker__nav-button--previous`, `--next` |
+| `cur-month`, `cur-year` | `bx--date-picker__month-label`, `bx--date-picker__year-input` |
+| `dayContainer` | `bx--date-picker__month-days`, with a `bx--date-picker__week` per row |
+| `flatpickr-day`, with `selected`, `today`, `inRange`, `startRange`, `endRange`, `flatpickr-disabled` | `bx--date-picker__day`, with `--selected`, `--today`, `--in-range`, `--range-start`, `--range-end`, `--disabled` |
+| `prevMonthDay`, `nextMonthDay` | `bx--date-picker__day--outside-month` |
+| `flatpickr-monthSelect-month`, `flatpickr-yearSelect-year` | `bx--date-picker__grid-cell` |
+
+The native mobile date input and the month dropdown are not available.

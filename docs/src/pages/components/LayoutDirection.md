@@ -1,0 +1,339 @@
+---
+components: ["LayoutDirection"]
+description: LayoutDirection sets the writing direction for part of a page, such as an Arabic or Hebrew form in an English app.
+---
+
+<script>
+  import {
+    Box,
+    Button,
+    ButtonSet,
+    Card,
+    CardBody,
+    CardHeader,
+    CardTitle,
+    ClickableTile,
+    ContentSwitcher,
+    CopyInput,
+    DatePicker,
+    DatePickerInput,
+    Dropdown,
+    LayoutDirection,
+    Link,
+    MenuButton,
+    MenuItem,
+    NumberInput,
+    OverflowMenu,
+    OverflowMenuItem,
+    PasswordInput,
+    RangeSlider,
+    Search,
+    Select,
+    SelectItem,
+    Slider,
+    Splitter,
+    Stack,
+    Switch,
+    Tab,
+    TabContent,
+    Tabs,
+    Text,
+    TextInput,
+    Toggletip,
+    TooltipIcon,
+    TreeView,
+  } from "carbon-components-svelte";
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+  import ArrowRight from "carbon-icons-svelte/lib/ArrowRight.svelte";
+  import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Set `dir` to `"rtl"` or `"ltr"`. `LayoutDirection` renders a `div` with that `dir`, and components inside it read the direction from context. Use `tag` to render another element, such as `section` or `form`. A plain `dir` attribute inside it wins for its part, for the arrow keys as for the styles.
+
+It matches Carbon React's `LayoutDirection`. To set the direction for the whole page, set `dir` on `<html>` instead. See the [right-to-left guide](/right-to-left) to set up an app, and for what flips and what stays left to right.
+
+<LayoutDirection dir="rtl" lang="ar" tag="form">
+  <Stack gap={6}>
+    <TextInput labelText="اسم الخدمة" placeholder="api-gateway" />
+    <TextInput labelText="البريد الإلكتروني للمالك" placeholder="ops@example.com" />
+    <Stack orientation="horizontal" gap={5}>
+      <Button>نشر</Button>
+      <Button kind="secondary">إلغاء</Button>
+    </Stack>
+  </Stack>
+</LayoutDirection>
+
+## Text fields
+
+In RTL, a field's icons and buttons sit at its left end: the password toggle, the copy button, the number steppers, the clear button, the select chevron, the calendar icon, and the invalid, warning, and read-only icons. The text keeps clear of them.
+
+`TagInput`'s tags sit at the right, so <DocKbd label="ArrowRight" /> at the start of the text moves to the last tag and <DocKbd label="ArrowLeft" /> moves back. `PinCodeInput`'s first segment is the rightmost one, and <DocKbd label="ArrowLeft" /> moves to the next segment.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={6}>
+    <PasswordInput labelText="مفتاح الواجهة البرمجية" value="sk-live-4242" />
+    <CopyInput labelText="رابط الإشعارات" value="https://hooks.example.com/42" />
+    <NumberInput
+      labelText="عدد النسخ"
+      value={12}
+      invalid
+      invalidText="الحد الأقصى ١٠ نسخ"
+    />
+    <Search labelText="بحث في الحوادث" value="فشل النشر" />
+    <Select labelText="المنطقة" invalid invalidText="المنطقة غير متاحة">
+      <SelectItem value="us-east" text="شرق الولايات المتحدة" />
+      <SelectItem value="eu-west" text="غرب أوروبا" />
+    </Select>
+  </Stack>
+</LayoutDirection>
+
+## Buttons
+
+In RTL, a button's label starts at its right edge and its icon sits at its left end. `ButtonSet`, `ComboButton` and `ActionSet` draw each divider on the right side of the button after it, and modal footers run from right to left.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={6}>
+    <Stack orientation="horizontal" wrap="wrap" gap={5}>
+      <Button icon={Add}>إضافة خدمة</Button>
+      <Button kind="secondary" icon={Add}>إضافة خدمة</Button>
+      <Button kind="tertiary" icon={Add}>إضافة خدمة</Button>
+      <Button kind="ghost" icon={Add}>إضافة خدمة</Button>
+      <Button kind="danger" icon={TrashCan}>حذف الخدمة</Button>
+      <Button kind="danger-tertiary" icon={TrashCan}>حذف الخدمة</Button>
+      <Button kind="danger-ghost" icon={TrashCan}>حذف الخدمة</Button>
+    </Stack>
+    <ButtonSet>
+      <Button kind="secondary">إلغاء</Button>
+      <Button>نشر</Button>
+    </ButtonSet>
+  </Stack>
+</LayoutDirection>
+
+## Date picker
+
+In RTL, the calendar runs from the right: the week starts at the right edge, and the previous month arrow sits on the right and points right. <DocKbd label="ArrowLeft" /> moves to the next day, month, or year, and <DocKbd label="ArrowRight" /> to the previous one. <DocKbd label="Home" /> and <DocKbd label="End" /> still go to the first and last day of the week. A calendar in a portal opens at the field's right edge. Set `locale` to name the months and weekdays and to start the week on the locale's first day, such as Saturday for `"ar"`.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <DatePicker datePickerType="range" locale="ar">
+    <DatePickerInput labelText="بداية الفترة" placeholder="mm/dd/yyyy" />
+    <DatePickerInput labelText="نهاية الفترة" placeholder="mm/dd/yyyy" />
+  </DatePicker>
+</LayoutDirection>
+
+## Slider
+
+In RTL, `Slider` and `RangeSlider` put `min` at the right end of the track. Dragging, clicking the track, marks, and the arrow keys follow it: <DocKbd label="ArrowLeft" /> raises the value.
+
+The thumbs, fill, and marks follow the nearest `dir` in the styles, in server-rendered markup and as it changes. A slider in a `LayoutDirection` reads its `dir` for the keys and the pointer as it changes. Outside one, it reads the page direction when it mounts, and again when the pointer or keyboard focus reaches it.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={7}>
+    <Slider labelText="عدد النسخ" min={0} max={10} value={3} />
+    <RangeSlider
+      labelText="نطاق النسخ"
+      min={0}
+      max={10}
+      value={2}
+      valueUpper={6}
+      marks={[
+        { value: 0, label: "٠" },
+        { value: 5, label: "٥" },
+        { value: 10, label: "١٠" },
+      ]}
+    />
+  </Stack>
+</LayoutDirection>
+
+## Tabs
+
+Tabs run from right to left. <DocKbd label="ArrowLeft" /> moves to the next tab and <DocKbd label="ArrowRight" /> to the previous one. <DocKbd label="Home" /> and <DocKbd label="End" /> still go to the first and last tab. Outside a `LayoutDirection`, the tabs read the page direction on each arrow key. When the list overflows, the first tab sits at the right end, and the scroll buttons and edge fades follow it. This also holds for the row layout of `TabsVertical`.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Tabs>
+    <Tab label="نظرة عامة" />
+    <Tab label="السجلات" />
+    <Tab label="الإعدادات" />
+    <svelte:fragment slot="content">
+      <TabContent>حالة الخدمة وآخر عملية نشر.</TabContent>
+      <TabContent>سجلات آخر ٢٤ ساعة.</TabContent>
+      <TabContent>المنطقة وحدود الموارد.</TabContent>
+    </svelte:fragment>
+  </Tabs>
+</LayoutDirection>
+
+## TreeView
+
+In RTL, rows indent from the right and a collapsed caret points left. <DocKbd label="ArrowLeft" /> expands a row or moves to its first child, and <DocKbd label="ArrowRight" /> collapses it or moves to its parent. Outside a `LayoutDirection`, the tree reads the page direction on each arrow key.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <TreeView
+    labelText="الخدمات"
+    expandedIds={["analytics"]}
+    nodes={[
+      {
+        id: "analytics",
+        text: "التحليلات",
+        nodes: [
+          { id: "spark", text: "Apache Spark" },
+          { id: "query", text: "استعلام SQL" },
+        ],
+      },
+      {
+        id: "storage",
+        text: "التخزين",
+        nodes: [{ id: "object-storage", text: "تخزين الكائنات" }],
+      },
+    ]}
+  />
+</LayoutDirection>
+
+## Menus
+
+In RTL, a menu opens from the trigger's right edge, and a submenu opens to the left. When there is no room on the left, the submenu opens to the right instead. <DocKbd label="ArrowLeft" /> opens a submenu and <DocKbd label="ArrowRight" /> closes it. This covers `Menu`, `MenuButton`, `ComboButton`, `ContextMenu`, and `HeaderNavMenu`.
+
+In `MenuButton` and `ComboButton`, `intrinsicAlign` values `"start"` and `"end"` mean the trigger's inline start and end. An `OverflowMenu` lines up with the button's right edge, and with its left edge when `flipped`.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack orientation="horizontal" gap={5} align="center">
+    <MenuButton labelText="إجراءات">
+      <MenuItem labelText="نسخ" />
+      <MenuItem labelText="تصدير بصيغة">
+        <MenuItem labelText="PDF" />
+        <MenuItem labelText="PNG" />
+      </MenuItem>
+    </MenuButton>
+    <OverflowMenu iconDescription="خيارات">
+      <OverflowMenuItem text="إعادة التشغيل" />
+      <OverflowMenuItem text="إيقاف" />
+    </OverflowMenu>
+  </Stack>
+</LayoutDirection>
+
+## Arrow keys
+
+In RTL, <DocKbd label="ArrowLeft" /> moves to the next item and <DocKbd label="ArrowRight" /> to the previous one in `ContentSwitcher`, `ToggleButtonGroup`, `ProgressIndicator`, `TagSet` with `navigation="roving"`, and the `HeaderNav` menubar. Outside a `LayoutDirection`, each reads the page direction when the key arrives.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <ContentSwitcher>
+    <Switch text="الأحدث" />
+    <Switch text="الأكثر رواجًا" />
+    <Switch text="المحفوظة" />
+  </ContentSwitcher>
+</LayoutDirection>
+
+## Resizing
+
+In RTL, a resizable `SideNav` has its handle on its left edge, and a horizontal `Splitter` puts its start pane on the right. Dragging the handle or separator left widens the side nav or the start pane, and so does <DocKbd label="ArrowLeft" />.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Box height="10rem" border="subtle">
+    <Splitter size={35} separatorLabel="تغيير حجم قائمة الملفات">
+      <Box slot="start" padding={5}>الملفات</Box>
+      <Box slot="end" padding={5}>deploy.yaml</Box>
+    </Splitter>
+  </Box>
+</LayoutDirection>
+
+## Icons
+
+In RTL, icons that point forward or back mirror: Pagination, PaginationNav, Carousel, Tabs and DatePicker month arrows, Stepper and InterstitialScreen buttons, the AILabel undo icon, submenu carets and the Card and ClickableTile icons. Icons without a direction stay as they are, such as check marks, the search icon and the Launch icon of an outbound link.
+
+Add the `bx--icon--mirror-rtl` class to mirror your own forward or back icon, such as an arrow in a link's `icon` slot. A `dir="ltr"` region inside an RTL page turns the mirror off again.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={5}>
+    <ClickableTile href="#" icon={ArrowRight}>إعدادات الفوترة</ClickableTile>
+    <Card clickable href="#" aria-label="إعدادات المشروع">
+      <CardHeader>
+        <CardTitle>إعدادات المشروع</CardTitle>
+      </CardHeader>
+      <CardBody>إدارة الأعضاء والصلاحيات والتكاملات.</CardBody>
+    </Card>
+    <Link href="#">
+      عرض سجل النشر
+      <ArrowRight slot="icon" class="bx--icon--mirror-rtl" />
+    </Link>
+  </Stack>
+</LayoutDirection>
+
+## Copy input
+
+`CopyInput` takes the direction of its value from the first letter of the value, so a URL or a token keeps its order in an RTL page, and Arabic or Hebrew text still reads right to left. Set `dir="ltr"` on a value that must read left to right whatever its first letter, such as a file path with Arabic folder names.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={6}>
+    <CopyInput labelText="رابط الخدمة" value="https://api.example.com/v1/deployments/" />
+    <CopyInput labelText="اسم الخدمة" value="بوابة الدفع (الإنتاج)" />
+  </Stack>
+</LayoutDirection>
+
+## Tooltips and popovers
+
+Above and below a trigger, `align="start"` and `align="end"` name inline sides, as in floating-ui, which Carbon React uses. In RTL they swap: a start-aligned tooltip lines up with the trigger's right edge, and its caret follows. `left`, `right`, and Popover's older names, such as `"top-left"`, name physical sides and stay put.
+
+This covers Tooltip, TooltipIcon, TooltipDefinition, Toggletip, the AILabel explanation, Popover, and the tooltips of icon-only buttons, in place and in a portal. A Breadcrumb's overflow menu opens from the right edge of its trigger. Outside a `LayoutDirection`, each reads the page direction when it opens.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack orientation="horizontal" gap={10}>
+    <Toggletip align="start" labelText="الخطة">
+      تُحسب الرسوم في بداية كل شهر.
+    </Toggletip>
+    <TooltipIcon
+      align="start"
+      tooltipText="تُحسب الرسوم شهريًا"
+      icon={Information}
+    />
+  </Stack>
+</LayoutDirection>
+
+## Portalled menus
+
+A menu or tooltip that renders in a portal leaves the subtree in the DOM, so it would lose the direction. `LayoutDirection` carries it to the portal. A plain `dir` nearer the trigger wins, as for the styles. This covers `portalMenu` on Dropdown, ComboBox, and MultiSelect, a portalled DatePicker calendar, and every component that portals a tooltip or menu.
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Dropdown
+    portalMenu
+    labelText="المنطقة"
+    selectedId="0"
+    items={[
+      { id: "0", text: "شرق الولايات المتحدة" },
+      { id: "1", text: "غرب أوروبا" },
+      { id: "2", text: "جنوب شرق آسيا" },
+    ]}
+  />
+</LayoutDirection>
+
+## Mixed directions
+
+Nest a `LayoutDirection` to switch back for one part, such as English fields in an RTL form. The nearest direction wins, so the password toggle and the search icons sit where they do in an LTR page. A `CodeSnippet` needs no wrapper: its code always reads left to right. See [CodeSnippet](/components/CodeSnippet#right-to-left).
+
+<LayoutDirection dir="rtl" lang="ar">
+  <Stack gap={5}>
+    <Text>أدخل بيانات الخادم باللغة الإنجليزية:</Text>
+    <LayoutDirection dir="ltr" lang="en">
+      <Stack gap={5}>
+        <TextInput labelText="Server URL" placeholder="https://api.example.com" />
+        <PasswordInput labelText="API key" value="sk-live-4f2a9c71" />
+        <Search labelText="Search services" value="payments-api" />
+      </Stack>
+    </LayoutDirection>
+    <Text>نستخدم هذا العنوان والمفتاح في كل طلب.</Text>
+  </Stack>
+</LayoutDirection>
+
+## Reading the direction
+
+Call `getLayoutDirection` during component initialization to read the nearest direction in your own components. It returns a store that holds `"ltr"`, `"rtl"`, or `undefined` outside a `LayoutDirection`.
+
+```svelte
+<script>
+  import { getLayoutDirection } from "carbon-components-svelte";
+
+  const direction = getLayoutDirection();
+</script>
+
+<span>{$direction === "rtl" ? "←" : "→"}</span>
+```

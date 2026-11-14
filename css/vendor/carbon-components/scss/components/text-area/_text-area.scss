@@ -1,0 +1,177 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+
+@import '../../globals/scss/vars';
+@import '../../globals/scss/typography';
+@import '../../globals/scss/css--reset';
+@import '../../globals/scss/helper-mixins';
+@import '../../globals/scss/vendor/@carbon/elements/scss/import-once/import-once';
+@import '../form/form';
+
+/// Text area styles
+/// @access private
+/// @group text-area
+@mixin text-area {
+  .#{$prefix}--text-area {
+    @include reset;
+    @include type-style('body-01');
+    @include focus-outline('reset');
+
+    width: 100%;
+    min-width: 10rem;
+    height: 100%;
+    min-height: to-rem(40px);
+    padding: to-rem(11px) $carbon--spacing-05;
+    border: none;
+    border-bottom: 1px solid $border-strong;
+    background-color: $field;
+    color: $text-primary;
+    resize: vertical;
+    transition: background-color $duration--fast-01 motion(standard, productive);
+  }
+
+  .#{$prefix}--text-area:focus,
+  .#{$prefix}--text-area:active {
+    @include focus-outline('outline');
+  }
+
+  .#{$prefix}--text-area::placeholder {
+    @include placeholder-colors;
+    @include type-style('body-01');
+  }
+
+  .#{$prefix}--text-area--invalid {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-area__wrapper {
+    position: relative;
+    display: flex;
+    width: 100%;
+  }
+
+  .#{$prefix}--text-area__invalid-icon {
+    position: absolute;
+    top: $carbon--spacing-04;
+    fill: $support-error;
+    @include ccs-inset-inline($end: $carbon--spacing-05);
+  }
+
+  .#{$prefix}--text-area:disabled {
+    border-bottom: 1px solid transparent;
+    background-color: $field;
+    color: $text-disabled;
+    cursor: not-allowed;
+    outline: none;
+  }
+
+  .#{$prefix}--text-area:disabled::placeholder {
+    color: $text-disabled;
+  }
+
+  .#{$prefix}--text-area.#{$prefix}--skeleton {
+    @include skeleton;
+
+    // ccs: as tall as a text area of the same `rows`: its lines
+    // (body-long-01's 20px), padding and bottom border.
+    height: calc(
+      var(--ccs-text-area-rows, 4) * #{to-rem(20px)} + #{to-rem(23px)}
+    );
+
+    &::placeholder {
+      color: transparent;
+    }
+  }
+
+  .#{$prefix}--text-area__label-wrapper {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  // carbon-components-svelte patch
+  // keeps the counter right-aligned when it is the only child
+  // (no visible label, or hideLabel removes the label from layout)
+  .#{$prefix}--text-area__label-counter {
+    margin-inline-start: auto;
+  }
+}
+
+@include exports('text-area') {
+  @include text-area;
+}
+
+// carbon-components-svelte patch (formerly css/_text-area-readonly.scss)
+/// Readonly textarea styles
+/// @access private
+/// @group text-area
+@mixin text-area-readonly {
+  .#{$prefix}--text-area__wrapper--readonly .#{$prefix}--text-area {
+    background: transparent;
+    border-block-end-color: $border-subtle;
+  }
+}
+
+@include exports("text-area-readonly") {
+  @include text-area-readonly;
+}
+
+// carbon-components-svelte patch (formerly css/_text-area-warn.scss)
+/// Textarea warning styles
+/// @access private
+/// @group text-area
+@mixin text-area-warn {
+  .#{$prefix}--text-area--warning {
+    padding-inline-end: $carbon--spacing-08;
+  }
+
+  .#{$prefix}--text-area__invalid-icon--warning {
+    fill: $support-warning;
+  }
+
+  .#{$prefix}--text-area__invalid-icon--warning path[fill] {
+    fill: $carbon__black-100;
+    opacity: 1;
+  }
+
+  .#{$prefix}--text-area__wrapper[data-warn]~.#{$prefix}--form-requirement {
+    display: block;
+    overflow: visible;
+    max-height: to-rem(200px);
+    font-weight: 400;
+  }
+}
+
+@include exports('text-area-warn') {
+  @include text-area-warn;
+}
+
+// carbon-components-svelte patch
+.#{$prefix}--text-area__label-counter--error {
+  color: $text-error;
+}
+
+// Each paragraph reads in its own direction, so in RTL "3 / 4" keeps its
+// order instead of showing as "4 / 3". `unicode-bidi: plaintext` also aligns
+// each paragraph to its own start, so keep it at the page's start.
+/// @access private
+/// @group components
+@mixin text-area-plaintext {
+  .#{$prefix}--text-area {
+    unicode-bidi: plaintext;
+    text-align: left;
+  }
+
+  [dir="rtl"] .#{$prefix}--text-area {
+    text-align: ccs-dir(left, right);
+  }
+}
+
+@include exports("text-area-plaintext") {
+  @include text-area-plaintext;
+}

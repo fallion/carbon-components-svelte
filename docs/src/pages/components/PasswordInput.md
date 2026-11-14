@@ -1,0 +1,215 @@
+---
+components: ["PasswordInput", "PasswordInputSkeleton"]
+description: Password inputs provide a secure text field with a visibility toggle, with support for validation and various states.
+---
+
+<script>
+  import { Box, Layer, PasswordInput, PasswordInputSkeleton, Stack, TooltipGroup, TooltipIcon } from "carbon-components-svelte";
+  import Information from "carbon-icons-svelte/lib/Information.svelte";
+</script>
+
+## Basic
+
+Create a basic password input with a label and placeholder.
+
+<PasswordInput labelText="Password" placeholder="Enter password..." />
+
+## Visibility toggle
+
+Control the show/hide password toggle button and its tooltip. Press <DocKbd label="Escape" /> to hide the tooltip without moving the pointer or focus. It shows again on the next hover or focus.
+
+### Value shown as text
+
+Set `type` to `"text"` to show the password in plain text.
+
+<PasswordInput labelText="Password" type="text" placeholder="Enter password..." value="correct horse battery staple" />
+
+### Custom tooltip alignment
+
+Place the visibility toggle's tooltip with `tooltipAlign`, which takes Popover's `align` names. It replaces `tooltipPosition` and `tooltipAlignment`, which still work and are deprecated.
+
+<PasswordInput tooltipAlign="left-start" labelText="Password" placeholder="Enter password..." />
+
+### Toggle labels
+
+Customize the toggle button's tooltip and ARIA label text with `showPasswordLabel` and `hidePasswordLabel`.
+
+<PasswordInput labelText="Password" placeholder="Enter password..." showPasswordLabel="Reveal password" hidePasswordLabel="Conceal password" />
+
+### Tooltip group
+
+Wrap related password fields in a [TooltipGroup](/components/TooltipGroup) so their toggle tooltips hand off. Moving from one toggle to the next swaps the tooltip without a fade-in, and only one shows at a time.
+
+<TooltipGroup>
+  <Stack gap={5}>
+    <PasswordInput labelText="New password" placeholder="Enter new password..." />
+    <PasswordInput labelText="Confirm password" placeholder="Re-enter new password..." />
+  </Stack>
+</TooltipGroup>
+
+## Select on focus
+
+Set `selectTextOnFocus` to select the full value when the field receives focus.
+
+<PasswordInput selectTextOnFocus labelText="Password" value="correct horse battery staple" />
+
+## Hidden label
+
+Hide the label visually by setting `hideLabel` to `true`. The label remains available to screen readers.
+
+<PasswordInput hideLabel labelText="Password" placeholder="Enter password..." />
+
+## Custom label
+
+Use the `labelChildren` slot to provide custom label content.
+
+<PasswordInput labelText="" placeholder="Enter password...">
+  <strong slot="labelChildren">Password</strong>
+</PasswordInput>
+
+## Helper text
+
+Add helper text to provide additional context or instructions.
+
+<PasswordInput helperText="Must be at least 12 characters and include a number and symbol." labelText="New password" placeholder="Enter new password..." />
+
+## On a layer
+
+Place the component in a [`Layer`](/components/Layer) to put it on the next surface, so it contrasts with the surface below. `Layer` replaces the v10 `light` prop.
+
+<Layer withBackground>
+  <Box padding={5}>
+    <PasswordInput labelText="Password" placeholder="Enter password..." />
+  </Box>
+</Layer>
+
+## Fluid
+
+Set `fluid` to embed the label inside the field. Fluid password inputs work
+standalone or inside [FluidForm](/components/FluidForm), which applies the
+variant automatically. The fluid variant cannot be combined with the inline variant.
+
+<PasswordInput fluid labelText="Password" placeholder="Enter password..." />
+
+### Custom label
+
+Use the `labelChildren` slot to render custom label content, such as a
+tooltip icon.
+
+<PasswordInput fluid labelText="New password" placeholder="Enter new password...">
+  <svelte:fragment slot="labelChildren">
+    New password
+    <TooltipIcon tooltipText="Must be at least 12 characters and include a number and symbol." icon={Information} />
+  </svelte:fragment>
+</PasswordInput>
+
+### Invalid
+
+Fluid password inputs display the error message inside the field boundary. Long
+messages wrap to multiple lines.
+
+<PasswordInput fluid invalid invalidText="Incorrect user name or password. Please verify your credentials and try again, or use the reset password link if you have forgotten your password." labelText="Password" placeholder="Enter password..." />
+
+### Warning
+
+<PasswordInput fluid warn warnText="Password has been reset." labelText="Password" placeholder="Enter password..." />
+
+### Disabled
+
+Invalid and warning states are not displayed while the input is disabled.
+
+<PasswordInput fluid disabled invalid invalidText="Incorrect user name or password." labelText="Password" placeholder="Enter password..." />
+
+### Read-only
+
+Invalid and warning states are not displayed while the input is read-only.
+
+<PasswordInput fluid readonly warn warnText="Password has been reset." labelText="Password" placeholder="Enter password..." value="TempPass_8f3K21" />
+
+## Inline
+
+Display the input with an inline label layout.
+
+<PasswordInput inline labelText="Password" placeholder="Enter password..." />
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom inline label content.
+
+<PasswordInput inline labelText="" placeholder="Enter password...">
+  <strong slot="labelChildren">Password</strong>
+</PasswordInput>
+
+## Sizes
+
+Set `size` to control the input height. The default is medium.
+
+### Extra-large
+
+Use the extra-large size variant for increased visibility.
+
+<PasswordInput size="xl" labelText="Password" placeholder="Enter password..." />
+
+### Small
+
+Use the small size variant for compact layouts.
+
+<PasswordInput size="sm" labelText="Password" placeholder="Enter password..." />
+
+### Extra-small
+
+Use the extra-small size variant for the most compact layouts.
+
+<PasswordInput size="xs" labelText="Password" placeholder="Enter password..." />
+
+## States
+
+Reflect validation and interaction states.
+
+### Invalid
+
+Display an error message when the input is invalid.
+
+<PasswordInput invalid invalidText="Incorrect user name or password." labelText="Password" placeholder="Enter password..." />
+
+### Warning
+
+Show a warning message for non-critical issues.
+
+<PasswordInput warn warnText="Password has been reset." labelText="Password" placeholder="Enter password..." />
+
+### Disabled
+
+Set `disabled` to `true` to prevent user interaction.
+
+<PasswordInput disabled labelText="Password" placeholder="Enter password..." />
+
+### Read-only
+
+Set the input to read-only to display a value that cannot be modified. The visibility toggle still works to show or hide the password.
+
+<PasswordInput readonly labelText="Password" placeholder="Enter password..." value="TempPass_8f3K21" />
+
+## Skeleton
+
+Show a loading state with the default skeleton variant.
+
+<PasswordInputSkeleton />
+
+### Sizes
+
+Set `size` to match the field the skeleton stands in for.
+
+<PasswordInputSkeleton size="xs" />
+
+### Without label
+
+Show a loading state without a label by setting `hideLabel` to `true`.
+
+<PasswordInputSkeleton hideLabel />
+
+## Inside a modal
+
+When used inside a Modal, the visibility toggle tooltip is automatically portalled to prevent clipping. Elsewhere, it opens in a portal when a container would cut it off, such as a box with `overflow: hidden`, a scroll area or a [DataTable](/components/DataTable). Set `portalTooltip` to `true` to always portal it, or to `false` to keep it in place.
+
+<FileSource src="/framed/PasswordInput/ResetPasswordModal" />

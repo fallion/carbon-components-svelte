@@ -1,0 +1,659 @@
+---
+components: ["FileUploaderButton", "FileUploader", "FileUploaderDropContainer", "FileUploaderItem", "FileDownloadItem", "FileUploaderSkeleton"]
+description: File uploaders handle file uploads with a button trigger, drag-and-drop container, and file list, with validation and various states.
+---
+
+<script>
+  import { FileDownloadItem, FileUploaderButton, FileUploader, FileUploaderDropContainer, FileUploaderItem, FileUploaderSkeleton, Form, Stack, formatFileSize } from "carbon-components-svelte";
+  import Add from "carbon-icons-svelte/lib/Add.svelte";
+  import DocumentAdd from "carbon-icons-svelte/lib/DocumentAdd.svelte";
+  import DocumentPdf from "carbon-icons-svelte/lib/DocumentPdf.svelte";
+</script>
+
+## Button
+
+Create a simple file upload button using the file uploader button. By default, it
+accepts a single file. Set `multiple` to `true` to allow multiple file selection.
+
+<FileUploaderButton labelText="Add file" />
+
+### Multiple files
+
+Enable multiple file selection by setting `multiple` to `true`.
+
+<FileUploaderButton multiple labelText="Add files" />
+
+### Prevent duplicate
+
+Set `preventDuplicate` to `true` to reject re-selected files that match an
+already-selected file by name, size, and last modified. Rejected duplicates are
+reported via `rejected` with `{ file, reason: "duplicate" }`.
+
+Only applies when `multiple` is `true`, since a single-file input replaces its
+selection rather than adding to it.
+
+<FileSource src="/framed/FileUploader/FileUploaderButtonPreventDuplicate" />
+
+### File size limit
+
+Limit selected file size with `maxFileSize`. Files exceeding the limit (in
+bytes) are automatically filtered out.
+
+This example accepts files up to 1 MB (1,000,000 bytes). Files over the limit
+are not added, and a `rejected` event fires with `{ file, reason: "size" }` for
+each rejected file. Each row shows the file's size (see [File size](#file-size-1)).
+
+<FileSource src="/framed/FileUploader/FileUploaderButtonMaxFileSize" />
+
+### Custom kind and size
+
+Customize button appearance with `kind` and `size`. The default is a small
+primary button.
+
+<FileUploaderButton kind="secondary" size="field" />
+<FileUploaderButton kind="tertiary" size="default" />
+<FileUploaderButton kind="danger" size="lg" />
+<FileUploaderButton kind="danger-tertiary" size="xl" />
+
+### With icon
+
+Add an icon to the file uploader button with `icon`.
+
+<FileUploaderButton icon={Add} labelText="Add file" />
+<FileUploaderButton icon={DocumentAdd} labelText="Upload document" kind="secondary" />
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom label content instead of `labelText`.
+
+<FileUploaderButton labelText="">
+  <strong slot="labelChildren">Add file</strong>
+</FileUploaderButton>
+
+### Disable label changes
+
+By default, the button label updates to show the selected file name (or file
+count, when `multiple`) after a file is chosen. Set `disableLabelChanges` to
+`true` to keep the original `labelText` instead.
+
+The label follows user picks only. Setting `files` programmatically doesn't
+change it, except that an empty list restores `labelText`.
+
+<FileUploaderButton disableLabelChanges labelText="Add file" />
+
+### Icon-only
+
+Set `labelText` to an empty string to render an icon-only button. Provide an `iconDescription` for accessibility — it is used as the button's tooltip and screen reader label. Press <DocKbd label="Escape" /> to hide the tooltip without moving the pointer or focus. It shows again on the next hover or focus.
+
+<FileUploaderButton labelText="" iconDescription="Add file" icon={Add} />
+<FileUploaderButton labelText="" iconDescription="Upload document" icon={DocumentAdd} kind="secondary" />
+
+### Custom tooltip position
+
+Set `tooltipAlign` to place the tooltip, with Popover's `align` names. It replaces `tooltipPosition` and `tooltipAlignment`, which still work and are deprecated.
+
+<FileUploaderButton labelText="" tooltipAlign="right-end" iconDescription="Add file" icon={Add} />
+
+### Hidden tooltip
+
+Set `hideTooltip` to `true` to visually hide the tooltip while maintaining accessibility for screen readers. Use this when tooltips cause layout issues, interfere with interactions, or when multiple icon buttons are densely packed, as in a toolbar. The `iconDescription` remains accessible to screen readers.
+
+<Stack orientation="horizontal" gap={2}>
+  <FileUploaderButton labelText="" hideTooltip iconDescription="Add file" icon={Add} />
+  <FileUploaderButton labelText="" hideTooltip iconDescription="Upload document" icon={DocumentAdd} kind="secondary" />
+</Stack>
+
+## File uploader
+
+The file uploader combines a button trigger with a list of uploaded
+files. It supports file type restrictions, multiple file selection, and various
+upload states.
+
+This example accepts multiple JPEG files and displays them in a completed state.
+
+<FileUploader multiple labelTitle="Upload files" buttonLabel="Add files" labelDescription="Only JPEG files are accepted." accept="{['.jpg', '.jpeg']}" status="complete" />
+
+The `labelDescription` is linked to the add button with `aria-describedby`, so
+screen readers announce the accepted types and limits when the button is
+focused. An `aria-describedby` or `aria-labelledby` you set on `FileUploader`
+also goes to the button. Your description ids join the built-in one.
+
+Long file names end in an ellipsis. Hovering a truncated name shows it in
+full.
+
+### Custom label
+
+Use the `labelTitle` and `labelDescription` slots to provide custom label content instead of the `labelTitle` and `labelDescription` props.
+
+<FileUploader multiple buttonLabel="Add files">
+  <strong slot="labelTitle">Upload files</strong>
+  <svelte:fragment slot="labelDescription">Only JPEG files are accepted.</svelte:fragment>
+</FileUploader>
+
+### Extra-small
+
+Set `size` to `"xs"` for a 24px button and 24px file rows.
+
+<FileUploader
+  size="xs"
+  labelTitle="Upload files"
+  labelDescription="Max file size is 500kb. Supported file types are .jpg and .png."
+  buttonLabel="Add file"
+  accept={[".jpg", ".png"]}
+  status="edit"
+  multiple
+/>
+
+### Camera capture
+
+Set `capture` to open the device camera instead of the file picker on mobile:
+`"environment"` for the rear camera (documents, receipts) or `"user"` for the
+front camera (selfies). Desktop browsers ignore it and open the file picker.
+
+<FileUploader
+  capture="environment"
+  accept={["image/*"]}
+  labelTitle="Photo of your receipt"
+  labelDescription="Take a photo or choose an image."
+  buttonLabel="Add photo"
+  status="edit"
+/>
+
+### Folder upload
+
+Set `directory` to `true` to select a folder instead of individual files. Every
+file inside the folder and its subfolders is added, and each row shows the
+file's path relative to the selected folder. Browsers do not apply `accept` to
+folder contents, so filter them with `maxFileSize` or your own check on
+`change`.
+
+<FileUploader
+  directory
+  multiple
+  labelTitle="Upload a folder"
+  buttonLabel="Add folder"
+  status="edit"
+/>
+
+### Form size
+
+Inside a `Form` with `size`, the add button matches the height of the other
+fields: `xs` is 24px, `sm` is 32px, and `xl` is 48px. In an `xs` form the file
+rows are 24px too. Outside a sized form, or when `size` is set on the uploader,
+the uploader's own `size` applies.
+
+<Form size="xs">
+  <FileUploader
+    labelTitle="Upload files"
+    buttonLabel="Add file"
+    status="edit"
+    files={[new File(["a"], "Q3-financial-report.pdf")]}
+  />
+</Form>
+
+### Per-file status
+
+Use `fileStatus` when files upload independently and should not share one
+global `status`. The callback receives `(file, index)` and returns
+`"uploading"`, `"edit"`, or `"complete"`. When omitted, every row uses
+`status`.
+
+`FileUploader` re-resolves rows when `files` (or the `fileStatus` prop)
+changes. If the callback reads reactive state that updates without
+changing `files`, reassign the list afterward (for example
+`files = [...files]`) so each row picks up the new status.
+
+Optional `fileInvalid`, `fileErrorSubject`, and `fileErrorBody` callbacks
+mark individual rows as invalid with error copy—without switching to
+manual `FileUploaderItem` composition.
+
+This demo starts each new file as uploading, then marks it complete on a
+staggered delay.
+
+<FileSource src="/framed/FileUploader/FileUploaderPerFileStatus" />
+
+### Per-file status icon labels
+
+Set `iconDescription` to a function for accessible labels that depend on each row. The callback receives `{ file, fileName, status, invalid }`.
+
+On FileUploader, file is that row’s File object. On FileUploaderItem, file is
+always undefined and fileName matches name.
+
+<FileUploaderItem
+  invalid
+  id="server-logs"
+  name="server-logs-2026-09.csv"
+  errorSubject="File size exceeds 500 kB limit"
+  errorBody="Please select a new file."
+  status="edit"
+  iconDescription={({ fileName, invalid }) =>
+    invalid ? `Remove invalid file ${fileName}` : `Remove ${fileName}`}
+  on:delete
+/>
+
+### Clear files
+
+Remove uploaded files from the file uploader in two ways:
+
+- programmatically with the `clearFiles` accessor
+- two-way binding by setting files to `[]`
+
+Calling `clearFiles` or setting `files` to `[]` dispatches `change` (with an empty array) and `clear` so event listeners stay in sync.
+
+<FileSource src="/framed/FileUploader/FileUploaderClearFiles" />
+
+### Programmatic input access
+
+Use `bind:ref` to capture the underlying `<input type="file">` and trigger it
+programmatically.
+
+<FileSource src="/framed/FileUploader/FileUploaderProgrammaticInputAccess" />
+
+### Maximum file size
+
+Limit uploaded file size with `maxFileSize`. Files exceeding the limit (in bytes)
+are automatically filtered out.
+
+`maxFileSize` is a raw byte count, so pick the multiplier that matches how you
+label the limit: `1000 * 1000` for 1 MB (decimal, as macOS, iOS, and Android
+report sizes) or `1024 * 1024` for 1 MiB (binary, as Windows reports sizes,
+though it labels them "MB").
+
+This example accepts files up to 1 MB (1,000,000 bytes). Files over the limit
+are not added, and a `rejected` event fires with `{ file, reason: "size" }` for
+each rejected file. Both lists show each file's size (see [File size](#file-size)).
+
+<FileSource src="/framed/FileUploader/FileUploaderMaxFileSize" />
+
+### Minimum file size
+
+Set `minFileSize` to reject files smaller than a byte count. Use `1` to reject
+empty files, which a failed download or a cloud-only placeholder can produce.
+Smaller files are not added, and `rejected` fires with
+`{ file, reason: "size" }`, the same reason as `maxFileSize`.
+
+<FileUploader
+  minFileSize={1}
+  multiple
+  labelTitle="Upload files"
+  labelDescription="Empty files are rejected."
+  buttonLabel="Add files"
+  status="edit"
+  on:rejected={(e) => console.log(e.detail)}
+/>
+
+### File size
+
+Set `fileSize` to show each file's size under its name. File sizes are hidden by
+default.
+
+`true` formats sizes with decimal units (1000 bytes = 1 kB). Set
+`fileSize="binary"` for binary units (1024 bytes = 1 KiB).
+
+<FileUploader
+  fileSize
+  multiple
+  labelTitle="Upload files"
+  buttonLabel="Add files"
+  status="edit"
+  files={[
+    new File([new Uint8Array(1500)], "notes.txt"),
+    new File([new Uint8Array(250_000)], "Q3-financial-report.pdf"),
+  ]}
+/>
+
+<FileUploader
+  fileSize="binary"
+  multiple
+  labelTitle="Upload files"
+  buttonLabel="Add files"
+  status="edit"
+  files={[
+    new File([new Uint8Array(1536)], "notes.txt"),
+    new File([new Uint8Array(250 * 1024)], "Q3-financial-report.pdf"),
+  ]}
+/>
+
+Pass a function to write the text yourself. It receives `(file, index)` and
+returns a string. The exported `formatFileSize(bytes, { units, locale })`
+helper does the unit math; `locale` formats the number (e.g., `1,5 kB` in
+German).
+
+```svelte
+<script>
+  import { FileUploader, formatFileSize } from "carbon-components-svelte";
+</script>
+
+<FileUploader fileSize={(file) => formatFileSize(file.size, { locale: "de-DE" })} />
+```
+
+<FileUploader
+  fileSize={(file) => formatFileSize(file.size, { locale: "de-DE" })}
+  multiple
+  labelTitle="Upload files"
+  buttonLabel="Add files"
+  status="edit"
+  files={[new File([new Uint8Array(1500)], "notes.txt")]}
+/>
+
+### Duplicate detection
+
+Set `preventDuplicate` to `true` to reject files that match an already-selected
+file by name, size, and last modified. Rejected duplicates are reported via
+`rejected` with `{ file, reason: "duplicate" }`.
+
+<FileSource src="/framed/FileUploader/FileUploaderPreventDuplicate" />
+
+### Full width
+
+The selected files, and FileUploaderDropContainer's drop area, stop at 20rem. Set `fullWidth` on FileUploader, FileUploaderItem or FileUploaderDropContainer to fill the container.
+
+<FileUploaderDropContainer fullWidth labelText="Drag and drop files here or click to upload" multiple />
+
+### Disabled
+
+Disable the file uploader by setting `disabled` to `true`. The add button and
+each row's remove button are disabled.
+
+<FileUploader
+  disabled
+  multiple
+  labelTitle="Upload files"
+  buttonLabel="Add files"
+  labelDescription="Only JPEG files are accepted."
+  accept={[".jpg", ".jpeg"]}
+  status="edit"
+  files={[new File(["a"], "site-photo.jpg")]}
+/>
+
+### Events
+
+Respond to file list changes.
+
+| Event | Fires when | `detail` |
+| --- | --- | --- |
+| `add` | `files` gains entries, including via two-way binding | The added files |
+| `remove` | `files` loses entries, including via two-way binding | The removed files |
+| `change` | A pick, a row's remove button (after its `remove`), or clearing the list changes `files` | The full list |
+| `clear` | The list becomes empty (see [Clear files](#clear-files)) | None |
+| `rejected` | Picked files fail validation (see [Maximum file size](#maximum-file-size) and [Duplicate detection](#duplicate-detection)) | `{ file, reason }` per rejected file |
+
+Removing a row that has focus moves focus to the next row's remove button,
+else the previous row's, else the add button.
+
+<FileUploader
+  multiple
+  labelTitle="Upload files"
+  buttonLabel="Add files"
+  labelDescription="Events are logged to the console."
+  on:add={(e) => console.log(e.detail)} // File[]
+  on:remove={(e) => console.log(e.detail)} // File[]
+  on:change={(e) => console.log(e.detail)} // File[]
+  on:clear={() => console.log("cleared")}
+  on:rejected={(e) => console.log(e.detail)} // Array<{ file: File; reason: "size" | "duplicate" }>
+/>
+
+## Form submission
+
+Set `name` so the selected files submit with the form. The native file input
+always holds exactly the files in `files`: rejected files are left out and
+removed files are dropped. Set `enctype="multipart/form-data"` on the form;
+without it the browser sends only the file names.
+
+```svelte
+<script>
+  import { Form, FileUploader, Button } from "carbon-components-svelte";
+</script>
+
+<Form method="POST" action="?/upload" enctype="multipart/form-data">
+  <FileUploader
+    name="attachments"
+    multiple
+    labelTitle="Attachments"
+    buttonLabel="Add files"
+  />
+  <Button type="submit">Upload</Button>
+</Form>
+```
+
+In a SvelteKit form action, read the files with `getAll`. A file input with
+nothing selected still submits one empty file, so filter by size:
+
+```js
+// +page.server.js
+export const actions = {
+  upload: async ({ request }) => {
+    const data = await request.formData();
+    const files = data
+      .getAll("attachments")
+      .filter((file) => file instanceof File && file.size > 0);
+  },
+};
+```
+
+## File ordering
+
+Control the order of files in the list.
+
+### Prepend
+
+By default, new files are appended to the end of the list.
+
+Set `orderFiles` to `"prepend"` to show the newest uploads first instead of appending them to the end.
+
+<FileSource src="/framed/FileUploader/FileUploaderOrderFilesPrepend" />
+
+### Custom
+
+Pass a custom function to `orderFiles` for full control over the file list order. The function receives `(existingFiles, addedFiles)` and returns the merged array.
+
+This example sorts all files by `lastModified`, newest first.
+
+<FileSource src="/framed/FileUploader/FileUploaderOrderFilesCustom" />
+
+## Item
+
+Render individual file rows with `FileUploaderItem`.
+
+### Uploading
+
+Display a file upload in progress with `status="uploading"`. This shows a loading
+indicator and the file name.
+
+<FileUploaderItem name="Q3-financial-report.pdf" status="uploading" />
+
+### Complete
+
+Show a successfully uploaded file with `status="complete"`. This displays a
+checkmark icon next to the file name.
+
+<FileUploaderItem name="Q3-financial-report.pdf" status="complete" />
+
+### Edit
+
+Enable file deletion by setting the status to `"edit"`. Clicking the close icon
+dispatches a `delete` event with the item's ID.
+
+<FileUploaderItem id="q3-report" name="Q3-financial-report.pdf" status="edit" on:delete={(e) => {
+  console.log(e.detail); // "q3-report"
+}} />
+
+### Edit (invalid)
+
+Mark a file as invalid while keeping it editable. This shows an error icon and
+allows the user to remove the file.
+
+<FileUploaderItem invalid id="q3-report" name="Q3-financial-report.pdf" status="edit" on:delete />
+
+### Edit (invalid, with subject and body)
+
+Provide detailed error messages for invalid files with `errorSubject` and
+`errorBody`. This helps users understand and resolve upload issues.
+
+Screen readers announce the error when the item becomes invalid. The error
+also describes the remove button, so it is read again when the button takes
+focus.
+
+<FileUploaderItem
+  invalid
+  id="q3-report"
+  name="Q3-financial-report.pdf"
+  fileSize={742_000}
+  errorSubject="File size exceeds 500 kB limit"
+  errorBody="Please select a new file."
+  status="edit"
+  on:delete
+/>
+
+### Disabled
+
+Set `disabled` to `true` to disable the remove button.
+
+<FileUploaderItem disabled name="Q3-financial-report.pdf" status="edit" />
+
+### File size
+
+Set `fileSize` to show the file's size under its name. A number is bytes,
+formatted with decimal units (1000 bytes = 1 kB). A string is shown as-is: use
+`formatFileSize` for binary units or a localized number, or pass your own text.
+Small items show the size beside the name so the row keeps its height.
+
+<FileUploaderItem name="Q3-financial-report.pdf" fileSize={250_000} status="complete" />
+<FileUploaderItem name="Q3-financial-report.pdf" fileSize={formatFileSize(250 * 1024, { units: "binary" })} status="complete" />
+<FileUploaderItem name="Q3-financial-report.pdf" fileSize="250 Ko" status="complete" />
+<FileUploaderItem size="small" name="Q3-financial-report.pdf" fileSize={250_000} status="complete" />
+
+### Sizes
+
+Customize file uploader item size with `size`. The default is `"default"`.
+
+<FileUploaderItem size="default" name="Q3-financial-report.pdf" status="uploading" />
+<FileUploaderItem size="field" name="Q3-financial-report.pdf" status="uploading" />
+<FileUploaderItem size="small" name="Q3-financial-report.pdf" status="uploading" />
+
+### No margin
+
+Set `noMargin` to `true` to remove the bottom margin, for items in a flex
+or grid layout that sets its own gap.
+
+<Stack gap={3}>
+  <FileUploaderItem noMargin name="invoice.pdf" status="complete" />
+  <FileUploaderItem noMargin name="receipt.png" status="complete" />
+</Stack>
+
+## Download item
+
+Show a file someone can download, such as one shared in a chat message or
+attached to a ticket, with `FileDownloadItem`. It is a `FileUploaderItem` row
+that is a link: the same name, `fileSize`, sizes and `noMargin`, with a download
+icon at the end. Screen readers hear `iconDescription` ("Download") before the
+name and size.
+
+| Use | For |
+| --- | --- |
+| `FileUploaderItem` | A file you are adding or sending: uploading, complete, or invalid, with a remove button. |
+| `FileDownloadItem` | A file you can save: a link, or a button for a download your app starts. |
+
+### Link
+
+Set `href` to the file's URL. `download` makes the browser save the file instead
+of opening it; pass a string to suggest a file name, or `false` to open the file,
+such as a PDF in a new tab. Browsers apply `download` only to same-origin and
+`blob:` or `data:` URLs.
+
+<Stack gap={3}>
+  <FileDownloadItem noMargin href="/files/Q3-financial-report.pdf" name="Q3-financial-report.pdf" fileSize={2_400_000} />
+  <FileDownloadItem noMargin href="/files/8f2a91" download="Q3-financial-report.pdf" name="Q3-financial-report.pdf" fileSize={2_400_000} />
+</Stack>
+
+### File type icon
+
+Set `icon` to show the file type before the name, and pass `fileSize` a string
+to add the type after the size.
+
+<FileDownloadItem href="/files/Q3-financial-report.pdf" icon={DocumentPdf} name="Q3-financial-report.pdf" fileSize="2.4 MB · PDF" />
+
+### Download in code
+
+Omit `href` to render a button and start the download in `on:click`, such as
+after requesting a signed URL or fetching the file with an authorization header.
+
+<FileSource src="/framed/FileUploader/FileDownloadItemButton" />
+
+### Disabled
+
+Set `disabled` for a file that can no longer be downloaded, such as an expired
+link. Say why in `fileSize`.
+
+<FileDownloadItem disabled href="/files/Q3-financial-report.pdf" icon={DocumentPdf} name="Q3-financial-report.pdf" fileSize="Expired" />
+
+### Sizes
+
+Set `size` to `"field"`, `"small"` or `"xs"`, as on `FileUploaderItem`.
+
+<Stack gap={3}>
+  <FileDownloadItem noMargin href="/files/Q3-financial-report.pdf" name="Q3-financial-report.pdf" fileSize={2_400_000} />
+  <FileDownloadItem noMargin size="field" href="/files/Q3-financial-report.pdf" name="Q3-financial-report.pdf" fileSize={2_400_000} />
+  <FileDownloadItem noMargin size="small" href="/files/Q3-financial-report.pdf" name="Q3-financial-report.pdf" fileSize={2_400_000} />
+</Stack>
+
+## Drop container
+
+Use the file uploader drop container for drag-and-drop file uploads. It supports
+multiple file selection, size and duplicate checks, and custom validation.
+
+Set `minFileSize`, `maxFileSize`, and `preventDuplicate` for the same rejection
+reasons as `FileUploader` (`size`, `duplicate`). Use `validateFiles` for additional
+filtering; files it removes are reported with `reason: "invalid"`. Dispatches
+`change` and `rejected` as described in [Events](#events). Unlike
+`FileUploader`, its `add` carries the whole list after each drop or pick, not
+only the added files, and fires even when every file is rejected.
+
+This example rejects files over 1 kB and duplicates of already-selected files.
+
+<FileSource src="/framed/FileUploader/FileUploaderDropContainerValidation" />
+
+### Custom label
+
+Use the `labelChildren` slot to provide custom label content instead of `labelText`.
+
+<FileUploaderDropContainer>
+  <strong slot="labelChildren">Drag and drop files here or click to upload</strong>
+</FileUploaderDropContainer>
+
+### Description
+
+Set `aria-describedby` to the id of text that lists the accepted types and
+limits. It goes to the focusable drop target, not the wrapper, so screen
+readers announce it on focus. `aria-labelledby` works the same way.
+`FileUploaderButton` puts both on its button instead of the hidden input.
+
+<p id="drop-help" class="bx--label-description">
+  Max file size is 1 MB. Supported file types are .pdf and .docx.
+</p>
+<FileUploaderDropContainer
+  aria-describedby="drop-help"
+  accept={[".pdf", ".docx"]}
+  labelText="Drag and drop files here or click to upload"
+/>
+
+### Programmatic input access
+
+Use `bind:ref` to capture the underlying `<input type="file">` and trigger it
+programmatically.
+
+<FileSource src="/framed/FileUploader/FileUploaderDropContainerProgrammaticInputAccess" />
+
+## Skeleton
+
+Show a loading state with the file uploader skeleton.
+
+<FileUploaderSkeleton />
+
+### Without labels
+
+Set `hideLabelTitle` or `hideLabelDescription` to hide the corresponding
+skeleton line. This is useful when the live component is configured without
+those labels, preventing layout shift when toggling between the two.
+
+<FileUploaderSkeleton hideLabelTitle hideLabelDescription />

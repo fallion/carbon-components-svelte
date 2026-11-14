@@ -1,0 +1,503 @@
+---
+description: Box applies Carbon fill, inset, and border tokens to any container, for panels, callouts, and padded sections.
+---
+
+<script>
+  import { Box, ScrollGradient, Stack, Text } from "carbon-components-svelte";
+
+  const auditLogEntries = [
+    "Signed in from new device",
+    "Updated API key",
+    "Revoked session token",
+    "Created service account",
+    "Modified IAM role: viewer → editor",
+    "Exported audit log (CSV)",
+    "Enabled MFA",
+    "Disabled webhook endpoint",
+    "Rotated database credentials",
+    "Added user to Engineering group",
+  ];
+</script>
+
+## Basic
+
+The default component renders a `<div>` with no modifiers.
+
+<Box>Content inside a box.</Box>
+
+## Tokens
+
+Apply Carbon fill and border tokens.
+
+### Fill
+
+Set `fill` to a Carbon background token. Tokens resolve through the active theme.
+
+| Token          | Description                                                         |
+| -------------- | ------------------------------------------------------------------- |
+| `background`   | Default page background                                             |
+| `layer-01`     | First layer surface                                                 |
+| `layer-02`     | Second layer surface                                                |
+| `layer-03`     | Third layer surface                                                 |
+| `layer-accent` | Accent surface, such as a placeholder tile                          |
+| `field`        | Form field background                                               |
+| `inverse`      | Inverse surface background                                          |
+| `brand`        | Brand-colored surface. Pair with on-color text                      |
+
+<Stack gap={3}>
+  <Box fill="background" padding={5}>background</Box>
+  <Box fill="layer-01" padding={5}>layer-01</Box>
+  <Box fill="layer-02" padding={5}>layer-02</Box>
+  <Box fill="layer-03" padding={5}>layer-03</Box>
+  <Box fill="layer-accent" padding={5}>layer-accent</Box>
+  <Box fill="brand" padding={5}><Text color="on-color">brand</Text></Box>
+</Stack>
+
+Nested fills stack Carbon layer surfaces. Contrast depends on the active theme: on white, layer-02 matches the page background, so pair a darker outer fill with border to show depth.
+
+<Box fill="layer-01" padding={6} border="subtle">
+  <Box fill="layer-03" padding={5} border="subtle">
+    <Text type="body-01">layer-03 inside layer-01.</Text>
+  </Box>
+</Box>
+
+### Border
+
+Set `border` to a Carbon border token. Each utility applies `1px solid`.
+
+| Token         | Description                |
+| ------------- | --------------------------- |
+| `subtle`      | Subtle divider border      |
+| `strong`      | Strong divider border      |
+| `interactive` | Interactive element border |
+| `disabled`    | Disabled element border    |
+
+<Stack gap={3}>
+  <Box fill="layer-01" padding={5} border="subtle">subtle</Box>
+  <Box fill="layer-01" padding={5} border="strong">strong</Box>
+  <Box fill="layer-01" padding={5} border="interactive">interactive</Box>
+</Stack>
+
+Set `borderStyle` to `"dashed"` for a dashed border. It only takes effect when `border` is set.
+
+<Stack gap={3}>
+  <Box fill="layer-01" padding={5} border="strong" borderStyle="dashed">dashed</Box>
+</Stack>
+
+Set `borderWidth` to a pixel number or a CSS length for a thicker border. It only takes effect when `border` is set.
+
+<Stack gap={3}>
+  <Box fill="layer-01" padding={5} border="interactive" borderWidth={2}>2px border</Box>
+</Stack>
+
+Set `borderSide` to `"top"`, `"right"`, `"bottom"`, or `"left"` to apply the border to one side only, instead of all four. Combine it with `borderWidth` to control that side's thickness independently.
+
+<Stack gap={3}>
+  <Box fill="layer-01" padding={5} border="strong" borderSide="left" borderWidth={3}>left side only</Box>
+</Stack>
+
+### Shadow
+
+Set `shadow` to `true` to apply a raised Carbon box shadow.
+
+<Stack gap={3}>
+  <Box fill="layer-01" padding={5} shadow>raised</Box>
+</Stack>
+
+## Spacing
+
+Set padding and margin using the shared layout scale 1–13 (same values as [Stack](/components/Stack) gap). Pass a string for any CSS length.
+
+| Scale | Size          |
+| ----- | ------------- |
+| 1     | 0.125rem (2px)  |
+| 2     | 0.25rem (4px)   |
+| 3     | 0.5rem (8px)    |
+| 4     | 0.75rem (12px)  |
+| 5     | 1rem (16px)     |
+| 6     | 1.5rem (24px)   |
+| 7     | 2rem (32px)     |
+| 8     | 2.5rem (40px)   |
+| 9     | 3rem (48px)     |
+| 10    | 4rem (64px)     |
+| 11    | 5rem (80px)     |
+| 12    | 6rem (96px)     |
+| 13    | 10rem (160px)   |
+
+### Padding
+
+Use `padding` for all sides, or `paddingX`/`paddingY` to target an axis.
+
+<Stack gap={5}>
+  <Box fill="layer-01" padding={5}>Scale padding (5)</Box>
+  <Box fill="layer-01" padding="2rem">Custom padding (`2rem`)</Box>
+  <Box fill="layer-01" paddingX={6} paddingY={3}>Axis padding</Box>
+</Stack>
+
+Set `paddingTop`, `paddingRight`, `paddingBottom`, or `paddingLeft` to pad a single side. A side prop overrides `padding`, `paddingX`, and `paddingY` on that side.
+
+<Box fill="layer-01" padding={5} paddingLeft={9}>Extra space on the left only</Box>
+
+### Margin
+
+Use `margin` for all sides, or `marginX`/`marginY` to target an axis.
+
+<Stack gap={5}>
+  <Box fill="layer-01" padding={5} margin={5}>All-side margin</Box>
+  <Box fill="layer-01" padding={5} marginX={6}>Horizontal margin</Box>
+  <Box fill="layer-01" padding={5} marginY={5}>Vertical margin</Box>
+</Stack>
+
+Set `marginTop`, `marginRight`, `marginBottom`, or `marginLeft` to offset a single side. A side prop overrides `margin`, `marginX`, and `marginY` on that side.
+
+<Box border="subtle" borderStyle="dashed" padding={3}>
+  <Box fill="layer-01" padding={5} marginY={3} marginTop={9}>Extra space above only</Box>
+</Box>
+
+### Start and end
+
+Left and right are fixed to the screen. Start and end follow the reading direction: start is the left in a left-to-right page and the right in a right-to-left one. Set `paddingStart`, `paddingEnd`, `marginStart`, or `marginEnd` for space that belongs to the reading order, such as the space between an icon and its label. Use the left and right props only for space tied to the screen.
+
+A start or end prop overrides `padding` and `paddingX` (or `margin` and `marginX`) on its side, like the left and right props. Do not set a left or right prop and a start or end prop together.
+
+<Stack gap={5}>
+  <Box fill="layer-01" padding={5} paddingStart={9}>Extra space at the start</Box>
+  <Box fill="layer-01" padding={5} paddingStart={9} dir="rtl">Extra space at the start, right to left</Box>
+</Stack>
+
+## Width
+
+Set `width`, `maxWidth`, or `minWidth` to any CSS length. Numbers are treated as pixels. Use `fullWidth` to span the container (`width: 100%`).
+
+### Fixed width
+
+<Box fill="layer-01" padding={5} width="16rem">
+  Fixed width (`16rem`).
+</Box>
+
+### Max width
+
+<Stack gap={5}>
+  <Box fill="layer-01" padding={5} maxWidth="20rem">
+    Max width in rem (`20rem`).
+  </Box>
+  <Box fill="layer-01" padding={5} maxWidth={480}>
+    Max width in pixels (`480`).
+  </Box>
+</Stack>
+
+### Min width
+
+<Box fullWidth overflow="auto">
+  <Box fill="layer-01" padding={5} minWidth="30rem">
+    Min width in rem (`30rem`); scroll if the container is narrower.
+  </Box>
+</Box>
+
+### Full width
+
+<Box fullWidth>
+  <Box fill="layer-01" padding={5} fullWidth maxWidth="24rem">
+    Full width up to a custom max width.
+  </Box>
+</Box>
+
+## Height
+
+Set `height`, `minHeight`, or `maxHeight` using the same layout scale as
+padding and margin, or pass a string for any CSS length. Set `height` or
+`minHeight` to `"viewport"` to size the box to the full viewport height. The
+`"viewport"` keyword emits a class that sets `100vh` first and `100dvh` after,
+so the box tracks mobile browser chrome instead of clipping under it.
+
+### Scale and custom height
+
+<Stack gap={5}>
+  <Box fill="layer-01" padding={5} height={9}>Scale height (9)</Box>
+  <Box fill="layer-01" padding={5} maxHeight="8rem" overflow="auto">
+    Max height in rem (`8rem`), with the rest of this sentence scrolling
+    past the edge of the box so you can see the clip in action.
+  </Box>
+</Stack>
+
+### Viewport height
+
+Set `minHeight="viewport"` to center content in the full height of the
+viewport, such as a sign-in card.
+
+```svelte
+<Box minHeight="viewport" display="flex" align="center" justify="center">
+  <SignInCard />
+</Box>
+```
+
+## Position
+
+Set `position` to `"relative"`, `"absolute"` or `"sticky"`, then use `top`,
+`bottom`, `left`, or `right` to offset the box using the same layout scale as
+padding and margin (`0`–`13`), or pass a string for any CSS length. A sticky
+box sticks to the nearest scroll container, not the browser viewport.
+
+<Box height="8rem" border="subtle" overflow="auto">
+  <Box height="12rem">Scroll to see the sticky box below.</Box>
+  <Box position="sticky" bottom={0} fill="layer-01" padding={3} border="subtle" borderSide="top">
+    Sticky footer bar
+  </Box>
+</Box>
+
+### Absolute
+
+Set `position="absolute"` to place a box against its nearest positioned ancestor, such as a Box with `position="relative"`.
+
+<Box position="relative" height="8rem" border="subtle" padding={5}>
+  Build 4127 deployed to production.
+  <Box position="absolute" bottom={3} right={3} fill="layer-01" padding={3} border="subtle">
+    2 minutes ago
+  </Box>
+</Box>
+
+### Horizontal offsets
+
+Use `left` or `right` to pin a box to a horizontal edge, such as a sticky first column in a sideways-scrolling strip.
+
+<Box width="16rem" border="subtle" overflowX="auto" overflowY="hidden">
+  <Box display="flex" width="32rem">
+    <Box position="sticky" left={0} fill="layer-01" padding={3} border="subtle" borderSide="right">
+      Sticky column
+    </Box>
+    <Box padding={3}>Scroll sideways; the first column stays pinned to the left edge.</Box>
+  </Box>
+</Box>
+
+## Display
+
+Set `display` to control the CSS display mode. Use `"flex"` or `"inline-flex"` to lay out children without a separate flex wrapper, and `"inline-block"` to size a box inside running text. `"none"` hides the box and keeps its content mounted, so a component inside keeps its state.
+
+<Box display="flex">
+  <Box fill="layer-01" padding={4} border="subtle" marginX={2}>Flex item</Box>
+  <Box fill="layer-01" padding={4} border="subtle" marginX={2}>Flex item</Box>
+</Box>
+
+### Gap
+
+Set `gap` to space out flex or grid children without nesting a [Stack](/components/Stack). It uses the same `1`–`13` layout scale as `Stack`'s `gap`; strings accept any CSS length.
+
+<Box display="flex" gap={5}>
+  <Box fill="layer-01" padding={4} border="subtle">Flex item</Box>
+  <Box fill="layer-01" padding={4} border="subtle">Flex item</Box>
+  <Box fill="layer-01" padding={4} border="subtle">Flex item</Box>
+</Box>
+
+### Direction
+
+Set `direction="column"` to stack flex children vertically, the same layout as a vertical [Stack](/components/Stack). Combine it with `gap`, `align`, and `justify` when a styled container would otherwise wrap a single `Stack`.
+
+<Box display="flex" direction="column" gap={3} fill="layer-01" padding={5} border="subtle">
+  <Text type="heading-compact-02">Backups</Text>
+  <Text type="body-compact-01" color="secondary">Last snapshot completed 12 minutes ago.</Text>
+</Box>
+
+### Alignment
+
+Set `align` (`align-items`) and `justify` (`justify-content`) to position flex or grid children. They take the same values as [Stack](/components/Stack)'s `align` and `justify`. A grid whose `columns` are all `fr` tracks fills the row, so `justify` has no free space to distribute there.
+
+<Box display="flex" align="center" justify="space-between" height="4rem" paddingX={5} border="subtle">
+  <Text type="body-compact-01">Storage used</Text>
+  <Text type="body-compact-01" color="secondary">42 of 100 GB</Text>
+</Box>
+
+### Wrap
+
+Set `wrap` to let flex children flow onto more lines when they run out of room.
+
+<Box display="flex" wrap="wrap" gap={3} maxWidth="20rem">
+  {#each ["us-south", "us-east", "eu-de", "eu-gb", "jp-tok", "au-syd", "br-sao"] as region (region)}
+    <Box fill="layer-01" paddingX={4} paddingY={3} border="subtle">{region}</Box>
+  {/each}
+</Box>
+
+### Flex items
+
+Set `grow` to let a box take up the free space in a flex row, and `alignSelf` to override the parent's `align` for one child.
+
+<Box display="flex" align="start" gap={3} height="6rem" border="subtle" padding={3}>
+  <Box fill="layer-01" padding={3}>Start</Box>
+  <Box fill="layer-01" padding={3} alignSelf="end">End</Box>
+  <Box grow />
+  <Box fill="layer-01" padding={3} alignSelf="center">Pushed to the end</Box>
+</Box>
+
+### Grid columns
+
+With `display="grid"`, set `columns` to a number for that many equal-width tracks, or to a string used as-is for `grid-template-columns`. `columns` has no effect on other display modes.
+
+<Box display="grid" columns={3} gap={5}>
+  <Box fill="layer-01" padding={4} border="subtle">Grid item</Box>
+  <Box fill="layer-01" padding={4} border="subtle">Grid item</Box>
+  <Box fill="layer-01" padding={4} border="subtle">Grid item</Box>
+</Box>
+
+<Box display="grid" columns="12rem 1fr" gap={5} marginY={5}>
+  <Box fill="layer-01" padding={4} border="subtle">Sidebar</Box>
+  <Box fill="layer-01" padding={4} border="subtle">Main content</Box>
+</Box>
+
+## Responsive visibility
+
+Set `hideBelow` to hide the box on viewports narrower than a breakpoint, or `hideAbove` to hide it on viewports wider than one. The box stays visible at the named breakpoint itself. Both resolve in CSS, so the box is correct on first paint with no JavaScript viewport measuring. Resize the window to see each box toggle.
+
+| Prop | Hidden at |
+| ---- | --------- |
+| `hideBelow="md"` | `sm` |
+| `hideBelow="lg"` | `sm`, `md` |
+| `hideAbove="md"` | `lg`, `xlg`, `max` |
+| `hideAbove="sm"` | `md` and wider |
+
+<Box display="flex" gap={5}>
+  <Box hideBelow="lg" fill="layer-01" padding={4} border="subtle">Visible at lg and wider</Box>
+  <Box hideAbove="md" fill="layer-01" padding={4} border="subtle">Visible at md and narrower</Box>
+</Box>
+
+## Overflow
+
+Set `overflow` to control how content that exceeds the box's bounds is handled.
+
+<Box height="6rem" width="16rem" border="subtle" overflow="auto">
+  <Box height="12rem" padding={3}>Scroll to see the clipped content below.</Box>
+</Box>
+
+Box forwards `on:scroll`, `on:keydown`, `on:keyup`, `on:focusin`, and `on:focusout`, alongside click and mouse events, so a scrolling Box can react to its own scroll position.
+
+### Axis overflow
+
+Set `overflowX` or `overflowY` to control one axis only. Each overrides `overflow` on its own axis, so `overflow="hidden"` with `overflowX="auto"` scrolls horizontally while clipping vertically.
+
+<Box width="16rem" border="subtle" overflowX="auto" overflowY="hidden">
+  <Box width="32rem" padding={3}>Scroll sideways to see the rest of this wide row; the vertical axis never scrolls.</Box>
+</Box>
+
+### Scroll gradient
+
+Compose `Box` with [ScrollGradient](/components/ScrollGradient) to hint at overflow with a fading edge instead of a plain scrollbar. `Box` supplies the panel styling; `ScrollGradient` owns the scroll behavior, so leave `overflow` unset on it.
+
+<Box fill="layer-01" border="subtle" paddingY={3} maxWidth="20rem">
+  <ScrollGradient height="10rem">
+    {#each auditLogEntries as entry}
+      <p>{entry}</p>
+    {/each}
+  </ScrollGradient>
+</Box>
+
+## Custom element
+
+The box renders a `<div>` by default. Set `tag` to use a different element.
+
+<Box tag="section" fill="layer-01" padding={5} border="subtle">
+  Rendered as a `section`.
+</Box>
+
+## Element reference
+
+Use `bind:ref` to get the rendered element, for example to measure it, scroll it into view, or hand it to a non-Svelte library. `ref` follows `tag`, so it updates if `tag` swaps the element.
+
+```svelte
+<script>
+  let ref = null;
+</script>
+
+<Box bind:ref fill="layer-01" padding={5}>
+  Referenced box
+</Box>
+```
+
+## Composition
+
+<Box fill="layer-01" padding={6} border="subtle" maxWidth="42rem">
+  <Stack gap={3}>
+    <Text tag="h2" type="heading-04">API keys</Text>
+    <Text type="body-01" color="secondary">
+      API keys authenticate programmatic access to your workspace. Store secrets in IBM Cloud Secrets Manager and rotate them on a schedule your security team defines.
+    </Text>
+  </Stack>
+</Box>
+
+## Utility classes
+
+Apply Box utilities directly when you do not need the component. Classes use the `bx--` prefix.
+
+| Class | Description |
+| ----- | ----------- |
+| `bx--box-fill-background` | Default page background |
+| `bx--box-fill-layer-01` | First layer surface |
+| `bx--box-fill-layer-02` | Second layer surface |
+| `bx--box-fill-layer-03` | Third layer surface |
+| `bx--box-fill-layer-accent` | Accent surface |
+| `bx--box-fill-field` | Form field background |
+| `bx--box-fill-inverse` | Inverse surface background |
+| `bx--box-fill-brand` | Brand-colored surface |
+| `bx--box-border-subtle` | Subtle 1px border |
+| `bx--box-border-strong` | Strong 1px border |
+| `bx--box-border-interactive` | Interactive 1px border |
+| `bx--box-border-disabled` | Disabled 1px border |
+| `bx--box-border-style-dashed` | `border-style: dashed` |
+| `bx--box-border-side-top` | Zero the right, bottom, and left border widths |
+| `bx--box-border-side-right` | Zero the top, bottom, and left border widths |
+| `bx--box-border-side-bottom` | Zero the top, right, and left border widths |
+| `bx--box-border-side-left` | Zero the top, right, and bottom border widths |
+| `bx--box-shadow` | Raised Carbon box shadow |
+| `bx--box-p-{1-13}` | Padding on all sides |
+| `bx--box-px-{1-13}` | Horizontal padding |
+| `bx--box-py-{1-13}` | Vertical padding |
+| `bx--box-pt-{1-13}` | Top padding, overriding the all-sides and axis classes |
+| `bx--box-pr-{1-13}` | Right padding, overriding the all-sides and axis classes |
+| `bx--box-pb-{1-13}` | Bottom padding, overriding the all-sides and axis classes |
+| `bx--box-pl-{1-13}` | Left padding, overriding the all-sides and axis classes |
+| `bx--box-ps-{1-13}` | Inline-start padding, overriding the all-sides and axis classes |
+| `bx--box-pe-{1-13}` | Inline-end padding, overriding the all-sides and axis classes |
+| `bx--box-m-{1-13}` | Margin on all sides |
+| `bx--box-mx-{1-13}` | Horizontal margin |
+| `bx--box-my-{1-13}` | Vertical margin |
+| `bx--box-mt-{1-13}` | Top margin, overriding the all-sides and axis classes |
+| `bx--box-mr-{1-13}` | Right margin, overriding the all-sides and axis classes |
+| `bx--box-mb-{1-13}` | Bottom margin, overriding the all-sides and axis classes |
+| `bx--box-ml-{1-13}` | Left margin, overriding the all-sides and axis classes |
+| `bx--box-ms-{1-13}` | Inline-start margin, overriding the all-sides and axis classes |
+| `bx--box-me-{1-13}` | Inline-end margin, overriding the all-sides and axis classes |
+| `bx--box-full-width` | Span the full container width |
+| `bx--box-height-{1-13}` | Height |
+| `bx--box-height-viewport` | Full viewport height (`100dvh`, `100vh` fallback) |
+| `bx--box-min-height-{1-13}` | Min height |
+| `bx--box-min-height-viewport` | Full viewport min height (`100dvh`, `100vh` fallback) |
+| `bx--box-max-height-{1-13}` | Max height |
+| `bx--box-position-relative` | `position: relative` |
+| `bx--box-position-absolute` | `position: absolute` |
+| `bx--box-position-sticky` | `position: sticky` |
+| `bx--box-display-block` | `display: block` |
+| `bx--box-display-inline-block` | `display: inline-block` |
+| `bx--box-display-flex` | `display: flex` |
+| `bx--box-display-inline-flex` | `display: inline-flex` |
+| `bx--box-display-grid` | `display: grid` |
+| `bx--box-display-none` | `display: none` |
+| `bx--box-gap-{1-13}` | Gap between flex or grid children |
+| `bx--box-align-{start,center,end,stretch,baseline}` | `align-items` for flex or grid children |
+| `bx--box-justify-{start,center,end,space-between,space-around,space-evenly}` | `justify-content` for flex or grid children |
+| `bx--box-direction-{row,column}` | `flex-direction` for flex children |
+| `bx--box-wrap-{nowrap,wrap,wrap-reverse}` | `flex-wrap` for flex children |
+| `bx--box-align-self-{start,center,end,stretch,baseline}` | `align-self` inside a flex or grid parent |
+| `bx--box-grow` | `flex-grow: 1` inside a flex parent |
+| `bx--box-overflow-visible` | `overflow: visible` |
+| `bx--box-overflow-hidden` | `overflow: hidden` |
+| `bx--box-overflow-auto` | `overflow: auto` |
+| `bx--box-overflow-scroll` | `overflow: scroll` |
+| `bx--box-overflow-x-{visible,hidden,auto,scroll}` | `overflow-x` on the horizontal axis only |
+| `bx--box-overflow-y-{visible,hidden,auto,scroll}` | `overflow-y` on the vertical axis only |
+| `bx--box-top-{0-13}` | Offset from the top |
+| `bx--box-bottom-{0-13}` | Offset from the bottom |
+| `bx--box-left-{0-13}` | Offset from the left |
+| `bx--box-right-{0-13}` | Offset from the right |
+| `bx--box-hide-below-{md,lg,xlg,max}` | `display: none` below the breakpoint |
+| `bx--box-hide-above-{sm,md,lg,xlg}` | `display: none` above the breakpoint |
+
+<div class="bx--box-fill-layer-01 bx--box-p-5 bx--box-border-subtle">
+  Styled with utility classes
+</div>

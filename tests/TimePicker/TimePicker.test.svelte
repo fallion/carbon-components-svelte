@@ -1,0 +1,68 @@
+<script lang="ts">
+  import SelectItem from "carbon-components-svelte/Select/SelectItem.svelte";
+  import TimePicker from "carbon-components-svelte/TimePicker/TimePicker.svelte";
+  import TimePickerSelect from "carbon-components-svelte/TimePicker/TimePickerSelect.svelte";
+  import type { ComponentProps } from "svelte";
+
+  export let size: ComponentProps<TimePicker>["size"] = undefined;
+  export let value: ComponentProps<TimePicker>["value"] = "";
+  export let placeholder: ComponentProps<TimePicker>["placeholder"] = "hh:mm";
+  export let pattern: ComponentProps<TimePicker>["pattern"] =
+    "(1[012]|[1-9]):[0-5][0-9](\\s)?";
+  export let maxlength: ComponentProps<TimePicker>["maxlength"] = 5;
+  export let disabled: ComponentProps<TimePicker>["disabled"] = false;
+  export let readonly: ComponentProps<TimePicker>["readonly"] = false;
+  export let labelText: ComponentProps<TimePicker>["labelText"] = "Time";
+  export let hideLabel: ComponentProps<TimePicker>["hideLabel"] = false;
+  export let invalid: ComponentProps<TimePicker>["invalid"] = false;
+  export let invalidText: ComponentProps<TimePicker>["invalidText"] = "";
+  export let warn: ComponentProps<TimePicker>["warn"] = false;
+  export let warnText: ComponentProps<TimePicker>["warnText"] = "";
+  export let helperText: ComponentProps<TimePicker>["helperText"] = "";
+  export let id: ComponentProps<TimePicker>["id"] = "ccs-test";
+  export let name: ComponentProps<TimePicker>["name"] = "test-time";
+  export let ref: ComponentProps<TimePicker>["ref"] = null;
+  export let fluid: ComponentProps<TimePicker>["fluid"] = false;
+  export let selectTextOnFocus: ComponentProps<TimePicker>["selectTextOnFocus"] = false;
+  export let onChange: () => void = () => {};
+  export let onInput: () => void = () => {};
+  export let onKeydown: () => void = () => {};
+  export let onFocus: () => void = () => {};
+  export let onBlur: () => void = () => {};
+</script>
+
+<TimePicker
+  {size}
+  bind:value
+  {placeholder}
+  {pattern}
+  {maxlength}
+  {disabled}
+  {readonly}
+  {labelText}
+  {hideLabel}
+  {invalid}
+  {invalidText}
+  {warn}
+  {warnText}
+  {helperText}
+  {id}
+  {name}
+  {ref}
+  {fluid}
+  {selectTextOnFocus}
+  on:change={onChange}
+  on:input={onInput}
+  on:keydown={onKeydown}
+  on:focus={onFocus}
+  on:blur={onBlur}
+>
+  <TimePickerSelect value="pm">
+    <SelectItem value="am" text="AM" />
+    <SelectItem value="pm" text="PM" />
+  </TimePickerSelect>
+  <TimePickerSelect value="pdt">
+    <SelectItem value="pdt" text="PDT" />
+    <SelectItem value="gmt" text="GMT" />
+  </TimePickerSelect>
+</TimePicker>

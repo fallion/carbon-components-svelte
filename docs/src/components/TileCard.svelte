@@ -1,13 +1,18 @@
-<script>
-  export let href = undefined;
+<script lang="ts">
+  export let href: string | undefined = undefined;
   export let title = "";
   export let subtitle = "";
   export let borderRight = false;
   export let borderBottom = false;
 
-  import { AspectRatio, ClickableTile, Tile } from "carbon-components-svelte";
-  import LogoGithub32 from "carbon-icons-svelte/lib/LogoGithub32";
-  import Launch20 from "carbon-icons-svelte/lib/Launch20";
+  import {
+    AspectRatio,
+    ClickableTile,
+    Stack,
+    Tile,
+  } from "carbon-components-svelte";
+  import Launch from "carbon-icons-svelte/lib/Launch.svelte";
+  import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
 
   $: tileComponent = href ? ClickableTile : Tile;
 </script>
@@ -15,24 +20,25 @@
 <div class="card-wrapper" class:borderRight class:borderBottom>
   <AspectRatio>
     <svelte:component
-      this="{tileComponent}"
-      href="{href}"
+      this={tileComponent}
+      {href}
       {...$$restProps}
       style="height: 100%;"
     >
       <div class="card">
-        <div>
+        <Stack gap={1}>
           <h5 class="title">{title}</h5>
           {#if subtitle}
             <div class="subtitle">{subtitle}</div>
           {/if}
-        </div>
+        </Stack>
         <div class="card-footer">
           <svelte:component
-            this="{LogoGithub32}"
-            style="fill: var(--cds-icon-01)"
+            this={LogoGithub}
+            size={32}
+            style="fill: var(--cds-icon-primary)"
           />
-          <Launch20 style="fill: var(--cds-icon-01)" />
+          <Launch size={20} style="fill: var(--cds-icon-primary)" />
         </div>
       </div>
     </svelte:component>
@@ -46,11 +52,11 @@
   }
 
   .borderRight {
-    border-right: 1px solid var(--cds-ui-03);
+    border-right: 1px solid var(--cds-border-subtle-01);
   }
 
   .borderBottom {
-    border-bottom: 1px solid var(--cds-ui-03);
+    border-bottom: 1px solid var(--cds-border-subtle-01);
   }
 
   .card {
@@ -68,18 +74,17 @@
 
   .title {
     margin-top: calc(-1 * var(--cds-spacing-02));
-    margin-bottom: var(--cds-spacing-01);
   }
 
   .subtitle {
-    color: var(--cds-text-02);
+    color: var(--cds-text-secondary);
   }
 
-  @media (max-width: 671px) {
+  @media (max-width: 41.98rem) {
     .card-wrapper,
     .borderRight {
       border-right: 0;
-      border-bottom: 1px solid var(--cds-ui-03);
+      border-bottom: 1px solid var(--cds-border-subtle-01);
     }
   }
 </style>

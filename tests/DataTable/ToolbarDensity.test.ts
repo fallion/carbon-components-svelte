@@ -1,0 +1,218 @@
+import { render, screen } from "@testing-library/svelte";
+import Settings from "carbon-components-svelte/icons/Settings.svelte";
+import { user } from "../utils/user";
+import ToolbarDensity from "./ToolbarDensity.test.svelte";
+
+describe("ToolbarDensity", () => {
+  it("keeps the toolbar action class alongside a custom class", () => {
+    render(ToolbarDensity, {
+      props: { standalone: true, triggerClass: "custom" },
+    });
+
+    const trigger = screen.getByRole("button", { name: "Row height" });
+    expect(trigger).toHaveClass("bx--toolbar-action");
+    expect(trigger).toHaveClass("custom");
+  });
+
+  it("renders the default icon, replaced by a custom icon prop", () => {
+    const { container, unmount } = render(ToolbarDensity, {
+      props: { standalone: true },
+    });
+    expect(container.querySelector("svg")?.innerHTML).toContain("M4 18 15 18");
+    unmount();
+
+    const { container: withCustomIcon } = render(ToolbarDensity, {
+      props: { standalone: true, icon: Settings },
+    });
+    expect(withCustomIcon.querySelector("svg")?.innerHTML).toContain(
+      "M27,16.76",
+    );
+  });
+
+  it("shows every size as an ordered menuitemradio on open", async () => {
+    render(ToolbarDensity, { props: { standalone: true } });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(
+      screen
+        .getAllByRole("menuitemradio")
+        .map((item) => item.textContent?.trim()),
+    ).toEqual(["Compact", "Short", "Medium", "Tall"]);
+  });
+
+  it("checks the item matching the parent DataTable's size without a size prop", async () => {
+    render(ToolbarDensity, { props: { tableSize: "short" } });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(
+      screen.getByRole("menuitemradio", { name: "Short" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("sets the bound size and dispatches change when an item is picked", async () => {
+    const onchange = vi.fn();
+    render(ToolbarDensity, { props: { standalone: true, onchange } });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Tall" }));
+
+    expect(screen.getByText("Size: tall")).toBeInTheDocument();
+    expect(onchange).toHaveBeenCalledExactlyOnceWith({ size: "tall" });
+  });
+
+  it("renders only the sizes given", async () => {
+    render(ToolbarDensity, {
+      props: { standalone: true, sizes: ["compact", "tall"] },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(
+      screen
+        .getAllByRole("menuitemradio")
+        .map((item) => item.textContent?.trim()),
+    ).toEqual(["Compact", "Tall"]);
+  });
+
+  it("uses formatLabel for the item text", async () => {
+    render(ToolbarDensity, {
+      props: {
+        standalone: true,
+        formatLabel: (size: string) => size.toUpperCase(),
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(
+      screen.getByRole("menuitemradio", { name: "COMPACT" }),
+    ).toBeInTheDocument();
+  });
+
+  const toolbarSizeCases: Array<
+    ["compact" | "short" | "medium" | "tall" | undefined, string[]]
+  > = [
+    [undefined, ["bx--menu--lg"]],
+    ["compact", ["bx--menu--xs"]],
+    // "short" (a small toolbar's trigger width) has no size class of its
+    // own; Menu's unclassed base rule already matches it (32px).
+    ["short", []],
+  ];
+
+  it.each(toolbarSizeCases)(
+    "matches the menu's seam-hiding bridge width to a %s table's toolbar",
+    async (tableSize, expectedClasses) => {
+      render(ToolbarDensity, { props: { tableSize } });
+
+      await user.click(screen.getByRole("button", { name: "Row height" }));
+
+      const menu = screen.getByRole("menu");
+      for (const className of [
+        "bx--menu--xs",
+        "bx--menu--md",
+        "bx--menu--lg",
+      ]) {
+        if (expectedClasses.includes(className)) {
+          expect(menu).toHaveClass(className);
+        } else {
+          expect(menu).not.toHaveClass(className);
+        }
+      }
+    },
+  );
+
+  it("checks Medium by default standalone in a bare Toolbar", async () => {
+    render(ToolbarDensity, { props: { standalone: true } });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(
+      screen.getByRole("menuitemradio", { name: "Medium" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+});
+
+describe("DataTable Toolbar size inheritance", () => {
+  const toolbar = (container: HTMLElement) =>
+    container.querySelector(".bx--table-toolbar");
+
+  it("inherits the small toolbar from a short DataTable", () => {
+    const { container } = render(ToolbarDensity, {
+      props: { tableSize: "short" },
+    });
+
+    expect(toolbar(container)).toHaveClass("bx--table-toolbar--small");
+    expect(toolbar(container)).not.toHaveClass("bx--table-toolbar--normal");
+  });
+
+  it('maps a DataTable\'s Carbon v11 "sm" to the short toolbar and item', async () => {
+    const { container } = render(ToolbarDensity, {
+      props: { tableSize: "sm" },
+    });
+
+    expect(toolbar(container)).toHaveClass("bx--table-toolbar--small");
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(
+      screen.getByRole("menuitemradio", { name: "Short" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
+  it('checks the item for its own Carbon v11 "xl" size', async () => {
+    render(ToolbarDensity, { props: { standalone: true, size: "xl" } });
+
+    await user.click(screen.getByRole("button", { name: "Row height" }));
+
+    expect(screen.getByRole("menuitemradio", { name: "Tall" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  it("inherits the extra small toolbar from a compact DataTable", () => {
+    const { container } = render(ToolbarDensity, {
+      props: { tableSize: "compact" },
+    });
+
+    expect(toolbar(container)).toHaveClass("bx--table-toolbar--xs");
+    expect(toolbar(container)).not.toHaveClass("bx--table-toolbar--small");
+  });
+
+  it("inherits the default toolbar from medium/tall/unset DataTable sizes", () => {
+    for (const tableSize of [undefined, "medium", "tall"] as const) {
+      const { container } = render(ToolbarDensity, {
+        props: { tableSize },
+      });
+
+      expect(toolbar(container)).toHaveClass("bx--table-toolbar--normal");
+      expect(toolbar(container)).not.toHaveClass("bx--table-toolbar--small");
+    }
+  });
+
+  it("lets an explicit toolbar size override the inherited size", () => {
+    const { container } = render(ToolbarDensity, {
+      props: { tableSize: "tall", toolbarSize: "sm" },
+    });
+
+    expect(toolbar(container)).toHaveClass("bx--table-toolbar--small");
+
+    const { container: container2 } = render(ToolbarDensity, {
+      props: { tableSize: "short", toolbarSize: "default" },
+    });
+
+    expect(toolbar(container2)).toHaveClass("bx--table-toolbar--normal");
+    expect(toolbar(container2)).not.toHaveClass("bx--table-toolbar--small");
+  });
+
+  it("defaults to the normal toolbar when used standalone", () => {
+    const { container } = render(ToolbarDensity, {
+      props: { standalone: true },
+    });
+
+    expect(toolbar(container)).toHaveClass("bx--table-toolbar--normal");
+    expect(toolbar(container)).not.toHaveClass("bx--table-toolbar--small");
+  });
+});

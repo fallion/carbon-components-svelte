@@ -1,0 +1,1508 @@
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import RangeSliderComponent from "carbon-components-svelte/Slider/RangeSlider.svelte";
+import { tick } from "svelte";
+import { clickToFocus } from "../utils/click-to-focus";
+import { rect } from "../utils/rect";
+import { trackPosition } from "../utils/slider-track";
+import { user } from "../utils/user";
+import RangeSlider from "./RangeSlider.test.svelte";
+
+/** Matches a `change`/`input` event whose detail is the given bounds. */
+const bounds = (value: number, valueUpper: number) =>
+  expect.objectContaining({ detail: { value, valueUpper } });
+
+/**
+ * Stubs a 200px track over 0–100 and centers each 16px thumb on its value,
+ * so a press on the track picks the nearer handle as a browser would.
+ */
+const mockTrack = (
+  container: HTMLElement,
+  value: number,
+  valueUpper: number,
+) => {
+  const slider = container.querySelector(".bx--slider");
+  const track = container.querySelector(".bx--slider__track");
+  assert(slider instanceof HTMLElement && track instanceof HTMLElement);
+  vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+    rect({ right: 200, height: 2 }),
+  );
+  const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+  vi.spyOn(lowerThumb, "getBoundingClientRect").mockReturnValue(
+    rect({ left: value * 2 - 8, width: 16, height: 16 }),
+  );
+  vi.spyOn(upperThumb, "getBoundingClientRect").mockReturnValue(
+    rect({ left: valueUpper * 2 - 8, width: 16, height: 16 }),
+  );
+  return { slider, track, lowerThumb, upperThumb };
+};
+
+describe("RangeSlider", () => {
+  it("names each thumb and text input by the label and its bound", () => {
+    render(RangeSlider, { props: { labelText: "Price" } });
+
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+    expect(lowerThumb).toHaveAccessibleName("Price Lower bound");
+    expect(upperThumb).toHaveAccessibleName("Price Upper bound");
+
+    const [lowerInput, upperInput] = screen.getAllByRole("spinbutton");
+    expect(lowerInput).toHaveAccessibleName("Price Lower bound");
+    expect(upperInput).toHaveAccessibleName("Price Upper bound");
+  });
+
+  it("keeps read-only thumbs reachable by keyboard", async () => {
+    render(RangeSlider, { props: { readonly: true, value: 10 } });
+
+    const [lowerThumb] = screen.getAllByRole("slider");
+    lowerThumb.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(lowerThumb).toHaveAttribute("aria-valuenow", "10");
+  });
+
+  it("dispatches focus and blur events from both text inputs with a handle", async () => {
+    const onfocus = vi.fn();
+    const onblur = vi.fn();
+    render(RangeSlider, {
+      props: { onfocus, onblur, value: 10, valueUpper: 90 },
+    });
+
+    const [lower, upper] = screen.getAllByRole("spinbutton");
+
+    await fireEvent.focus(lower);
+    expect(onfocus).toHaveBeenCalledTimes(1);
+    expect(onfocus.mock.calls[0][0].detail).toEqual({
+      value: 10,
+      valueUpper: 90,
+      handle: "lower",
+    });
+    await fireEvent.blur(lower);
+    expect(onblur).toHaveBeenCalledTimes(1);
+    expect(onblur.mock.calls[0][0].detail).toEqual({
+      value: 10,
+      valueUpper: 90,
+      handle: "lower",
+    });
+
+    await fireEvent.focus(upper);
+    expect(onfocus).toHaveBeenCalledTimes(2);
+    expect(onfocus.mock.calls[1][0].detail).toEqual({
+      value: 10,
+      valueUpper: 90,
+      handle: "upper",
+    });
+    await fireEvent.blur(upper);
+    expect(onblur).toHaveBeenCalledTimes(2);
+    expect(onblur.mock.calls[1][0].detail).toEqual({
+      value: 10,
+      valueUpper: 90,
+      handle: "upper",
+    });
+  });
+
+  it("selects each text input's full value on focus when selectTextOnFocus is true", async () => {
+    render(RangeSlider, {
+      props: { selectTextOnFocus: true, value: 10, valueUpper: 90 },
+    });
+
+    const [lower, upper] = screen.getAllByRole("spinbutton");
+    assert(lower instanceof HTMLInputElement);
+    assert(upper instanceof HTMLInputElement);
+
+    const selectLower = vi.spyOn(lower, "select");
+    await user.click(lower);
+    await tick();
+    expect(selectLower).toHaveBeenCalled();
+
+    const selectUpper = vi.spyOn(upper, "select");
+    await user.click(upper);
+    await tick();
+    expect(selectUpper).toHaveBeenCalled();
+  });
+
+  it("keeps each selected value through the click's mouseup", async () => {
+    render(RangeSlider, {
+      props: { selectTextOnFocus: true, value: 10, valueUpper: 90 },
+    });
+
+    const [lower, upper] = screen.getAllByRole("spinbutton");
+    expect((await clickToFocus(lower)).defaultPrevented).toBe(true);
+    expect((await clickToFocus(upper)).defaultPrevented).toBe(true);
+  });
+
+  it("does not select all text on focus when selectTextOnFocus is false (default)", async () => {
+    render(RangeSlider, { props: { value: 10, valueUpper: 90 } });
+
+    const [lower] = screen.getAllByRole("spinbutton");
+    assert(lower instanceof HTMLInputElement);
+    const select = vi.spyOn(lower, "select");
+    await user.click(lower);
+    await tick();
+
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("does not select text on focus when disabled", async () => {
+    render(RangeSlider, {
+      props: {
+        selectTextOnFocus: true,
+        disabled: true,
+        value: 10,
+        valueUpper: 90,
+      },
+    });
+
+    const [lower, upper] = screen.getAllByRole("spinbutton");
+    assert(lower instanceof HTMLInputElement);
+    assert(upper instanceof HTMLInputElement);
+    const selectLower = vi.spyOn(lower, "select");
+    const selectUpper = vi.spyOn(upper, "select");
+    await fireEvent.focus(lower);
+    await fireEvent.focus(upper);
+
+    expect(selectLower).not.toHaveBeenCalled();
+    expect(selectUpper).not.toHaveBeenCalled();
+  });
+
+  it("should hide both text inputs when hideTextInput is true", () => {
+    render(RangeSlider, { props: { hideTextInput: true } });
+
+    const inputs = screen
+      .getAllByLabelText(/bound/i)
+      .filter((el) => el.tagName === "INPUT");
+    expect(inputs).toHaveLength(2);
+    for (const input of inputs) {
+      expect(input).toHaveAttribute("type", "hidden");
+    }
+  });
+
+  it("leaves the thumbs as the only controls when read-only", async () => {
+    render(RangeSlider, { props: { readonly: true, value: 10 } });
+
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+    await user.tab();
+    expect(lowerThumb).toHaveFocus();
+    await user.tab();
+    expect(upperThumb).toHaveFocus();
+    await user.tab();
+    expect(document.body).toHaveFocus();
+  });
+
+  it("hides the range labels with hideRangeLabels", () => {
+    const { container } = render(RangeSlider, {
+      props: { hideRangeLabels: true },
+    });
+
+    expect(container.querySelector(".bx--slider__range-label")).toBeNull();
+  });
+
+  it.each([
+    {
+      handle: "lower",
+      minGap: 0,
+      value: 10,
+      valueUpper: 50,
+      typed: "80",
+      limit: ["max", "50"],
+      expected: [50, 50],
+    },
+    {
+      handle: "upper",
+      minGap: 0,
+      value: 40,
+      valueUpper: 80,
+      typed: "20",
+      limit: ["min", "40"],
+      expected: [40, 40],
+    },
+    {
+      handle: "lower",
+      minGap: 10,
+      value: 10,
+      valueUpper: 50,
+      typed: "45",
+      limit: ["max", "40"],
+      expected: [40, 50],
+    },
+    {
+      handle: "upper",
+      minGap: 10,
+      value: 40,
+      valueUpper: 80,
+      typed: "45",
+      limit: ["min", "50"],
+      expected: [40, 50],
+    },
+  ])(
+    "should clamp a typed $handle value to the other handle (minGap $minGap)",
+    async ({ handle, minGap, value, valueUpper, typed, limit, expected }) => {
+      const onchange = vi.fn();
+      render(RangeSlider, { props: { value, valueUpper, minGap, onchange } });
+
+      const input =
+        screen.getAllByRole("spinbutton")[handle === "lower" ? 0 : 1];
+      expect(input).toHaveAttribute(limit[0], limit[1]);
+      await user.clear(input);
+      await user.type(input, typed);
+      await user.keyboard("{Tab}");
+
+      expect(onchange).toHaveBeenCalledWith(bounds(expected[0], expected[1]));
+    },
+  );
+
+  it.each([
+    { typed: "", expected: "50" },
+    { typed: "abc", expected: "50" },
+    { typed: "٣٠", expected: "30" },
+    { typed: "80", expected: "50" },
+  ])(
+    "shows $expected after typing '$typed' into the lower input",
+    async ({ typed, expected }) => {
+      render(RangeSlider, {
+        props: { value: 50, valueUpper: 50, inputType: "text" },
+      });
+      const [lowerInput] = screen.getAllByRole("textbox");
+
+      await fireEvent.change(lowerInput, { target: { value: typed } });
+
+      const [lowerThumb] = screen.getAllByRole("slider");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", expected);
+      expect(lowerInput).toHaveValue(expected);
+    },
+  );
+
+  it.each([
+    {
+      handle: "lower",
+      value: 49,
+      valueUpper: 50,
+      key: "{ArrowRight}",
+      expected: "50",
+    },
+    {
+      handle: "upper",
+      value: 50,
+      valueUpper: 51,
+      key: "{ArrowLeft}",
+      expected: "50",
+    },
+  ])(
+    "should not push the $handle handle past the other via arrow keys",
+    async ({ handle, value, valueUpper, key, expected }) => {
+      render(RangeSlider, { props: { value, valueUpper } });
+
+      const thumb = screen.getAllByRole("slider")[handle === "lower" ? 0 : 1];
+      thumb.focus();
+      await user.keyboard(key);
+      await user.keyboard(key);
+
+      expect(thumb).toHaveAttribute("aria-valuenow", expected);
+    },
+  );
+
+  it("prevents arrow/Home/End default actions (page scroll) while dragging a thumb", () => {
+    render(RangeSlider);
+
+    const [lowerThumb] = screen.getAllByRole("slider");
+
+    for (const key of ["ArrowRight", "Home", "End"]) {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
+      lowerThumb.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+  });
+
+  it.each(["altKey", "metaKey"])(
+    "leaves %s+Arrow to the browser",
+    (modifier) => {
+      render(RangeSlider, { props: { value: 50, valueUpper: 80 } });
+      const [lowerThumb] = screen.getAllByRole("slider");
+      const event = new KeyboardEvent("keydown", {
+        key: "ArrowLeft",
+        bubbles: true,
+        cancelable: true,
+        [modifier]: true,
+      });
+
+      lowerThumb.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "50");
+    },
+  );
+
+  it.each([
+    {
+      handle: "lower",
+      first: ["{End}", "60"],
+      second: ["{Home}", "0"],
+    },
+    {
+      handle: "upper",
+      first: ["{Home}", "40"],
+      second: ["{End}", "100"],
+    },
+  ])(
+    "should jump the $handle thumb via Home and End, clamped to the other handle",
+    async ({ handle, first, second }) => {
+      render(RangeSlider, {
+        props: { value: 40, valueUpper: 60, min: 0, max: 100 },
+      });
+
+      const thumb = screen.getAllByRole("slider")[handle === "lower" ? 0 : 1];
+      thumb.focus();
+      await user.keyboard(first[0]);
+      expect(thumb).toHaveAttribute("aria-valuenow", first[1]);
+      await user.keyboard(second[0]);
+      expect(thumb).toHaveAttribute("aria-valuenow", second[1]);
+    },
+  );
+
+  it("should dispatch change event with { value, valueUpper } detail", async () => {
+    const onchange = vi.fn();
+    const oninput = vi.fn();
+    render(RangeSlider, {
+      props: { value: 0, valueUpper: 100, onchange, oninput },
+    });
+
+    const [lowerThumb] = screen.getAllByRole("slider");
+    lowerThumb.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(onchange).toHaveBeenLastCalledWith(bounds(1, 100));
+    expect(oninput).toHaveBeenLastCalledWith(bounds(1, 100));
+  });
+
+  it("ends the drag on a release right after the press", async () => {
+    const onchange = vi.fn();
+    const { container } = render(RangeSlider, {
+      props: { value: 20, valueUpper: 80, onchange },
+    });
+    const slider = container.querySelector(".bx--slider");
+    const track = container.querySelector(".bx--slider__track");
+    assert(slider instanceof HTMLElement && track instanceof HTMLElement);
+    vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+      rect({ right: 200, height: 2 }),
+    );
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+    vi.spyOn(lowerThumb, "getBoundingClientRect").mockReturnValue(
+      rect({ left: 32, width: 16, height: 16 }),
+    );
+    vi.spyOn(upperThumb, "getBoundingClientRect").mockReturnValue(
+      rect({ left: 152, width: 16, height: 16 }),
+    );
+
+    await fireEvent.pointerDown(slider, { clientX: 60, pointerId: 1 });
+    await fireEvent.pointerUp(slider, { pointerId: 1 });
+    expect(onchange).toHaveBeenCalledExactlyOnceWith(bounds(30, 80));
+
+    // With no button held, a later move must not drag the thumb.
+    await fireEvent.pointerMove(slider, { clientX: 100, pointerId: 1 });
+    expect(lowerThumb).toHaveAttribute("aria-valuenow", "30");
+  });
+
+  it("moves the upper thumb for a click above stacked thumbs", async () => {
+    const { container } = render(RangeSlider, {
+      props: { value: 50, valueUpper: 50 },
+    });
+    const slider = container.querySelector(".bx--slider");
+    const track = container.querySelector(".bx--slider__track");
+    assert(slider instanceof HTMLElement && track instanceof HTMLElement);
+    vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+      rect({ right: 200, height: 2 }),
+    );
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+    for (const thumb of [lowerThumb, upperThumb]) {
+      vi.spyOn(thumb, "getBoundingClientRect").mockReturnValue(
+        rect({ left: 92, width: 16, height: 16 }),
+      );
+    }
+
+    await fireEvent.pointerDown(slider, { clientX: 160, pointerId: 1 });
+    await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+    expect(lowerThumb).toHaveAttribute("aria-valuenow", "50");
+    expect(upperThumb).toHaveAttribute("aria-valuenow", "80");
+  });
+
+  it("should clamp keyboard arrow values to min and max", async () => {
+    const onchange = vi.fn();
+    const oninput = vi.fn();
+    render(RangeSlider, {
+      props: { value: 0, valueUpper: 100, onchange, oninput },
+    });
+
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+
+    upperThumb.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(oninput).toHaveBeenLastCalledWith(bounds(0, 100));
+    expect(onchange).toHaveBeenLastCalledWith(bounds(0, 100));
+
+    onchange.mockClear();
+    oninput.mockClear();
+    lowerThumb.focus();
+    await user.keyboard("{Shift>}{ArrowLeft}{/Shift}");
+    expect(oninput).toHaveBeenLastCalledWith(bounds(0, 100));
+    expect(onchange).toHaveBeenLastCalledWith(bounds(0, 100));
+  });
+
+  it("should move the focused thumb by the large step on PageUp and PageDown", async () => {
+    const onchange = vi.fn();
+    render(RangeSlider, { props: { value: 0, valueUpper: 100, onchange } });
+
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+
+    lowerThumb.focus();
+    await user.keyboard("{PageUp}");
+    expect(onchange).toHaveBeenLastCalledWith(bounds(25, 100));
+
+    upperThumb.focus();
+    await user.keyboard("{PageDown}");
+    expect(onchange).toHaveBeenLastCalledWith(bounds(25, 75));
+  });
+
+  it.each([
+    ["Shift+ArrowRight", "{Shift>}{ArrowRight}{/Shift}"],
+    ["PageUp", "{PageUp}"],
+  ])("moves by range / stepMultiplier on %s", async (_name, keys) => {
+    const onchange = vi.fn();
+    render(RangeSlider, {
+      props: { value: 0, valueUpper: 100, stepMultiplier: 10, onchange },
+    });
+
+    const [lowerThumb] = screen.getAllByRole("slider");
+    lowerThumb.focus();
+    await user.keyboard(keys);
+
+    expect(onchange).toHaveBeenLastCalledWith(bounds(10, 100));
+  });
+
+  it("prevents PageUp/PageDown default actions (page scroll)", () => {
+    render(RangeSlider);
+
+    const [lowerThumb] = screen.getAllByRole("slider");
+
+    for (const key of ["PageUp", "PageDown"]) {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+      });
+      lowerThumb.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+  });
+
+  it("should allow the upper handle to reach max via keyboard when step doesn't evenly divide the range", async () => {
+    render(RangeSlider, {
+      props: { value: 0, valueUpper: 400, min: 0, max: 435, step: 50 },
+    });
+
+    const [, upperThumb] = screen.getAllByRole("slider");
+    upperThumb.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(upperThumb).toHaveAttribute("aria-valuenow", "435");
+  });
+
+  it.each([
+    {
+      name: "0.1 steps",
+      props: { max: 1, step: 0.1, value: 0, valueUpper: 0.5 },
+      keys: "{ArrowRight}{ArrowRight}{ArrowRight}",
+      expected: "0.3",
+    },
+    {
+      name: "a grid counted from min",
+      props: { min: 3, max: 103, step: 5, value: 3, valueUpper: 103 },
+      keys: "{ArrowRight}",
+      expected: "8",
+    },
+  ])("keys land on the step grid: $name", async ({ props, keys, expected }) => {
+    render(RangeSlider, { props });
+    const [lowerThumb] = screen.getAllByRole("slider");
+    lowerThumb.focus();
+    await user.keyboard(keys);
+    expect(lowerThumb).toHaveAttribute("aria-valuenow", expected);
+  });
+
+  it("should not dispatch change on programmatic value updates", async () => {
+    const onchange = vi.fn();
+    const { rerender } = render(RangeSlider, {
+      props: { value: 10, valueUpper: 90, onchange },
+    });
+
+    await rerender({ value: 20, valueUpper: 80 });
+
+    expect(onchange).not.toHaveBeenCalled();
+  });
+
+  it("should format aria-valuetext on both thumbs without changing numeric values", async () => {
+    const onchange = vi.fn();
+    render(RangeSlider, {
+      props: {
+        value: 20,
+        valueUpper: 80,
+        onchange,
+        formatValue: (v) => `$${v}`,
+      },
+    });
+
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+    expect(lowerThumb).toHaveAttribute("aria-valuetext", "$20");
+    expect(upperThumb).toHaveAttribute("aria-valuetext", "$80");
+    expect(lowerThumb).toHaveAttribute("aria-valuenow", "20");
+    expect(upperThumb).toHaveAttribute("aria-valuenow", "80");
+    expect(screen.getByText("$0")).toBeInTheDocument();
+    expect(screen.getByText("$100")).toBeInTheDocument();
+
+    const inputs = screen.getAllByRole("spinbutton");
+    expect(inputs[0]).toHaveValue(20);
+    expect(inputs[1]).toHaveValue(80);
+
+    lowerThumb.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(onchange).toHaveBeenLastCalledWith(bounds(21, 80));
+    expect(lowerThumb).toHaveAttribute("aria-valuenow", "21");
+    expect(lowerThumb).toHaveAttribute("aria-valuetext", "$21");
+  });
+
+  it("announces both thumbs as disabled and leaves them out of the tab order", () => {
+    render(RangeSlider, {
+      props: { value: 10, valueUpper: 90, disabled: true },
+    });
+
+    for (const thumb of screen.getAllByRole("slider")) {
+      expect(thumb).toHaveAttribute("aria-disabled", "true");
+      expect(thumb).not.toHaveAttribute("tabindex");
+    }
+  });
+
+  it.each(["Home", "End", "PageUp", "ArrowRight"])(
+    "ignores %s on a disabled thumb",
+    async (key) => {
+      const oninput = vi.fn();
+      const onchange = vi.fn();
+      render(RangeSlider, {
+        props: {
+          value: 50,
+          valueUpper: 80,
+          disabled: true,
+          oninput,
+          onchange,
+        },
+      });
+
+      // Disabled thumbs can't take focus, so dispatch the key directly.
+      const [lowerThumb] = screen.getAllByRole("slider");
+      await fireEvent.keyDown(lowerThumb, { key });
+
+      expect(oninput).not.toHaveBeenCalled();
+      expect(onchange).not.toHaveBeenCalled();
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "50");
+    },
+  );
+
+  it("should render labeled marks at the given values", () => {
+    const { container } = render(RangeSlider, {
+      props: {
+        min: 0,
+        max: 3,
+        step: 1,
+        value: 0,
+        valueUpper: 2,
+        marks: [
+          { value: 0, label: "Off" },
+          { value: 1, label: "Low" },
+          { value: 2, label: "Med" },
+          { value: 3, label: "High" },
+        ],
+      },
+    });
+
+    const markEls =
+      container.querySelectorAll<HTMLElement>(".bx--slider__mark");
+    expect(markEls).toHaveLength(4);
+    expect(screen.getByText("Off")).toBeInTheDocument();
+    expect(screen.getByText("High")).toBeInTheDocument();
+    expect(trackPosition(markEls[0])).toBe("0%");
+    expect(trackPosition(markEls[3])).toBe("100%");
+  });
+
+  it.each([
+    ["disabled", { disabled: true }],
+    ["readonly", { readonly: true }],
+  ])("hides invalid and warn states when %s", (_, props) => {
+    for (const status of [
+      { invalid: true, invalidText: "Invalid range" },
+      { warn: true, warnText: "Check range" },
+    ]) {
+      const { container, unmount } = render(RangeSliderComponent, {
+        props: { labelText: "Range", ...status, ...props },
+      });
+      expect(screen.queryByText("Invalid range")).not.toBeInTheDocument();
+      expect(screen.queryByText("Check range")).not.toBeInTheDocument();
+      const inputs = container.querySelectorAll("input");
+      expect(inputs).toHaveLength(2);
+      for (const input of inputs) {
+        expect(input).not.toHaveAttribute("aria-invalid");
+        expect(input).not.toHaveAttribute("data-warn");
+      }
+      unmount();
+    }
+  });
+
+  it("describes the field as read-only for screen readers that ignore aria-readonly", () => {
+    const { container } = render(RangeSliderComponent, {
+      props: { labelText: "Range", id: "test-range", readonly: true },
+    });
+
+    const [lower, upper] = screen.getAllByRole("slider");
+    expect(lower).toHaveAttribute("aria-readonly", "true");
+    expect(lower).toHaveAttribute("aria-describedby", "readonly-test-range");
+    expect(upper).toHaveAttribute("aria-readonly", "true");
+    expect(upper).toHaveAttribute("aria-describedby", "readonly-test-range");
+
+    const description = container.querySelector("#readonly-test-range");
+    expect(description).toHaveTextContent("Read-only");
+    expect(description).toHaveClass("bx--visually-hidden");
+  });
+
+  it("shows helper text", () => {
+    render(RangeSliderComponent, {
+      props: {
+        labelText: "Range",
+        id: "test-range",
+        helperText: "Drag both ends",
+      },
+    });
+
+    expect(screen.getByText("Drag both ends")).toBeInTheDocument();
+    for (const thumb of screen.getAllByRole("slider")) {
+      expect(thumb).toHaveAttribute("aria-describedby", "helper-test-range");
+    }
+  });
+
+  describe("minGap", () => {
+    it("should stop the lower handle minGap short of the upper handle", async () => {
+      render(RangeSlider, {
+        props: { value: 40, valueUpper: 50, minGap: 10 },
+      });
+
+      const [lowerThumb] = screen.getAllByRole("slider");
+      lowerThumb.focus();
+      await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "40");
+      expect(lowerThumb).toHaveAttribute("aria-valuemax", "40");
+    });
+
+    it("should stop the upper handle minGap short of the lower handle", async () => {
+      render(RangeSlider, {
+        props: { value: 40, valueUpper: 60, minGap: 10 },
+      });
+
+      const [, upperThumb] = screen.getAllByRole("slider");
+      upperThumb.focus();
+      await user.keyboard("{ArrowLeft>15/}");
+
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "50");
+      expect(upperThumb).toHaveAttribute("aria-valuemin", "50");
+    });
+
+    it("should keep both values in bounds when minGap exceeds the range", async () => {
+      render(RangeSlider, {
+        props: { min: 0, max: 100, value: 40, valueUpper: 60, minGap: 200 },
+      });
+
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+      const lower = Number(lowerThumb.getAttribute("aria-valuenow"));
+      const upper = Number(upperThumb.getAttribute("aria-valuenow"));
+      expect(lower).toBeGreaterThanOrEqual(0);
+      expect(upper).toBeLessThanOrEqual(100);
+      expect(lower).toBeLessThanOrEqual(upper);
+      expect(upper - lower).toBeLessThanOrEqual(100);
+
+      lowerThumb.focus();
+      await user.keyboard("{End}");
+      expect(
+        Number(lowerThumb.getAttribute("aria-valuenow")),
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        Number(lowerThumb.getAttribute("aria-valuemax")),
+      ).toBeGreaterThanOrEqual(0);
+    });
+
+    it("should respect minGap on Home and End", async () => {
+      render(RangeSlider, {
+        props: { min: 0, max: 100, value: 40, valueUpper: 60, minGap: 10 },
+      });
+
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+      lowerThumb.focus();
+      await user.keyboard("{End}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "50");
+
+      upperThumb.focus();
+      await user.keyboard("{Home}");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "60");
+    });
+
+    it("should stop a dragged lower handle minGap short of the upper handle", async () => {
+      const { container } = render(RangeSlider, {
+        props: { value: 10, valueUpper: 50, minGap: 10 },
+      });
+
+      const slider = container.querySelector(".bx--slider");
+      const track = container.querySelector(".bx--slider__track");
+      assert(slider instanceof HTMLElement && track instanceof HTMLElement);
+      vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+        rect({ right: 200, height: 2 }),
+      );
+
+      // Pressing the thumb itself grabs it, so no nearest-handle pick is made.
+      const [lowerThumb] = screen.getAllByRole("slider");
+      await fireEvent.pointerDown(lowerThumb, { clientX: 20, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 98, pointerId: 1 });
+      await tick();
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "40");
+    });
+
+    it("should correct a programmatic update that violates minGap", async () => {
+      const { rerender } = render(RangeSlider, {
+        props: { value: 20, valueUpper: 80, minGap: 10 },
+      });
+
+      await rerender({ value: 75 });
+
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "75");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "85");
+    });
+  });
+
+  describe("orientation", () => {
+    it("should set aria-orientation on both thumbs", () => {
+      const { unmount } = render(RangeSlider);
+      for (const thumb of screen.getAllByRole("slider")) {
+        expect(thumb).toHaveAttribute("aria-orientation", "horizontal");
+      }
+      unmount();
+
+      render(RangeSlider, { props: { orientation: "vertical" } });
+      for (const thumb of screen.getAllByRole("slider")) {
+        expect(thumb).toHaveAttribute("aria-orientation", "vertical");
+      }
+    });
+
+    it("should position handles, fill, and marks along the vertical axis", () => {
+      const { container } = render(RangeSlider, {
+        props: {
+          orientation: "vertical",
+          value: 20,
+          valueUpper: 70,
+          marks: [{ value: 0 }, { value: 100 }],
+        },
+      });
+
+      const lower = container.querySelector<HTMLElement>(
+        ".bx--slider__thumb-wrapper--lower",
+      );
+      const upper = container.querySelector<HTMLElement>(
+        ".bx--slider__thumb-wrapper--upper",
+      );
+      assert(lower && upper);
+      expect(lower).toHaveStyle({ top: "80%" });
+      expect(upper).toHaveStyle({ top: "30%" });
+      expect(lower.style.insetInlineStart).toBe("");
+      expect(
+        container.querySelector<HTMLElement>(".bx--slider__filled-track")?.style
+          .transform,
+      ).toBe("translate(-50%, -20%) scaleY(0.5)");
+      const marks =
+        container.querySelectorAll<HTMLElement>(".bx--slider__mark");
+      expect(marks[0]).toHaveStyle({ top: "100%" });
+      expect(marks[1]).toHaveStyle({ top: "0%" });
+    });
+
+    it("should pick the handle nearest the pointer by clientY and read the value from it", async () => {
+      const { container } = render(RangeSlider, {
+        props: { orientation: "vertical", value: 20, valueUpper: 70 },
+      });
+
+      const slider = container.querySelector(".bx--slider");
+      const track = container.querySelector(".bx--slider__track");
+      assert(slider instanceof HTMLElement);
+      assert(track instanceof HTMLElement);
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+      vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+        rect({ bottom: 200, right: 2 }),
+      );
+      // Same x for both handles, so only the y distance can tell them apart.
+      vi.spyOn(lowerThumb, "getBoundingClientRect").mockReturnValue(
+        rect({ top: 160, bottom: 176, height: 16, width: 24 }),
+      );
+      vi.spyOn(upperThumb, "getBoundingClientRect").mockReturnValue(
+        rect({ top: 44, bottom: 60, height: 16, width: 24 }),
+      );
+
+      await fireEvent.pointerDown(slider, {
+        clientX: 1,
+        clientY: 20,
+        pointerId: 1,
+      });
+      await tick();
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "20");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "90");
+    });
+
+    it("should increase with ArrowUp and decrease with ArrowDown when vertical", async () => {
+      render(RangeSlider, {
+        props: { orientation: "vertical", value: 20, valueUpper: 70 },
+      });
+
+      const [lowerThumb] = screen.getAllByRole("slider");
+      lowerThumb.focus();
+      await user.keyboard("{ArrowUp}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "21");
+      await user.keyboard("{ArrowDown}{ArrowDown}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "19");
+    });
+  });
+
+  it("should announce a mark label on the handle sitting on its mark", () => {
+    render(RangeSlider, {
+      props: {
+        min: 0,
+        max: 100,
+        value: 0,
+        valueUpper: 60,
+        marks: [
+          { value: 0, label: "Free" },
+          { value: 100, label: "Max" },
+        ],
+      },
+    });
+
+    const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+    expect(lowerThumb).toHaveAttribute("aria-valuetext", "Free");
+    expect(upperThumb).not.toHaveAttribute("aria-valuetext");
+  });
+
+  describe("snapToMarks", () => {
+    const marks = [{ value: 0 }, { value: 25 }, { value: 50 }, { value: 100 }];
+
+    it("should snap a press to the nearest mark the handle can reach", async () => {
+      const onchange = vi.fn();
+      const { container } = render(RangeSlider, {
+        props: {
+          value: 0,
+          valueUpper: 100,
+          marks: [{ value: 0 }, { value: 25 }, { value: 45 }, { value: 100 }],
+          snapToMarks: true,
+          minGap: 60,
+          onchange,
+        },
+      });
+      const { slider } = mockTrack(container, 0, 100);
+
+      // 44 is nearer the lower handle and nearest 45, but minGap keeps the
+      // lower handle at 40 or below.
+      await fireEvent.pointerDown(slider, { clientX: 88, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(onchange).toHaveBeenLastCalledWith(bounds(25, 100));
+    });
+
+    it("should move each handle to the adjacent reachable mark with arrow keys", async () => {
+      render(RangeSlider, {
+        props: { value: 0, valueUpper: 100, marks, snapToMarks: true },
+      });
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+
+      lowerThumb.focus();
+      await user.keyboard("{ArrowRight}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "25");
+
+      upperThumb.focus();
+      await user.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}");
+      // 25 is taken by the lower handle; the upper handle stops there.
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "25");
+
+      lowerThumb.focus();
+      await user.keyboard("{ArrowRight}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "25");
+    });
+
+    it("should jump by stepMultiplier marks with Shift+Arrow", async () => {
+      render(RangeSlider, {
+        props: { value: 0, valueUpper: 100, marks, snapToMarks: true },
+      });
+      const [lowerThumb] = screen.getAllByRole("slider");
+
+      lowerThumb.focus();
+      await user.keyboard("{Shift>}{ArrowRight}{/Shift}");
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "100");
+    });
+  });
+
+  describe("markSnapDistance", () => {
+    const setup = (props: {
+      value: number;
+      valueUpper: number;
+      marks: { value: number }[];
+      markSnapDistance: number;
+      trackDrag?: "brush";
+    }) => {
+      const { container } = render(RangeSlider, { props });
+      return mockTrack(container, props.value, props.valueUpper);
+    };
+
+    it("should snap a handle drag to a nearby reachable mark", async () => {
+      const { slider, lowerThumb } = setup({
+        value: 0,
+        valueUpper: 100,
+        marks: [{ value: 25 }, { value: 50 }],
+        markSnapDistance: 8,
+      });
+
+      await fireEvent.pointerDown(slider, { clientX: 56, pointerId: 1 });
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "25");
+      await fireEvent.pointerMove(slider, { clientX: 70, pointerId: 1 });
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "35");
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+    });
+
+    it("should skip marks past the other handle", async () => {
+      const { slider, lowerThumb } = setup({
+        value: 0,
+        valueUpper: 48,
+        marks: [{ value: 50 }],
+        markSnapDistance: 8,
+      });
+
+      // Grab the lower handle and drag it up against the upper one.
+      await fireEvent.pointerDown(lowerThumb, { clientX: 0, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 94, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "47");
+    });
+
+    it('should snap brush endpoints when trackDrag is "brush"', async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 0,
+        valueUpper: 10,
+        marks: [{ value: 50 }, { value: 80 }],
+        markSnapDistance: 8,
+        trackDrag: "brush",
+      });
+
+      await fireEvent.pointerDown(track, { clientX: 104, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 156, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "50");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "80");
+    });
+  });
+
+  describe("trackDrag", () => {
+    const setup = (props: {
+      value: number;
+      valueUpper: number;
+      trackDrag?: "range" | "brush";
+    }) => {
+      const onchange = vi.fn();
+      const { container } = render(RangeSlider, {
+        props: { ...props, onchange },
+      });
+      return {
+        onchange,
+        ...mockTrack(container, props.value, props.valueUpper),
+      };
+    };
+
+    it('should drag the whole range from inside it when "range"', async () => {
+      const { onchange, slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "range",
+      });
+
+      // Press at 30 (inside), move to 51: +21, keeping the width of 30.
+      await fireEvent.pointerDown(track, { clientX: 60, pointerId: 1 });
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "20");
+      await fireEvent.pointerMove(slider, { clientX: 102, pointerId: 1 });
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "41");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "71");
+
+      // Past the end, the range stops against max.
+      await fireEvent.pointerMove(slider, { clientX: 400, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "70");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "100");
+      expect(onchange).toHaveBeenCalledExactlyOnceWith(bounds(70, 100));
+    });
+
+    it('should move the nearer handle for a press outside the range when "range"', async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "range",
+      });
+
+      await fireEvent.pointerDown(track, { clientX: 20, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "10");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "50");
+    });
+
+    it("should move one handle for a press inside the range by default", async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+      });
+
+      await fireEvent.pointerDown(track, { clientX: 60, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 70, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "35");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "50");
+    });
+
+    it.each([
+      { to: 180, expected: ["80", "90"] },
+      { to: 20, expected: ["10", "80"] },
+    ])(
+      'should paint a new range from a press outside it when "brush" (to $to)',
+      async ({ to, expected }) => {
+        const { onchange, slider, track, lowerThumb, upperThumb } = setup({
+          value: 20,
+          valueUpper: 50,
+          trackDrag: "brush",
+        });
+
+        await fireEvent.pointerDown(track, { clientX: 160, pointerId: 1 });
+        // The press focuses the nearer handle; painting releases it.
+        expect(upperThumb).toHaveFocus();
+        await fireEvent.pointerMove(slider, { clientX: to, pointerId: 1 });
+        expect(slider).toHaveClass("bx--slider--moving-range");
+        expect(slider.style.cursor).toBe("crosshair");
+        expect(upperThumb).not.toHaveFocus();
+        await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+        expect(lowerThumb).toHaveAttribute("aria-valuenow", expected[0]);
+        expect(upperThumb).toHaveAttribute("aria-valuenow", expected[1]);
+        expect(slider).not.toHaveClass("bx--slider--moving-range");
+        expect(onchange).toHaveBeenLastCalledWith(
+          bounds(Number(expected[0]), Number(expected[1])),
+        );
+      },
+    );
+
+    it('should treat a press without travel as a handle move when "brush"', async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "brush",
+      });
+
+      await fireEvent.pointerDown(track, { clientX: 20, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 22, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "11");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "50");
+    });
+
+    it('should still drag the whole range from inside it when "brush"', async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "brush",
+      });
+
+      await fireEvent.pointerDown(track, { clientX: 60, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 80, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "30");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "60");
+    });
+
+    it.each([
+      { trackDrag: "range", outside: "" },
+      { trackDrag: "brush", outside: "crosshair" },
+    ] as const)(
+      'should show a grab cursor over the range and "$outside" outside it ($trackDrag)',
+      async ({ trackDrag, outside }) => {
+        const { slider, track } = setup({
+          value: 20,
+          valueUpper: 50,
+          trackDrag,
+        });
+
+        await fireEvent.pointerMove(track, { clientX: 60 });
+        expect(slider.style.cursor).toBe("grab");
+
+        await fireEvent.pointerMove(track, { clientX: 150 });
+        expect(slider.style.cursor).toBe(outside);
+
+        await fireEvent.pointerLeave(slider);
+        expect(slider.style.cursor).toBe("");
+      },
+    );
+
+    it("should highlight both handles and focus neither while moving the range", async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "range",
+      });
+      lowerThumb.focus();
+
+      await fireEvent.pointerDown(track, { clientX: 60, pointerId: 1 });
+      expect(slider.style.cursor).toBe("grabbing");
+      expect(slider).toHaveClass("bx--slider--moving-range");
+      expect(lowerThumb).not.toHaveFocus();
+      expect(upperThumb).not.toHaveFocus();
+
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+      expect(slider).not.toHaveClass("bx--slider--moving-range");
+      expect(slider.style.cursor).toBe("");
+    });
+  });
+
+  describe("pointer drag", () => {
+    it("commits a press released before any render", () => {
+      const onchange = vi.fn();
+      const { container } = render(RangeSlider, {
+        props: { value: 20, valueUpper: 80, onchange },
+      });
+      const slider = container.querySelector(".bx--slider");
+      const track = container.querySelector(".bx--slider__track");
+      assert(slider instanceof HTMLElement && track instanceof HTMLElement);
+      vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+        rect({ right: 200, height: 2 }),
+      );
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+      vi.spyOn(lowerThumb, "getBoundingClientRect").mockReturnValue(
+        rect({ left: 32, width: 16, height: 16 }),
+      );
+      vi.spyOn(upperThumb, "getBoundingClientRect").mockReturnValue(
+        rect({ left: 152, width: 16, height: 16 }),
+      );
+
+      fireEvent.pointerDown(slider, { clientX: 20, pointerId: 1 });
+      fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(onchange).toHaveBeenLastCalledWith(bounds(10, 80));
+    });
+
+    it("keeps the picked handle focused through the compat mousedown", async () => {
+      const { container } = render(RangeSlider, {
+        props: { value: 20, valueUpper: 80 },
+      });
+      const track = container.querySelector(".bx--slider__track");
+      assert(track instanceof HTMLElement);
+
+      const notCanceled = await fireEvent.pointerDown(track, { pointerId: 1 });
+
+      expect(notCanceled).toBe(false);
+      expect(screen.getAllByRole("slider")[0]).toHaveFocus();
+    });
+  });
+
+  describe("grabbing a handle", () => {
+    it.each([
+      ["disabled", { disabled: true }],
+      ["readonly", { readonly: true }],
+    ])("does not start a drag when pressed while %s", async (_name, state) => {
+      const onchange = vi.fn();
+      const oninput = vi.fn();
+      const { container } = render(RangeSlider, {
+        props: { value: 20, valueUpper: 70, ...state, onchange, oninput },
+      });
+
+      const slider = container.querySelector(".bx--slider");
+      assert(slider instanceof HTMLElement);
+      await fireEvent.pointerDown(slider, { clientX: 100, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(oninput).not.toHaveBeenCalled();
+      expect(onchange).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {
+        orientation: "horizontal" as const,
+        track: rect({ right: 200, height: 2 }),
+        // Value point of 20 is x=40; the lower handle hangs left of it.
+        press: { clientX: 32 },
+        move: { clientX: 52 },
+      },
+      {
+        orientation: "vertical" as const,
+        track: rect({ bottom: 200, width: 2 }),
+        // Value point of 20 is y=160; the lower handle hangs below it.
+        press: { clientY: 168 },
+        move: { clientY: 148 },
+      },
+    ])(
+      "should not jump the handle when pressed off its value point ($orientation)",
+      async ({ orientation, track, press, move }) => {
+        const { container } = render(RangeSlider, {
+          props: { orientation, value: 20, valueUpper: 70 },
+        });
+
+        const trackEl = container.querySelector(".bx--slider__track");
+        assert(trackEl instanceof HTMLElement);
+        vi.spyOn(trackEl, "getBoundingClientRect").mockReturnValue(track);
+        const [lowerThumb] = screen.getAllByRole("slider");
+
+        await fireEvent.pointerDown(lowerThumb, { ...press, pointerId: 1 });
+        await tick();
+        expect(lowerThumb).toHaveAttribute("aria-valuenow", "20");
+
+        // Moving 20px keeps the grab offset: 10 units, not 10 plus the offset.
+        await fireEvent.pointerMove(lowerThumb, { ...move, pointerId: 1 });
+        await tick();
+        await fireEvent.pointerUp(lowerThumb, { pointerId: 1 });
+        expect(lowerThumb).toHaveAttribute("aria-valuenow", "30");
+      },
+    );
+  });
+
+  describe("right to left", () => {
+    beforeEach(() => {
+      document.documentElement.style.direction = "rtl";
+    });
+
+    afterEach(() => {
+      document.documentElement.style.removeProperty("direction");
+    });
+
+    /**
+     * Stubs a 200px track over 0–100 that runs right to left, and centers
+     * each 16px thumb on its value: 0 at x=200, 100 at x=0.
+     */
+    const setup = (
+      props: Partial<{
+        value: number;
+        valueUpper: number;
+        marks: { value: number }[];
+        markSnapDistance: number;
+        trackDrag: "range" | "brush";
+        disabled: boolean;
+        readonly: boolean;
+      }> & { value: number; valueUpper: number },
+    ) => {
+      const oninput = vi.fn();
+      const { container } = render(RangeSlider, {
+        props: { ...props, oninput },
+      });
+      const slider = container.querySelector(".bx--slider");
+      const track = container.querySelector(".bx--slider__track");
+      assert(slider instanceof HTMLElement && track instanceof HTMLElement);
+      vi.spyOn(track, "getBoundingClientRect").mockReturnValue(
+        rect({ right: 200, height: 2 }),
+      );
+      const [lowerThumb, upperThumb] = screen.getAllByRole("slider");
+      const at = (value: number) =>
+        rect({ left: 200 - value * 2 - 8, width: 16, height: 16 });
+      vi.spyOn(lowerThumb, "getBoundingClientRect").mockReturnValue(
+        at(props.value),
+      );
+      vi.spyOn(upperThumb, "getBoundingClientRect").mockReturnValue(
+        at(props.valueUpper),
+      );
+      return { container, oninput, slider, track, lowerThumb, upperThumb };
+    };
+
+    it("mirrors the handles and marks", () => {
+      const { container, slider } = setup({
+        value: 20,
+        valueUpper: 70,
+        marks: [{ value: 0 }, { value: 25 }],
+      });
+      const part = (selector: string) => {
+        const el = container.querySelector<HTMLElement>(selector);
+        assert(el);
+        return el;
+      };
+
+      // No `dir` attribute: the styles fall back to the computed direction.
+      expect(slider.style.getPropertyValue("--ccs-slider-sign")).toBe(
+        "var(--ccs-inline-sign, -1)",
+      );
+      expect(trackPosition(part(".bx--slider__thumb-wrapper--lower"))).toBe(
+        "80%",
+      );
+      expect(trackPosition(part(".bx--slider__thumb-wrapper--upper"))).toBe(
+        "30%",
+      );
+      const marks = [
+        ...container.querySelectorAll<HTMLElement>(".bx--slider__mark"),
+      ];
+      expect(marks.map(trackPosition)).toEqual(["100%", "75%"]);
+    });
+
+    it("keeps vertical sliders bottom to top", () => {
+      const { container } = render(RangeSlider, {
+        props: { orientation: "vertical", value: 20, valueUpper: 70 },
+      });
+      const lower = container.querySelector<HTMLElement>(
+        ".bx--slider__thumb-wrapper--lower",
+      );
+      assert(lower);
+      expect(lower.style.top).toBe("80%");
+      expect(lower.style.left).toBe("");
+      expect(lower.style.transform).toBe("");
+    });
+
+    it("moves the nearer handle to a press", async () => {
+      const { slider, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 70,
+      });
+
+      await fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "10");
+
+      await fireEvent.pointerDown(slider, { clientX: 40, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "80");
+    });
+
+    it.each([
+      { clientX: 90, handle: "upper", expected: ["50", "55"] },
+      { clientX: 110, handle: "lower", expected: ["45", "50"] },
+    ])(
+      "picks the $handle of two stacked handles for a press toward it",
+      async ({ clientX, expected }) => {
+        const { slider, lowerThumb, upperThumb } = setup({
+          value: 50,
+          valueUpper: 50,
+        });
+
+        await fireEvent.pointerDown(slider, { clientX, pointerId: 1 });
+        await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+        expect(lowerThumb).toHaveAttribute("aria-valuenow", expected[0]);
+        expect(upperThumb).toHaveAttribute("aria-valuenow", expected[1]);
+      },
+    );
+
+    it("keeps a grabbed handle under the pointer", async () => {
+      const { slider, lowerThumb } = setup({ value: 20, valueUpper: 70 });
+
+      // The value point of 20 is x=160; the lower handle hangs right of it.
+      await fireEvent.pointerDown(lowerThumb, { clientX: 168, pointerId: 1 });
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "20");
+      await fireEvent.pointerMove(slider, { clientX: 148, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "30");
+    });
+
+    it("moves a handle the way the arrow keys point", async () => {
+      const { lowerThumb, upperThumb } = setup({ value: 20, valueUpper: 70 });
+
+      lowerThumb.focus();
+      await user.keyboard("{ArrowLeft}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "21");
+      await user.keyboard("{ArrowRight}{ArrowRight}");
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "19");
+
+      upperThumb.focus();
+      await user.keyboard("{ArrowLeft}{ArrowUp}{ArrowDown}");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "71");
+    });
+
+    it("drags the whole range from inside it", async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "range",
+      });
+
+      // x=140 is 30, inside the range.
+      await fireEvent.pointerMove(track, { clientX: 140 });
+      expect(slider.style.cursor).toBe("grab");
+
+      // Press at 30, move to 51: +21, keeping the width of 30.
+      await fireEvent.pointerDown(track, { clientX: 140, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 98, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "41");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "71");
+    });
+
+    it("paints a new range from a press outside it", async () => {
+      const { slider, track, lowerThumb, upperThumb } = setup({
+        value: 20,
+        valueUpper: 50,
+        trackDrag: "brush",
+      });
+
+      // Press at 80 and paint to 90.
+      await fireEvent.pointerDown(track, { clientX: 40, pointerId: 1 });
+      await fireEvent.pointerMove(slider, { clientX: 20, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "80");
+      expect(upperThumb).toHaveAttribute("aria-valuenow", "90");
+    });
+
+    it("snaps a handle to a nearby mark measured from the right edge", async () => {
+      const { slider, lowerThumb } = setup({
+        value: 0,
+        valueUpper: 100,
+        marks: [{ value: 25 }, { value: 50 }],
+        markSnapDistance: 8,
+      });
+
+      // x=144 is 28, 6px from the mark at 25.
+      await fireEvent.pointerDown(slider, { clientX: 144, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "25");
+    });
+
+    it.each([
+      ["disabled", { disabled: true }],
+      ["readonly", { readonly: true }],
+    ])("stays put when %s", async (_name, state) => {
+      const { oninput, slider, lowerThumb } = setup({
+        value: 20,
+        valueUpper: 70,
+        ...state,
+      });
+
+      await fireEvent.pointerDown(slider, { clientX: 180, pointerId: 1 });
+      await fireEvent.pointerUp(slider, { pointerId: 1 });
+      await fireEvent.keyDown(lowerThumb, { key: "ArrowLeft" });
+
+      expect(lowerThumb).toHaveAttribute("aria-valuenow", "20");
+      expect(oninput).not.toHaveBeenCalled();
+    });
+  });
+});

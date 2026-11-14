@@ -1,0 +1,331 @@
+//
+// Copyright IBM Corp. 2016, 2018
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@import 'vars';
+@import 'css--reset';
+@import 'typography';
+@import './vendor/@carbon/elements/scss/import-once/import-once';
+
+/// Adds text overflow styling
+/// @access public
+/// @param {Number} $width [false] - Value of width if you want to set width, else nothing
+/// @example @include text-overflow(300px);
+/// @group global-helpers
+@mixin text-overflow($width: false) {
+  display: block;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @if ($width) {
+    width: $width;
+  }
+}
+
+/// Adds placeholder text color
+/// @access public
+/// @example @include placeholder-colors;
+/// @group global-helpers
+@mixin placeholder-colors {
+  color: $text-helper;
+  opacity: 1;
+}
+
+/// Adds box shadow
+/// @access public
+/// @example @include box-shadow;
+/// @group global-helpers
+@mixin box-shadow {
+  box-shadow: 0 2px 6px $shadow;
+}
+
+/// ccs: `solid`, or `dotted` under `prefers-contrast`. One custom property set
+/// on `:root` replaces a `@media` block after every focus outline.
+/// @access private
+/// @group global-helpers
+$focus-outline-style: var(--#{$custom-property-prefix}-focus-outline-style, solid);
+
+@include exports('focus-outline-style') {
+  @media screen and (prefers-contrast) {
+    :root {
+      --#{$custom-property-prefix}-focus-outline-style: dotted;
+    }
+  }
+}
+
+/// Adds outline styles depending on specific type
+/// @access public
+/// @param {String} $type ['border'] - Type of outline from: `border`, `blurred`, `outline`, `invalid`, `reset`
+/// @param {List} $omit [()] - Properties this mixin should not emit, for includers that always re-set them afterward
+/// @example @include focus-outline('outline');
+/// @group global-helpers
+@mixin focus-outline($type: 'border', $omit: ()) {
+  @if ($type == 'border') {
+    @if not index($omit, outline) {
+      outline: 1px $focus-outline-style $focus;
+    }
+  }
+
+  @if ($type == 'blurred') {
+    box-shadow: 0 0 0 3px $focus;
+    outline: 1px solid transparent;
+  }
+
+  @if ($type == 'outline') {
+    outline: 2px $focus-outline-style $focus;
+    @if not index($omit, outline-offset) {
+      outline-offset: -2px;
+    }
+  }
+
+  @if ($type == 'outline-compat') {
+    box-sizing: border-box;
+    border: 2px solid $focus;
+
+    @media screen and (prefers-contrast) {
+      border-style: dotted;
+    }
+  }
+
+  @if ($type == 'invalid') {
+    outline: 2px $focus-outline-style $support-error;
+    outline-offset: -2px;
+  }
+
+  @if ($type == 'reset') {
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+  }
+}
+
+/// Adds styles to hide content
+/// @access public
+/// @group global-helpers
+@mixin hidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px 0; // ccs: no inline margin, see `.bx--visually-hidden`
+  clip: rect(0, 0, 0, 0);
+  visibility: inherit;
+  white-space: nowrap;
+}
+
+/// Resets button styles
+/// @access public
+/// @param {Bool} $width [true] - Sets width to 100% if true
+/// @param {List} $omit [()] - Properties this mixin should not emit, for includers that always re-set them afterward
+/// @example @include button-reset($width: false);
+/// @group global-helpers
+@mixin button-reset($width: true, $omit: ()) {
+  @include reset;
+
+  @if not index($omit, display) {
+    display: inline-block;
+  }
+  @if not index($omit, padding) {
+    padding: 0;
+  }
+  @if not index($omit, border) {
+    border: 0;
+  }
+  appearance: none;
+  background: none;
+  @if not index($omit, cursor) {
+    cursor: pointer;
+  }
+
+  @if ($width == true) and not index($omit, width) {
+    width: 100%;
+  }
+
+  &::-moz-focus-inner {
+    border: 0;
+  }
+}
+
+/// Skeleton loading animation
+/// @access public
+/// @param {List} $omit [()] - Properties this mixin should not emit, for includers that always re-set them afterward
+/// @example @include skeleton;
+/// @group global-helpers
+@mixin skeleton($omit: ()) {
+  @if not index($omit, position) {
+    position: relative;
+  }
+  @if not index($omit, padding) {
+    padding: 0;
+  }
+  border: none;
+  background: $skeleton-background;
+  box-shadow: none;
+  pointer-events: none;
+
+  &:hover,
+  &:focus,
+  &:active {
+    border: none;
+    cursor: default;
+    outline: none;
+  }
+
+  &::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    animation: 3000ms ease-in-out skeleton infinite;
+    background: $skeleton-element;
+    content: '';
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}
+
+@include exports('skeleton') {
+  // ccs: transform only, from a fixed left origin, so the compositor runs it.
+  // Upstream switched `transform-origin` between left and right, which no
+  // browser animates off the main thread: each skeleton on screen restyled
+  // the page every frame. Scaling about the right edge by `s` is
+  // `translateX((1 - s) * 100%) scaleX(s)` about the left one, and the
+  // origin switched only at `scaleX(1)`, so every frame is the same.
+  @keyframes skeleton {
+    0% {
+      opacity: 0.3;
+      transform: translateX(0) scaleX(0); // ccs: translateX(0) to match the others
+      transform-origin: left;
+    }
+
+    20% {
+      opacity: 1;
+      transform: translateX(0) scaleX(1); // ccs: translateX(0) to match the others
+      transform-origin: left;
+    }
+
+    28% {
+      transform: translateX(0) scaleX(1); // ccs: was scaleX(1) from the right
+      transform-origin: left;
+    }
+
+    51% {
+      transform: translateX(100%) scaleX(0); // ccs: was scaleX(0) from the right
+      transform-origin: left;
+    }
+
+    58% {
+      transform: translateX(100%) scaleX(0); // ccs: was scaleX(0) from the right
+      transform-origin: left;
+    }
+
+    82% {
+      transform: translateX(0) scaleX(1); // ccs: was scaleX(1) from the right
+      transform-origin: left;
+    }
+
+    83% {
+      transform: translateX(0) scaleX(1); // ccs: translateX(0) to match the others
+      transform-origin: left;
+    }
+
+    96% {
+      transform: translateX(0) scaleX(0); // ccs: translateX(0) to match the others
+      transform-origin: left;
+    }
+
+    100% {
+      opacity: 0.3;
+      transform: translateX(0) scaleX(0); // ccs: translateX(0) to match the others
+      transform-origin: left;
+    }
+  }
+}
+
+/// High Contrast Mode mixin (forced-colors / modern HCM).
+/// Legacy `-ms-high-contrast` dropped — outside the Svelte 5 browserslist.
+/// @access public
+/// @example @include high-contrast-mode;
+/// @group global-helpers
+/// We should set HCM styles at the end of each file to ensure they are not overridden
+@mixin high-contrast-mode($type: '') {
+  @media (forced-colors: active) {
+    @if ($type == 'icon-fill') {
+      fill: ButtonText;
+    }
+
+    @if ($type == 'focus') {
+      color: Highlight;
+      outline: 1px solid Highlight;
+    }
+
+    @if ($type == 'outline') {
+      outline: 1px solid transparent;
+    }
+
+    @if ($type == 'disabled') {
+      color: GrayText;
+      fill: GrayText;
+    }
+
+    @content;
+  }
+}
+
+// carbon-components-svelte patch
+// Right-to-left helpers. Offsets are logical (`ccs-inset-inline`). What has
+// no logical form, such as a transform, mirrors under a `[dir="rtl"]`
+// ancestor, since `:dir()` is newer than the Safari 14.1 floor.
+
+/// The value for the nearest `dir`: `$ltr` under `dir="ltr"` (or no
+/// `dir`), `$rtl` under `dir="rtl"`. Use it in a `[dir="rtl"]` twin. The
+/// twin matches any RTL ancestor, so without it a `dir="ltr"` region
+/// inside an RTL page would keep the RTL value, while logical properties
+/// follow the region. It reads `--ccs-rtl` and `--ccs-ltr`, which every
+/// `[dir]` element sets to an empty value (on) or `initial` (off), so the
+/// one that is off falls back to its value and the other adds nothing.
+/// @access private
+/// @group global-helpers
+/// @example transform: ccs-dir(translateX(-100%), translateX(100%));
+@function ccs-dir($ltr, $rtl) {
+  @if $ltr == $rtl {
+    @return $ltr;
+  }
+
+  @return unquote("var(--ccs-rtl, #{$ltr}) var(--ccs-ltr, #{$rtl})");
+}
+
+/// Sets `inset-inline-start` to `$start` and `inset-inline-end` to `$end`,
+/// which follow the element's own direction. A side left `null` is `auto`,
+/// so a physical offset from Carbon's base rule on that side stops
+/// applying, in both directions.
+/// @access private
+/// @group global-helpers
+/// @example @include ccs-inset-inline($end: $carbon--spacing-05);
+@mixin ccs-inset-inline($start: null, $end: null) {
+  inset-inline-start: if($start == null, auto, $start);
+  inset-inline-end: if($end == null, auto, $end);
+}
+
+/// Mirrors a directional icon, such as a next arrow, under a `[dir="rtl"]`
+/// ancestor. `--ccs-mirror-rtl` holds `scaleX(-1)` and inherits from the
+/// nearest `dir`, so a nested `dir="ltr"` turns it off again. `$transform`
+/// is the element's own transform, such as a rotation; it applies first,
+/// and the mirror composes with it. Include it after the rule's
+/// declarations: Sass splits a rule around the nested one.
+/// @access private
+/// @group global-helpers
+/// @example @include ccs-mirror-rtl;
+@mixin ccs-mirror-rtl($transform: null) {
+  [dir="rtl"] & {
+    transform: var(--ccs-mirror-rtl,) $transform;
+  }
+}
